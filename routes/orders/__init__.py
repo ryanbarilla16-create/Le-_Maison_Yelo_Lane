@@ -1,9 +1,9 @@
 from flask import render_template, request, session, redirect, url_for, flash
 from flask_login import login_required, current_user
 from .. import main_bp
-from models import db, MenuItem, Order, OrderItem, Review
+from models import db, MenuItem, Order, OrderItem, Review, User
 from datetime import datetime
-from utils import get_ph_time
+from utils import get_ph_time, create_notification
 import os
 import requests
 import base64
@@ -192,6 +192,16 @@ def payment_success(order_id):
     order.status = 'PENDING'
     order.payment_status = 'PAID'
     db.session.commit()
+    
+    # Notify all staff (Admin, Cashier, Kitchen)
+    staff_users = User.query.filter(User.role.in_(['ADMIN', 'CASHIER', 'STAFF', 'KITCHEN'])).all()
+    for staff in staff_users:
+        create_notification(
+            staff.id, 
+            'New Order Received! 🛍️', 
+            f'Order #{order.id} for {current_user.first_name} has been paid and is ready for preparation.', 
+            'ORDER'
+        )
     
     flash("Payment successful! Your order has been placed.", "success")
     return redirect(url_for('main.index'))

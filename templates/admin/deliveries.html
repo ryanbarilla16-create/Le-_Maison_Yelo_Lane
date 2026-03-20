@@ -120,9 +120,7 @@
     </div>
 </div>
 
-<!-- Leaflet CSS & JS -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 
 <style>
     #deliveryMap {
@@ -294,7 +292,7 @@
         setInterval(updateRiderLocations, 5000);
     }
     
-    // Also refresh the table every 10 seconds
+    // Also refresh the table every 60 seconds (instead of 10s to avoid interrupting map dragging)
     const doRefresh = () => {
         if (typeof adminLoadPage === 'function') {
             adminLoadPage(window.location.href, false);
@@ -302,8 +300,8 @@
             window.location.reload();
         }
     };
-    if (window.registerTimeout) window.registerTimeout(doRefresh, 10000);
-    else setTimeout(doRefresh, 10000);
+    if (window.registerTimeout) window.registerTimeout(doRefresh, 60000);
+    else setTimeout(doRefresh, 60000);
 })();
 </script>
 {% endblock %}

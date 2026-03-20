@@ -1,117 +1,135 @@
 {% extends "layouts/base.html" %}
 
-{% block title %}Reservation{% endblock %}
+{% block title %}Reserve a Table — Le Maison{% endblock %}
 
 {% block content %}
-<div class="form-wrapper wide">
-    <h2 class="title"
-        style="background: linear-gradient(to right, #8B4513, #d4a862); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
-        Book a Table</h2>
-    <p class="subtitle text-muted mb-4">Experience fine dining. Reserve your spot today.</p>
+<style>
+    .resPage { max-width: 720px; margin: 6rem auto 3rem; padding: 0 1.5rem; }
+    .resCard { background: #fff; border-radius: 24px; border: 1px solid var(--border-color); box-shadow: 0 8px 32px rgba(0,0,0,0.05); overflow: hidden; }
+    .resHeader { background: linear-gradient(135deg, rgba(93,64,55,0.04), rgba(212,168,98,0.06)); padding: 2.5rem 2.5rem 1.5rem; text-align: center; }
+    .resHeader h2 { font-family: 'Playfair Display', 'Georgia', serif; font-weight: 700; font-size: 2rem; margin-bottom: 0.5rem; background: linear-gradient(135deg, #5D4037, #D4A862); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    .resHeader p { color: var(--text-muted); font-size: 0.92rem; margin: 0; }
 
-    <!-- Reservation Rules / Policies -->
-    <div class="alert alert-light border shadow-sm mb-4 p-4 rounded-4 text-start"
-        style="border-left: 4px solid #d4a862 !important;">
-        <h5 style="color: #8B4513; font-family: 'Georgia', serif; font-weight: bold; margin-bottom: 1rem;"><i
-                class="fas fa-clipboard-list me-2"></i>Reservation Policies</h5>
-        <div class="row" style="font-size: 0.85rem; color: #555;">
-            <div class="col-md-6 mb-3">
-                <strong style="color: #333;"><i class="fas fa-calendar-alt me-2" style="color: #d4a862;"></i>Date &
-                    Time:</strong>
-                <ul class="mb-0 mt-1 ps-4 text-muted">
-                    <li>Strictly <strong>1 to 14 days</strong> advance booking. (No same-day booking)</li>
-                    <li>Hours: <strong>11:30 AM - 8:30 PM</strong> in 30-min intervals.</li>
-                </ul>
-            </div>
-            <div class="col-md-6 mb-3">
-                <strong style="color: #333;"><i class="fas fa-users me-2" style="color: #d4a862;"></i>Guest
-                    Capacity:</strong>
-                <ul class="mb-0 mt-1 ps-4 text-muted">
-                    <li>Maximum of <strong>20 guests</strong> per reservation.</li>
-                </ul>
-            </div>
-            <div class="col-md-12">
-                <strong style="color: #333;"><i class="fas fa-info-circle me-2" style="color: #d4a862;"></i>Important
-                    Notes:</strong>
-                <ul class="mb-0 mt-1 ps-4 text-muted">
-                    <li>The system runs a real-time <strong>capacity check</strong> and will decline bookings if
-                        slots/seats run out.</li>
-                    <li>All submitted reservations will be tagged as <strong>Pending</strong> until approved by our
-                        Admin.</li>
-                </ul>
+    .resPolicies { margin: 0 2rem; padding: 1.5rem; background: rgba(93,64,55,0.03); border-radius: 16px; border: 1px solid rgba(93,64,55,0.06); }
+    .resPolicies h6 { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 0.95rem; color: var(--primary-color); margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; }
+    .resPolicies .polGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .resPolicies .polItem { font-size: 0.82rem; color: var(--text-muted); }
+    .resPolicies .polItem strong { color: var(--text-main); display: flex; align-items: center; gap: 6px; margin-bottom: 0.3rem; font-size: 0.85rem; }
+    .resPolicies .polItem strong i { color: #D4A862; font-size: 0.8rem; }
+    .resPolicies .polItem ul { padding-left: 1.25rem; margin: 0.3rem 0 0; }
+    .resPolicies .polItem ul li { margin-bottom: 0.2rem; }
+    .resPolicies .polFull { grid-column: 1 / -1; border-top: 1px solid rgba(93,64,55,0.08); padding-top: 0.75rem; margin-top: 0.25rem; }
+
+    .resForm { padding: 2rem 2.5rem 2.5rem; }
+    .resRow { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; }
+    .resField { display: flex; flex-direction: column; }
+    .resField label { font-weight: 700; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+    .resField input, .resField select, .resField textarea { border: 1.5px solid rgba(93,64,55,0.12); border-radius: 12px; padding: 0.7rem 1rem; font-size: 0.9rem; transition: all 0.3s; background: #fff; color: var(--text-main); font-family: 'Inter', sans-serif; appearance: none; -webkit-appearance: none; }
+    .resField input:focus, .resField select:focus, .resField textarea:focus { border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(93,64,55,0.08); outline: none; }
+    .resField select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%235D4037' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 1rem center; background-size: 12px; padding-right: 2.5rem; }
+
+    .resSubmit { background: linear-gradient(135deg, #5D4037, #795548); color: #fff; font-weight: 700; border: none; border-radius: 50px; padding: 0.85rem 2rem; width: 100%; font-size: 1rem; cursor: pointer; transition: all 0.3s; box-shadow: 0 6px 20px rgba(93,64,55,0.2); letter-spacing: 0.5px; margin-top: 0.5rem; }
+    .resSubmit:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(93,64,55,0.3); }
+
+    @media(max-width: 600px) {
+        .resRow { grid-template-columns: 1fr; }
+        .resPolicies .polGrid { grid-template-columns: 1fr; }
+        .resForm { padding: 1.5rem; }
+        .resHeader { padding: 2rem 1.5rem 1.25rem; }
+        .resPolicies { margin: 0 1rem; }
+    }
+</style>
+
+<div class="resPage">
+    <div class="resCard">
+        <div class="resHeader">
+            <h2><i class="fas fa-calendar-plus" style="font-size: 1.6rem; -webkit-text-fill-color: var(--primary-color);"></i> Book a Table</h2>
+            <p>Experience fine dining. Reserve your spot today.</p>
+        </div>
+
+        <div class="resPolicies">
+            <h6><i class="fas fa-clipboard-list"></i> Reservation Policies</h6>
+            <div class="polGrid">
+                <div class="polItem">
+                    <strong><i class="fas fa-calendar-alt"></i> Date & Time</strong>
+                    <ul>
+                        <li>Strictly <strong>1 to 14 days</strong> advance booking</li>
+                        <li>Hours: <strong>11:30 AM - 8:30 PM</strong> (30-min intervals)</li>
+                    </ul>
+                </div>
+                <div class="polItem">
+                    <strong><i class="fas fa-users"></i> Guest Capacity</strong>
+                    <ul>
+                        <li>Maximum of <strong>20 guests</strong> per reservation</li>
+                    </ul>
+                </div>
+                <div class="polItem polFull">
+                    <strong><i class="fas fa-info-circle"></i> Important Notes</strong>
+                    <ul>
+                        <li>Real-time <strong>capacity check</strong> — bookings decline if slots run out</li>
+                        <li>Reservations tagged as <strong>Pending</strong> until approved by Admin</li>
+                    </ul>
+                </div>
             </div>
         </div>
+
+        <form method="POST" action="{{ url_for('main.reserve') }}" class="resForm">
+            <div class="resRow">
+                <div class="resField">
+                    <label for="date">Date</label>
+                    <input type="date" id="date" name="date" required>
+                </div>
+                <div class="resField">
+                    <label for="time">Time</label>
+                    <select id="time" name="time" required>
+                        <option value="" disabled selected>Select a slot...</option>
+                        <option value="11:30">11:30 AM</option>
+                        <option value="12:00">12:00 PM</option>
+                        <option value="12:30">12:30 PM</option>
+                        <option value="13:00">1:00 PM</option>
+                        <option value="13:30">1:30 PM</option>
+                        <option value="14:00">2:00 PM</option>
+                        <option value="14:30">2:30 PM</option>
+                        <option value="15:00">3:00 PM</option>
+                        <option value="15:30">3:30 PM</option>
+                        <option value="16:00">4:00 PM</option>
+                        <option value="16:30">4:30 PM</option>
+                        <option value="17:00">5:00 PM</option>
+                        <option value="17:30">5:30 PM</option>
+                        <option value="18:00">6:00 PM</option>
+                        <option value="18:30">6:30 PM</option>
+                        <option value="19:00">7:00 PM</option>
+                        <option value="19:30">7:30 PM</option>
+                        <option value="20:00">8:00 PM</option>
+                        <option value="20:30">8:30 PM</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="resRow">
+                <div class="resField">
+                    <label for="guest_count">Guest Count</label>
+                    <input type="number" id="guest_count" name="guest_count" min="1" max="20" step="1" required placeholder="Number of guests">
+                    <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.3rem;">Maximum of 20 guests per reservation.</small>
+                </div>
+                <div class="resField">
+                    <label for="occasion">Occasion <span style="font-weight: 400; color: var(--text-muted); font-size: 0.75rem;">(Optional)</span></label>
+                    <input type="text" id="occasion" name="occasion" maxlength="50" placeholder="e.g. Birthday, Anniversary">
+                </div>
+            </div>
+
+            <input type="hidden" name="booking_type" value="REGULAR">
+            <button type="submit" class="resSubmit"><i class="fas fa-calendar-check me-2"></i>Submit Reservation</button>
+        </form>
     </div>
-
-    <form method="POST" action="{{ url_for('main.reserve') }}">
-        <div class="form-row">
-            <div class="form-group">
-                <label for="date">Date</label>
-                <!-- HTML5 Date Picker restricts selection to today + 1 day minimum -->
-                <input type="date" id="date" name="date" required>
-            </div>
-            <div class="form-group">
-                <label for="time">Time</label>
-                <select id="time" name="time" required>
-                    <option value="" disabled selected>Select a slot...</option>
-                    <option value="11:30">11:30 AM</option>
-                    <option value="12:00">12:00 PM</option>
-                    <option value="12:30">12:30 PM</option>
-                    <option value="13:00">1:00 PM</option>
-                    <option value="13:30">1:30 PM</option>
-                    <option value="14:00">2:00 PM</option>
-                    <option value="14:30">2:30 PM</option>
-                    <option value="15:00">3:00 PM</option>
-                    <option value="15:30">3:30 PM</option>
-                    <option value="16:00">4:00 PM</option>
-                    <option value="16:30">4:30 PM</option>
-                    <option value="17:00">5:00 PM</option>
-                    <option value="17:30">5:30 PM</option>
-                    <option value="18:00">6:00 PM</option>
-                    <option value="18:30">6:30 PM</option>
-                    <option value="19:00">7:00 PM</option>
-                    <option value="19:30">7:30 PM</option>
-                    <option value="20:00">8:00 PM</option>
-                    <option value="20:30">8:30 PM</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="form-row">
-            <div class="form-group">
-                <label for="guest_count">Guest Count</label>
-                <!-- Integer input only, using step=1 -->
-                <input type="number" id="guest_count" name="guest_count" min="1" max="20" step="1" required
-                    placeholder="Number of guests">
-                <small id="guest_guide" style="color: var(--text-muted); font-size: 0.8rem;">Maximum of 20 guests per
-                    reservation.</small>
-            </div>
-        </div>
-        <input type="hidden" name="booking_type" value="REGULAR">
-
-        <div class="form-group">
-            <label for="occasion">Occasion (Optional)</label>
-            <input type="text" id="occasion" name="occasion" maxlength="50" placeholder="e.g. Birthday, Anniversary">
-        </div>
-
-        <button type="submit" class="btn" style="background: #22c55e; border-color: #22c55e;">Submit Request</button>
-    </form>
 </div>
 
 <script>
-    // Initialize minimum and maximum date
     document.addEventListener("DOMContentLoaded", function () {
         var dateField = document.getElementById('date');
         var today = new Date();
-
-        // Formulate minimum date (tomorrow)
-        var tmrw = new Date(today);
-        tmrw.setDate(tmrw.getDate() + 1);
-
-        // Configure max 14 days ahead
-        var maxDate = new Date(today);
-        maxDate.setDate(maxDate.getDate() + 14);
-
+        var tmrw = new Date(today); tmrw.setDate(tmrw.getDate() + 1);
+        var maxDate = new Date(today); maxDate.setDate(maxDate.getDate() + 14);
         dateField.min = tmrw.toISOString().split("T")[0];
         dateField.max = maxDate.toISOString().split("T")[0];
     });

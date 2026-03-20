@@ -1,12 +1,16 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
 from flask_login import login_required, current_user, login_user, logout_user
 from flask_mail import Message
-from models import db, User, Reservation, MenuItem, Order, OrderItem, Review
+from models import db, User, Reservation, MenuItem, Order, OrderItem, Review, Notification
 from datetime import datetime, date, timedelta
-from utils import get_ph_time
+from utils import get_ph_time, create_notification
 from sqlalchemy import func
 from functools import wraps
 import traceback
+
+def _create_web_notification(user_id, title, message, notif_type='SYSTEM'):
+    """Backwards compatible helper for admin routes"""
+    return create_notification(user_id, title, message, notif_type)
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -88,6 +92,39 @@ def overview():
     
     recent_reservations = Reservation.query.order_by(Reservation.created_at.desc()).limit(5).all()
 
+    import json as _json
+    today = date.today()
+
+    # 1) Revenue Trend
+    revenue_trend_labels, revenue_trend_data = [], []
+    for i in range(6, -1, -1):
+        d = today - timedelta(days=i)
+        revenue_trend_labels.append(d.strftime('%b %d'))
+        day_rev = db.session.query(func.coalesce(func.sum(Order.total_amount), 0)).filter(func.date(Order.created_at) == d).scalar()
+        revenue_trend_data.append(float(day_rev))
+
+    # 2) Daily Orders
+    daily_orders_labels, daily_orders_data = [], []
+    for i in range(6, -1, -1):
+        d = today - timedelta(days=i)
+        daily_orders_labels.append(d.strftime('%b %d'))
+        cnt = db.session.query(func.count(Order.id)).filter(func.date(Order.created_at) == d).scalar()
+        daily_orders_data.append(int(cnt or 0))
+
+    # 3) Busy Times
+    busy_hours_raw = db.session.query(func.extract('hour', Order.created_at).label('hr'), func.count(Order.id)).group_by('hr').order_by('hr').all()
+    busy_map = {int(h): c for h, c in busy_hours_raw}
+    busy_times_labels = [f'{h:02d}:00' for h in range(24)]
+    busy_times_data = [busy_map.get(h, 0) for h in range(24)]
+
+    # 4) Order Status Donut
+    order_status_rows = db.session.query(Order.status, func.count(Order.id)).group_by(Order.status).all()
+    order_status_labels = [r[0] for r in order_status_rows] if order_status_rows else ['No Data']
+    order_status_data = [r[1] for r in order_status_rows] if order_status_rows else [1]
+
+    # Compute total revenue
+    total_revenue = float(db.session.query(func.coalesce(func.sum(Order.total_amount), 0)).scalar())
+
     return render_template('admin/overview.html',
         total_customers=total_customers,
         pending_users=pending_users,
@@ -96,7 +133,16 @@ def overview():
         pending_reservations=pending_reservations,
         confirmed_reservations=confirmed_reservations,
         recent_reservations=recent_reservations,
-        low_stock_items=low_stock_items
+        low_stock_items=low_stock_items,
+        total_revenue=total_revenue,
+        revenue_trend_labels=_json.dumps(revenue_trend_labels),
+        revenue_trend_data=_json.dumps(revenue_trend_data),
+        daily_orders_labels=_json.dumps(daily_orders_labels),
+        daily_orders_data=_json.dumps(daily_orders_data),
+        busy_times_labels=_json.dumps(busy_times_labels),
+        busy_times_data=_json.dumps(busy_times_data),
+        order_status_labels=_json.dumps(order_status_labels),
+        order_status_data=_json.dumps(order_status_data)
     )
 
 # ─── MAIN: ANALYTICS ────────────────────────────────
@@ -402,6 +448,9 @@ def approve_user(user_id):
         print(f"Approval email failed: {e}")
         traceback.print_exc()
     
+    # Create in-app notification for user
+    _create_web_notification(user.id, 'Account Approved! 🎉', 'Your account has been approved. You can now log in and enjoy all features!', 'SYSTEM')
+    
     flash(f"User {user.username} approved.", "success")
     return redirect(url_for('admin.approvals'))
 
@@ -412,6 +461,7 @@ def reject_user(user_id):
     user = User.query.get_or_404(user_id)
     user.status = 'REJECTED'
     db.session.commit()
+    _create_web_notification(user.id, 'Account Update', 'Your account registration was not approved. Please contact us for more information.', 'SYSTEM')
     flash(f"User {user.username} rejected.", "warning")
     return redirect(url_for('admin.approvals'))
 
@@ -534,6 +584,14 @@ def update_reservation(res_id):
     new_status = request.form.get('status')
     res.status = new_status
     db.session.commit()
+    # Notify user about reservation status change
+    status_msgs = {
+        'CONFIRMED': f'Your reservation for {res.date.strftime("%b %d, %Y")} at {res.time.strftime("%I:%M %p")} has been confirmed!',
+        'REJECTED': f'Your reservation for {res.date.strftime("%b %d, %Y")} has been declined. Please try a different date/time.',
+        'COMPLETED': f'Your reservation for {res.date.strftime("%b %d, %Y")} has been marked as completed. Thank you for dining with us!',
+    }
+    if new_status in status_msgs:
+        _create_web_notification(res.user_id, f'Reservation {new_status.capitalize()}', status_msgs[new_status], 'RESERVATION')
     flash(f"Reservation #{res.id} updated to {new_status}.", "success")
     return redirect(url_for('admin.reservations'))
 
@@ -816,6 +874,16 @@ def update_order(order_id):
     order.status = new_status
     db.session.commit()
     
+    # Notify user about order status change
+    if order.user_id:
+        order_status_msgs = {
+            'PREPARING': f'Your order #{order.id} is now being prepared! 🍳',
+            'COMPLETED': f'Your order #{order.id} is ready! Total: ₱{float(order.total_amount):,.2f}',
+            'CANCELLED': f'Your order #{order.id} has been cancelled.',
+        }
+        if new_status in order_status_msgs:
+            _create_web_notification(order.user_id, f'Order {new_status.capitalize()}', order_status_msgs[new_status], 'ORDER')
+    
     # Send receipt email when order is COMPLETED (skip walk-in orders)
     if new_status == 'COMPLETED' and order.user:
         try:
@@ -961,3 +1029,126 @@ def settings():
         return redirect(url_for('admin.settings'))
 
     return render_template('admin/settings.html', site=site_settings)
+
+# ─── ADMIN NOTIFICATIONS API ─────────────────────────
+@admin_bp.route('/api/notifications')
+@login_required
+@admin_required
+def admin_notifications():
+    """Get recent notifications for the admin/staff user"""
+    notifs_data = []
+
+    # Get actual DB notifications assigned to the user
+    notifs = Notification.query.filter_by(user_id=current_user.id).order_by(Notification.created_at.desc()).limit(15).all()
+    for n in notifs:
+        notifs_data.append({
+            'id': f'db_{n.id}', 'title': n.title, 'message': n.message,
+            'type': n.type, 'is_read': n.is_read,
+            'created_at': n.created_at.strftime('%b %d, %I:%M %p') if n.created_at else '',
+            'raw_date': n.created_at or get_ph_time()
+        })
+
+    # Add system-wide live notifications for admins
+    if current_user.role and current_user.role.upper() == 'ADMIN':
+        pend_users = User.query.filter_by(status='PENDING', is_verified=True).order_by(User.id.desc()).limit(5).all()
+        for u in pend_users:
+            notifs_data.append({
+                'id': f'usr_{u.id}', 'title': 'Account Approval Needed',
+                'message': f'{u.first_name} {u.last_name} is awaiting admin approval.',
+                'type': 'SYSTEM', 'is_read': False, 'created_at': 'Pending', 'raw_date': get_ph_time()
+            })
+            
+        pend_res = Reservation.query.filter_by(status='PENDING').order_by(Reservation.created_at.desc()).limit(5).all()
+        for r in pend_res:
+            notifs_data.append({
+                'id': f'res_{r.id}', 'title': 'New Reservation Need Confirmation',
+                'message': f'{r.guest_count} guests for {r.date.strftime("%b %d")} at {r.time.strftime("%I:%M %p")}.',
+                'type': 'RESERVATION', 'is_read': False,
+                'created_at': r.created_at.strftime('%b %d, %I:%M %p') if r.created_at else 'Pending',
+                'raw_date': r.created_at or get_ph_time()
+            })
+
+    # Add order notifications for Staff/Admin
+    if current_user.role and current_user.role.upper() in ['ADMIN', 'CASHIER', 'STAFF', 'KITCHEN']:
+        pend_ords = Order.query.filter_by(status='PENDING').order_by(Order.created_at.desc()).limit(5).all()
+        for o in pend_ords:
+            notifs_data.append({
+                'id': f'ord_{o.id}', 'title': f'New Order #{o.id}',
+                'message': f'Amount: ₱{float(o.total_amount):,.2f} ({o.dining_option})',
+                'type': 'ORDER', 'is_read': False,
+                'created_at': o.created_at.strftime('%b %d, %I:%M %p') if o.created_at else '',
+                'raw_date': o.created_at or get_ph_time()
+            })
+
+    # Sort manually by created_at (descending)
+    notifs_data.sort(key=lambda x: x['raw_date'], reverse=True)
+
+    return jsonify({
+        'notifications': notifs_data[:30]
+    })
+
+@admin_bp.route('/api/notifications/unread-count')
+@login_required
+@admin_required
+def admin_unread_count():
+    """Get unread notification count for admin bell badge"""
+    count = Notification.query.filter_by(user_id=current_user.id, is_read=False).count()
+    
+    # Also include system-wide counts for admins
+    extras = {}
+    if current_user.role and current_user.role.upper() == 'ADMIN':
+        extras['pending_users'] = User.query.filter_by(status='PENDING', role='USER', is_verified=True).count()
+        extras['pending_orders'] = Order.query.filter_by(status='PENDING').count()
+        extras['pending_reservations'] = Reservation.query.filter_by(status='PENDING').count()
+        extras['pending_reviews'] = Review.query.filter_by(status='PENDING').count()
+    elif current_user.role and current_user.role.upper() in ['CASHIER', 'STAFF']:
+        extras['pending_orders'] = Order.query.filter_by(status='PENDING').count()
+    elif current_user.role and current_user.role.upper() == 'KITCHEN':
+        extras['pending_orders'] = Order.query.filter_by(status='PENDING').count()
+        extras['preparing_orders'] = Order.query.filter_by(status='PREPARING').count()
+    elif current_user.role and current_user.role.upper() == 'RIDER':
+        extras['waiting_deliveries'] = Order.query.filter_by(dining_option='DELIVERY', delivery_status='WAITING').count()
+    
+    return jsonify({'count': count, **extras})
+
+@admin_bp.route('/api/notifications/mark-all-read', methods=['POST'])
+@login_required
+@admin_required
+def admin_mark_all_read():
+    """Mark all admin's notifications as read"""
+    Notification.query.filter_by(user_id=current_user.id, is_read=False).update({'is_read': True})
+    db.session.commit()
+    return jsonify({'success': True})
+
+# ─── USER WEB NOTIFICATIONS API ──────────────────────
+@admin_bp.route('/web/notifications')
+@login_required
+def web_user_notifications():
+    """Get notifications for logged-in user on the website"""
+    notifs = Notification.query.filter_by(user_id=current_user.id).order_by(Notification.created_at.desc()).limit(30).all()
+    return jsonify({
+        'notifications': [{
+            'id': n.id,
+            'title': n.title,
+            'message': n.message,
+            'type': n.type,
+            'is_read': n.is_read,
+            'created_at': n.created_at.strftime('%b %d, %I:%M %p') if n.created_at else '',
+        } for n in notifs]
+    })
+
+@admin_bp.route('/web/notifications/unread-count')
+@login_required
+def web_user_unread_count():
+    """Get unread count for user notification bell"""
+    count = Notification.query.filter_by(user_id=current_user.id, is_read=False).count()
+    return jsonify({'count': count})
+
+@admin_bp.route('/web/notifications/mark-all-read', methods=['POST'])
+@login_required
+def web_user_mark_all_read():
+    """Mark all user web notifications as read"""
+    Notification.query.filter_by(user_id=current_user.id, is_read=False).update({'is_read': True})
+    db.session.commit()
+    return jsonify({'success': True})
+

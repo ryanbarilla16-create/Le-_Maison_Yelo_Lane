@@ -3,92 +3,310 @@
 {% block title %}Log In{% endblock %}
 
 {% block content %}
-<div class="row w-100 justify-content-center m-0 p-3">
-    <div class="col-12 col-md-8 col-lg-5 col-xxl-4 p-0">
-        <div class="card shadow-lg border-0"
-            style="border-radius: 24px; background-color: rgba(255, 255, 255, 0.95); overflow: hidden;">
-            <div class="card-header text-center border-0"
-                style="background: linear-gradient(to right, rgba(139, 69, 19, 0.05), rgba(210, 105, 30, 0.05)); padding: 3rem 2rem 1.5rem;">
-                <h2 class="fw-bold mb-2"
-                    style="font-family: 'Georgia', serif; color: var(--primary-color); font-size: 2.25rem;">Welcome Back
-                </h2>
-                <p class="text-muted" style="font-size: 1.05rem;">Please sign in to your account.</p>
+<div class="login-wrapper row w-100 justify-content-center align-items-center m-0">
+    <div class="col-12 col-md-8 col-lg-5 col-xxl-4 p-3">
+        <!-- Glassmorphism Card -->
+        <div class="card login-glass-card shadow-lg border-0">
+             
+            <div class="card-header text-center border-0 bg-transparent login-header">
+                <h2 class="fw-bold mb-2 login-title">Welcome Back.</h2>
+                <p class="text-muted login-subtitle">Breathe, relax, and log in to continue.</p>
             </div>
 
             <div class="card-body p-4 p-md-5 pt-2">
 
-                <div class="row g-3 mb-4 mt-2">
+                <!-- Social Login Buttons -->
+                <div class="row g-3 mb-4 mt-1">
                     <div class="col-6">
                         <button type="button" onclick="handleGoogleLogin()"
-                            class="btn btn-outline-dark w-100 rounded-pill py-2 d-flex align-items-center justify-content-center gap-2 shadow-sm"
-                            style="border: 1px solid #e2e8f0; transition: all 0.2s;">
-                            <img src="https://cdn-icons-png.flaticon.com/512/300/300221.png" alt="Google"
-                                style="width: 20px;">
-                            <span class="fw-bold text-muted" style="font-size: 0.95rem;">Google</span>
+                            class="btn btn-social w-100 rounded-pill d-flex align-items-center justify-content-center gap-2">
+                            <img src="https://cdn-icons-png.flaticon.com/512/300/300221.png" alt="Google" class="social-icon">
+                            <span class="fw-semibold social-text">Google</span>
                         </button>
                     </div>
                     <div class="col-6">
                         <button type="button" onclick="handleFacebookLogin()"
-                            class="btn btn-outline-dark w-100 rounded-pill py-2 d-flex align-items-center justify-content-center gap-2 shadow-sm"
-                            style="border: 1px solid #e2e8f0; transition: all 0.2s;">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/b/b8/2021_Facebook_icon.svg"
-                                alt="Facebook" style="width: 20px;">
-                            <span class="fw-bold text-muted" style="font-size: 0.95rem;">Facebook</span>
+                            class="btn btn-social w-100 rounded-pill d-flex align-items-center justify-content-center gap-2">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/b/b8/2021_Facebook_icon.svg" alt="Facebook" class="social-icon">
+                            <span class="fw-semibold social-text">Facebook</span>
                         </button>
                     </div>
                 </div>
 
                 <div class="d-flex align-items-center mb-4">
-                    <hr class="flex-grow-1" style="border-top: 1px solid #e0e0e0;">
-                    <span class="mx-3 text-muted small fw-bold" style="font-size: 0.75rem; letter-spacing: 1px;">OR LOG
-                        IN WITH EMAIL</span>
-                    <hr class="flex-grow-1" style="border-top: 1px solid #e0e0e0;">
+                    <hr class="flex-grow-1 divider-line">
+                    <span class="mx-3 text-muted fw-semibold divider-text">or log in with email</span>
+                    <hr class="flex-grow-1 divider-line">
                 </div>
 
                 <form method="POST" action="{{ url_for('main.login') }}">
+                    <!-- Email field -->
                     <div class="form-group mb-4">
-                        <label for="email" class="fw-bold text-muted small text-uppercase letter-spacing-1 mb-2">Email
-                            Address</label>
-                        <input type="email" id="email" name="email" class="form-control form-control-lg bg-light"
-                            style="border: 1px solid rgba(139, 69, 19, 0.15); border-radius: 12px; padding: 0.85rem 1rem;"
-                            required placeholder="you@gmail.com">
+                        <label for="email" class="fw-semibold mb-2 form-label-custom">Email Address</label>
+                        <input type="email" id="email" name="email" class="form-control glass-input"
+                            required placeholder="hello@example.com">
                     </div>
 
+                    <!-- Password field -->
                     <div class="form-group mb-4 position-relative">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <label for="password"
-                                class="fw-bold text-muted small text-uppercase letter-spacing-1 mb-2">Password</label>
-                            <a href="{{ url_for('main.forgot_password') }}"
-                                class="small fw-semibold text-decoration-none"
-                                style="color: var(--primary-color);">Forgot Password?</a>
+                        <div class="d-flex justify-content-between align-items-center mb-2 px-1">
+                            <label for="password" class="fw-semibold mb-0 form-label-custom">Password</label>
+                            <a href="{{ url_for('main.forgot_password') }}" class="fw-semibold text-decoration-none forgot-link">Forgot Password?</a>
                         </div>
                         <div class="position-relative">
-                            <input type="password" id="password" name="password"
-                                class="form-control form-control-lg bg-light"
-                                style="border: 1px solid rgba(139, 69, 19, 0.15); border-radius: 12px; padding: 0.85rem 2.5rem 0.85rem 1rem;"
+                            <input type="password" id="password" name="password" class="form-control glass-input password-input"
                                 required placeholder="••••••••">
-                            <i class="fas fa-eye" onclick="togglePasswordVisibility('password', this)"
-                                style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #a0a0a0; font-size: 1.1rem; z-index: 10;"></i>
+                            <i class="fas fa-eye text-muted toggle-password" onclick="togglePasswordVisibility('password', this)"></i>
                         </div>
                     </div>
 
-                    <button type="submit" class="btn w-100 rounded-pill py-3 fw-bold text-white shadow-sm mt-3"
-                        style="background-color: var(--primary-color); font-size: 1.1rem; transition: transform 0.2s;">Sign
-                        In to Le Maison</button>
+                    <button type="submit" class="btn btn-primary-gradient w-100 rounded-pill fw-bold text-white shadow-sm mt-2">
+                        Sign In
+                    </button>
                 </form>
 
-                <div class="text-center mt-5">
-                    <p class="text-muted small">
-                        Don't have an account? <a href="{{ url_for('main.signup') }}"
-                            class="fw-bold text-decoration-none pb-1"
-                            style="color: var(--primary-hover); border-bottom: 2px solid var(--primary-hover);">Create
-                            one here</a>
+                <div class="text-center mt-4 pt-3 border-top border-subtle">
+                    <p class="text-muted fw-medium mb-0 bottom-text">
+                        New to Le Maison? 
+                        <a href="{{ url_for('main.signup') }}" class="fw-bold text-decoration-none create-account-link">
+                            Create an account
+                        </a>
                     </p>
                 </div>
+
             </div>
         </div>
     </div>
 </div>
+
+<style>
+/* --- Login Page specific styles --- */
+.login-wrapper {
+    min-height: 80vh;
+}
+
+/* Glassmorphism Card (Warm Brown Vibe) */
+.login-glass-card {
+    border-radius: 32px;
+    background: rgba(248, 241, 235, 0.85); /* Calm light beige/brown base */
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    box-shadow: 0 25px 50px -12px rgba(139, 90, 43, 0.15); /* Soft brown shadow */
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+/* Header Typography */
+.login-header {
+    padding: 3.5rem 2rem 1.5rem;
+}
+
+.login-title {
+    font-family: 'Georgia', serif;
+    color: #4a3b32; /* Dark shade brown */
+    font-size: 2.25rem;
+    letter-spacing: -0.5px;
+}
+
+.login-subtitle {
+    font-size: 1.05rem;
+    font-weight: 400;
+    color: #8b634b; /* Primary brown */
+}
+
+/* Social Buttons */
+.btn-social {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(139, 99, 75, 0.2);
+    padding: 0.75rem;
+    box-shadow: 0 4px 6px -1px rgba(92, 58, 33, 0.05);
+    transition: all 0.2s ease;
+}
+
+.btn-social:hover {
+    background: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 10px -2px rgba(92, 58, 33, 0.1);
+}
+
+.social-icon {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+}
+
+.social-text {
+    font-size: 0.95rem;
+    color: #5c3a21; /* Dark brown */
+}
+
+/* Divider styling */
+.divider-line {
+    border-top: 1px solid rgba(139, 99, 75, 0.2);
+}
+
+.divider-text {
+    font-size: 0.75rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #8b634b;
+}
+
+/* Input Styles */
+.form-label-custom {
+    font-size: 0.85rem;
+    color: #5c3a21;
+    margin-left: 0.5rem;
+    font-weight: 600;
+}
+
+.glass-input {
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(139, 99, 75, 0.2);
+    border-radius: 16px;
+    padding: 1rem 1.25rem;
+    font-size: 1rem;
+    color: #4a3b32;
+    box-shadow: inset 0 2px 4px rgba(92, 58, 33, 0.02);
+    transition: all 0.3s ease;
+}
+
+.password-input {
+    padding-right: 3rem;
+}
+
+.glass-input:focus {
+    background: #ffffff;
+    border-color: #8b634b;
+    box-shadow: 0 0 0 4px rgba(139, 99, 75, 0.15);
+    outline: none;
+}
+
+/* Forgot Password Link */
+.forgot-link {
+    font-size: 0.85rem;
+    color: #8b634b;
+    transition: color 0.2s;
+    opacity: 0.9;
+}
+
+.forgot-link:hover {
+    color: #5c3a21;
+    opacity: 1;
+}
+
+/* Password Eye Icon */
+.toggle-password {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    font-size: 1.1rem;
+    z-index: 10;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: background 0.2s ease, color 0.2s ease;
+    color: #8b634b !important;
+}
+
+.toggle-password:hover {
+    background: rgba(139, 99, 75, 0.1);
+    color: #5c3a21 !important;
+}
+
+/* Primary Gradient Button */
+.btn-primary-gradient {
+    background: linear-gradient(135deg, #8b634b 0%, #5c3a21 100%);
+    padding: 1rem;
+    border: none;
+    font-size: 1.05rem;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 15px -3px rgba(92, 58, 33, 0.25);
+}
+
+.btn-primary-gradient:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 20px -3px rgba(92, 58, 33, 0.35);
+    color: white;
+}
+
+/* Bottom elements */
+.border-subtle {
+    border-color: rgba(139, 99, 75, 0.15) !important;
+}
+
+.bottom-text {
+    font-size: 0.95rem;
+    color: #5c3a21 !important;
+}
+
+.create-account-link {
+    color: #8b634b;
+    position: relative;
+    padding-bottom: 2px;
+    margin-left: 0.25rem;
+}
+
+.create-account-link::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: #8b634b;
+    border-radius: 2px;
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 0.3s ease;
+}
+
+.create-account-link:hover::after {
+    transform: scaleX(1);
+    transform-origin: left;
+}
+
+/* Chrome Autofill adjustment */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active{
+    -webkit-box-shadow: 0 0 0 30px #fdfbfa inset !important;
+    -webkit-text-fill-color: #4a3b32 !important;
+    border-radius: 16px;
+}
+
+/* Modal and global button alignment perfection */
+.modal-content {
+    border-radius: 28px !important;
+    border: 1px solid rgba(255, 255, 255, 0.6) !important;
+    box-shadow: 0 25px 50px -12px rgba(139, 90, 43, 0.2) !important;
+    background: rgba(248, 241, 235, 0.98) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    overflow: hidden;
+}
+.modal-header {
+    border-bottom: 1px solid rgba(139, 99, 75, 0.1) !important;
+    padding: 1.5rem 2rem !important;
+}
+.modal-footer {
+    border-top: 1px solid rgba(139, 99, 75, 0.1) !important;
+    padding: 1.25rem 2rem !important;
+}
+.modal-body {
+    padding: 2rem !important;
+}
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+</style>
 <script>
     // --- Social Login Integration ---
     function sendSocialAuth(provider, email, firstName, lastName, pictureUrl) {

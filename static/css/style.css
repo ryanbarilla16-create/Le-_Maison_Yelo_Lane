@@ -266,6 +266,25 @@ navbar {
 .nav-links a:hover {
     color: var(--primary-hover);
 }
-.elegant-divider { display: flex; align-items: center; justify-content: center; gap: 1rem; color: var(--primary-color); margin: 2rem 0;}
-.divider-line { flex-grow: 1; max-width: 300px; border: none; border-top: 1px solid rgba(139, 69, 19, 0.2); }
-.divider-icon { display: flex; align-items: center; gap: 10px; }
+
+.elegant-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    color: var(--primary-color);
+    margin: 2rem 0;
+}
+
+.divider-line {
+    flex-grow: 1;
+    max-width: 300px;
+    border: none;
+    border-top: 1px solid rgba(139, 69, 19, 0.2);
+}
+
+.divider-icon {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}

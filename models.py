@@ -99,3 +99,14 @@ class Review(db.Model):
     created_at = db.Column(db.DateTime, default=get_ph_time)
 
     user = db.relationship('User', backref=db.backref('reviews', lazy=True))
+
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    type = db.Column(db.String(30), default='SYSTEM')  # ORDER, RESERVATION, DELIVERY, SYSTEM
+    is_read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=get_ph_time)
+
+    user = db.relationship('User', backref=db.backref('notifications', lazy=True, order_by='Notification.created_at.desc()'))

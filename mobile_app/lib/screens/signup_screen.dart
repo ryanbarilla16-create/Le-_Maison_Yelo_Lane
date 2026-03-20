@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -187,9 +188,10 @@ class _SignupScreenState extends State<SignupScreen> {
     setState(() => _socialLoading = true);
     final sessionId =
         '${DateTime.now().millisecondsSinceEpoch}_${(1000 + (DateTime.now().microsecond % 9000))}';
-    // Use localtunnel public URL for Facebook redirect flow
+    // Use local machine IP instead of localtunnel for Facebook redirect flow
+    final String oauthBase = dotenv.env['OAUTH_BASE_URL'] ?? 'http://192.168.0.1:5000';
     final url = Uri.parse(
-      'https://lemaison-final-test.loca.lt/mobile/social?provider=facebook&session_id=$sessionId',
+      '$oauthBase/mobile/social?provider=facebook&session_id=$sessionId',
     );
 
     try {

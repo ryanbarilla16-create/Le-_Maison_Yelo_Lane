@@ -1,103 +1,247 @@
-<nav class="navbar main-nav fixed-top navbar-expand-md py-1"
-    style="background: rgba(255, 255, 255, 0.98); box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+<style>
+    .main-nav {
+        background: rgba(255, 255, 255, 0.97) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+        box-shadow: 0 1px 0 rgba(93,64,55,0.08) !important;
+        padding: 0.5rem 0 !important;
+        transition: box-shadow 0.3s;
+    }
+    .main-nav:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.06) !important; }
+
+    /* Nav text links */
+    .navTxt {
+        color: var(--text-main) !important; font-weight: 600 !important;
+        font-size: 0.82rem !important; letter-spacing: 1.5px;
+        text-decoration: none; position: relative; padding: 0.5rem 0 !important;
+        transition: color 0.3s;
+    }
+    .navTxt::after {
+        content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+        height: 2px; background: var(--primary-color);
+        transform: scaleX(0); transition: transform 0.3s ease;
+    }
+    .navTxt:hover { color: var(--primary-color) !important; }
+    .navTxt:hover::after { transform: scaleX(1); }
+
+    /* Icon circle buttons (cart, bell) */
+    .navIcon {
+        width: 40px; height: 40px; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(93,64,55,0.06) !important;
+        color: var(--primary-color) !important;
+        border: none !important; font-size: 1rem;
+        transition: all 0.3s ease; position: relative;
+        box-shadow: none !important;
+    }
+    .navIcon:hover {
+        background: rgba(93,64,55,0.12) !important;
+        transform: translateY(-2px);
+        color: var(--primary-color) !important;
+    }
+
+    /* Text nav buttons (Dashboard, My Orders) */
+    .navLink {
+        color: var(--text-main) !important; font-weight: 600;
+        font-size: 0.85rem; padding: 0.5rem 1rem !important;
+        border-radius: 10px; text-decoration: none !important;
+        transition: all 0.3s ease;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+    .navLink:hover {
+        background: rgba(93,64,55,0.06) !important;
+        color: var(--primary-color) !important;
+        transform: translateY(-1px);
+    }
+    .navLink i { font-size: 0.8rem; opacity: 0.6; }
+
+    /* Primary CTA button */
+    .navCta {
+        background: linear-gradient(135deg, #5D4037, #795548) !important;
+        color: #fff !important; font-weight: 700;
+        font-size: 0.82rem; padding: 0.55rem 1.25rem !important;
+        border-radius: 50px; text-decoration: none !important;
+        border: none !important;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 14px rgba(93,64,55,0.25) !important;
+        letter-spacing: 0.3px;
+    }
+    .navCta:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(93,64,55,0.35) !important;
+        color: #fff !important;
+    }
+
+    /* Profile ring */
+    .navProfile {
+        width: 42px; height: 42px; border-radius: 50%;
+        border: 2px solid transparent !important;
+        background-clip: padding-box;
+        box-shadow: 0 0 0 2px rgba(93,64,55,0.12) !important;
+        transition: all 0.3s;
+    }
+    .navProfile:hover { box-shadow: 0 0 0 3px rgba(93,64,55,0.2) !important; }
+
+    /* Sign in / Join buttons */
+    .navSignIn {
+        border: 1.5px solid rgba(93,64,55,0.2) !important;
+        color: var(--primary-color) !important;
+        background: transparent !important;
+        font-weight: 600; font-size: 0.85rem;
+        padding: 0.5rem 1.25rem !important;
+        border-radius: 50px; transition: all 0.3s;
+        box-shadow: none !important;
+    }
+    .navSignIn:hover {
+        background: rgba(93,64,55,0.05) !important;
+        border-color: var(--primary-color) !important;
+        transform: translateY(-1px);
+        color: var(--primary-color) !important;
+    }
+    .navJoin {
+        background: linear-gradient(135deg, #5D4037, #795548) !important;
+        color: #fff !important; font-weight: 700; font-size: 0.85rem;
+        padding: 0.55rem 1.5rem !important;
+        border-radius: 50px; border: none !important;
+        transition: all 0.3s;
+        box-shadow: 0 4px 14px rgba(93,64,55,0.25) !important;
+    }
+    .navJoin:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(93,64,55,0.35) !important;
+        color: #fff !important;
+    }
+
+    /* Dropdown refinement */
+    .navDropdown {
+        border-radius: 16px !important; border: 1px solid rgba(93,64,55,0.08) !important;
+        box-shadow: 0 12px 40px rgba(0,0,0,0.1) !important;
+        padding: 0.5rem 0 !important; overflow: hidden;
+        animation: dropIn 0.2s ease-out;
+    }
+    @keyframes dropIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+    .navDropdown .dropdown-item {
+        font-weight: 500; padding: 0.6rem 1.25rem !important;
+        font-size: 0.88rem; transition: all 0.2s;
+    }
+    .navDropdown .dropdown-item:hover { background: rgba(93,64,55,0.04); }
+    .navDropdown .dropdown-item i { width: 20px; text-align: center; }
+</style>
+
+<nav class="navbar main-nav fixed-top navbar-expand-md">
     <div class="container-fluid px-md-5">
         <a class="navbar-brand text-dark" href="{{ url_for('main.index') }}"
-            style="font-family: 'Georgia', serif; font-weight: bold; font-size: 1.15rem;">
-            <i class="fas fa-coffee" style="color: var(--primary-color); font-size: 0.95rem;"></i> Le maison yelo Lane
+            style="font-family: 'Playfair Display', 'Georgia', serif; font-weight: 700; font-size: 1.15rem; letter-spacing: -0.3px;">
+            <i class="fas fa-coffee" style="color: var(--primary-color); font-size: 0.9rem;"></i> Le maison yelo Lane
         </a>
 
         <ul class="nav nav-left me-auto d-md-flex d-none align-items-center ms-4">
             <li class="nav-item me-3">
-                <a class="nav-link text-dark fw-bold" href="{{ url_for('main.menu_page') }}"
-                    style="letter-spacing: 1px;">MENU</a>
+                <a class="nav-link navTxt" href="{{ url_for('main.menu_page') }}">MENU</a>
             </li>
             <li class="nav-item me-3">
-                <a class="nav-link text-dark fw-bold" href="{{ url_for('main.about_page') }}"
-                    style="letter-spacing: 1px;">ABOUT</a>
+                <a class="nav-link navTxt" href="{{ url_for('main.about_page') }}">ABOUT</a>
             </li>
             <li class="nav-item me-3">
-                <a class="nav-link text-dark fw-bold" href="{{ url_for('main.reviews_page') }}"
-                    style="letter-spacing: 1px;">REVIEWS</a>
+                <a class="nav-link navTxt" href="{{ url_for('main.reviews_page') }}">REVIEWS</a>
             </li>
         </ul>
 
-        <ul class="nav nav-right ms-auto d-md-flex d-none align-items-center">
+        <ul class="nav nav-right ms-auto d-md-flex d-none align-items-center" style="gap: 6px;">
             {% if current_user.is_authenticated %}
-            <li class="nav-item me-2">
-                <a href="{{ url_for('main.view_cart') }}"
-                    class="btn text-white rounded-circle position-relative shadow-sm"
-                    style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; background-color: var(--primary-color); border: none;">
-                    <i class="fas fa-shopping-cart fs-5"></i>
+            <li class="nav-item">
+                <a href="{{ url_for('main.view_cart') }}" class="btn navIcon position-relative">
+                    <i class="fas fa-shopping-cart"></i>
                     {% set cart_count = session.get('cart', {})|length %}
                     {% if cart_count > 0 %}
-                    <span
-                        class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger shadow-sm"
-                        style="font-size: 0.65rem;">
+                    <span class="position-absolute badge rounded-pill bg-danger shadow-sm"
+                        style="font-size: 0.6rem; top: -2px; right: -4px; min-width: 18px;">
                         {{ cart_count }}
                     </span>
                     {% endif %}
                 </a>
             </li>
-            <li class="nav-item me-3">
-                <a href="{{ url_for('main.index') }}" class="btn text-white rounded-pill px-4 fw-bold shadow-sm"
-                    style="background-color: var(--primary-color); border: none;">
+            <!-- NOTIFICATION BELL -->
+            <li class="nav-item">
+                <div class="user-notif-wrapper" style="position: relative;">
+                    <button id="userNotifBell" onclick="toggleUserNotifPanel()" class="btn navIcon position-relative">
+                        <i class="fas fa-bell"></i>
+                        <span id="userNotifBadge"
+                            class="position-absolute badge rounded-pill bg-danger shadow-sm"
+                            style="font-size: 0.6rem; top: -2px; right: -4px; min-width: 18px; display: none;">0</span>
+                    </button>
+                    <!-- Notification Dropdown -->
+                    <div id="userNotifPanel" style="display:none; position: absolute; right: 0; top: 48px; width: 370px; max-height: 480px; background: #fff; border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,0.15); z-index: 9999; overflow: hidden; border: 1px solid rgba(0,0,0,0.06);">
+                        <div style="padding: 16px 20px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #5D4037, #795548);">
+                            <span style="font-weight: 700; font-size: 0.9rem; color: #fff;"><i class="fas fa-bell me-2"></i>Notifications</span>
+                            <button onclick="markAllUserNotifRead()" style="background: rgba(255,255,255,0.15); border: none; color: #fff; font-size: 0.72rem; cursor: pointer; padding: 4px 12px; border-radius: 20px; font-weight: 600; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">Mark all read</button>
+                        </div>
+                        <div id="userNotifList" style="max-height: 380px; overflow-y: auto; padding: 8px 0;"></div>
+                        <div id="userNotifEmpty" style="display:none; text-align: center; padding: 40px 20px; color: #999;">
+                            <i class="fas fa-bell-slash" style="font-size: 2rem; margin-bottom: 10px; opacity: 0.2;"></i>
+                            <p style="margin: 0; font-size: 0.85rem;">No notifications yet</p>
+                        </div>
+                    </div>
+                </div>
+            </li>
+
+            <li style="width: 1px; height: 24px; background: rgba(93,64,55,0.1); margin: 0 6px;"></li>
+
+            <li class="nav-item">
+                <a href="{{ url_for('main.index') }}" class="btn navLink">
                     <i class="fas fa-home me-1"></i> Dashboard
                 </a>
             </li>
-            <li class="nav-item me-3">
-                <a href="{{ url_for('main.my_orders') }}" class="btn text-white rounded-pill px-4 fw-bold shadow-sm"
-                    style="background-color: var(--primary-color); border: none;">
+            <li class="nav-item">
+                <a href="{{ url_for('main.my_orders') }}" class="btn navLink">
                     <i class="fas fa-shopping-bag me-1"></i> My Orders
                 </a>
             </li>
-            <li class="nav-item me-3">
-                <a href="{{ url_for('main.reserve') }}" class="btn text-white rounded-pill px-4 fw-bold shadow-sm"
-                    style="background-color: var(--primary-color); border: none;">Reserve Table</a>
+            <li class="nav-item">
+                <a href="{{ url_for('main.reserve') }}" class="btn navCta">
+                    <i class="fas fa-calendar-plus me-1"></i> Reserve
+                </a>
             </li>
+
+            <li style="width: 1px; height: 24px; background: rgba(93,64,55,0.1); margin: 0 4px;"></li>
+
             <li class="nav-item dropdown d-flex align-items-center">
-                <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle px-2"
+                <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle px-1"
                     id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false"
                     style="color: var(--text-main);">
                     {% if current_user.profile_picture_url %}
-                    <img src="{{ current_user.profile_picture_url }}" alt="Profile Picture" class="shadow-sm"
-                        style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; box-shadow: 0 0 0 2px rgba(139,69,19,0.2);">
+                    <img src="{{ current_user.profile_picture_url }}" alt="Profile" class="navProfile"
+                        style="width: 42px; height: 42px; object-fit: cover;">
                     {% else %}
-                    <div class="shadow-sm"
-                        style="width: 45px; height: 45px; border-radius: 50%; background: linear-gradient(135deg, #8B4513, #A0522D); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-family: 'Georgia', serif; font-size: 1.2rem; border: 2px solid #fff; box-shadow: 0 0 0 2px rgba(139,69,19,0.2);">
+                    <div class="navProfile"
+                        style="width: 42px; height: 42px; background: linear-gradient(135deg, #5D4037, #8D6E63); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-family: 'Georgia', serif; font-size: 1rem;">
                         {{ current_user.first_name[:1] }}{{ current_user.last_name[:1] }}
                     </div>
                     {% endif %}
                 </a>
-                <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-3" aria-labelledby="profileDropdown"
-                    style="border-radius: 12px; min-width: 200px; padding: 0.5rem 0; right: 0;">
+                <ul class="dropdown-menu dropdown-menu-end navDropdown mt-3" aria-labelledby="profileDropdown"
+                    style="min-width: 220px;">
                     <li class="px-3 py-2 border-bottom mb-1">
-                        <div class="fw-bold" style="color: var(--text-main); font-size: 0.95rem;">{{
-                            current_user.first_name }} {{ current_user.last_name }}</div>
-                        <small class="text-muted">{{ current_user.email }}</small>
+                        <div class="fw-bold" style="font-size: 0.95rem;">{{ current_user.first_name }} {{ current_user.last_name }}</div>
+                        <small style="color: var(--text-muted); font-size: 0.78rem;">{{ current_user.email }}</small>
                     </li>
-                    <li><a class="dropdown-item py-2" href="{{ url_for('main.index') }}" style="font-weight: 500;"><i
-                                class="fas fa-home me-2 text-muted"></i>Dashboard</a></li>
-                    <li><a class="dropdown-item py-2" href="{{ url_for('main.my_orders') }}"
-                            style="font-weight: 500;"><i class="fas fa-shopping-bag me-2 text-muted"></i>My Orders</a>
-                    </li>
-                    <li><a class="dropdown-item py-2" href="{{ url_for('main.profile') }}" style="font-weight: 500;"><i
-                                class="fas fa-user-edit me-2 text-muted"></i>Edit Profile</a></li>
-                    <li>
-                        <hr class="dropdown-divider my-1">
-                    </li>
-                    <li><a class="dropdown-item py-2 text-danger fw-bold" href="{{ url_for('main.logout') }}"><i
-                                class="fas fa-sign-out-alt me-2"></i>Sign out</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('main.index') }}"><i class="fas fa-home me-2" style="color: var(--text-muted);"></i>Dashboard</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('main.my_orders') }}"><i class="fas fa-shopping-bag me-2" style="color: var(--text-muted);"></i>My Orders</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('main.profile') }}"><i class="fas fa-user-edit me-2" style="color: var(--text-muted);"></i>Edit Profile</a></li>
+                    <li><hr class="dropdown-divider my-1"></li>
+                    <li><a class="dropdown-item" href="{{ url_for('main.logout') }}" style="color: var(--danger); font-weight: 600;"><i class="fas fa-sign-out-alt me-2"></i>Sign out</a></li>
                 </ul>
             </li>
             {% else %}
-            <li class="nav-item me-3">
+            <li class="nav-item">
                 <button onclick="$('#termsModal').modal('show'); window.authIntent = 'login';"
-                    class="btn btn-outline-dark rounded-pill px-4 fw-bold">Sign in</button>
+                    class="btn navSignIn">Sign in</button>
             </li>
             <li class="nav-item">
                 <button onclick="$('#termsModal').modal('show'); window.authIntent = 'signup';"
-                    class="btn text-white rounded-pill px-4 fw-bold shadow-sm"
-                    style="background-color: var(--primary-color); border: none;">Join Now</button>
+                    class="btn navJoin">Join Now</button>
             </li>
             {% endif %}
         </ul>
@@ -109,40 +253,127 @@
 </nav>
 
 <div class="collapse d-md-none p-3 fixed-top" id="mobileMenu"
-    style="top: 70px; background: rgba(255, 255, 255, 0.98); z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-    <ul class="navbar-nav">
-        <li class="nav-item border-bottom py-2"><a class="nav-link fw-bold text-dark"
-                href="{{ url_for('main.menu_page') }}">MENU</a></li>
-        <li class="nav-item border-bottom py-2"><a class="nav-link fw-bold text-dark"
-                href="{{ url_for('main.about_page') }}">ABOUT</a></li>
-        <li class="nav-item border-bottom py-2"><a class="nav-link fw-bold text-dark"
-                href="{{ url_for('main.reviews_page') }}">REVIEWS</a></li>
+    style="top: 56px; background: rgba(255, 255, 255, 0.98); z-index: 1000; box-shadow: 0 8px 24px rgba(0,0,0,0.08); border-radius: 0 0 20px 20px; backdrop-filter: blur(20px);">
+    <ul class="navbar-nav" style="gap: 4px;">
+        <li class="nav-item py-2"><a class="nav-link fw-bold" href="{{ url_for('main.menu_page') }}"
+                style="color: var(--text-main); font-size: 0.9rem; letter-spacing: 1px;">MENU</a></li>
+        <li class="nav-item py-2"><a class="nav-link fw-bold" href="{{ url_for('main.about_page') }}"
+                style="color: var(--text-main); font-size: 0.9rem; letter-spacing: 1px;">ABOUT</a></li>
+        <li class="nav-item py-2" style="border-bottom: 1px solid var(--border-color);"><a class="nav-link fw-bold" href="{{ url_for('main.reviews_page') }}"
+                style="color: var(--text-main); font-size: 0.9rem; letter-spacing: 1px;">REVIEWS</a></li>
         {% if current_user.is_authenticated %}
-        <li class="nav-item mt-3"><a href="{{ url_for('main.index') }}"
-                class="btn text-white w-100 rounded-pill fw-bold mb-2 shadow-sm"
-                style="background-color: var(--primary-color); border: none;">
-                <i class="fas fa-home me-1"></i> Dashboard</a></li>
-        <li class="nav-item border-bottom py-2"><a class="nav-link fw-bold text-dark"
-                href="{{ url_for('main.my_orders') }}"><i class="fas fa-shopping-bag me-2 text-muted"></i>My
-                Orders</a></li>
-        <li class="nav-item"><a href="{{ url_for('main.profile') }}"
-                class="btn btn-outline-dark w-100 rounded-pill fw-bold mb-2 shadow-sm"
-                style="border: 1px solid rgba(139,69,19,0.2);">
-                <i class="fas fa-user-edit me-1"></i> Edit Profile</a></li>
-        <li class="nav-item"><a href="{{ url_for('main.reserve') }}"
-                class="btn text-white w-100 rounded-pill fw-bold mb-2 shadow-sm"
-                style="background-color: var(--primary-color); border: none;">Reserve Table</a></li>
-        <li class="nav-item"><a href="{{ url_for('main.logout') }}"
-                class="btn btn-outline-danger w-100 rounded-pill fw-bold"><i class="fas fa-sign-out-alt me-1"></i>
-                Logout</a></li>
+        <li class="nav-item mt-2"><a href="{{ url_for('main.index') }}" class="btn navLink w-100 text-start"
+                style="padding: 0.65rem 1rem !important;"><i class="fas fa-home me-2" style="opacity: 0.5;"></i> Dashboard</a></li>
+        <li class="nav-item"><a href="{{ url_for('main.my_orders') }}" class="btn navLink w-100 text-start"
+                style="padding: 0.65rem 1rem !important;"><i class="fas fa-shopping-bag me-2" style="opacity: 0.5;"></i> My Orders</a></li>
+        <li class="nav-item"><a href="{{ url_for('main.profile') }}" class="btn navLink w-100 text-start"
+                style="padding: 0.65rem 1rem !important;"><i class="fas fa-user-edit me-2" style="opacity: 0.5;"></i> Edit Profile</a></li>
+        <li class="nav-item mt-2"><a href="{{ url_for('main.reserve') }}" class="btn navCta w-100">
+                <i class="fas fa-calendar-plus me-1"></i> Reserve Table</a></li>
+        <li class="nav-item mt-2"><a href="{{ url_for('main.logout') }}"
+                class="btn w-100" style="background: transparent; color: var(--danger); font-weight: 600; border: 1.5px solid rgba(150,75,75,0.2); border-radius: 50px; font-size: 0.88rem;">
+                <i class="fas fa-sign-out-alt me-1"></i> Sign Out</a></li>
         {% else %}
         <li class="nav-item mt-3"><button
                 onclick="$('#mobileMenu').collapse('hide'); $('#termsModal').modal('show'); window.authIntent = 'login';"
-                class="btn btn-outline-dark w-100 rounded-pill fw-bold mb-2">Sign in</button></li>
-        <li class="nav-item"><button
+                class="btn navSignIn w-100">Sign in</button></li>
+        <li class="nav-item mt-2"><button
                 onclick="$('#mobileMenu').collapse('hide'); $('#termsModal').modal('show'); window.authIntent = 'signup';"
-                class="btn text-white w-100 rounded-pill fw-bold shadow-sm"
-                style="background-color: var(--primary-color); border: none;">Join Now</button></li>
+                class="btn navJoin w-100">Join Now</button></li>
         {% endif %}
     </ul>
 </div>
+
+{% if current_user.is_authenticated %}
+<!-- User Notification Bell JS -->
+<style>
+    @keyframes userNotifPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+    #userNotifPanel::-webkit-scrollbar { width: 4px; }
+    #userNotifPanel::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+</style>
+<script>
+    let _userNotifOpen = false;
+
+    function toggleUserNotifPanel() {
+        const panel = document.getElementById('userNotifPanel');
+        _userNotifOpen = !_userNotifOpen;
+        panel.style.display = _userNotifOpen ? 'block' : 'none';
+        if (_userNotifOpen) fetchUserNotifs();
+    }
+
+    document.addEventListener('click', function(e) {
+        const wrapper = document.querySelector('.user-notif-wrapper');
+        if (wrapper && !wrapper.contains(e.target)) {
+            _userNotifOpen = false;
+            const panel = document.getElementById('userNotifPanel');
+            if (panel) panel.style.display = 'none';
+        }
+    });
+
+    function _userNotifIcon(type) {
+        const icons = {
+            'ORDER': '<i class="fas fa-shopping-bag" style="color:#8B4513;"></i>',
+            'RESERVATION': '<i class="fas fa-calendar-check" style="color:#17a2b8;"></i>',
+            'DELIVERY': '<i class="fas fa-truck" style="color:#28a745;"></i>',
+            'SYSTEM': '<i class="fas fa-cog" style="color:#6c757d;"></i>',
+        };
+        return icons[type] || icons['SYSTEM'];
+    }
+
+    async function fetchUserNotifs() {
+        try {
+            const resp = await fetch('/admin/web/notifications');
+            const data = await resp.json();
+            const list = document.getElementById('userNotifList');
+            const empty = document.getElementById('userNotifEmpty');
+
+            if (!data.notifications || data.notifications.length === 0) {
+                list.innerHTML = '';
+                empty.style.display = 'block';
+                return;
+            }
+            empty.style.display = 'none';
+            list.innerHTML = data.notifications.map(n => `
+                <div style="padding: 12px 20px; border-bottom: 1px solid #f5f5f5; display: flex; gap: 12px; align-items: flex-start; background: ${n.is_read ? '#fff' : '#faf6f2'}; transition: background 0.2s; cursor: default;"
+                     onmouseover="this.style.background='#f5f0eb'" onmouseout="this.style.background='${n.is_read ? '#fff' : '#faf6f2'}'">
+                    <div style="width: 36px; height: 36px; border-radius: 50%; background: ${n.is_read ? '#f0f0f0' : 'rgba(139,69,19,0.1)'}; display:flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.85rem;">
+                        ${_userNotifIcon(n.type)}
+                    </div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-weight: ${n.is_read ? '400' : '600'}; font-size: 0.82rem; color: #333; margin-bottom: 2px;">${n.title}</div>
+                        <div style="font-size: 0.75rem; color: #777; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${n.message}</div>
+                        <div style="font-size: 0.65rem; color: #aaa; margin-top: 4px;"><i class="far fa-clock me-1"></i>${n.created_at}</div>
+                    </div>
+                    ${!n.is_read ? '<div style="width:8px;height:8px;border-radius:50%;background:#8B4513;flex-shrink:0;margin-top:6px;"></div>' : ''}
+                </div>
+            `).join('');
+        } catch (e) { console.error('User notif error:', e); }
+    }
+
+    async function fetchUserUnreadCount() {
+        try {
+            const resp = await fetch('/admin/web/notifications/unread-count');
+            const data = await resp.json();
+            const badge = document.getElementById('userNotifBadge');
+            if (data.count > 0) {
+                badge.textContent = data.count > 99 ? '99+' : data.count;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        } catch (e) {}
+    }
+
+    async function markAllUserNotifRead() {
+        try {
+            await fetch('/admin/web/notifications/mark-all-read', { method: 'POST' });
+            fetchUserUnreadCount();
+            fetchUserNotifs();
+        } catch (e) {}
+    }
+
+    // Initial + auto-poll every 15 seconds
+    fetchUserUnreadCount();
+    setInterval(fetchUserUnreadCount, 15000);
+</script>
+{% endif %}

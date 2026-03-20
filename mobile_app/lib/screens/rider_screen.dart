@@ -6,6 +6,7 @@ import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../theme.dart';
 import 'login_screen.dart';
+import 'notifications_screen.dart';
 
 class RiderScreen extends StatefulWidget {
   const RiderScreen({super.key});
@@ -30,6 +31,7 @@ class _RiderScreenState extends State<RiderScreen>
   int _totalToday = 0;
   int _activeCount = 0;
   bool _locationEnabled = false;
+  int _unreadNotifCount = 0;
 
   @override
   void initState() {
@@ -37,9 +39,11 @@ class _RiderScreenState extends State<RiderScreen>
     _tabCtrl = TabController(length: 3, vsync: this);
     _loadData();
     _initLocationTracking();
+    _loadUnreadCount();
     // Auto-refresh every 8 seconds
     _refreshTimer = Timer.periodic(const Duration(seconds: 8), (_) {
       _loadData(silent: true);
+      _loadUnreadCount();
     });
   }
 
@@ -334,6 +338,15 @@ class _RiderScreenState extends State<RiderScreen>
     );
   }
 
+  Future<void> _loadUnreadCount() async {
+    if (_riderId == null) return;
+    final res = await ApiService.get('/api/user/$_riderId/notifications/unread-count');
+    if (!mounted) return;
+    if (res != null && res['success'] == true) {
+      setState(() => _unreadNotifCount = res['count'] ?? 0);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -357,6 +370,22 @@ class _RiderScreenState extends State<RiderScreen>
           ],
         ),
         actions: [
+          // Notification Bell
+          IconButton(
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+              );
+              _loadUnreadCount();
+            },
+            icon: Badge(
+              label: Text('$_unreadNotifCount', style: const TextStyle(fontSize: 10)),
+              isLabelVisible: _unreadNotifCount > 0,
+              backgroundColor: AppColors.danger,
+              child: Icon(Icons.notifications_rounded, color: AppColors.textMain),
+            ),
+          ),
           IconButton(
             onPressed: _logout,
             icon: Icon(Icons.logout, color: AppColors.textMain),
@@ -666,12 +695,18 @@ class _RiderScreenState extends State<RiderScreen>
                           final googleUrl = Uri.parse(
                             'https://www.google.com/maps/search/?api=1&query=$address',
                           );
-                          if (await canLaunchUrl(googleUrl)) {
-                            await launchUrl(
+                          try {
+                            final launched = await launchUrl(
                               googleUrl,
                               mode: LaunchMode.externalApplication,
                             );
-                          } else {
+                            if (!launched && mounted) {
+                              _showSnack(
+                                'Could not open Google Maps.',
+                                Colors.red,
+                              );
+                            }
+                          } catch (e) {
                             if (mounted) {
                               _showSnack(
                                 'Could not open Google Maps.',

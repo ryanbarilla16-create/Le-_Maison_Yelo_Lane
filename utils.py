@@ -5,6 +5,19 @@ from datetime import datetime, timedelta
 def get_ph_time():
     return datetime.utcnow() + timedelta(hours=8)
 
+def create_notification(user_id, title, message, notif_type='SYSTEM'):
+    """Helper to create a notification for any user"""
+    from models import db, Notification
+    notif = Notification(
+        user_id=user_id,
+        title=title,
+        message=message,
+        type=notif_type
+    )
+    db.session.add(notif)
+    db.session.commit()
+    return notif
+
 SETTINGS_FILE = os.path.join(os.path.dirname(os.path.abspath(__dirname__)) if '__dirname__' in locals() else os.path.dirname(__file__), 'site_settings.json')
 
 DEFAULT_SETTINGS = {

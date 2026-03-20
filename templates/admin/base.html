@@ -10,6 +10,10 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/admin.css') }}" rel="stylesheet">
+    
+    <!-- Leaflet CSS & JS for Maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 
 <body class="admin-body">
@@ -113,11 +117,34 @@
 
     <!-- TOP BAR -->
     <header class="admin-topbar">
-        <button class="topbar-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
         <div class="topbar-right">
             <span style="font-size: 0.85rem; color: var(--admin-text-muted);">
                 <i class="fas fa-clock me-1"></i> <span id="liveDateTime"></span>
             </span>
+
+            <!-- NOTIFICATION BELL -->
+            <div class="notif-bell-wrapper" style="position: relative; margin-left: 16px;">
+                <button id="adminNotifBell" onclick="toggleNotifPanel()" style="background: none; border: none; cursor: pointer; position: relative; padding: 8px;">
+                    <i class="fas fa-bell" style="font-size: 1.25rem; color: var(--admin-text-muted); transition: color 0.2s;"></i>
+                    <span id="adminNotifBadge" style="display:none; position: absolute; top: 2px; right: 2px; background: #dc3545; color: #fff; font-size: 0.6rem; font-weight: 700; border-radius: 50%; min-width: 18px; height: 18px; line-height: 18px; text-align: center; padding: 0 4px; box-shadow: 0 2px 6px rgba(220,53,69,0.4); animation: notifPulse 2s infinite;">0</span>
+                </button>
+
+                <!-- Notification Dropdown Panel -->
+                <div id="adminNotifPanel" style="display:none; position: absolute; right: 0; top: 48px; width: 370px; max-height: 480px; background: #fff; border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,0.15); z-index: 9999; overflow: hidden; border: 1px solid rgba(0,0,0,0.08);">
+                    <div style="padding: 16px 20px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #8B4513, #A0522D);">
+                        <span style="font-weight: 700; font-size: 0.95rem; color: #fff;"><i class="fas fa-bell me-2"></i>Notifications</span>
+                        <button onclick="markAllNotifRead()" style="background: rgba(255,255,255,0.2); border: none; color: #fff; font-size: 0.75rem; cursor: pointer; padding: 4px 12px; border-radius: 20px; font-weight: 600; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">Mark all read</button>
+                    </div>
+                    <!-- Live counts summary -->
+                    <div id="adminLiveCountsBar" style="display:none; padding: 10px 20px; background: #faf6f2; border-bottom: 1px solid #f0e6d9; font-size: 0.75rem; color: #8B4513;"></div>
+                    <div id="adminNotifList" style="max-height: 380px; overflow-y: auto; padding: 8px 0;"></div>
+                    <div id="adminNotifEmpty" style="display:none; text-align: center; padding: 40px 20px; color: #999;">
+                        <i class="fas fa-bell-slash" style="font-size: 2rem; margin-bottom: 10px; opacity: 0.3;"></i>
+                        <p style="margin: 0; font-size: 0.85rem;">No notifications yet</p>
+                    </div>
+                </div>
+            </div>
+
             <div class="topbar-avatar">{{ current_user.first_name[0] if current_user.is_authenticated else 'A' }}</div>
         </div>
     </header>
@@ -256,6 +283,119 @@
             }
         }
     </script>
+
+    <!-- Admin Notification Bell JS -->
+    <style>
+        @keyframes notifPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+        #adminNotifBell:hover i { color: #8B4513 !important; }
+        #adminNotifPanel::-webkit-scrollbar { width: 4px; }
+        #adminNotifPanel::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+    </style>
+    <script>
+        let _notifPanelOpen = false;
+
+        function toggleNotifPanel() {
+            const panel = document.getElementById('adminNotifPanel');
+            _notifPanelOpen = !_notifPanelOpen;
+            panel.style.display = _notifPanelOpen ? 'block' : 'none';
+            if (_notifPanelOpen) fetchAdminNotifs();
+        }
+
+        // Close panel when clicking outside
+        document.addEventListener('click', function(e) {
+            const wrapper = document.querySelector('.notif-bell-wrapper');
+            if (wrapper && !wrapper.contains(e.target)) {
+                _notifPanelOpen = false;
+                document.getElementById('adminNotifPanel').style.display = 'none';
+            }
+        });
+
+        function _notifIcon(type) {
+            const icons = {
+                'ORDER': '<i class="fas fa-shopping-bag" style="color:#8B4513;"></i>',
+                'RESERVATION': '<i class="fas fa-calendar-check" style="color:#17a2b8;"></i>',
+                'DELIVERY': '<i class="fas fa-truck" style="color:#28a745;"></i>',
+                'SYSTEM': '<i class="fas fa-cog" style="color:#6c757d;"></i>',
+            };
+            return icons[type] || icons['SYSTEM'];
+        }
+
+        async function fetchAdminNotifs() {
+            try {
+                const resp = await fetch('/admin/api/notifications');
+                const data = await resp.json();
+                const list = document.getElementById('adminNotifList');
+                const empty = document.getElementById('adminNotifEmpty');
+
+                if (!data.notifications || data.notifications.length === 0) {
+                    list.innerHTML = '';
+                    empty.style.display = 'block';
+                    return;
+                }
+                empty.style.display = 'none';
+                list.innerHTML = data.notifications.map(n => `
+                    <div style="padding: 12px 20px; border-bottom: 1px solid #f5f5f5; display: flex; gap: 12px; align-items: flex-start; background: ${n.is_read ? '#fff' : '#faf6f2'}; transition: background 0.2s; cursor: default;"
+                         onmouseover="this.style.background='#f5f0eb'" onmouseout="this.style.background='${n.is_read ? '#fff' : '#faf6f2'}'">
+                        <div style="width: 36px; height: 36px; border-radius: 50%; background: ${n.is_read ? '#f0f0f0' : 'rgba(139,69,19,0.1)'}; display:flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.85rem;">
+                            ${_notifIcon(n.type)}
+                        </div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-weight: ${n.is_read ? '400' : '600'}; font-size: 0.82rem; color: #333; margin-bottom: 2px;">${n.title}</div>
+                            <div style="font-size: 0.75rem; color: #777; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${n.message}</div>
+                            <div style="font-size: 0.65rem; color: #aaa; margin-top: 4px;"><i class="far fa-clock me-1"></i>${n.created_at}</div>
+                        </div>
+                        ${!n.is_read ? '<div style="width:8px;height:8px;border-radius:50%;background:#8B4513;flex-shrink:0;margin-top:6px;"></div>' : ''}
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error('Notif fetch error:', e);
+            }
+        }
+
+        async function fetchAdminUnreadCount() {
+            try {
+                const resp = await fetch('/admin/api/notifications/unread-count');
+                const data = await resp.json();
+                const badge = document.getElementById('adminNotifBadge');
+                if (data.count > 0) {
+                    badge.textContent = data.count > 99 ? '99+' : data.count;
+                    badge.style.display = 'block';
+                } else {
+                    badge.style.display = 'none';
+                }
+
+                // Show live counts bar for admin
+                const bar = document.getElementById('adminLiveCountsBar');
+                let parts = [];
+                if (data.pending_users) parts.push(`<i class="fas fa-user-clock me-1"></i>${data.pending_users} pending approvals`);
+                if (data.pending_orders) parts.push(`<i class="fas fa-shopping-bag me-1"></i>${data.pending_orders} pending orders`);
+                if (data.preparing_orders) parts.push(`<i class="fas fa-fire me-1"></i>${data.preparing_orders} preparing`);
+                if (data.pending_reservations) parts.push(`<i class="fas fa-calendar me-1"></i>${data.pending_reservations} pending reservations`);
+                if (data.pending_reviews) parts.push(`<i class="fas fa-star me-1"></i>${data.pending_reviews} pending reviews`);
+                if (data.waiting_deliveries) parts.push(`<i class="fas fa-truck me-1"></i>${data.waiting_deliveries} waiting deliveries`);
+
+                if (parts.length > 0) {
+                    bar.style.display = 'block';
+                    bar.innerHTML = parts.join(' &nbsp;·&nbsp; ');
+                } else {
+                    bar.style.display = 'none';
+                }
+            } catch (e) {}
+        }
+
+        async function markAllNotifRead() {
+            try {
+                await fetch('/admin/api/notifications/mark-all-read', { method: 'POST' });
+                fetchAdminUnreadCount();
+                fetchAdminNotifs();
+            } catch (e) {}
+        }
+
+        // Initial load + auto-poll every 15 seconds
+        fetchAdminUnreadCount();
+        setInterval(fetchAdminUnreadCount, 15000);
+    </script>
+
     {% block scripts %}{% endblock %}
 </body>
 

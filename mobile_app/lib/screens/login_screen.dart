@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -9,6 +10,7 @@ import 'signup_screen.dart';
 import 'home_screen.dart';
 import 'rider_screen.dart';
 import 'otp_screen.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -118,9 +120,10 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _socialLoading = true);
     final sessionId =
         '${DateTime.now().millisecondsSinceEpoch}_${(1000 + (DateTime.now().microsecond % 9000))}';
-    // Use localtunnel public URL for Facebook redirect flow
+    // Use local machine IP instead of localtunnel for Facebook redirect flow
+    final String oauthBase = dotenv.env['OAUTH_BASE_URL'] ?? 'http://192.168.0.1:5000';
     final url = Uri.parse(
-      'https://lemaison-final-test.loca.lt/mobile/social?provider=facebook&session_id=$sessionId',
+      '$oauthBase/mobile/social?provider=facebook&session_id=$sessionId',
     );
 
     try {
@@ -380,7 +383,27 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: GestureDetector(
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ForgotPasswordScreen(),
+                            ),
+                          ),
+                          child: Text(
+                            'Forgot Password?',
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
 
                       SizedBox(
                         width: double.infinity,

@@ -1,8 +1,12 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../theme.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
+import 'settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -14,12 +18,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Map<String, dynamic>? _user;
   bool _loading = true;
   bool _saving = false;
+  bool _uploadingPic = false;
   String? _error;
   final _firstCtrl = TextEditingController();
   final _lastCtrl = TextEditingController();
   final _usernameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
+  bool _isEditing = false; // Track edit mode
+
+  void _toggleEdit() {
+    setState(() => _isEditing = !_isEditing);
+  }
 
   @override
   void initState() {
@@ -122,6 +132,143 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Future<void> _pickAndUploadImage() async {
+    final ImagePicker picker = ImagePicker();
+
+    // Show a dialog to choose camera or gallery
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Change Profile Picture',
+                style: AppTextStyles.heading.copyWith(fontSize: 18),
+              ),
+              const SizedBox(height: 20),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.camera_alt, color: AppColors.primary),
+                ),
+                title: const Text(
+                  'Take a Photo',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: const Text('Use your camera'),
+                onTap: () => Navigator.pop(ctx, ImageSource.camera),
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.photo_library, color: AppColors.accent),
+                ),
+                title: const Text(
+                  'Choose from Gallery',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: const Text('Pick an existing photo'),
+                onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
+    try {
+      final XFile? pickedFile = await picker.pickImage(
+        source: source,
+        maxWidth: 500,
+        maxHeight: 500,
+        imageQuality: 80,
+      );
+
+      if (pickedFile == null) return;
+
+      setState(() => _uploadingPic = true);
+
+      // Convert to base64
+      final bytes = await File(pickedFile.path).readAsBytes();
+      final base64Image = base64Encode(bytes);
+
+      final userId = await AuthService.getUserId();
+      if (userId == null) return;
+
+      final res = await ApiService.post('/api/user/$userId/profile-picture', {
+        'image': base64Image,
+      });
+
+      if (!mounted) return;
+      setState(() => _uploadingPic = false);
+
+      if (res['success'] == true) {
+        final newUrl = res['profile_picture_url'];
+        setState(() {
+          _user?['profile_picture_url'] = newUrl;
+        });
+
+        // Update cached user
+        final u = await AuthService.getUser();
+        if (u != null) {
+          u['profile_picture_url'] = newUrl;
+          await AuthService.saveUser(u);
+        }
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profile picture updated!'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(res['message'] ?? 'Upload failed.'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _uploadingPic = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error picking image: $e'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+    }
+  }
+
   Future<void> _logout() async {
     await AuthService.logout();
     if (!mounted) return;
@@ -208,13 +355,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
     }
 
+    final profileUrl = _user?['profile_picture_url'];
+    // Build full image URL from relative path
+    String? fullImageUrl;
+    if (profileUrl != null && profileUrl.toString().isNotEmpty) {
+      if (profileUrl.toString().startsWith('http')) {
+        fullImageUrl = profileUrl;
+      } else {
+        fullImageUrl = '${ApiService.getBaseUrl()}$profileUrl';
+      }
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
           'Profile',
-          style: AppTextStyles.heading.copyWith(fontSize: 20),
+          style: AppTextStyles.heading.copyWith(fontSize: 20, color: AppColors.textMain),
         ),
         centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(_isEditing ? Icons.close : Icons.edit_note_rounded, color: AppColors.primary),
+            onPressed: _toggleEdit,
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings_outlined, color: AppColors.primary),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              );
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: RefreshIndicator(
         color: AppColors.primary,
@@ -224,23 +400,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              // Avatar
-              CircleAvatar(
-                radius: 45,
-                backgroundColor: AppColors.primary.withOpacity(0.1),
-                backgroundImage: _user?['profile_picture_url'] != null
-                    ? NetworkImage(_user!['profile_picture_url'])
-                    : null,
-                child: _user?['profile_picture_url'] == null
-                    ? Text(
-                        '${(_user?['first_name'] ?? 'U')[0]}',
-                        style: const TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+              // Avatar with camera edit button
+              Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 55,
+                    backgroundColor: AppColors.primary.withOpacity(0.1),
+                    backgroundImage:
+                        fullImageUrl != null ? NetworkImage(fullImageUrl) : null,
+                    child: _uploadingPic
+                        ? const CircularProgressIndicator(
+                            color: AppColors.primary,
+                            strokeWidth: 2.5,
+                          )
+                        : fullImageUrl == null
+                            ? Text(
+                                '${(_user?['first_name'] ?? 'U')[0]}',
+                                style: const TextStyle(
+                                  fontSize: 38,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primary,
+                                ),
+                              )
+                            : null,
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: GestureDetector(
+                      onTap: _uploadingPic ? null : _pickAndUploadImage,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [AppColors.primary, AppColors.primaryLight],
+                          ),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2.5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withOpacity(0.3),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
-                      )
-                    : null,
+                        child: const Icon(
+                          Icons.camera_alt,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
               Text(
@@ -249,44 +462,54 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               Text('@${_user?['username'] ?? ''}', style: AppTextStyles.muted),
               const SizedBox(height: 24),
-              _field('First Name', _firstCtrl, Icons.person_outline),
-              _field('Last Name', _lastCtrl, Icons.person_outline),
-              _field('Username', _usernameCtrl, Icons.alternate_email),
-              _field('Email', _emailCtrl, Icons.email_outlined),
-              _field('Phone', _phoneCtrl, Icons.phone_outlined),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: _saving ? null : _save,
-                  child: _saving
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2.5,
+              _field('First Name', _firstCtrl, Icons.person_outline, enabled: _isEditing),
+              _field('Last Name', _lastCtrl, Icons.person_outline, enabled: _isEditing),
+              _field('Username', _usernameCtrl, Icons.alternate_email, enabled: _isEditing),
+              _field('Email', _emailCtrl, Icons.email_outlined, enabled: false), // Email NOT editable
+              _field('Phone', _phoneCtrl, Icons.phone_outlined, enabled: _isEditing),
+              const SizedBox(height: 24),
+              if (_isEditing)
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: _saving ? null : _save,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      elevation: 4,
+                    ),
+                    child: _saving
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Text(
+                            'Update Profile',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                           ),
-                        )
-                      : const Text('Save Changes'),
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: OutlinedButton.icon(
-                  onPressed: _logout,
-                  icon: const Icon(Icons.logout),
-                  label: const Text('Sign Out'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.danger,
-                    side: const BorderSide(color: AppColors.danger),
                   ),
                 ),
-              ),
-              const SizedBox(height: 30),
+              if (!_isEditing)
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: OutlinedButton.icon(
+                    onPressed: _logout,
+                    icon: const Icon(Icons.logout_rounded),
+                    label: const Text('Sign Out'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.danger,
+                      side: BorderSide(color: AppColors.danger.withOpacity(0.5)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 40),
             ],
           ),
         ),
@@ -294,15 +517,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _field(String label, TextEditingController ctrl, IconData icon) {
+  Widget _field(String label, TextEditingController ctrl, IconData icon, {bool enabled = true}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: TextField(
-        controller: ctrl,
-        decoration: InputDecoration(
-          labelText: label,
-          prefixIcon: Icon(icon, color: AppColors.primary),
-        ),
+      padding: const EdgeInsets.only(bottom: 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 6),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textMain.withOpacity(0.6),
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+          TextField(
+            controller: ctrl,
+            readOnly: !enabled,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: enabled ? AppColors.textMain : AppColors.textMain.withOpacity(0.5),
+            ),
+            decoration: InputDecoration(
+              prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
+              filled: true,
+              fillColor: enabled ? Colors.white : AppColors.cardBg.withOpacity(0.5),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: AppColors.primary.withOpacity(0.1)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: AppColors.primary.withOpacity(0.08)),
+              ),
+              hintText: 'Enter your $label',
+              contentPadding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+          ),
+        ],
       ),
     );
   }

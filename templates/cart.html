@@ -1,277 +1,181 @@
 {% extends "layouts/base.html" %}
 
-{% block title %}Your Cart{% endblock %}
+{% block title %}Your Cart — Le Maison{% endblock %}
 
 {% block content %}
-<div class="container py-5" style="margin-top: 5rem; min-height: 70vh;">
-    <h2 class="mb-4"
-        style="font-family: 'Georgia', serif; font-size: 2.5rem; color: var(--text-main); font-weight: bold;">
-        <i class="fas fa-shopping-cart" style="color: var(--primary-color);"></i> Your Cart
-    </h2>
+<style>
+    .cartPage { max-width: 1100px; margin: 6rem auto 3rem; padding: 0 1.5rem; min-height: 70vh; }
+    .cartHead { display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; }
+    .cartHead h2 { font-family: 'Playfair Display', 'Georgia', serif; font-weight: 700; font-size: 2rem; margin: 0; }
+    .cartHead h2 i { color: var(--primary-color); font-size: 1.5rem; }
+    .cartHead .cartCount { background: rgba(93,64,55,0.08); color: var(--primary-color); padding: 0.2rem 0.75rem; border-radius: 50px; font-size: 0.78rem; font-weight: 700; }
 
+    .cartGrid { display: grid; grid-template-columns: 1fr 380px; gap: 2rem; align-items: start; }
+    .cartList { background: #fff; border-radius: 20px; border: 1px solid var(--border-color); box-shadow: 0 4px 20px rgba(0,0,0,0.04); overflow: hidden; }
+    .cartItem { display: grid; grid-template-columns: auto 1fr auto auto auto; gap: 1rem; align-items: center; padding: 1.25rem 1.5rem; border-bottom: 1px solid rgba(93,64,55,0.05); transition: background 0.2s; }
+    .cartItem:last-child { border-bottom: none; }
+    .cartItem:hover { background: rgba(93,64,55,0.02); }
+    .cartItem-img { width: 64px; height: 64px; border-radius: 14px; object-fit: cover; }
+    .cartItem-noImg { width: 64px; height: 64px; border-radius: 14px; background: rgba(93,64,55,0.06); display: flex; align-items: center; justify-content: center; }
+    .cartItem-noImg i { color: rgba(93,64,55,0.2); font-size: 1.2rem; }
+    .cartItem-name { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.1rem; }
+    .cartItem-cat { font-size: 0.78rem; color: var(--text-muted); }
+    .cartItem-price { color: var(--text-muted); font-weight: 600; font-size: 0.88rem; white-space: nowrap; }
+    .cartItem-qty { background: rgba(93,64,55,0.06); padding: 0.3rem 0.75rem; border-radius: 8px; font-weight: 700; font-size: 0.88rem; text-align: center; }
+    .cartItem-subtotal { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--primary-color); font-size: 1rem; white-space: nowrap; }
+    .cartItem-remove { width: 34px; height: 34px; border-radius: 10px; border: 1px solid rgba(200,50,50,0.15); background: rgba(200,50,50,0.04); color: #C62828; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s; font-size: 0.8rem; }
+    .cartItem-remove:hover { background: #C62828; color: #fff; border-color: #C62828; }
+
+    .cartSummary { background: #fff; border-radius: 20px; border: 1px solid var(--border-color); box-shadow: 0 4px 20px rgba(0,0,0,0.04); padding: 1.75rem; position: sticky; top: 80px; }
+    .cartSummary h5 { font-family: 'Playfair Display', serif; font-weight: 700; padding-bottom: 1rem; margin-bottom: 1rem; border-bottom: 1px solid rgba(93,64,55,0.08); }
+    .cartSummary .sumRow { display: flex; justify-content: space-between; margin-bottom: 0.75rem; color: var(--text-muted); font-size: 0.9rem; }
+    .cartSummary .sumTotal { display: flex; justify-content: space-between; padding-top: 0.75rem; margin-top: 0.5rem; border-top: 1.5px solid rgba(93,64,55,0.1); }
+    .cartSummary .sumTotal span:first-child { font-weight: 700; font-size: 1.1rem; }
+    .cartSummary .sumTotal span:last-child { font-family: 'Playfair Display', serif; font-weight: 800; font-size: 1.3rem; color: var(--primary-color); }
+
+    .cartSummary label.form-label { font-weight: 700; font-size: 0.88rem; color: var(--text-main); margin-bottom: 0.5rem; }
+    .cartOpt { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; }
+    .cartOpt label { flex: 1; background: rgba(93,64,55,0.04); border: 1.5px solid transparent; border-radius: 12px; padding: 0.6rem 0.75rem; text-align: center; font-weight: 600; font-size: 0.82rem; cursor: pointer; transition: all 0.3s; }
+    .cartOpt input:checked+label { border-color: var(--primary-color); background: rgba(93,64,55,0.08); color: var(--primary-color); }
+
+    .cartPay { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.25rem; }
+    .cartPay label { background: rgba(93,64,55,0.04); border: 1.5px solid transparent; border-radius: 14px; padding: 0.85rem 1rem; cursor: pointer; transition: all 0.3s; }
+    .cartPay input:checked+label { border-color: var(--primary-color); background: rgba(93,64,55,0.06); }
+    .cartPay label .payTitle { font-weight: 700; font-size: 0.88rem; display: flex; align-items: center; gap: 6px; }
+    .cartPay label .payDesc { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.15rem; padding-left: 24px; }
+
+    .cartSubmit { background: linear-gradient(135deg, #5D4037, #795548); color: #fff; font-weight: 700; border: none; border-radius: 50px; padding: 0.85rem; width: 100%; font-size: 1rem; cursor: pointer; transition: all 0.3s; box-shadow: 0 6px 20px rgba(93,64,55,0.2); letter-spacing: 0.5px; }
+    .cartSubmit:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(93,64,55,0.3); }
+
+    .cartEmpty { text-align: center; padding: 5rem 1rem; }
+    .cartEmpty i { font-size: 5rem; color: rgba(93,64,55,0.08); margin-bottom: 1.5rem; }
+    .cartEmpty h3 { font-family: 'Playfair Display', serif; margin-bottom: 0.5rem; }
+    .cartEmpty p { color: var(--text-muted); margin-bottom: 1.5rem; }
+
+    @media(max-width: 900px) { .cartGrid { grid-template-columns: 1fr; } .cartItem { grid-template-columns: auto 1fr auto; gap: 0.75rem; } .cartItem-price, .cartItem-qty { display: none; } }
+</style>
+
+<div class="cartPage">
     {% if cart_items %}
-    <div class="row g-4">
-        <!-- Cart Items List -->
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-sm" style="border-radius: 16px; overflow: hidden;">
-                <div class="card-body p-0">
-                    <table class="table table-hover align-middle mb-0" style="font-size: 1rem;">
-                        <thead style="background: rgba(139,69,19,0.05);">
-                            <tr>
-                                <th class="border-0 px-4 py-3 text-muted fw-bold">Item</th>
-                                <th class="border-0 py-3 text-muted fw-bold">Price</th>
-                                <th class="border-0 py-3 text-muted fw-bold">Qty</th>
-                                <th class="border-0 py-3 text-muted fw-bold text-end">Subtotal</th>
-                                <th class="border-0 py-3 text-end px-4"></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for c_item in cart_items %}
-                            <tr>
-                                <td class="px-4 py-3">
-                                    <div class="d-flex align-items-center">
-                                        {% if c_item.item.image_url %}
-                                        <img src="{{ c_item.item.image_url }}" alt="{{ c_item.item.name }}"
-                                            style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; margin-right: 15px;">
-                                        {% else %}
-                                        <div
-                                            style="width: 60px; height: 60px; border-radius: 8px; background: #f0ebe1; display: flex; align-items: center; justify-content: center; margin-right: 15px;">
-                                            <i class="fas fa-utensils text-muted"></i>
-                                        </div>
-                                        {% endif %}
-                                        <div>
-                                            <h6 class="mb-0 fw-bold text-dark">{{ c_item.item.name }}</h6>
-                                            <small class="text-muted">{{ c_item.item.category }}</small>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="py-3 fw-bold text-muted">₱{{ "%.2f"|format(c_item.item.price) }}</td>
-                                <td class="py-3">
-                                    <span class="badge bg-light text-dark border px-3 py-2 fs-6">{{ c_item.quantity
-                                        }}</span>
-                                </td>
-                                <td class="py-3 text-end fw-bold" style="color: var(--primary-color);">₱{{
-                                    "%.2f"|format(c_item.subtotal) }}</td>
-                                <td class="py-3 text-end px-4">
-                                    <form action="{{ url_for('main.remove_from_cart', item_id=c_item.item.id) }}"
-                                        method="POST" class="d-inline">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle p-2"
-                                            title="Remove Item">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+    <div class="cartHead">
+        <h2><i class="fas fa-shopping-cart"></i> Your Cart</h2>
+        <span class="cartCount">{{ cart_items|length }} item{{ 's' if cart_items|length > 1 else '' }}</span>
+    </div>
+
+    <div class="cartGrid">
+        <div class="cartList">
+            {% for c_item in cart_items %}
+            <div class="cartItem">
+                {% if c_item.item.image_url %}
+                <img src="{{ c_item.item.image_url }}" alt="{{ c_item.item.name }}" class="cartItem-img">
+                {% else %}
+                <div class="cartItem-noImg"><i class="fas fa-utensils"></i></div>
+                {% endif %}
+                <div>
+                    <div class="cartItem-name">{{ c_item.item.name }}</div>
+                    <div class="cartItem-cat">{{ c_item.item.category }}</div>
+                </div>
+                <span class="cartItem-price">₱{{ "%.2f"|format(c_item.item.price) }}</span>
+                <span class="cartItem-qty">{{ c_item.quantity }}</span>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="cartItem-subtotal">₱{{ "%.2f"|format(c_item.subtotal) }}</span>
+                    <form action="{{ url_for('main.remove_from_cart', item_id=c_item.item.id) }}" method="POST" class="d-inline m-0">
+                        <button type="submit" class="cartItem-remove" title="Remove"><i class="fas fa-trash-alt"></i></button>
+                    </form>
                 </div>
             </div>
+            {% endfor %}
         </div>
 
-        <!-- Order Summary & Checkout -->
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-sm"
-                style="border-radius: 16px; background-color: #ffffff; position: sticky; top: 100px;">
-                <div class="card-body p-4">
-                    <h5 class="card-title fw-bold mb-4"
-                        style="font-family: 'Georgia', serif; border-bottom: 2px solid rgba(139,69,19,0.1); padding-bottom: 0.75rem;">
-                        Order Summary</h5>
+        <div class="cartSummary">
+            <h5>Order Summary</h5>
+            <div class="sumRow"><span>Items Subtotal</span><span>₱{{ "%.2f"|format(total) }}</span></div>
+            <div class="sumRow"><span>Tax & Fees</span><span style="font-style:italic;">At store</span></div>
+            <div class="sumRow" id="delivery_fee_row" style="display: none !important;"><span>Delivery Fee</span><span>₱50.00</span></div>
+            <div class="sumTotal"><span>Total</span><span id="totalAmountDisplay">₱{{ "%.2f"|format(total) }}</span></div>
 
-                    <div class="d-flex justify-content-between mb-3 text-muted">
-                        <span>Items Subtotal</span>
-                        <span>₱{{ "%.2f"|format(total) }}</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-4 text-muted">
-                        <span>Tax & Fees</span>
-                        <span>Calculated at store</span>
-                    </div>
+            <form action="{{ url_for('main.checkout') }}" method="POST" style="margin-top: 1.5rem;">
+                <label class="form-label">Dining Option</label>
+                <div class="cartOpt">
+                    <input type="radio" class="btn-check" name="dining_option" id="dine_in" value="DINE_IN" checked>
+                    <label for="dine_in"><i class="fas fa-utensils me-1"></i>Dine In</label>
+                    <input type="radio" class="btn-check" name="dining_option" id="take_out" value="TAKE_OUT">
+                    <label for="take_out"><i class="fas fa-shopping-bag me-1"></i>Take Out</label>
+                    <input type="radio" class="btn-check" name="dining_option" id="delivery" value="DELIVERY">
+                    <label for="delivery"><i class="fas fa-motorcycle me-1"></i>Delivery</label>
+                </div>
 
-                    <div class="d-flex justify-content-between mb-2 text-muted" id="delivery_fee_row"
-                        style="display: none !important;">
-                        <span>Delivery Fee</span>
-                        <span>₱50.00</span>
-                    </div>
-
-                    <div class="d-flex justify-content-between mb-4 mt-2"
-                        style="border-top: 1px solid rgba(0,0,0,0.1); padding-top: 10px;">
-                        <span class="fw-bold fs-5 text-dark">Total Amount</span>
-                        <span class="fw-bold fs-5" style="color: var(--primary-color);" id="totalAmountDisplay">₱{{
-                            "%.2f"|format(total) }}</span>
-                    </div>
-
-                    <form action="{{ url_for('main.checkout') }}" method="POST">
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-dark" style="font-size: 0.95rem;">Dining
-                                Option</label>
-                            <div class="d-flex gap-2">
-                                <input type="radio" class="btn-check" name="dining_option" id="dine_in" value="DINE_IN"
-                                    checked>
-                                <label class="btn btn-outline-dark rounded-pill flex-fill py-2" for="dine_in"
-                                    style="font-size: 0.9rem;"><i class="fas fa-utensils me-1"></i>Dine In</label>
-
-                                <input type="radio" class="btn-check" name="dining_option" id="take_out"
-                                    value="TAKE_OUT">
-                                <label class="btn btn-outline-dark rounded-pill flex-fill py-2" for="take_out"
-                                    style="font-size: 0.9rem;"><i class="fas fa-shopping-bag me-1"></i>Take Out</label>
-
-                                <input type="radio" class="btn-check" name="dining_option" id="delivery"
-                                    value="DELIVERY">
-                                <label class="btn btn-outline-dark rounded-pill flex-fill py-2" for="delivery"
-                                    style="font-size: 0.9rem;"><i class="fas fa-motorcycle me-1"></i>Delivery</label>
-                            </div>
-                        </div>
-
-                        <!-- Delivery Fields -->
-                        <div id="delivery_fields" style="display: none;" class="mb-4">
-                            <div class="card bg-light border-0 shadow-sm p-3 rounded-3">
-                                <label class="form-label fw-bold text-dark" style="font-size: 0.95rem;">Delivery
-                                    Location</label>
-                                <select name="delivery_area" id="delivery_area"
-                                    class="form-select mb-3 border-0 shadow-sm">
-                                    <option value="">Select your area...</option>
-                                    <option value="Santa Cruz, Laguna">Santa Cruz, Laguna</option>
-                                    <option value="Magdalena, Laguna">Magdalena, Laguna</option>
-                                    <option value="Los Baños, Laguna">Los Baños, Laguna</option>
-                                    <option value="Cavinti, Laguna">Cavinti, Laguna</option>
-                                </select>
-
-                                <label class="form-label fw-bold text-dark" style="font-size: 0.95rem;">Exact Address /
-                                    Landmark</label>
-                                <textarea name="delivery_address" id="delivery_address"
-                                    class="form-control border-0 shadow-sm" rows="2"
-                                    placeholder="House number, street name, near [landmark]..."></textarea>
-                            </div>
-                        </div>
-
-                        <div class="mb-4">
-                            <label class="form-label fw-bold text-dark" style="font-size: 0.95rem;">Payment
-                                Method</label>
-                            <div class="d-flex flex-column gap-2">
-                                <input type="radio" class="btn-check" name="payment_method" id="pay_counter"
-                                    value="COUNTER" checked>
-                                <label class="btn btn-outline-dark rounded-3 text-start py-3 px-3 shadow-sm"
-                                    for="pay_counter">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <span class="fw-bold" id="label_pay_counter"><i
-                                                class="fas fa-cash-register text-success me-2"></i>Pay
-                                            at the Counter</span>
-                                    </div>
-                                    <small class="text-muted d-block mt-1 ps-4" id="desc_pay_counter"
-                                        style="font-size: 0.8rem;">Pay cash or
-                                        card in-store.</small>
-                                </label>
-
-                                <input type="radio" class="btn-check" name="payment_method" id="pay_online"
-                                    value="ONLINE">
-                                <label class="btn btn-outline-dark rounded-3 text-start py-3 px-3 shadow-sm"
-                                    for="pay_online">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <span class="fw-bold"><i class="fas fa-mobile-alt text-primary me-2"></i>Online
-                                            Payment (GCash via Xendit)</span>
-                                    </div>
-                                    <small class="text-muted d-block mt-1 ps-4" id="desc_pay_online"
-                                        style="font-size: 0.8rem;">Pay securely
-                                        via e-wallet.</small>
-                                </label>
-                            </div>
-                        </div>
-
-                        <div class="mb-4">
-                            <label for="notes" class="form-label fw-bold text-dark" style="font-size: 0.95rem;">Special
-                                Instructions <small class="fw-normal text-muted">(Optional)</small></label>
-                            <textarea id="notes" name="notes" class="form-control rounded-3" rows="3"
-                                placeholder="e.g. Less sugar, extra napkins..."
-                                style="border: 1px solid rgba(139,69,19,0.2);"></textarea>
-                        </div>
-
-                        {% if current_user.is_authenticated %}
-                        <button type="submit" class="btn w-100 rounded-pill py-3 fw-bold shadow-sm"
-                            style="background-color: var(--primary-color); color: white; border: none; font-size: 1.1rem; letter-spacing: 1px;">
-                            <i class="fas fa-check-circle me-2"></i> Submit Order
-                        </button>
-                        {% else %}
-                        <button type="button" class="btn w-100 rounded-pill py-3 fw-bold shadow-sm btn-outline-dark"
-                            onclick="$('#termsModal').modal('show'); window.authIntent = 'login';">
-                            Sign in to Checkout
-                        </button>
-                        {% endif %}
-                    </form>
-                    <div class="text-center mt-3">
-                        <a href="{{ url_for('main.menu_page') }}" class="text-decoration-none text-muted"
-                            style="font-size: 0.9rem;">
-                            <i class="fas fa-arrow-left me-1"></i> Continue Shopping
-                        </a>
+                <div id="delivery_fields" style="display: none;" class="mb-3">
+                    <div style="background: rgba(93,64,55,0.03); border-radius: 14px; padding: 1rem; border: 1px solid rgba(93,64,55,0.06);">
+                        <label class="form-label" style="font-size: 0.85rem;">Delivery Area</label>
+                        <select name="delivery_area" id="delivery_area" class="form-select mb-2" style="border-radius: 10px; border: 1px solid var(--border-color);">
+                            <option value="">Select your area...</option>
+                            <option value="Santa Cruz, Laguna">Santa Cruz, Laguna</option>
+                            <option value="Magdalena, Laguna">Magdalena, Laguna</option>
+                            <option value="Los Baños, Laguna">Los Baños, Laguna</option>
+                            <option value="Cavinti, Laguna">Cavinti, Laguna</option>
+                        </select>
+                        <label class="form-label" style="font-size: 0.85rem;">Address / Landmark</label>
+                        <textarea name="delivery_address" id="delivery_address" class="form-control" rows="2" placeholder="House number, street, near..." style="border-radius: 10px; border: 1px solid var(--border-color); resize: none;"></textarea>
                     </div>
                 </div>
+
+                <label class="form-label">Payment Method</label>
+                <div class="cartPay">
+                    <input type="radio" class="btn-check" name="payment_method" id="pay_counter" value="COUNTER" checked>
+                    <label for="pay_counter">
+                        <div class="payTitle"><i class="fas fa-cash-register" style="color: #2E7D32;"></i> <span id="label_pay_counter">Pay at Counter</span></div>
+                        <div class="payDesc" id="desc_pay_counter">Pay cash or card in-store.</div>
+                    </label>
+                    <input type="radio" class="btn-check" name="payment_method" id="pay_online" value="ONLINE">
+                    <label for="pay_online">
+                        <div class="payTitle"><i class="fas fa-mobile-alt" style="color: #1565C0;"></i> Online Payment (GCash)</div>
+                        <div class="payDesc" id="desc_pay_online">Pay securely via e-wallet.</div>
+                    </label>
+                </div>
+
+                <label class="form-label">Special Instructions <span style="font-weight: 400; color: var(--text-muted); font-size: 0.78rem;">(Optional)</span></label>
+                <textarea id="notes" name="notes" class="form-control mb-4" rows="2" placeholder="e.g. Less sugar, extra napkins..." style="border-radius: 12px; border: 1px solid var(--border-color); resize: none;"></textarea>
+
+                {% if current_user.is_authenticated %}
+                <button type="submit" class="cartSubmit"><i class="fas fa-check-circle me-2"></i>Submit Order</button>
+                {% else %}
+                <button type="button" class="cartSubmit" style="background: linear-gradient(135deg,#333,#555);" onclick="$('#termsModal').modal('show'); window.authIntent = 'login';">Sign in to Checkout</button>
+                {% endif %}
+            </form>
+            <div class="text-center mt-3">
+                <a href="{{ url_for('main.menu_page') }}" style="color: var(--text-muted); font-size: 0.85rem; text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='var(--text-muted)'"><i class="fas fa-arrow-left me-1"></i> Continue Shopping</a>
             </div>
         </div>
     </div>
+
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const baseTotal = parseFloat("{{ total }}");
-            const deliveryFee = 50.00;
-
-            document.querySelectorAll('input[name="dining_option"]').forEach(radio => {
-                radio.addEventListener('change', function () {
-                    const isDelivery = this.value === 'DELIVERY';
-                    const deliverySection = document.getElementById('delivery_fields');
-                    const feeRow = document.getElementById('delivery_fee_row');
-                    const totalDisplay = document.getElementById('totalAmountDisplay');
-
-                    const counterLabel = document.getElementById('label_pay_counter');
-                    const counterDesc = document.getElementById('desc_pay_counter');
-                    const onlineDesc = document.getElementById('desc_pay_online');
-
-                    const areaInput = document.getElementById('delivery_area');
-                    const addressInput = document.getElementById('delivery_address');
-
-                    if (isDelivery) {
-                        deliverySection.style.display = 'block';
-                        feeRow.style.setProperty('display', 'flex', 'important');
-                        totalDisplay.innerText = '₱' + (baseTotal + deliveryFee).toFixed(2);
-
-                        counterLabel.innerHTML = '<i class="fas fa-hand-holding-usd text-success me-2"></i>Cash on Delivery';
-                        counterDesc.innerText = 'Pay cash when your order arrives. Includes delivery fee.';
-                        onlineDesc.innerText = 'Pay securely via e-wallet. Includes delivery fee.';
-
-                        areaInput.required = true;
-                        addressInput.required = true;
-                    } else {
-                        deliverySection.style.display = 'none';
-                        feeRow.style.setProperty('display', 'none', 'important');
-                        totalDisplay.innerText = '₱' + baseTotal.toFixed(2);
-
-                        counterLabel.innerHTML = '<i class="fas fa-cash-register text-success me-2"></i>Pay at the Counter';
-                        counterDesc.innerText = 'Pay cash or card in-store.';
-                        onlineDesc.innerText = 'Pay securely via e-wallet.';
-
-                        areaInput.required = false;
-                        addressInput.required = false;
-                    }
+        document.addEventListener('DOMContentLoaded', function() {
+            const baseTotal = parseFloat("{{ total }}"), deliveryFee = 50.00;
+            document.querySelectorAll('input[name="dining_option"]').forEach(r => {
+                r.addEventListener('change', function() {
+                    const isDel = this.value === 'DELIVERY';
+                    document.getElementById('delivery_fields').style.display = isDel ? 'block' : 'none';
+                    document.getElementById('delivery_fee_row').style.setProperty('display', isDel ? 'flex' : 'none', 'important');
+                    document.getElementById('totalAmountDisplay').innerText = '₱' + (isDel ? baseTotal + deliveryFee : baseTotal).toFixed(2);
+                    document.getElementById('label_pay_counter').innerHTML = isDel ? '<i class="fas fa-hand-holding-usd text-success me-2"></i>Cash on Delivery' : '<i class="fas fa-cash-register text-success me-2"></i>Pay at Counter';
+                    document.getElementById('desc_pay_counter').innerText = isDel ? 'Pay cash when your order arrives.' : 'Pay cash or card in-store.';
+                    document.getElementById('desc_pay_online').innerText = isDel ? 'Pay securely via e-wallet. Includes delivery fee.' : 'Pay securely via e-wallet.';
+                    const a = document.getElementById('delivery_area'), ad = document.getElementById('delivery_address');
+                    a.required = isDel; ad.required = isDel;
                 });
             });
-
-            // Initial check
-            const checkedOption = document.querySelector('input[name="dining_option"]:checked');
-            if (checkedOption && checkedOption.value === 'DELIVERY') {
-                checkedOption.dispatchEvent(new Event('change'));
-            }
+            const co = document.querySelector('input[name="dining_option"]:checked');
+            if (co && co.value === 'DELIVERY') co.dispatchEvent(new Event('change'));
         });
     </script>
     {% else %}
-    <div class="text-center py-5">
-        <div style="font-size: 6rem; color: rgba(139,69,19,0.1); margin-bottom: 1.5rem;">
-            <i class="fas fa-shopping-basket"></i>
-        </div>
-        <h3 style="font-family: 'Georgia', serif; color: var(--text-main); font-weight: bold;">Your cart is empty</h3>
-        <p class="text-muted mb-4">Looks like you haven't added any of our delicious items yet.</p>
-        <a href="{{ url_for('main.menu_page') }}" class="btn rounded-pill px-5 py-3 fw-bold text-white shadow"
-            style="background-color: var(--primary-color);">
-            Browse Menu
-        </a>
+    <div class="cartEmpty">
+        <i class="fas fa-shopping-basket"></i>
+        <h3>Your cart is empty</h3>
+        <p>Looks like you haven't added any of our delicious items yet.</p>
+        <a href="{{ url_for('main.menu_page') }}" class="cartSubmit" style="display: inline-block; width: auto; padding: 0.85rem 2.5rem; text-decoration: none;"><i class="fas fa-book-open me-2"></i>Browse Menu</a>
     </div>
     {% endif %}
-
 </div>
 {% endblock %}

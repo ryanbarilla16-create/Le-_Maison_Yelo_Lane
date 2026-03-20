@@ -1,14 +1,21 @@
 from flask import Blueprint, jsonify, request, current_app
 from flask_mail import Message
-from models import db, MenuItem, User, Reservation, Order, OrderItem, Review
+from models import db, MenuItem, User, Reservation, Order, OrderItem, Review, Notification
 from werkzeug.security import generate_password_hash
 from datetime import datetime, date, time as dtime
 from utils import get_ph_time
 import re
 import random
 import traceback
+import os
+import base64
+import requests as http_requests
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
+
+# Setup Xendit (direct HTTP - SDK has urllib3 compatibility issues)
+XENDIT_SECRET_KEY = os.environ.get('XENDIT_SECRET_KEY')
+XENDIT_API_URL = 'https://api.xendit.co/v2/invoices'
 
 # ═══ VALIDATION HELPERS (same as web) ═══
 def has_repeated_chars(s, limit=4):
@@ -207,7 +214,7 @@ def api_signup():
             <div style="text-align: center; margin: 30px 0;">
                 <span style="display: inline-block; background: linear-gradient(135deg, #8B4513, #A0522D); color: #fff; font-size: 2rem; font-weight: bold; letter-spacing: 8px; padding: 15px 35px; border-radius: 10px;">{otp}</span>
             </div>
-            <p style="color: #999; font-size: 0.8rem; text-align: center;">This code will expire in 10 minutes.</p>
+            <p style="color: #999; font-size: 0.8rem; text-align: center;">This code will expire in 5 minutes.</p>
         </div>
         """
         mail.send(msg)
@@ -538,7 +545,7 @@ def api_user_orders(user_id):
             'delivery_status': o.delivery_status,
             'notes': o.notes,
             'created_at': o.created_at.strftime('%b %d, %Y - %I:%M %p'),
-            'items': [{'name': item.menu_item.name, 'quantity': item.quantity, 'price': float(item.price_at_time)} for item in o.items],
+            'items': [{'name': item.menu_item.name, 'quantity': item.quantity, 'price': float(item.price_at_time), 'image_url': item.menu_item.image_url, 'category': item.menu_item.category} for item in o.items],
             'review_rating': reviews_by_order.get(o.id)
         })
     
@@ -603,7 +610,112 @@ def api_checkout():
     
     db.session.commit()
     
-    return jsonify({'success': True, 'message': 'Order placed successfully!', 'order_id': new_order.id}), 201
+    # ═══ HANDLE ONLINE PAYMENT (XENDIT) ═══
+    invoice_url = None
+    if payment_method == 'GCASH' and XENDIT_SECRET_KEY:
+        try:
+            # Build auth header
+            auth_str = base64.b64encode(f'{XENDIT_SECRET_KEY}:'.encode()).decode()
+            
+            # Build invoice items
+            inv_items = [
+                {
+                    'name': item.menu_item.name,
+                    'quantity': int(item.quantity),
+                    'price': float(item.price_at_time)
+                } for item in order_items
+            ]
+            
+            # Create Xendit Invoice via REST API
+            xendit_resp = http_requests.post(
+                XENDIT_API_URL,
+                headers={
+                    'Authorization': f'Basic {auth_str}',
+                    'Content-Type': 'application/json'
+                },
+                json={
+                    'external_id': f'order_{new_order.id}',
+                    'amount': float(total),
+                    'payer_email': User.query.get(user_id).email,
+                    'description': f'Order #{new_order.id} - Le Maison Yelo Lane',
+                    'invoice_duration': 86400,
+                    'currency': 'PHP',
+                    'items': inv_items
+                },
+                timeout=15
+            )
+            
+            if xendit_resp.status_code == 200:
+                inv_data = xendit_resp.json()
+                new_order.xendit_invoice_id = inv_data.get('id')
+                new_order.xendit_invoice_url = inv_data.get('invoice_url')
+                new_order.payment_method = 'ONLINE'
+                db.session.commit()
+                invoice_url = inv_data.get('invoice_url')
+            else:
+                print(f'Xendit Error {xendit_resp.status_code}: {xendit_resp.text}')
+                return jsonify({
+                    'success': True,
+                    'message': 'Order placed, but payment generation failed. Please pay at the counter.',
+                    'order_id': new_order.id,
+                    'payment_failed': True
+                }), 201
+            
+        except Exception as e:
+            print(f'Xendit Error: {e}')
+            traceback.print_exc()
+            return jsonify({
+                'success': True, 
+                'message': 'Order placed, but payment generation failed. Please pay at the counter.', 
+                'order_id': new_order.id,
+                'payment_failed': True
+            }), 201
+
+    # Send notification to user
+    _create_notification(user_id, 'Order Placed', f'Your order #{new_order.id} has been placed successfully! Total: ₱{total:.2f}', 'ORDER')
+    
+    return jsonify({
+        'success': True, 
+        'message': 'Order placed successfully!', 
+        'order_id': new_order.id,
+        'invoice_url': invoice_url
+    }), 201
+
+# ═══ XENDIT WEBHOOK (payment callback) ═══
+@api_bp.route('/xendit/callback', methods=['POST'])
+def xendit_callback():
+    """Handles Xendit invoice payment status updates."""
+    data = request.json
+    if not data:
+        return jsonify({'success': False}), 400
+    
+    external_id = data.get('external_id', '')
+    status = data.get('status', '')
+    
+    # Extract order ID from external_id (format: "order_123")
+    if not external_id.startswith('order_'):
+        return jsonify({'success': False, 'message': 'Invalid external_id'}), 400
+    
+    try:
+        order_id = int(external_id.replace('order_', ''))
+    except ValueError:
+        return jsonify({'success': False, 'message': 'Invalid order ID'}), 400
+    
+    order = Order.query.get(order_id)
+    if not order:
+        return jsonify({'success': False, 'message': 'Order not found'}), 404
+    
+    if status == 'PAID':
+        order.payment_status = 'PAID'
+        db.session.commit()
+        _create_notification(order.user_id, 'Payment Received', f'Your GCash payment for order #{order.id} has been confirmed! ₱{float(order.total_amount):.2f}', 'ORDER')
+    elif status == 'EXPIRED':
+        order.payment_status = 'UNPAID'
+        order.notes = (order.notes or '') + ' [Payment expired]'
+        db.session.commit()
+        _create_notification(order.user_id, 'Payment Expired', f'Your payment for order #{order.id} has expired. Please pay at the counter or place a new order.', 'ORDER')
+    
+    return jsonify({'success': True}), 200
 
 @api_bp.route('/order/<int:order_id>/review', methods=['POST'])
 def api_add_review(order_id):
@@ -703,6 +815,9 @@ def api_reserve():
     db.session.add(new_res)
     db.session.commit()
     
+    # Send notification to user
+    _create_notification(user_id, 'Reservation Submitted', f'Your reservation for {res_date.strftime("%b %d, %Y")} at {res_time.strftime("%I:%M %p")} has been submitted. Pending approval.', 'RESERVATION')
+    
     return jsonify({'success': True, 'message': 'Reservation submitted! Pending admin approval.'}), 201
 
 @api_bp.route('/user/<int:user_id>/reservations', methods=['GET'])
@@ -779,6 +894,234 @@ def api_update_profile(user_id):
     db.session.commit()
     
     return jsonify({'success': True, 'message': 'Profile updated!'}), 200
+
+# ═══ FORGOT PASSWORD API ═══
+@api_bp.route('/auth/forgot-password', methods=['POST'])
+def api_forgot_password():
+    """Step 1: Send OTP to user's email for password reset"""
+    data = request.json
+    email = (data.get('email') or '').strip()
+    
+    if not email:
+        return jsonify({'success': False, 'message': 'Email is required.'}), 400
+    
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        return jsonify({'success': False, 'message': 'No account found with this email.'}), 404
+    
+    # Rate-limit OTP (wait 60 seconds between requests)
+    if user.otp_created_at:
+        elapsed = (get_ph_time() - user.otp_created_at).total_seconds()
+        if elapsed < 60:
+            remaining = int(60 - elapsed)
+            return jsonify({'success': False, 'message': f'Please wait {remaining}s before requesting a new code.'}), 429
+    
+    otp = f"{random.randint(100000, 999999)}"
+    user.otp_code = otp
+    user.otp_created_at = get_ph_time()
+    db.session.commit()
+    
+    print(f"--- FORGOT PASSWORD OTP FOR {email} IS: {otp} ---")
+    
+    # Send OTP via Gmail
+    try:
+        mail = current_app.extensions['mail']
+        msg = Message(
+            subject='Le Maison Yelo Lane - Password Reset Code',
+            sender=current_app.config['MAIL_USERNAME'],
+            recipients=[email]
+        )
+        msg.html = f"""
+        <div style="font-family: 'Georgia', serif; max-width: 500px; margin: 0 auto; padding: 40px 30px; background: #ffffff; border-radius: 12px; border: 1px solid #e0d5c7;">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h1 style="color: #8B4513; margin: 0; font-size: 1.5rem;">Le Maison Yelo Lane</h1>
+                <p style="color: #999; font-size: 0.85rem; margin-top: 5px;">Password Reset</p>
+            </div>
+            <p style="color: #333;">Hello <strong>{user.first_name}</strong>,</p>
+            <p style="color: #555;">You requested a password reset. Use the following OTP code to reset your password:</p>
+            <div style="text-align: center; margin: 30px 0;">
+                <span style="display: inline-block; background: linear-gradient(135deg, #8B4513, #A0522D); color: #fff; font-size: 2rem; font-weight: bold; letter-spacing: 8px; padding: 15px 35px; border-radius: 10px;">{otp}</span>
+            </div>
+            <p style="color: #999; font-size: 0.8rem; text-align: center;">This code will expire in 5 minutes. If you didn't request this, please ignore this email.</p>
+        </div>
+        """
+        mail.send(msg)
+    except Exception as e:
+        print(f"Email sending failed: {e}")
+        traceback.print_exc()
+    
+    return jsonify({'success': True, 'user_id': user.id, 'message': f'OTP sent to {email}.'}), 200
+
+@api_bp.route('/auth/forgot-password/verify-otp', methods=['POST'])
+def api_forgot_password_verify_otp():
+    """Step 2: Verify the OTP entered by user"""
+    data = request.json
+    user_id = data.get('user_id')
+    otp_input = (data.get('otp') or '').strip()
+    
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'success': False, 'message': 'User not found.'}), 404
+    
+    # Check OTP expiry (5 minutes)
+    if user.otp_created_at:
+        elapsed = (get_ph_time() - user.otp_created_at).total_seconds()
+        if elapsed > 300:
+            return jsonify({'success': False, 'message': 'OTP has expired. Please request a new one.'}), 400
+    
+    if user.otp_code == otp_input:
+        return jsonify({'success': True, 'message': 'OTP verified! You can now set a new password.'}), 200
+    
+    return jsonify({'success': False, 'message': 'Invalid OTP code.'}), 400
+
+@api_bp.route('/auth/forgot-password/reset', methods=['POST'])
+def api_forgot_password_reset():
+    """Step 3: Set the new password (after OTP is verified)"""
+    data = request.json
+    user_id = data.get('user_id')
+    otp_input = (data.get('otp') or '').strip()
+    new_password = data.get('new_password', '')
+    confirm_password = data.get('confirm_password', '')
+    
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'success': False, 'message': 'User not found.'}), 404
+    
+    # Re-verify OTP for security
+    if user.otp_code != otp_input:
+        return jsonify({'success': False, 'message': 'Invalid OTP. Please start over.'}), 400
+        
+    # Check OTP expiry (5 minutes)
+    if user.otp_created_at:
+        elapsed = (get_ph_time() - user.otp_created_at).total_seconds()
+        if elapsed > 300:
+            return jsonify({'success': False, 'message': 'OTP has expired. Please start over.'}), 400
+    
+    # Validate new password
+    err = validate_password(new_password, confirm_password)
+    if err:
+        return jsonify({'success': False, 'message': err}), 400
+    
+    user.set_password(new_password)
+    user.otp_code = None
+    user.otp_created_at = None
+    db.session.commit()
+    
+    # Send notification
+    _create_notification(user.id, 'Password Changed', 'Your password was successfully changed.', 'SYSTEM')
+    
+    return jsonify({'success': True, 'message': 'Password reset successfully! You can now log in with your new password.'}), 200
+
+from utils import get_ph_time, create_notification
+
+# ═══ NOTIFICATIONS API ═══
+def _create_notification(user_id, title, message, notif_type='SYSTEM'):
+    """Helper to create a notification (uses centralized helper)"""
+    return create_notification(user_id, title, message, notif_type)
+
+@api_bp.route('/user/<int:user_id>/notifications', methods=['GET'])
+def api_get_notifications(user_id):
+    """Get all notifications for a user"""
+    from models import Notification
+    notifications = Notification.query.filter_by(user_id=user_id).order_by(Notification.created_at.desc()).limit(50).all()
+    return jsonify({
+        'success': True,
+        'notifications': [{
+            'id': n.id,
+            'title': n.title,
+            'message': n.message,
+            'type': n.type,
+            'is_read': n.is_read,
+            'created_at': n.created_at.strftime('%b %d, %Y - %I:%M %p') if n.created_at else '',
+        } for n in notifications]
+    }), 200
+
+@api_bp.route('/user/<int:user_id>/notifications/unread-count', methods=['GET'])
+def api_unread_notification_count(user_id):
+    """Get count of unread notifications"""
+    from models import Notification
+    count = Notification.query.filter_by(user_id=user_id, is_read=False).count()
+    return jsonify({'success': True, 'count': count}), 200
+
+@api_bp.route('/notification/<int:notif_id>/read', methods=['POST'])
+def api_mark_notification_read(notif_id):
+    """Mark a single notification as read"""
+    from models import Notification
+    notif = Notification.query.get(notif_id)
+    if not notif:
+        return jsonify({'success': False, 'message': 'Notification not found.'}), 404
+    notif.is_read = True
+    db.session.commit()
+    return jsonify({'success': True}), 200
+
+@api_bp.route('/user/<int:user_id>/notifications/read-all', methods=['POST'])
+def api_mark_all_notifications_read(user_id):
+    """Mark all notifications as read for a user"""
+    from models import Notification
+    Notification.query.filter_by(user_id=user_id, is_read=False).update({'is_read': True})
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'All notifications marked as read.'}), 200
+
+# ═══ PROFILE PICTURE UPLOAD API ═══
+@api_bp.route('/user/<int:user_id>/profile-picture', methods=['POST'])
+def api_upload_profile_picture(user_id):
+    """Upload profile picture as base64"""
+    import base64
+    import uuid
+    
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'success': False, 'message': 'User not found.'}), 404
+    
+    data = request.json
+    image_data = data.get('image')  # base64 string
+    
+    if not image_data:
+        return jsonify({'success': False, 'message': 'No image data provided.'}), 400
+    
+    try:
+        # Remove data URI prefix if present
+        if ',' in image_data:
+            image_data = image_data.split(',')[1]
+        
+        # Decode base64
+        img_bytes = base64.b64decode(image_data)
+        
+        # Create uploads directory
+        import os
+        upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', 'profiles')
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        # Delete old profile picture file if exists
+        if user.profile_picture_url and '/static/uploads/profiles/' in user.profile_picture_url:
+            old_filename = user.profile_picture_url.split('/')[-1]
+            old_path = os.path.join(upload_dir, old_filename)
+            if os.path.exists(old_path):
+                os.remove(old_path)
+        
+        # Save new file
+        filename = f"profile_{user_id}_{uuid.uuid4().hex[:8]}.jpg"
+        filepath = os.path.join(upload_dir, filename)
+        with open(filepath, 'wb') as f:
+            f.write(img_bytes)
+        
+        # Update user record with relative URL
+        user.profile_picture_url = f"/static/uploads/profiles/{filename}"
+        db.session.commit()
+        
+        # Build full URL for the app
+        base_url = request.host_url.rstrip('/')
+        full_url = f"{base_url}/static/uploads/profiles/{filename}"
+        
+        return jsonify({
+            'success': True,
+            'message': 'Profile picture updated!',
+            'profile_picture_url': full_url
+        }), 200
+    except Exception as e:
+        print(f"Profile picture upload error: {e}")
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': 'Failed to upload image.'}), 500
 
 # ═══ RIDER API ENDPOINTS ═══
 @api_bp.route('/rider/deliveries', methods=['GET'])
@@ -1014,4 +1357,21 @@ def track_delivery(order_id):
         'rider_name': rider_name,
         'rider_location': rider_location,
     })
+
+@api_bp.route('/user/<int:user_id>', methods=['DELETE'])
+def api_delete_user(user_id):
+    """Delete a user account permanently"""
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'success': False, 'message': 'User not found.'}), 404
+    
+    try:
+        # User deletion will cascade if relationships are set correctly in models.py
+        # Otherwise, we might need to handle related records
+        db.session.delete(user)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Account deleted successfully.'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Error deleting account: {str(e)}'}), 500
 

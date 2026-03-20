@@ -3,345 +3,515 @@
 {% block title %}Welcome, {{ current_user.first_name }}{% endblock %}
 
 {% block content %}
-<main style="padding: 0 1rem;">
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 
-    <!-- ═══ WELCOME HERO BANNER ═══ -->
-    <section
-        style="position: relative; width: 100vw; max-width: 100vw; height: 45vh; min-height: 320px; overflow: hidden; margin-top: -56px; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw;">
-        <div style="position: absolute; inset: 0; z-index: 0;">
-            <img src="https://images.unsplash.com/photo-1600093463592-8e36ae95ef56?q=80&w=2070&auto=format&fit=crop"
-                style="width: 100%; height: 100%; object-fit: cover; filter: brightness(0.4);">
-        </div>
-        <div
-            style="position: absolute; inset: 0; z-index: 1; display: flex; align-items: center; justify-content: center;">
-            <div style="text-align: center; padding: 2rem;">
-                <p
-                    style="font-family: 'Georgia', serif; font-style: italic; font-size: 1.2rem; color: #d4a862; margin-bottom: 0.5rem;">
-                    Welcome back,</p>
-                <h1
-                    style="font-family: 'Georgia', serif; font-size: 3rem; font-weight: bold; color: #ffffff; margin-bottom: 0.5rem;">
-                    {{ current_user.first_name }} {{ current_user.last_name }}
-                </h1>
-                <p
-                    style="color: rgba(255,255,255,0.7); font-size: 0.95rem; letter-spacing: 2px; text-transform: uppercase;">
-                    Le Maison de Yelo Lane</p>
+    /* ═══ HERO ═══ */
+    .dashHero {
+        position: relative; width: 100vw; height: 55vh; min-height: 380px;
+        overflow: hidden; margin-top: -56px;
+        left: 50%; margin-left: -50vw;
+    }
+    .dashHero img {
+        width: 100%; height: 100%; object-fit: cover;
+        filter: brightness(0.3) saturate(0.9);
+        transform: scale(1.02);
+    }
+    .dashHero::after {
+        content: ''; position: absolute; inset: 0;
+        background: linear-gradient(180deg,
+            rgba(62,39,35,0.2) 0%,
+            rgba(62,39,35,0.5) 60%,
+            rgba(253,251,249,1) 100%);
+        z-index: 1;
+    }
+    .dashHero-content {
+        position: absolute; inset: 0; z-index: 2;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .dashHero-text {
+        text-align: center; padding: 2rem;
+        animation: heroFade 1s ease-out;
+    }
+    @keyframes heroFade {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .dashHero-text .greeting {
+        font-family: 'Playfair Display', serif; font-style: italic;
+        font-size: 1.15rem; color: #D4A862; margin-bottom: 0.4rem;
+        letter-spacing: 1px;
+    }
+    .dashHero-text h1 {
+        font-family: 'Playfair Display', serif;
+        font-size: clamp(2.2rem, 5vw, 3.5rem);
+        font-weight: 700; color: #fff; margin-bottom: 0.6rem;
+        text-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        letter-spacing: -0.5px;
+    }
+    .dashHero-text .tagline {
+        color: rgba(255,255,255,0.5); font-size: 0.8rem;
+        letter-spacing: 4px; text-transform: uppercase; font-weight: 500;
+    }
+
+    /* ═══ LAYOUT ═══ */
+    .dashWrap { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
+
+    /* ═══ QUICK ACTIONS ═══ */
+    .dashActions {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.25rem;
+        margin-top: -50px;
+        position: relative;
+        z-index: 3;
+    }
+    .dashAction {
+        background: #fff;
+        border-radius: 20px;
+        padding: 2rem 1.5rem;
+        text-align: center;
+        text-decoration: none !important;
+        color: inherit !important;
+        border: 1px solid rgba(93,64,55,0.06);
+        box-shadow: 0 8px 32px rgba(0,0,0,0.06);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+    .dashAction::before {
+        content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+        background: linear-gradient(90deg, var(--accent-start), var(--accent-end));
+        opacity: 0; transition: opacity 0.3s;
+    }
+    .dashAction:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 16px 48px rgba(93,64,55,0.15);
+    }
+    .dashAction:hover::before { opacity: 1; }
+    .dashAction-icon {
+        width: 60px; height: 60px; border-radius: 16px;
+        display: flex; align-items: center; justify-content: center;
+        margin: 0 auto 1.1rem; font-size: 1.4rem; color: #fff;
+        transition: transform 0.3s;
+    }
+    .dashAction:hover .dashAction-icon { transform: scale(1.1) rotate(-3deg); }
+    .dashAction h6 { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.3rem; color: var(--text-main); }
+    .dashAction p { font-size: 0.78rem; color: var(--text-muted); margin: 0; }
+
+    /* ═══ STATS ═══ */
+    .dashStats {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;
+        margin-top: 2.5rem;
+    }
+    .dashStat {
+        background: #fff;
+        border-radius: 20px;
+        padding: 2rem;
+        border: 1px solid rgba(93,64,55,0.06);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+        display: flex; align-items: center; gap: 1.5rem;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    .dashStat::after {
+        content: ''; position: absolute;
+        right: -30px; bottom: -30px;
+        width: 100px; height: 100px; border-radius: 50%;
+        background: var(--stat-accent, rgba(93,64,55,0.04));
+    }
+    .dashStat:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(0,0,0,0.07); }
+    .dashStat-icon {
+        width: 56px; height: 56px; border-radius: 16px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.3rem; flex-shrink: 0;
+    }
+    .dashStat h3 {
+        font-family: 'Playfair Display', serif; font-weight: 700;
+        font-size: 2rem; margin: 0; line-height: 1;
+    }
+    .dashStat .statLabel { color: var(--text-muted); font-size: 0.82rem; margin: 0.15rem 0 0; font-weight: 500; }
+
+    /* ═══ PANELS ═══ */
+    .dashPanels { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 2.5rem; }
+    .dashPanel {
+        background: #fff;
+        border-radius: 20px;
+        padding: 1.75rem;
+        border: 1px solid rgba(93,64,55,0.06);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+    }
+    .dashPanel-head {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 1.25rem; padding-bottom: 1rem;
+        border-bottom: 1px solid rgba(93,64,55,0.06);
+    }
+    .dashPanel-head h5 {
+        font-family: 'Playfair Display', serif; font-weight: 700;
+        font-size: 1.1rem; margin: 0;
+        display: flex; align-items: center; gap: 0.6rem;
+    }
+    .dashPanel-head .panelBtn {
+        background: linear-gradient(135deg, #5D4037, #795548);
+        color: #fff; padding: 0.4rem 1rem; border-radius: 50px;
+        font-size: 0.72rem; font-weight: 700;
+        text-decoration: none; display: flex; align-items: center; gap: 5px;
+        transition: all 0.3s; box-shadow: 0 3px 12px rgba(93,64,55,0.2);
+    }
+    .dashPanel-head .panelBtn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(93,64,55,0.3);
+        color: #fff;
+    }
+
+    /* List Items */
+    .dashItem {
+        background: linear-gradient(135deg, rgba(93,64,55,0.02), rgba(212,168,98,0.03));
+        border-radius: 14px; padding: 1rem 1.1rem;
+        margin-bottom: 0.6rem; border: 1px solid rgba(93,64,55,0.04);
+        transition: all 0.25s;
+    }
+    .dashItem:hover { background: rgba(93,64,55,0.05); transform: translateX(3px); }
+    .dashItem:last-child { margin-bottom: 0; }
+    .dashItem .itemTitle { font-weight: 700; font-size: 0.9rem; color: var(--text-main); }
+    .dashItem .itemSub { color: var(--text-muted); font-size: 0.78rem; margin-top: 0.2rem; }
+
+    /* Badges */
+    .dbadge {
+        padding: 0.2rem 0.65rem; border-radius: 50px;
+        font-size: 0.65rem; font-weight: 700; letter-spacing: 0.3px;
+    }
+    .dbadge-green { background: #E8F5E9; color: #2E7D32; }
+    .dbadge-amber { background: #FFF8E1; color: #E65100; }
+    .dbadge-blue { background: #E3F2FD; color: #1565C0; }
+    .dbadge-grey { background: #F5F5F5; color: #616161; }
+
+    /* Empty State */
+    .dashEmpty {
+        text-align: center; padding: 2.5rem 1rem;
+    }
+    .dashEmpty-icon {
+        width: 64px; height: 64px; border-radius: 50%;
+        background: rgba(93,64,55,0.05);
+        display: flex; align-items: center; justify-content: center;
+        margin: 0 auto 1rem;
+    }
+    .dashEmpty-icon i { font-size: 1.5rem; color: rgba(93,64,55,0.2); }
+    .dashEmpty p { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem; }
+
+    /* ═══ SECTION HEADER ═══ */
+    .dashSecHead {
+        display: flex; justify-content: space-between; align-items: flex-end;
+        margin-top: 3.5rem; margin-bottom: 1.75rem;
+    }
+    .dashSecHead .eyebrow {
+        text-transform: uppercase; font-weight: 700; letter-spacing: 3px;
+        font-size: 0.72rem; color: #D4A862; margin-bottom: 0.3rem;
+    }
+    .dashSecHead h3 {
+        font-family: 'Playfair Display', serif; font-weight: 700;
+        font-size: 1.75rem; color: var(--text-main); margin: 0;
+    }
+    .dashSecHead .secBtn {
+        background: linear-gradient(135deg, #5D4037, #795548);
+        color: #fff !important; padding: 0.55rem 1.4rem; border-radius: 50px;
+        font-size: 0.85rem; font-weight: 600;
+        text-decoration: none; display: flex; align-items: center; gap: 6px;
+        transition: all 0.3s; box-shadow: 0 4px 16px rgba(93,64,55,0.2);
+        white-space: nowrap;
+    }
+    .dashSecHead .secBtn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(93,64,55,0.3);
+    }
+
+    /* ═══ MENU CARDS ═══ */
+    .dashMenuGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1.25rem; }
+    .dashMenuCard {
+        background: #fff; border-radius: 18px; overflow: hidden;
+        border: 1px solid rgba(93,64,55,0.06);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .dashMenuCard:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 16px 40px rgba(93,64,55,0.12);
+    }
+    .dashMenuCard .mcImg { height: 190px; overflow: hidden; position: relative; }
+    .dashMenuCard .mcImg img {
+        width: 100%; height: 100%; object-fit: cover;
+        transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .dashMenuCard:hover .mcImg img { transform: scale(1.08); }
+    .dashMenuCard .mcBadge {
+        position: absolute; top: 12px; left: 12px;
+        background: linear-gradient(135deg, #D4A862, #c49652);
+        color: #fff; padding: 0.25rem 0.75rem; border-radius: 50px;
+        font-size: 0.65rem; font-weight: 700;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .dashMenuCard .mcNoImg {
+        height: 190px; display: flex; align-items: center; justify-content: center;
+        background: linear-gradient(135deg, #5D4037 0%, #8D6E63 50%, #D4A862 100%);
+    }
+    .dashMenuCard .mcInfo { padding: 1.15rem 1.25rem; }
+    .dashMenuCard .mcInfo h6 {
+        font-family: 'Playfair Display', serif; font-weight: 700;
+        font-size: 1rem; margin-bottom: 0.2rem;
+    }
+    .dashMenuCard .mcInfo .mcPrice {
+        font-weight: 800; color: var(--primary-color); font-size: 1rem;
+        font-family: 'Playfair Display', serif;
+    }
+    .dashMenuCard .mcInfo .mcCat {
+        display: inline-block; background: rgba(93,64,55,0.06);
+        color: var(--text-muted); padding: 0.18rem 0.65rem;
+        border-radius: 50px; font-size: 0.68rem; font-weight: 600; margin-top: 0.4rem;
+    }
+
+    /* ═══ CATEGORY GRID ═══ */
+    .dashCatGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.25rem; }
+    .dashCatCard {
+        background: #fff; border-radius: 16px; overflow: hidden;
+        border: 1px solid rgba(93,64,55,0.06);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+        transition: all 0.35s ease; text-decoration: none !important; color: inherit !important;
+    }
+    .dashCatCard:hover { transform: translateY(-5px); box-shadow: 0 12px 32px rgba(93,64,55,0.1); }
+    .dashCatCard .ccImg { height: 130px; overflow: hidden; }
+    .dashCatCard .ccImg img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
+    .dashCatCard:hover .ccImg img { transform: scale(1.08); }
+    .dashCatCard .ccInfo { padding: 0.9rem 1.1rem; }
+    .dashCatCard .ccInfo h5 { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 0.95rem; margin-bottom: 0.15rem; }
+    .dashCatCard .ccInfo p { color: var(--text-muted); font-size: 0.75rem; margin: 0; }
+
+    /* ═══ LOCATION ═══ */
+    .dashLocation {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+        border-radius: 24px; overflow: hidden;
+        box-shadow: 0 8px 36px rgba(0,0,0,0.06);
+        border: 1px solid rgba(93,64,55,0.06);
+        margin: 3.5rem 0;
+    }
+    .dashLocInfo {
+        background: #fff; padding: 3rem;
+        display: flex; flex-direction: column; justify-content: center;
+    }
+    .dashLocInfo h3 { font-family: 'Playfair Display', serif; font-size: 2rem; margin-bottom: 2rem; }
+    .dashLocRow { display: flex; align-items: flex-start; gap: 1.15rem; margin-bottom: 1.5rem; }
+    .dashLocRow:last-child { margin-bottom: 0; }
+    .dashLocRow .locIcon {
+        width: 40px; height: 40px; border-radius: 12px;
+        background: rgba(93,64,55,0.06);
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+    }
+    .dashLocRow .locIcon i { color: var(--primary-color); font-size: 0.95rem; }
+    .dashLocRow h6 { font-weight: 700; font-size: 0.88rem; margin-bottom: 0.15rem; }
+    .dashLocRow p { color: var(--text-muted); font-size: 0.85rem; margin: 0; line-height: 1.6; }
+
+    /* ═══ RESPONSIVE ═══ */
+    @media (max-width: 992px) {
+        .dashActions { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 768px) {
+        .dashStats { grid-template-columns: 1fr; }
+        .dashPanels { grid-template-columns: 1fr; }
+        .dashLocation { grid-template-columns: 1fr; }
+        .dashLocInfo { padding: 2rem; }
+        .dashSecHead { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+    }
+    @media (max-width: 480px) {
+        .dashActions { grid-template-columns: 1fr; }
+    }
+</style>
+
+<main>
+    <!-- ═══ CINEMATIC HERO ═══ -->
+    <section class="dashHero">
+        <img src="https://images.unsplash.com/photo-1600093463592-8e36ae95ef56?q=80&w=2070&auto=format&fit=crop" alt="Restaurant Ambiance">
+        <div class="dashHero-content">
+            <div class="dashHero-text">
+                <p class="greeting">Welcome back,</p>
+                <h1>{{ current_user.first_name }} {{ current_user.last_name }}</h1>
+                <p class="tagline">Le Maison de Yelo Lane</p>
             </div>
         </div>
     </section>
 
-    <!-- ═══ QUICK ACTION CARDS ═══ -->
-    <section class="mx-md-4 mt-4 mb-5">
-        <div class="row g-3">
-            <div class="col-md-3 col-6">
-                <a href="{{ url_for('main.reserve') }}" style="text-decoration: none;">
-                    <div style="background: #ffffff; border-radius: 12px; padding: 1.5rem; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.04); border: 1px solid rgba(139,69,19,0.08); transition: all 0.3s;"
-                        onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 25px rgba(139,69,19,0.1)';"
-                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.04)';">
-                        <div
-                            style="width: 50px; height: 50px; border-radius: 12px; background: linear-gradient(135deg, #8B4513, #A0522D); color: white; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 1.2rem;">
-                            <i class="fas fa-calendar-plus"></i>
-                        </div>
-                        <h6 style="font-weight: 700; color: var(--text-main); margin-bottom: 0.25rem;">Reserve a Table
-                        </h6>
-                        <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0;">Book your next visit</p>
-                    </div>
-                </a>
-            </div>
-            <div class="col-md-3 col-6">
-                <a href="{{ url_for('main.menu_page') }}" style="text-decoration: none;">
-                    <div style="background: #ffffff; border-radius: 12px; padding: 1.5rem; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.04); border: 1px solid rgba(139,69,19,0.08); transition: all 0.3s;"
-                        onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 25px rgba(139,69,19,0.1)';"
-                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.04)';">
-                        <div
-                            style="width: 50px; height: 50px; border-radius: 12px; background: linear-gradient(135deg, #d4a862, #c49652); color: white; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 1.2rem;">
-                            <i class="fas fa-book-open"></i>
-                        </div>
-                        <h6 style="font-weight: 700; color: var(--text-main); margin-bottom: 0.25rem;">View Menu</h6>
-                        <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0;">Browse our dishes</p>
-                    </div>
-                </a>
-            </div>
-            <div class="col-md-3 col-6">
-                <a href="{{ url_for('main.about_page') }}" style="text-decoration: none;">
-                    <div style="background: #ffffff; border-radius: 12px; padding: 1.5rem; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.04); border: 1px solid rgba(139,69,19,0.08); transition: all 0.3s;"
-                        onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 25px rgba(139,69,19,0.1)';"
-                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.04)';">
-                        <div
-                            style="width: 50px; height: 50px; border-radius: 12px; background: linear-gradient(135deg, #5D4037, #795548); color: white; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 1.2rem;">
-                            <i class="fas fa-info-circle"></i>
-                        </div>
-                        <h6 style="font-weight: 700; color: var(--text-main); margin-bottom: 0.25rem;">About Us</h6>
-                        <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0;">Our story & mission</p>
-                    </div>
-                </a>
-            </div>
-            <div class="col-md-3 col-6">
-                <a href="{{ url_for('main.reviews_page') }}" style="text-decoration: none;">
-                    <div style="background: #ffffff; border-radius: 12px; padding: 1.5rem; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.04); border: 1px solid rgba(139,69,19,0.08); transition: all 0.3s;"
-                        onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 25px rgba(139,69,19,0.1)';"
-                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.04)';">
-                        <div
-                            style="width: 50px; height: 50px; border-radius: 12px; background: linear-gradient(135deg, #fca311, #e6950f); color: white; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 1.2rem;">
-                            <i class="fas fa-star"></i>
-                        </div>
-                        <h6 style="font-weight: 700; color: var(--text-main); margin-bottom: 0.25rem;">Reviews</h6>
-                        <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0;">Guest testimonials</p>
-                    </div>
-                </a>
-            </div>
-        </div>
-    </section>
-
-    <!-- ═══ YOUR STATS ═══ -->
-    <section class="mx-md-4 mb-5">
-        <div class="row g-3">
-            <div class="col-md-4">
-                <div
-                    style="background: #ffffff; border-radius: 12px; padding: 1.75rem; box-shadow: 0 4px 15px rgba(0,0,0,0.04); border: 1px solid rgba(139,69,19,0.08);">
-                    <div class="d-flex align-items-center">
-                        <div
-                            style="width: 55px; height: 55px; border-radius: 50%; background: rgba(139,69,19,0.1); display: flex; align-items: center; justify-content: center; margin-right: 1rem;">
-                            <i class="fas fa-calendar-check"
-                                style="font-size: 1.3rem; color: var(--primary-color);"></i>
-                        </div>
-                        <div>
-                            <h3 style="font-weight: 800; color: var(--text-main); margin: 0; font-size: 1.75rem;">{{
-                                upcoming|length }}</h3>
-                            <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Upcoming Reservations
-                            </p>
-                        </div>
-                    </div>
+    <!-- ═══ QUICK ACTIONS (elevated above hero) ═══ -->
+    <section class="dashWrap">
+        <div class="dashActions">
+            <a href="{{ url_for('main.reserve') }}" class="dashAction" style="--accent-start: #5D4037; --accent-end: #8D6E63;">
+                <div class="dashAction-icon" style="background: linear-gradient(135deg, #5D4037, #795548);">
+                    <i class="fas fa-calendar-plus"></i>
                 </div>
-            </div>
-            <div class="col-md-4">
-                <div
-                    style="background: #ffffff; border-radius: 12px; padding: 1.75rem; box-shadow: 0 4px 15px rgba(0,0,0,0.04); border: 1px solid rgba(139,69,19,0.08);">
-                    <div class="d-flex align-items-center">
-                        <div
-                            style="width: 55px; height: 55px; border-radius: 50%; background: rgba(56,142,60,0.1); display: flex; align-items: center; justify-content: center; margin-right: 1rem;">
-                            <i class="fas fa-check-circle" style="font-size: 1.3rem; color: #388e3c;"></i>
-                        </div>
-                        <div>
-                            <h3 style="font-weight: 800; color: var(--text-main); margin: 0; font-size: 1.75rem;">{{
-                                total_visits }}</h3>
-                            <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Completed Visits</p>
-                        </div>
-                    </div>
+                <h6>Reserve a Table</h6>
+                <p>Book your next visit</p>
+            </a>
+            <a href="{{ url_for('main.menu_page') }}" class="dashAction" style="--accent-start: #D4A862; --accent-end: #B08968;">
+                <div class="dashAction-icon" style="background: linear-gradient(135deg, #D4A862, #c49652);">
+                    <i class="fas fa-book-open"></i>
                 </div>
-            </div>
-            <div class="col-md-4">
-                <div
-                    style="background: #ffffff; border-radius: 12px; padding: 1.75rem; box-shadow: 0 4px 15px rgba(0,0,0,0.04); border: 1px solid rgba(139,69,19,0.08);">
-                    <div class="d-flex align-items-center">
-                        <div
-                            style="width: 55px; height: 55px; border-radius: 50%; background: rgba(212,168,98,0.15); display: flex; align-items: center; justify-content: center; margin-right: 1rem;">
-                            <i class="fas fa-trophy" style="font-size: 1.3rem; color: #d4a862;"></i>
-                        </div>
-                        <div>
-                            <h3 style="font-weight: 800; color: var(--text-main); margin: 0; font-size: 1.75rem;">
-                                {% if total_visits >= 10 %}Gold
-                                {% elif total_visits >= 5 %}Silver
-                                {% elif total_visits >= 1 %}Bronze
-                                {% else %}New
-                                {% endif %}
-                            </h3>
-                            <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Loyalty Status</p>
-                        </div>
-                    </div>
+                <h6>View Menu</h6>
+                <p>Browse our dishes</p>
+            </a>
+            <a href="{{ url_for('main.about_page') }}" class="dashAction" style="--accent-start: #8D6E63; --accent-end: #A1887F;">
+                <div class="dashAction-icon" style="background: linear-gradient(135deg, #8D6E63, #A1887F);">
+                    <i class="fas fa-info-circle"></i>
                 </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ═══ COMPACT: UPCOMING RESERVATIONS + RECENT ORDERS (side by side) ═══ -->
-    <section class="mx-md-4 mb-5">
-        <div class="row g-3">
-            <!-- UPCOMING RESERVATIONS (left) -->
-            <div class="col-lg-6">
-                <div
-                    style="background: #ffffff; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.04); border: 1px solid rgba(139,69,19,0.08); height: 100%;">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5
-                            style="font-family: 'Georgia', serif; font-weight: bold; color: var(--text-main); margin: 0; font-size: 1.1rem;">
-                            <i class="fas fa-clock me-2" style="color: var(--primary-color);"></i>Upcoming Reservations
-                        </h5>
-                        <a href="{{ url_for('main.reserve') }}" class="btn btn-sm rounded-pill px-3 fw-bold"
-                            style="background-color: var(--primary-color); color: white; border: none; font-size: 0.75rem;">
-                            <i class="fas fa-plus me-1"></i> New
-                        </a>
-                    </div>
-
-                    {% if upcoming %}
-                    <div class="d-flex flex-column gap-2">
-                        {% for res in upcoming %}
-                        <div
-                            style="background: rgba(139,69,19,0.03); border-radius: 10px; padding: 0.85rem 1rem; border: 1px solid rgba(139,69,19,0.06);">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <span style="font-weight: 700; color: var(--text-main); font-size: 0.9rem;">{{
-                                        res.date.strftime('%b %d, %Y') }}</span>
-                                    <span class="text-muted mx-1">·</span>
-                                    <span style="color: var(--text-muted); font-size: 0.85rem;">{{
-                                        res.time.strftime('%I:%M %p') }}</span>
-                                </div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <span style="font-size: 0.75rem; color: var(--text-muted);"><i
-                                            class="fas fa-users me-1"></i>{{ res.guest_count }}</span>
-                                    {% if res.status == 'CONFIRMED' %}
-                                    <span
-                                        style="background: rgba(56,142,60,0.1); color: #388e3c; padding: 0.15rem 0.5rem; border-radius: 20px; font-size: 0.7rem; font-weight: 600;">
-                                        <i class="fas fa-check-circle me-1"></i>Confirmed
-                                    </span>
-                                    {% elif res.status == 'PENDING' %}
-                                    <span
-                                        style="background: rgba(245,124,0,0.1); color: #f57c00; padding: 0.15rem 0.5rem; border-radius: 20px; font-size: 0.7rem; font-weight: 600;">
-                                        <i class="fas fa-hourglass-half me-1"></i>Pending
-                                    </span>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            {% if res.occasion %}
-                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">{{
-                                res.occasion }}</div>
-                            {% endif %}
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <div class="text-center py-3">
-                        <i class="far fa-calendar"
-                            style="font-size: 2rem; color: rgba(139,69,19,0.15); margin-bottom: 0.5rem;"></i>
-                        <p class="text-muted mb-2" style="font-size: 0.85rem;">No upcoming reservations</p>
-                        <a href="{{ url_for('main.reserve') }}" class="btn btn-sm rounded-pill px-3 fw-bold"
-                            style="background-color: var(--primary-color); color: white; border: none; font-size: 0.8rem;">Book
-                            a Table</a>
-                    </div>
-                    {% endif %}
+                <h6>About Us</h6>
+                <p>Our story & mission</p>
+            </a>
+            <a href="{{ url_for('main.reviews_page') }}" class="dashAction" style="--accent-start: #B08968; --accent-end: #D4A862;">
+                <div class="dashAction-icon" style="background: linear-gradient(135deg, #B08968, #D4A862);">
+                    <i class="fas fa-star"></i>
                 </div>
-            </div>
-
-            <!-- RECENT ORDERS (right) -->
-            <div class="col-lg-6">
-                <div
-                    style="background: #ffffff; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.04); border: 1px solid rgba(139,69,19,0.08); height: 100%;">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5
-                            style="font-family: 'Georgia', serif; font-weight: bold; color: var(--text-main); margin: 0; font-size: 1.1rem;">
-                            <i class="fas fa-shopping-bag me-2" style="color: var(--primary-color);"></i>Recent Orders
-                        </h5>
-                        <a href="{{ url_for('main.my_orders') }}" class="btn btn-sm rounded-pill px-3 fw-bold"
-                            style="background-color: var(--primary-color); color: white; border: none; font-size: 0.75rem;">
-                            View All <i class="fas fa-arrow-right ms-1"></i>
-                        </a>
-                    </div>
-
-                    {% if recent_orders %}
-                    <div class="d-flex flex-column gap-2">
-                        {% for order in recent_orders[:3] %}
-                        <div
-                            style="background: rgba(139,69,19,0.03); border-radius: 10px; padding: 0.85rem 1rem; border: 1px solid rgba(139,69,19,0.06);">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <span style="font-weight: 700; color: var(--text-main); font-size: 0.9rem;">Order
-                                        #{{ order.id }}</span>
-                                    <span class="text-muted mx-1">·</span>
-                                    <span style="color: var(--text-muted); font-size: 0.8rem;">{{
-                                        order.created_at.strftime('%b %d') }}</span>
-                                </div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <span style="font-weight: 700; color: var(--primary-color); font-size: 0.9rem;">₱{{
-                                        "%.2f"|format(order.total_amount) }}</span>
-                                    {% if order.status == 'COMPLETED' %}
-                                    <span class="badge bg-success rounded-pill" style="font-size: 0.65rem;">Done</span>
-                                    {% elif order.status == 'PENDING' %}
-                                    <span class="badge bg-warning text-dark rounded-pill"
-                                        style="font-size: 0.65rem;">Pending</span>
-                                    {% elif order.status == 'PREPARING' %}
-                                    <span class="badge bg-info text-dark rounded-pill"
-                                        style="font-size: 0.65rem;">Preparing</span>
-                                    {% else %}
-                                    <span class="badge bg-secondary rounded-pill" style="font-size: 0.65rem;">{{
-                                        order.status }}</span>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.3rem;">
-                                {{ order.items|length }} item{{ 's' if order.items|length > 1 else '' }}
-                                {% if order.items %}
-                                — {{ order.items[0].menu_item.name }}{% if order.items|length > 1 %}, +{{
-                                order.items|length - 1 }} more{% endif %}
-                                {% endif %}
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <div class="text-center py-3">
-                        <i class="fas fa-shopping-bag"
-                            style="font-size: 2rem; color: rgba(139,69,19,0.15); margin-bottom: 0.5rem;"></i>
-                        <p class="text-muted mb-2" style="font-size: 0.85rem;">No orders yet</p>
-                        <a href="{{ url_for('main.menu_page') }}" class="btn btn-sm rounded-pill px-3 fw-bold"
-                            style="background-color: var(--primary-color); color: white; border: none; font-size: 0.8rem;">Browse
-                            Menu</a>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ═══ BESTSELLERS / TODAY'S SPECIALS ═══ -->
-    <section class="mx-md-4 mb-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <p class="text-uppercase fw-bold mb-0"
-                    style="color: var(--primary-color); letter-spacing: 2px; font-size: 0.8rem;">🔥 Bestsellers</p>
-                <h3 style="font-family: 'Georgia', serif; font-weight: bold; color: var(--text-main);">Today's Specials
-                </h3>
-            </div>
-            <a href="{{ url_for('main.menu_page') }}" class="btn text-white rounded-pill px-4 fw-bold"
-                style="background-color: var(--primary-color); border: none;">
-                Full Menu <i class="fas fa-arrow-right ms-1"></i>
+                <h6>Reviews</h6>
+                <p>Guest testimonials</p>
             </a>
         </div>
-        <div class="row g-3">
-            {% for item in bestsellers %}
-            <div class="col-md-4 col-6">
-                <div style="background: #ffffff; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.04); border: 1px solid rgba(139,69,19,0.06); transition: all 0.3s;"
-                    onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 25px rgba(139,69,19,0.1)';"
-                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.04)';">
-                    {% if item.image_url %}
-                    <div style="height: 170px; overflow: hidden; position: relative;">
-                        <img src="{{ item.image_url }}"
-                            style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s;"
-                            onmouseover="this.style.transform='scale(1.05)';"
-                            onmouseout="this.style.transform='scale(1)';">
-                        <div style="position: absolute; top: 8px; left: 8px;">
-                            <span
-                                style="background: linear-gradient(135deg, #d4a862, #c49652); color: #fff; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.65rem; font-weight: 700;">
-                                <i class="fas fa-fire me-1"></i>Popular
-                            </span>
+    </section>
+
+    <!-- ═══ STATS ═══ -->
+    <section class="dashWrap">
+        <div class="dashStats">
+            <div class="dashStat" style="--stat-accent: rgba(93,64,55,0.06);">
+                <div class="dashStat-icon" style="background: linear-gradient(135deg, rgba(93,64,55,0.08), rgba(93,64,55,0.15)); color: var(--primary-color);">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <div>
+                    <h3>{{ upcoming|length }}</h3>
+                    <p class="statLabel">Upcoming Reservations</p>
+                </div>
+            </div>
+            <div class="dashStat" style="--stat-accent: rgba(96,108,56,0.06);">
+                <div class="dashStat-icon" style="background: linear-gradient(135deg, rgba(96,108,56,0.08), rgba(96,108,56,0.15)); color: #606C38;">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div>
+                    <h3>{{ total_visits }}</h3>
+                    <p class="statLabel">Completed Visits</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ RESERVATIONS + ORDERS ═══ -->
+    <section class="dashWrap">
+        <div class="dashPanels">
+            <!-- Upcoming Reservations -->
+            <div class="dashPanel">
+                <div class="dashPanel-head">
+                    <h5><i class="fas fa-clock" style="color: var(--primary-color); font-size: 0.95rem;"></i> Upcoming Reservations</h5>
+                    <a href="{{ url_for('main.reserve') }}" class="panelBtn"><i class="fas fa-plus"></i> New</a>
+                </div>
+                {% if upcoming %}
+                {% for res in upcoming %}
+                <div class="dashItem">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="itemTitle">{{ res.date.strftime('%b %d, %Y') }}</span>
+                            <span style="color: var(--text-muted); margin: 0 6px;">·</span>
+                            <span style="color: var(--text-muted); font-size: 0.85rem;">{{ res.time.strftime('%I:%M %p') }}</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span style="font-size: 0.75rem; color: var(--text-muted);"><i class="fas fa-users me-1"></i>{{ res.guest_count }}</span>
+                            {% if res.status == 'CONFIRMED' %}
+                            <span class="dbadge dbadge-green"><i class="fas fa-check-circle me-1"></i>Confirmed</span>
+                            {% elif res.status == 'PENDING' %}
+                            <span class="dbadge dbadge-amber"><i class="fas fa-hourglass-half me-1"></i>Pending</span>
+                            {% endif %}
                         </div>
                     </div>
-                    {% else %}
-                    <div
-                        style="height: 170px; background: linear-gradient(135deg, #8B4513, #A0522D); display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-utensils" style="font-size: 2.5rem; color: rgba(255,255,255,0.3);"></i>
-                    </div>
+                    {% if res.occasion %}
+                    <div class="itemSub">{{ res.occasion }}</div>
                     {% endif %}
-                    <div style="padding: 1.15rem;">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <h6
-                                style="font-family: 'Georgia', serif; font-weight: 700; color: var(--text-main); margin-bottom: 0.3rem; font-size: 0.95rem;">
-                                {{ item.name }}</h6>
-                            <span
-                                style="font-weight: 800; color: var(--primary-color); font-size: 0.95rem; white-space: nowrap;">₱{{
-                                item.price }}</span>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="dashEmpty">
+                    <div class="dashEmpty-icon"><i class="far fa-calendar"></i></div>
+                    <p>No upcoming reservations</p>
+                    <a href="{{ url_for('main.reserve') }}" class="panelBtn" style="display: inline-flex;">Book a Table</a>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Recent Orders -->
+            <div class="dashPanel">
+                <div class="dashPanel-head">
+                    <h5><i class="fas fa-shopping-bag" style="color: var(--primary-color); font-size: 0.95rem;"></i> Recent Orders</h5>
+                    <a href="{{ url_for('main.my_orders') }}" class="panelBtn">View All <i class="fas fa-arrow-right ms-1"></i></a>
+                </div>
+                {% if recent_orders %}
+                {% for order in recent_orders[:3] %}
+                <div class="dashItem">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="itemTitle">Order #{{ order.id }}</span>
+                            <span style="color: var(--text-muted); margin: 0 6px;">·</span>
+                            <span style="color: var(--text-muted); font-size: 0.8rem;">{{ order.created_at.strftime('%b %d') }}</span>
                         </div>
-                        <span
-                            style="background: rgba(139,69,19,0.06); color: var(--text-muted); padding: 0.15rem 0.6rem; border-radius: 20px; font-size: 0.7rem; font-weight: 600;">{{
-                            item.category }}</span>
+                        <div class="d-flex align-items-center gap-2">
+                            <span style="font-weight: 700; color: var(--primary-color); font-size: 0.9rem; font-family:'Playfair Display',serif;">₱{{ "%.2f"|format(order.total_amount) }}</span>
+                            {% if order.status == 'COMPLETED' %}
+                            <span class="dbadge dbadge-green">Done</span>
+                            {% elif order.status == 'PENDING' %}
+                            <span class="dbadge dbadge-amber">Pending</span>
+                            {% elif order.status == 'PREPARING' %}
+                            <span class="dbadge dbadge-blue">Preparing</span>
+                            {% else %}
+                            <span class="dbadge dbadge-grey">{{ order.status }}</span>
+                            {% endif %}
+                        </div>
                     </div>
+                    <div class="itemSub">
+                        {{ order.items|length }} item{{ 's' if order.items|length > 1 else '' }}
+                        {% if order.items %} — {{ order.items[0].menu_item.name }}{% if order.items|length > 1 %}, +{{ order.items|length - 1 }} more{% endif %}{% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="dashEmpty">
+                    <div class="dashEmpty-icon"><i class="fas fa-shopping-bag"></i></div>
+                    <p>No orders yet</p>
+                    <a href="{{ url_for('main.menu_page') }}" class="panelBtn" style="display: inline-flex;">Browse Menu</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ BESTSELLERS ═══ -->
+    <section class="dashWrap">
+        <div class="dashSecHead">
+            <div>
+                <p class="eyebrow">🔥 Bestsellers</p>
+                <h3>Today's Specials</h3>
+            </div>
+            <a href="{{ url_for('main.menu_page') }}" class="secBtn">Full Menu <i class="fas fa-arrow-right"></i></a>
+        </div>
+        <div class="dashMenuGrid">
+            {% for item in bestsellers %}
+            <div class="dashMenuCard">
+                {% if item.image_url %}
+                <div class="mcImg">
+                    <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                    <span class="mcBadge"><i class="fas fa-fire me-1"></i>Popular</span>
+                </div>
+                {% else %}
+                <div class="mcNoImg">
+                    <i class="fas fa-utensils" style="font-size: 2.5rem; color: rgba(255,255,255,0.2);"></i>
+                </div>
+                {% endif %}
+                <div class="mcInfo">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <h6>{{ item.name }}</h6>
+                        <span class="mcPrice">₱{{ item.price }}</span>
+                    </div>
+                    <span class="mcCat">{{ item.category }}</span>
                 </div>
             </div>
             {% endfor %}
@@ -350,35 +520,28 @@
 
     <!-- ═══ PAST VISITS ═══ -->
     {% if past %}
-    <section class="mx-md-4 mb-5">
-        <div
-            style="background: #ffffff; border-radius: 12px; padding: 2rem; box-shadow: 0 4px 15px rgba(0,0,0,0.04); border: 1px solid rgba(139,69,19,0.08);">
-            <h3
-                style="font-family: 'Georgia', serif; font-weight: bold; color: var(--text-main); margin-bottom: 1.25rem;">
-                <i class="fas fa-history me-2" style="color: var(--text-muted);"></i>Recent History
-            </h3>
+    <section class="dashWrap" style="margin-top: 3rem;">
+        <div class="dashPanel">
+            <div class="dashPanel-head">
+                <h5><i class="fas fa-history" style="color: var(--text-muted); font-size: 0.95rem;"></i> Recent History</h5>
+            </div>
             <div class="row g-3">
                 {% for res in past %}
                 <div class="col-md-4">
-                    <div
-                        style="background: rgba(139,69,19,0.03); border-radius: 10px; padding: 1.25rem; border: 1px solid rgba(139,69,19,0.06);">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <span style="font-weight: 700; color: var(--text-main);">{{ res.date.strftime('%b %d, %Y')
-                                }}</span>
+                    <div class="dashItem">
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <span class="itemTitle">{{ res.date.strftime('%b %d, %Y') }}</span>
                             {% if res.status == 'COMPLETED' %}
-                            <span
-                                style="background: rgba(56,142,60,0.1); color: #388e3c; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.7rem; font-weight: 600;">Completed</span>
+                            <span class="dbadge dbadge-green">Completed</span>
                             {% else %}
-                            <span
-                                style="background: rgba(211,47,47,0.1); color: #d32f2f; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.7rem; font-weight: 600;">{{
-                                res.status }}</span>
+                            <span class="dbadge" style="background: rgba(150,75,75,0.1); color: #964B4B;">{{ res.status }}</span>
                             {% endif %}
                         </div>
-                        <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">
+                        <div class="itemSub">
                             <i class="fas fa-clock me-1"></i> {{ res.time.strftime('%I:%M %p') }} ·
                             <i class="fas fa-users me-1"></i> {{ res.guest_count }} guests
                             {% if res.occasion %} · {{ res.occasion }}{% endif %}
-                        </p>
+                        </div>
                     </div>
                 </div>
                 {% endfor %}
@@ -387,149 +550,99 @@
     </section>
     {% endif %}
 
-    <!-- ═══ FEATURED MENU ITEMS ═══ -->
-    <section class="mx-md-4 mb-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
+    <!-- ═══ FEATURED PICKS ═══ -->
+    <section class="dashWrap">
+        <div class="dashSecHead">
             <div>
-                <p class="text-uppercase fw-bold mb-0"
-                    style="color: var(--primary-color); letter-spacing: 2px; font-size: 0.8rem;">Curated For You</p>
-                <h3 style="font-family: 'Georgia', serif; font-weight: bold; color: var(--text-main);">Today's Featured
-                    Picks</h3>
+                <p class="eyebrow">Curated For You</p>
+                <h3>Today's Featured Picks</h3>
             </div>
-            <a href="{{ url_for('main.menu_page') }}" class="btn text-white rounded-pill px-4 fw-bold"
-                style="background-color: var(--primary-color); border: none;">
-                Full Menu <i class="fas fa-arrow-right ms-1"></i>
-            </a>
+            <a href="{{ url_for('main.menu_page') }}" class="secBtn">Full Menu <i class="fas fa-arrow-right"></i></a>
         </div>
-        <div class="row g-3">
+        <div class="dashMenuGrid">
             {% for item in featured %}
-            <div class="col-md-4 col-6">
-                <div style="background: #ffffff; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.04); border: 1px solid rgba(139,69,19,0.06); transition: all 0.3s;"
-                    onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 25px rgba(139,69,19,0.1)';"
-                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.04)';">
-                    {% if item.image_url %}
-                    <div style="height: 170px; overflow: hidden;">
-                        <img src="{{ item.image_url }}"
-                            style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s;"
-                            onmouseover="this.style.transform='scale(1.05)';"
-                            onmouseout="this.style.transform='scale(1)';">
+            <div class="dashMenuCard">
+                {% if item.image_url %}
+                <div class="mcImg">
+                    <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                </div>
+                {% else %}
+                <div class="mcNoImg">
+                    <i class="fas fa-utensils" style="font-size: 2.5rem; color: rgba(255,255,255,0.2);"></i>
+                </div>
+                {% endif %}
+                <div class="mcInfo">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <h6>{{ item.name }}</h6>
+                        <span class="mcPrice">₱{{ item.price }}</span>
                     </div>
-                    {% else %}
-                    <div
-                        style="height: 170px; background: linear-gradient(135deg, #8B4513, #A0522D); display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-utensils" style="font-size: 2.5rem; color: rgba(255,255,255,0.3);"></i>
-                    </div>
-                    {% endif %}
-                    <div style="padding: 1.15rem;">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <h6
-                                style="font-family: 'Georgia', serif; font-weight: 700; color: var(--text-main); margin-bottom: 0.3rem; font-size: 0.95rem;">
-                                {{ item.name }}</h6>
-                            <span
-                                style="font-weight: 800; color: var(--primary-color); font-size: 0.95rem; white-space: nowrap;">₱{{
-                                item.price }}</span>
-                        </div>
-                        <span
-                            style="background: rgba(139,69,19,0.06); color: var(--text-muted); padding: 0.15rem 0.6rem; border-radius: 20px; font-size: 0.7rem; font-weight: 600;">{{
-                            item.category }}</span>
-                    </div>
+                    <span class="mcCat">{{ item.category }}</span>
                 </div>
             </div>
             {% endfor %}
         </div>
     </section>
 
-    <!-- ═══ MENU CATEGORIES ═══ -->
-    <section class="mx-md-4 mb-5">
-        <div class="text-center mb-4">
-            <p class="text-uppercase fw-bold mb-1"
-                style="color: var(--primary-color); letter-spacing: 3px; font-size: 0.8rem;">Browse By</p>
-            <h3 style="font-family: 'Georgia', serif; font-size: 2rem; color: var(--text-main); font-weight: bold;">Menu
-                Categories</h3>
+    <!-- ═══ CATEGORIES ═══ -->
+    <section class="dashWrap">
+        <div class="dashSecHead">
+            <div>
+                <p class="eyebrow">Browse By</p>
+                <h3>Menu Categories</h3>
+            </div>
         </div>
-        <div
-            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: stretch;">
+        <div class="dashCatGrid">
             {% for cat in categories %}
-            <a href="{{ url_for('main.menu_page') }}"
-                style="text-decoration: none; color: inherit; display: block; height: 100%;">
-                <div style="background: #ffffff; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.04); border: 1px solid rgba(139,69,19,0.06); transition: all 0.3s; height: 100%; display: flex; flex-direction: column;"
-                    onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 25px rgba(139,69,19,0.1)';"
-                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.04)';">
-                    {% if cat.sample_image %}
-                    <div style="height: 120px; overflow: hidden; flex-shrink: 0;">
-                        <img src="{{ cat.sample_image }}"
-                            style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s;"
-                            onmouseover="this.style.transform='scale(1.06)';"
-                            onmouseout="this.style.transform='scale(1)';">
-                    </div>
-                    {% else %}
-                    <div
-                        style="height: 120px; background: linear-gradient(135deg, #8B4513, #A0522D); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                        <i class="fas fa-utensils" style="font-size: 2rem; color: rgba(255,255,255,0.3);"></i>
-                    </div>
-                    {% endif %}
-                    <div style="padding: 1rem 1.15rem; flex-grow: 1; display: flex; flex-direction: column;">
-                        <h5
-                            style="font-family: 'Georgia', serif; font-weight: 700; font-size: 1rem; color: var(--text-main); margin-bottom: 0.15rem;">
-                            {{ cat.category }}</h5>
-                        <p style="color: var(--text-muted); font-size: 0.75rem; margin: 0; margin-top: auto;">{{
-                            cat.count }} item{{ 's'
-                            if cat.count > 1 else '' }}</p>
-                    </div>
+            <a href="{{ url_for('main.menu_page') }}" class="dashCatCard">
+                {% if cat.sample_image %}
+                <div class="ccImg"><img src="{{ cat.sample_image }}" alt="{{ cat.category }}"></div>
+                {% else %}
+                <div class="ccImg" style="background: linear-gradient(135deg, #5D4037, #8D6E63, #D4A862); display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-utensils" style="font-size: 2rem; color: rgba(255,255,255,0.2);"></i>
+                </div>
+                {% endif %}
+                <div class="ccInfo">
+                    <h5>{{ cat.category }}</h5>
+                    <p>{{ cat.count }} item{{ 's' if cat.count > 1 else '' }}</p>
                 </div>
             </a>
             {% endfor %}
         </div>
     </section>
 
-    <!-- ═══ LOCATION & HOURS ═══ -->
-    <section class="mx-md-4 mb-5">
-        <div class="row g-0 rounded-4 overflow-hidden"
-            style="box-shadow: 0 10px 30px rgba(0,0,0,0.06); border: 1px solid rgba(139,69,19,0.08);">
-            <div class="col-md-6 d-flex flex-column justify-content-center p-5" style="background-color: #ffffff;">
-                <h3 class="mb-4" style="font-family: 'Georgia', serif; font-size: 2rem; color: var(--text-main);">Visit
-                    Us</h3>
-                <div class="d-flex align-items-start mb-3">
-                    <i class="fas fa-map-marker-alt mt-1 me-3"
-                        style="font-size: 1.2rem; color: var(--primary-color);"></i>
+    <!-- ═══ LOCATION ═══ -->
+    <section class="dashWrap">
+        <div class="dashLocation">
+            <div class="dashLocInfo">
+                <h3>Visit Us</h3>
+                <div class="dashLocRow">
+                    <div class="locIcon"><i class="fas fa-map-marker-alt"></i></div>
                     <div>
-                        <h6
-                            style="font-weight: bold; margin-bottom: 0.15rem; color: var(--text-main); font-size: 0.9rem;">
-                            Location</h6>
-                        <p style="color: var(--text-muted); margin: 0; font-size: 0.85rem;">Yelo Lane, General Taino
-                            Street<br>Pagsanjan, Laguna, Philippines</p>
+                        <h6>Location</h6>
+                        <p>Yelo Lane, General Taino Street<br>Pagsanjan, Laguna, Philippines</p>
                     </div>
                 </div>
-                <div class="d-flex align-items-start mb-3">
-                    <i class="fas fa-clock mt-1 me-3" style="font-size: 1.2rem; color: var(--primary-color);"></i>
+                <div class="dashLocRow">
+                    <div class="locIcon"><i class="fas fa-clock"></i></div>
                     <div>
-                        <h6
-                            style="font-weight: bold; margin-bottom: 0.15rem; color: var(--text-main); font-size: 0.9rem;">
-                            Hours</h6>
-                        <p style="color: var(--text-muted); margin: 0; font-size: 0.85rem;">Mon - Sun · 8:00 AM - 10:00
-                            PM</p>
+                        <h6>Hours</h6>
+                        <p>Mon - Sun · 8:00 AM - 10:00 PM</p>
                     </div>
                 </div>
-                <div class="d-flex align-items-start">
-                    <i class="fas fa-phone mt-1 me-3" style="font-size: 1.2rem; color: var(--primary-color);"></i>
+                <div class="dashLocRow">
+                    <div class="locIcon"><i class="fas fa-phone"></i></div>
                     <div>
-                        <h6
-                            style="font-weight: bold; margin-bottom: 0.15rem; color: var(--text-main); font-size: 0.9rem;">
-                            Contact</h6>
-                        <p style="color: var(--text-muted); margin: 0; font-size: 0.85rem;">+63 (912) 345-6789 ·
-                            hello@lemaison.com</p>
+                        <h6>Contact</h6>
+                        <p>+63 (912) 345-6789 · hello@lemaison.com</p>
                     </div>
                 </div>
             </div>
-            <div class="col-md-6 p-0" style="min-height: 350px;">
-                <iframe
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15467.433431776097!2d121.44287413955078!3d14.261899999999998!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3397e29b4e723529%3A0xc6cb12b545f4add7!2sPagsanjan%2C%20Laguna!5e0!3m2!1sen!2sph!4v1700000000000!5m2!1sen!2sph"
+            <div style="min-height: 380px;">
+                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15467.433431776097!2d121.44287413955078!3d14.261899999999998!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3397e29b4e723529%3A0xc6cb12b545f4add7!2sPagsanjan%2C%20Laguna!5e0!3m2!1sen!2sph!4v1700000000000!5m2!1sen!2sph"
                     width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"
-                    referrerpolicy="no-referrer-when-downgrade">
-                </iframe>
+                    referrerpolicy="no-referrer-when-downgrade"></iframe>
             </div>
         </div>
     </section>
-
 </main>
 {% endblock %}

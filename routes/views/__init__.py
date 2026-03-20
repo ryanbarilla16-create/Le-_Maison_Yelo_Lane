@@ -73,9 +73,21 @@ def my_orders():
 
     all_orders = Order.query.filter_by(user_id=current_user.id).order_by(Order.created_at.desc()).all()
     
-    pending_count = sum(1 for o in all_orders if o.status == 'PENDING')
-    preparing_count = sum(1 for o in all_orders if o.status == 'PREPARING')
-    completed_count = sum(1 for o in all_orders if o.status == 'COMPLETED')
+    for o in all_orders:
+        if o.dining_option == 'DELIVERY' and o.status == 'COMPLETED' and o.delivery_status != 'DELIVERED':
+            if o.delivery_status in ['WAITING', 'PICKED_UP']:
+                o.overall_status = 'PREPARING' # still in progress
+            else:
+                o.overall_status = o.delivery_status # ON_THE_WAY
+        elif o.dining_option == 'DELIVERY' and o.delivery_status == 'DELIVERED':
+             o.overall_status = 'COMPLETED'
+        else:
+            o.overall_status = o.status
+
+    pending_count = sum(1 for o in all_orders if o.overall_status == 'PENDING')
+    preparing_count = sum(1 for o in all_orders if o.overall_status in ['PREPARING', 'WAITING', 'PICKED_UP'])
+    on_the_way_count = sum(1 for o in all_orders if o.overall_status == 'ON_THE_WAY')
+    completed_count = sum(1 for o in all_orders if o.overall_status == 'COMPLETED')
     
     user_reviews = Review.query.filter_by(user_id=current_user.id).all()
     user_reviews_by_order = {r.order_id: r for r in user_reviews if r.order_id}
@@ -84,6 +96,7 @@ def my_orders():
         all_orders=all_orders,
         pending_count=pending_count,
         preparing_count=preparing_count,
+        on_the_way_count=on_the_way_count,
         completed_count=completed_count,
         user_reviews_by_order=user_reviews_by_order
     )

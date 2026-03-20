@@ -1,125 +1,126 @@
 {% extends "layouts/base.html" %}
 
-{% block title %}Edit Profile{% endblock %}
+{% block title %}Edit Profile — Le Maison{% endblock %}
 
 {% block content %}
-<div class="row w-100 justify-content-center m-0 p-3"
-    style="margin-top: 5rem !important; margin-bottom: 3rem !important;">
-    <div class="col-12 col-md-10 col-lg-8 col-xl-7 col-xxl-6 p-0">
-        <div class="card shadow-lg border-0"
-            style="border-radius: 24px; background-color: rgba(255, 255, 255, 0.95); overflow: hidden;">
-            <div class="card-header text-center border-0"
-                style="background: linear-gradient(to right, rgba(139, 69, 19, 0.05), rgba(210, 105, 30, 0.05)); padding: 3rem 2rem 1.5rem;">
-                <h2 class="fw-bold mb-2"
-                    style="font-family: 'Georgia', serif; color: var(--primary-color); font-size: 2.25rem;">Edit Profile
-                </h2>
-                <p class="text-muted" style="font-size: 1.05rem;">Keep your personal details up to date.</p>
-            </div>
+<style>
+    .profPage { max-width: 640px; margin: 6rem auto 3rem; padding: 0 1.5rem; }
+    .profCard { background: #fff; border-radius: 24px; border: 1px solid var(--border-color); box-shadow: 0 8px 32px rgba(0,0,0,0.05); overflow: hidden; }
+    .profHeader { background: linear-gradient(135deg, rgba(93,64,55,0.04), rgba(212,168,98,0.06)); padding: 2.5rem 2rem 1.5rem; text-align: center; }
+    .profHeader h2 { font-family: 'Playfair Display', 'Georgia', serif; font-weight: 700; font-size: 1.8rem; margin-bottom: 0.4rem; color: var(--primary-color); }
+    .profHeader p { color: var(--text-muted); font-size: 0.9rem; margin: 0; }
 
-            <div class="card-body p-4 p-md-5 pt-3">
-                <form id="profileForm" action="{{ url_for('main.profile') }}" method="POST"
-                    enctype="multipart/form-data" onsubmit="return validateProfile()">
+    .profBody { padding: 1.5rem 2.5rem 2.5rem; }
+    .profAvatar { text-align: center; margin-bottom: 2rem; }
+    .profAvatar .avatarWrap { position: relative; display: inline-block; }
+    .profAvatar img, .profAvatar .avatarFallback { width: 110px; height: 110px; border-radius: 50%; object-fit: cover; border: 4px solid #fff; box-shadow: 0 4px 16px rgba(93,64,55,0.12); }
+    .profAvatar .avatarFallback { background: linear-gradient(135deg, #5D4037, #8D6E63); color: white; display: flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-size: 2.5rem; font-weight: 700; }
+    .profAvatar .camBtn { position: absolute; bottom: 2px; right: 2px; background: #fff; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.12); cursor: pointer; border: 2px solid rgba(93,64,55,0.08); transition: all 0.3s; z-index: 5; }
+    .profAvatar .camBtn:hover { background: var(--primary-color); }
+    .profAvatar .camBtn:hover i { color: #fff; }
+    .profAvatar .camBtn i { color: var(--primary-color); font-size: 0.8rem; }
 
-                    <div class="text-center mb-4 mt-3">
-                        <div class="position-relative d-inline-block">
-                            {% if current_user.profile_picture_url %}
-                            <img id="profile-pic-preview" src="{{ current_user.profile_picture_url }}"
-                                class="rounded-circle shadow"
-                                style="width: 120px; height: 120px; object-fit: cover; border: 3px solid #fff;">
-                            <div id="profile-pic-preview-div" style="display: none;"></div>
-                            {% else %}
-                            <div id="profile-pic-preview-div"
-                                class="rounded-circle shadow d-flex align-items-center justify-content-center"
-                                style="width: 120px; height: 120px; background: linear-gradient(135deg, #8B4513, #A0522D); color: white; font-family: 'Georgia', serif; font-size: 3rem; border: 3px solid #fff;">
-                                {{ current_user.first_name[:1] }}{{ current_user.last_name[:1] }}
-                            </div>
-                            <img id="profile-pic-preview" class="rounded-circle shadow"
-                                style="width: 120px; height: 120px; object-fit: cover; border: 3px solid #fff; display: none;">
-                            {% endif %}
+    .profSection { margin-bottom: 1.5rem; }
+    .profSection h6 { font-weight: 700; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 2px; color: var(--text-muted); padding-bottom: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid rgba(93,64,55,0.06); display: flex; align-items: center; gap: 6px; }
+    .profSection h6 i { font-size: 0.7rem; color: #D4A862; }
+    .profRow { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 0.5rem; }
+    .profField { display: flex; flex-direction: column; }
+    .profField label { font-weight: 600; font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.4rem; }
+    .profField input { border: 1.5px solid rgba(93,64,55,0.1); border-radius: 12px; padding: 0.7rem 1rem; font-size: 0.9rem; transition: all 0.3s; background: rgba(93,64,55,0.02); font-family: 'Inter', sans-serif; }
+    .profField input:focus { border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(93,64,55,0.08); outline: none; background: #fff; }
+    .profField .fieldError { color: #C62828; font-size: 0.78rem; margin-top: 0.3rem; display: none; }
 
-                            <label for="profile_picture"
-                                class="position-absolute bottom-0 end-0 bg-white rounded-circle shadow p-2"
-                                style="cursor: pointer; transform: translate(20%, 20%); border: 1px solid #ddd; z-index: 10;">
-                                <i class="fas fa-camera" style="color: var(--primary-color);"></i>
-                            </label>
-                            <input type="file" id="profile_picture" name="profile_picture" class="d-none"
-                                accept="image/*" onchange="previewProfileImage(event)">
+    .profActions { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 2rem; }
+    .profCancel { background: rgba(93,64,55,0.04); color: var(--text-main); font-weight: 600; border: 1.5px solid rgba(93,64,55,0.1); border-radius: 50px; padding: 0.8rem; text-align: center; text-decoration: none; transition: all 0.3s; font-size: 0.92rem; }
+    .profCancel:hover { background: rgba(93,64,55,0.08); color: var(--text-main); }
+    .profSave { background: linear-gradient(135deg, #5D4037, #795548); color: #fff; font-weight: 700; border: none; border-radius: 50px; padding: 0.8rem; font-size: 0.95rem; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 14px rgba(93,64,55,0.2); }
+    .profSave:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(93,64,55,0.3); }
+
+    .profSecure { text-align: center; margin-top: 1.25rem; font-size: 0.78rem; color: var(--text-muted); }
+    .profSecure i { color: #D4A862; margin-right: 4px; }
+
+    @media(max-width: 500px) {
+        .profBody { padding: 1.5rem; }
+        .profActions { grid-template-columns: 1fr; }
+        .profRow { grid-template-columns: 1fr; }
+    }
+</style>
+
+<div class="profPage">
+    <div class="profCard">
+        <div class="profHeader">
+            <h2>Edit Profile</h2>
+            <p>Keep your personal details up to date.</p>
+        </div>
+
+        <div class="profBody">
+            <form id="profileForm" action="{{ url_for('main.profile') }}" method="POST" enctype="multipart/form-data" onsubmit="return validateProfile()">
+
+                <div class="profAvatar">
+                    <div class="avatarWrap">
+                        {% if current_user.profile_picture_url %}
+                        <img id="profile-pic-preview" src="{{ current_user.profile_picture_url }}">
+                        <div id="profile-pic-preview-div" style="display: none;"></div>
+                        {% else %}
+                        <div id="profile-pic-preview-div" class="avatarFallback">
+                            {{ current_user.first_name[:1] }}{{ current_user.last_name[:1] }}
+                        </div>
+                        <img id="profile-pic-preview" style="display: none;">
+                        {% endif %}
+                        <label for="profile_picture" class="camBtn"><i class="fas fa-camera"></i></label>
+                        <input type="file" id="profile_picture" name="profile_picture" class="d-none" accept="image/*" onchange="previewProfileImage(event)">
+                    </div>
+                </div>
+
+                <div class="profSection">
+                    <h6><i class="fas fa-user"></i> Personal Information</h6>
+                    <div class="profRow">
+                        <div class="profField">
+                            <label for="first_name">First Name</label>
+                            <input type="text" id="first_name" name="first_name" maxlength="50" required value="{{ current_user.first_name }}">
+                        </div>
+                        <div class="profField">
+                            <label for="middle_name">Middle Name</label>
+                            <input type="text" id="middle_name" name="middle_name" maxlength="50" placeholder="(Optional)" value="{{ current_user.middle_name or '' }}">
+                        </div>
+                        <div class="profField">
+                            <label for="last_name">Last Name</label>
+                            <input type="text" id="last_name" name="last_name" maxlength="50" required value="{{ current_user.last_name }}">
                         </div>
                     </div>
+                </div>
 
-                    <h5 class="fw-bold fs-6 text-muted border-bottom pb-2 mb-4 mt-3">Personal Information</h5>
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-4">
-                            <label for="first_name" class="fw-bold text-muted small mb-2">First Name</label>
-                            <input type="text" id="first_name" name="first_name"
-                                class="form-control form-control-lg bg-light border-0 shadow-sm"
-                                style="border-radius: 10px;" maxlength="50" required
-                                value="{{ current_user.first_name }}">
+                <div class="profSection">
+                    <h6><i class="fas fa-address-book"></i> Contact Details</h6>
+                    <div class="profRow">
+                        <div class="profField">
+                            <label for="phone_number">Phone Number</label>
+                            <input type="text" id="phone_number" name="phone_number" required placeholder="09xxxxxxxxx" value="{{ current_user.phone_number or '' }}" maxlength="11">
+                            <div id="phoneError" class="fieldError">Invalid phone number</div>
                         </div>
-                        <div class="col-md-4">
-                            <label for="middle_name" class="fw-bold text-muted small mb-2">Middle Name</label>
-                            <input type="text" id="middle_name" name="middle_name"
-                                class="form-control form-control-lg bg-light border-0 shadow-sm"
-                                style="border-radius: 10px;" maxlength="50" placeholder="(Optional)"
-                                value="{{ current_user.middle_name or '' }}">
-                        </div>
-                        <div class="col-md-4">
-                            <label for="last_name" class="fw-bold text-muted small mb-2">Last Name</label>
-                            <input type="text" id="last_name" name="last_name"
-                                class="form-control form-control-lg bg-light border-0 shadow-sm"
-                                style="border-radius: 10px;" maxlength="50" required
-                                value="{{ current_user.last_name }}">
+                        <div class="profField">
+                            <label for="email">Email Address</label>
+                            <input type="email" id="email" name="email" required value="{{ current_user.email }}">
                         </div>
                     </div>
+                </div>
 
-                    <h5 class="fw-bold fs-6 text-muted border-bottom pb-2 mb-4 mt-5">Contact Details</h5>
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-6">
-                            <label for="phone_number" class="fw-bold text-muted small mb-2">Phone Number</label>
-                            <!-- Validation added via JS for sleek UX -->
-                            <input type="text" id="phone_number" name="phone_number"
-                                class="form-control form-control-lg bg-light border-0 shadow-sm"
-                                style="border-radius: 10px;" required placeholder="09xxxxxxxxx"
-                                value="{{ current_user.phone_number or '' }}" maxlength="11">
-                            <div id="phoneError" class="text-danger small mt-1"
-                                style="display: none; padding-left: 5px;">Invalid phone number</div>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="email" class="fw-bold text-muted small mb-2">Email Address</label>
-                            <input type="email" id="email" name="email"
-                                class="form-control form-control-lg bg-light border-0 shadow-sm"
-                                style="border-radius: 10px;" required value="{{ current_user.email }}">
+                <div class="profSection">
+                    <h6><i class="fas fa-shield-alt"></i> Account Details</h6>
+                    <div class="profRow">
+                        <div class="profField">
+                            <label for="username">Username</label>
+                            <input type="text" id="username" name="username" minlength="5" maxlength="20" required value="{{ current_user.username }}">
                         </div>
                     </div>
+                </div>
 
-                    <h5 class="fw-bold fs-6 text-muted border-bottom pb-2 mb-4 mt-5">Account Details</h5>
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-12">
-                            <label for="username" class="fw-bold text-muted small mb-2">Username</label>
-                            <input type="text" id="username" name="username"
-                                class="form-control form-control-lg bg-light border-0 shadow-sm"
-                                style="border-radius: 10px;" minlength="5" maxlength="20" required
-                                value="{{ current_user.username }}">
-                        </div>
-                    </div>
-
-                    <div class="d-flex justify-content-between align-items-center mt-5 mb-3 gap-3">
-                        <a href="{{ url_for('main.index') }}"
-                            class="btn btn-light shadow-sm rounded-pill fw-bold w-50 py-3"
-                            style="color: var(--text-main);">Cancel</a>
-                        <button type="submit" class="btn text-white rounded-pill fw-bold shadow-sm w-50 py-3"
-                            style="background-color: var(--primary-color); font-size: 1.05rem; transition: transform 0.2s;">
-                            Save Changes
-                        </button>
-                    </div>
-
-                    <div class="text-center mt-3">
-                        <p class="text-muted" style="font-size: 0.85rem;"><i class="fas fa-shield-alt me-1"></i> Your
-                            personal
-                            information is kept secure and confidential.</p>
-                    </div>
-                </form>
-            </div>
+                <div class="profActions">
+                    <a href="{{ url_for('main.index') }}" class="profCancel">Cancel</a>
+                    <button type="submit" class="profSave">Save Changes</button>
+                </div>
+                <div class="profSecure"><i class="fas fa-lock"></i> Your information is kept secure and confidential.</div>
+            </form>
         </div>
     </div>
 </div>
@@ -132,7 +133,7 @@
             reader.onload = function (e) {
                 const img = document.getElementById('profile-pic-preview');
                 const div = document.getElementById('profile-pic-preview-div');
-                if (div) { div.style.display = 'none'; }
+                if (div) div.style.display = 'none';
                 img.src = e.target.result;
                 img.style.display = 'block';
             }
@@ -142,59 +143,28 @@
 
     const phoneInput = document.getElementById('phone_number');
     const phoneError = document.getElementById('phoneError');
-
-    phoneInput.addEventListener('input', function (e) {
-        // Numbers only allowed while typing for a smooth experience
+    phoneInput.addEventListener('input', function () {
         this.value = this.value.replace(/[^0-9]/g, '');
         phoneError.style.display = 'none';
-        this.style.border = '';
+        this.style.borderColor = '';
     });
 
     function validateProfile() {
         const phone = phoneInput.value;
-
-        // Validation for PH format: Must start with 09 and exactly 11 digits
-        const phRegex = /^09\d{9}$/;
-        if (!phRegex.test(phone)) {
-            showError("Needs to be exactly 11 digits and start with 09.");
-            return false;
-        }
-
-        // Check against easily guessed repeating sequences (like 09999999999 or 09111111111 or 09121212121)
+        if (!/^09\d{9}$/.test(phone)) { showError("Must be exactly 11 digits starting with 09."); return false; }
         const digitsOnly = phone.substring(2);
-
-        // Block purely repeating number formats
-        if (/^([0-9])\1{8}$/.test(digitsOnly)) {
-            showError("Invalid sequence (repeating). Please input a valid mobile number.");
-            return false;
-        }
-
-        // Check names format as well smoothly
+        if (/^([0-9])\1{8}$/.test(digitsOnly)) { showError("Invalid sequence. Please input a valid mobile number."); return false; }
         const names = [document.getElementById('first_name').value, document.getElementById('last_name').value];
-        const nameRegex = /^[A-Za-z\s\-]+$/;
-        for (let name of names) {
-            if (!nameRegex.test(name)) {
-                alert("Names can only contain letters, spaces, and dashes.");
-                return false;
-            }
-        }
-
-        // Email domain check smoothly
+        for (let name of names) { if (!/^[A-Za-z\s\-]+$/.test(name)) { alert("Names can only contain letters, spaces, and dashes."); return false; } }
         const email = document.getElementById('email').value;
-        if (!email.endsWith('@gmail.com')) {
-            alert("Email must end with @gmail.com");
-            return false;
-        }
-
+        if (!email.endsWith('@gmail.com')) { alert("Email must end with @gmail.com"); return false; }
         return true;
     }
 
     function showError(msg) {
         phoneError.textContent = msg;
         phoneError.style.display = 'block';
-        phoneInput.style.border = '2px solid #ef4444';
-
-        // Scroll slightly up to emphasize error so they don't lose focus
+        phoneInput.style.borderColor = '#C62828';
         phoneInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 </script>

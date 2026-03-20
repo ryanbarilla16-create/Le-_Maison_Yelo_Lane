@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 
+import 'xendit_sandbox_screen.dart';
+
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
 
@@ -98,12 +100,45 @@ class _CartScreenState extends State<CartScreen> {
 
     if (res['success'] == true) {
       CartScreen.clear();
+      
+      // Handle Xendit Payment Redirection (In-App WebView)
+      if (res['invoice_url'] != null) {
+        if (!mounted) return;
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => XenditSandboxScreen(url: res['invoice_url']),
+          ),
+        );
+      }
+
       if (!mounted) return;
-      _showMsg(res['message'] ?? 'Order placed!', true);
-      Navigator.pop(
-        context,
-        true,
-      ); // Return true to indicate success and trigger rebuild
+      
+      // Show success dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              Icon(Icons.check_circle, color: AppColors.success, size: 28),
+              const SizedBox(width: 10),
+              const Text('Order Success!'),
+            ],
+          ),
+          content: Text(res['message'] ?? 'Your order has been placed successfully!'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx); // pop dialog
+                Navigator.pop(context, 1); // pop cart and return index 1
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
     } else {
       _showMsg(res['message'] ?? 'Checkout failed.', false);
     }
@@ -153,7 +188,7 @@ class _CartScreenState extends State<CartScreen> {
                   ),
                   const SizedBox(height: 20),
                   ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () => Navigator.pop(context, 1),
                     child: const Text('Browse Menu'),
                   ),
                 ],

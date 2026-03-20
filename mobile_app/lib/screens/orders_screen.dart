@@ -11,18 +11,31 @@ class OrdersScreen extends StatefulWidget {
   State<OrdersScreen> createState() => _OrdersScreenState();
 }
 
-class _OrdersScreenState extends State<OrdersScreen> {
+class _OrdersScreenState extends State<OrdersScreen>
+    with SingleTickerProviderStateMixin {
   List<dynamic> _orders = [];
-  int _pendingCount = 0;
-  int _preparingCount = 0;
-  int _completedCount = 0;
-  String _filter = 'ALL';
   bool _loading = true;
+  late TabController _tabController;
+
+  final _tabs = [
+    {'label': 'All', 'value': 'ALL'},
+    {'label': 'Pending', 'value': 'PENDING'},
+    {'label': 'Preparing', 'value': 'PREPARING'},
+    {'label': 'Completed', 'value': 'COMPLETED'},
+    {'label': 'Cancelled', 'value': 'CANCELLED'},
+  ];
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: _tabs.length, vsync: this);
     _loadOrders();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadOrders() async {
@@ -33,9 +46,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
     if (res != null && res is Map) {
       setState(() {
         _orders = res['orders'] ?? [];
-        _pendingCount = res['pending_count'] ?? 0;
-        _preparingCount = res['preparing_count'] ?? 0;
-        _completedCount = res['completed_count'] ?? 0;
         _loading = false;
       });
     } else {
@@ -43,384 +53,464 @@ class _OrdersScreenState extends State<OrdersScreen> {
     }
   }
 
-  List<dynamic> get _filteredOrders {
-    if (_filter == 'ALL') return _orders;
-    if (_filter == 'DELIVERY') {
-      return _orders.where((o) => o['dining_option'] == 'DELIVERY').toList();
+  List<dynamic> _filteredOrders(String filter) {
+    if (filter == 'ALL') return _orders;
+    return _orders.where((o) => o['status'] == filter).toList();
+  }
+
+  String _statusLabel(String status) {
+    switch (status) {
+      case 'PENDING':
+        return 'TO CONFIRM';
+      case 'CONFIRMED':
+        return 'CONFIRMED';
+      case 'PREPARING':
+        return 'PREPARING';
+      case 'READY':
+        return 'READY';
+      case 'ON_THE_WAY':
+        return 'ON THE WAY';
+      case 'COMPLETED':
+        return 'COMPLETED';
+      case 'CANCELLED':
+        return 'CANCELLED';
+      default:
+        return status;
     }
-    return _orders.where((o) => o['status'] == _filter).toList();
+  }
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'PENDING':
+        return const Color(0xFFE8740C);
+      case 'CONFIRMED':
+        return const Color(0xFF2E7D32);
+      case 'PREPARING':
+        return const Color(0xFF1565C0);
+      case 'READY':
+        return const Color(0xFF00838F);
+      case 'ON_THE_WAY':
+        return const Color(0xFF6A1B9A);
+      case 'COMPLETED':
+        return const Color(0xFF2E7D32);
+      case 'CANCELLED':
+        return const Color(0xFFC62828);
+      default:
+        return Colors.grey;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        title: Text(
+        backgroundColor: AppColors.primary,
+        elevation: 0.5,
+        title: const Text(
           'My Orders',
-          style: AppTextStyles.heading.copyWith(fontSize: 20),
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+            letterSpacing: 0.3,
+          ),
         ),
         centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
+        bottom: TabBar(
+          controller: _tabController,
+          isScrollable: true,
+          indicatorColor: Colors.white,
+          indicatorWeight: 3,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white60,
+          labelStyle: const TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: 13,
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.w500,
+            fontSize: 13,
+          ),
+          tabAlignment: TabAlignment.start,
+          tabs: _tabs.map((t) {
+            final count = _filteredOrders(t['value']!).length;
+            return Tab(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(t['label']!),
+                  if (count > 0 && t['value'] != 'ALL') ...[
+                    const SizedBox(width: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.25),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '$count',
+                        style: const TextStyle(fontSize: 10),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            );
+          }).toList(),
+        ),
       ),
       body: _loading
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.primary),
             )
-          : RefreshIndicator(
-              color: AppColors.primary,
-              onRefresh: _loadOrders,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    // Stats Cards
-                    Row(
-                      children: [
-                        _statCard(
-                          '${_orders.length}',
-                          'Total',
-                          Icons.receipt,
-                          AppColors.primary,
-                        ),
-                        const SizedBox(width: 8),
-                        _statCard(
-                          '$_pendingCount',
-                          'Pending',
-                          Icons.schedule,
-                          AppColors.warning,
-                        ),
-                        const SizedBox(width: 8),
-                        _statCard(
-                          '$_preparingCount',
-                          'Preparing',
-                          Icons.restaurant,
-                          AppColors.info,
-                        ),
-                        const SizedBox(width: 8),
-                        _statCard(
-                          '$_completedCount',
-                          'Done',
-                          Icons.check_circle,
-                          AppColors.success,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Filter tabs
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          _filterChip('All', 'ALL'),
-                          _filterChip('Pending', 'PENDING'),
-                          _filterChip('Preparing', 'PREPARING'),
-                          _filterChip('Delivery', 'DELIVERY'),
-                          _filterChip('Completed', 'COMPLETED'),
-                          _filterChip('Cancelled', 'CANCELLED'),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Orders list
-                    if (_filteredOrders.isEmpty)
-                      _emptyState()
-                    else
-                      ..._filteredOrders.map((o) => _orderCard(o)),
-                  ],
-                ),
-              ),
+          : TabBarView(
+              controller: _tabController,
+              children: _tabs.map((t) {
+                final orders = _filteredOrders(t['value']!);
+                if (orders.isEmpty) return _emptyState(t['label']!);
+                return RefreshIndicator(
+                  color: AppColors.primary,
+                  onRefresh: _loadOrders,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    itemCount: orders.length,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    itemBuilder: (_, i) => _orderCard(orders[i]),
+                  ),
+                );
+              }).toList(),
             ),
     );
   }
 
-  Widget _statCard(String value, String label, IconData icon, Color color) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8),
-          ],
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: TextStyle(
-                fontWeight: FontWeight.w800,
-                fontSize: 18,
-                color: AppColors.textMain,
-              ),
-            ),
-            Text(
-              label,
-              style: TextStyle(color: AppColors.textMuted, fontSize: 10),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _filterChip(String label, String value) {
-    final selected = _filter == value;
-    return GestureDetector(
-      onTap: () => setState(() => _filter = value),
-      child: Container(
-        margin: const EdgeInsets.only(right: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primary : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected
-                ? AppColors.primary
-                : AppColors.textMuted.withOpacity(0.3),
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: selected ? Colors.white : AppColors.textMain,
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
-          ),
-        ),
-      ),
-    );
-  }
-
+  // ═══ SHOPEE-STYLE ORDER CARD ═══
   Widget _orderCard(dynamic o) {
+    final items = o['items'] as List? ?? [];
+    final status = o['status'] ?? 'PENDING';
+    final statusColor = _statusColor(status);
+    final diningOption = o['dining_option'] ?? '';
+    final paymentMethod = o['payment_method'] ?? '';
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(8),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 6,
+            offset: const Offset(0, 1),
+          ),
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Order #${o['id']}',
-                style: const TextStyle(
-                  fontFamily: 'Georgia',
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              _statusBadge(o['status']),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            o['created_at'] ?? '',
-            style: AppTextStyles.muted.copyWith(fontSize: 12),
-          ),
-          const Divider(height: 20),
-
-          // Items
-          if (o['items'] != null)
-            ...List.generate((o['items'] as List).length, (i) {
-              final item = o['items'][i];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Row(
-                  children: [
-                    Text(
-                      '${item['quantity']}x ',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        item['name'] ?? '',
-                        style: const TextStyle(fontSize: 13),
-                      ),
-                    ),
-                    Text(
-                      '₱${(item['price'] as num).toStringAsFixed(2)}',
-                      style: AppTextStyles.muted.copyWith(fontSize: 12),
-                    ),
-                  ],
-                ),
-              );
-            }),
-          const Divider(height: 16),
-
-          // Bottom row
-          Row(
-            children: [
-              if (o['dining_option'] != null)
-                _infoBadge(
-                  o['dining_option'] == 'DINE_IN'
-                      ? 'Dine In'
-                      : o['dining_option'] == 'DELIVERY'
-                          ? 'Delivery'
-                          : 'Take Out',
-                  o['dining_option'] == 'DELIVERY'
-                      ? Icons.delivery_dining
-                      : Icons.restaurant,
-                ),
-              const SizedBox(width: 6),
-              if (o['payment_method'] != null)
-                _infoBadge(
-                  o['payment_method'] == 'COUNTER' ? 'Counter' : 'GCash',
-                  Icons.payment,
-                ),
-              const Spacer(),
-              Text(
-                '₱${(o['total_amount'] as num).toStringAsFixed(2)}',
-                style: TextStyle(
-                  fontFamily: 'Georgia',
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                  color: AppColors.primary,
-                ),
-              ),
-            ],
-          ),
-
-          // Track Delivery button for active delivery orders
-          if (o['dining_option'] == 'DELIVERY' &&
-              o['status'] != 'CANCELLED' &&
-              o['status'] != 'COMPLETED') ...[
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => DeliveryTrackingScreen(
-                        orderId: o['id'],
-                        deliveryAddress: o['delivery_address'],
-                      ),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.location_on, size: 18),
-                label: const Text('Track Delivery'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 10),
+          // ── HEADER: Store Name + Status ──
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: Colors.grey.shade100,
+                  width: 1,
                 ),
               ),
             ),
-          ],
-
-          // Review button for completed orders
-          if (o['status'] == 'COMPLETED' && o['review_rating'] == null) ...[
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => _showReviewDialog(o['id']),
-                icon: const Icon(Icons.star_outline, size: 18),
-                label: const Text('Leave a Review'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.accent,
-                  side: BorderSide(color: AppColors.accent.withOpacity(0.5)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-              ),
-            ),
-          ],
-
-          if (o['review_rating'] != null) ...[
-            const SizedBox(height: 10),
-            Row(
+            child: Row(
               children: [
-                ...List.generate(
-                  5,
-                  (i) => Icon(
-                    i < (o['review_rating'] as int)
-                        ? Icons.star
-                        : Icons.star_border,
-                    color: AppColors.gold,
-                    size: 18,
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Icon(
+                    Icons.store_rounded,
+                    size: 14,
+                    color: AppColors.primary,
                   ),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Le Maison Yelo Lane',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ),
                 Text(
-                  'Reviewed',
+                  _statusLabel(status),
                   style: TextStyle(
-                    color: AppColors.success,
+                    color: statusColor,
                     fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
                   ),
                 ),
               ],
             ),
-          ],
+          ),
 
-          if (o['notes'] != null && o['notes'] != '') ...[
-            const SizedBox(height: 8),
+          // ── ORDER ITEMS ──
+          ...items.map((item) => _orderItemRow(item)),
+
+          // ── DELIVERY INFO ──
+          if (diningOption == 'DELIVERY' &&
+              o['delivery_address'] != null &&
+              o['delivery_address'] != '')
             Container(
-              padding: const EdgeInsets.all(8),
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.04),
-                borderRadius: BorderRadius.circular(8),
+                color: const Color(0xFFFFF8E1),
+                border: Border(
+                  top: BorderSide(color: Colors.amber.shade100),
+                ),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.note, color: AppColors.textMuted, size: 14),
+                  Icon(
+                    Icons.delivery_dining_rounded,
+                    size: 16,
+                    color: Colors.amber.shade800,
+                  ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      o['notes'],
-                      style: AppTextStyles.muted.copyWith(fontSize: 12),
+                      o['delivery_address'],
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.amber.shade900,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
               ),
             ),
-          ],
-        ],
-      ),
-    );
-  }
 
-  Widget _infoBadge(String label, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.06),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: AppColors.textMuted, size: 12),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: AppColors.textMuted,
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
+          // ── ORDER TOTAL ──
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(
+                  color: Colors.grey.shade100,
+                  width: 1,
+                ),
+              ),
+            ),
+            child: Row(
+              children: [
+                // Info tags
+                _miniTag(
+                  diningOption == 'DINE_IN'
+                      ? 'Dine In'
+                      : diningOption == 'DELIVERY'
+                          ? 'Delivery'
+                          : 'Take Out',
+                  diningOption == 'DELIVERY'
+                      ? Icons.delivery_dining
+                      : diningOption == 'DINE_IN'
+                          ? Icons.restaurant
+                          : Icons.takeout_dining,
+                ),
+                const SizedBox(width: 6),
+                _miniTag(
+                  paymentMethod == 'ONLINE'
+                      ? 'GCash'
+                      : paymentMethod == 'GCASH'
+                          ? 'GCash'
+                          : 'Counter',
+                  Icons.payment_rounded,
+                ),
+                const Spacer(),
+                Text(
+                  '${items.length} item${items.length > 1 ? 's' : ''}',
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                const Text(
+                  'Total:',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.black54,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '₱${(o['total_amount'] as num).toStringAsFixed(2)}',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primary,
+                    fontFamily: 'Georgia',
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ── NOTES ──
+          if (o['notes'] != null && o['notes'] != '')
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                border: Border(
+                  top: BorderSide(color: Colors.grey.shade100),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.sticky_note_2_outlined,
+                    size: 14,
+                    color: Colors.grey.shade500,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      o['notes'],
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                        fontStyle: FontStyle.italic,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          // ── REVIEW STARS (if reviewed) ──
+          if (o['review_rating'] != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                border: Border(
+                  top: BorderSide(color: Colors.grey.shade100),
+                ),
+              ),
+              child: Row(
+                children: [
+                  ...List.generate(
+                    5,
+                    (i) => Icon(
+                      i < (o['review_rating'] as int)
+                          ? Icons.star_rounded
+                          : Icons.star_border_rounded,
+                      color: const Color(0xFFF9A825),
+                      size: 18,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2E7D32).withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Text(
+                      'Reviewed',
+                      style: TextStyle(
+                        color: Color(0xFF2E7D32),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          // ── ACTION BUTTONS ──
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(color: Colors.grey.shade100),
+              ),
+            ),
+            child: Row(
+              children: [
+                // Order date
+                Expanded(
+                  child: Text(
+                    'Order #${o['id']} · ${o['created_at'] ?? ''}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey.shade500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+
+                // Track Delivery
+                if (diningOption == 'DELIVERY' &&
+                    status != 'CANCELLED' &&
+                    status != 'COMPLETED')
+                  _actionButton(
+                    'Track',
+                    Icons.location_on_rounded,
+                    const Color(0xFF1565C0),
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => DeliveryTrackingScreen(
+                            orderId: o['id'],
+                            deliveryAddress: o['delivery_address'],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+
+                // Review button
+                if (status == 'COMPLETED' && o['review_rating'] == null) ...[
+                  const SizedBox(width: 8),
+                  _actionButton(
+                    'Rate',
+                    Icons.star_rounded,
+                    const Color(0xFFF9A825),
+                    () => _showReviewDialog(o['id']),
+                  ),
+                ],
+
+                // Buy Again
+                if (status == 'COMPLETED') ...[
+                  const SizedBox(width: 8),
+                  _primaryActionButton(
+                    'Buy Again',
+                    () {
+                      // Navigate to menu
+                    },
+                  ),
+                ],
+              ],
             ),
           ),
         ],
@@ -428,71 +518,225 @@ class _OrdersScreenState extends State<OrdersScreen> {
     );
   }
 
-  Widget _statusBadge(String status) {
-    Color bg, fg;
-    switch (status) {
-      case 'CONFIRMED':
-        bg = AppColors.success.withOpacity(0.1);
-        fg = AppColors.success;
-        break;
-      case 'COMPLETED':
-        bg = AppColors.success.withOpacity(0.1);
-        fg = AppColors.success;
-        break;
-      case 'PENDING':
-        bg = AppColors.warning.withOpacity(0.1);
-        fg = AppColors.warning;
-        break;
-      case 'PREPARING':
-        bg = AppColors.info.withOpacity(0.1);
-        fg = AppColors.info;
-        break;
-      case 'CANCELLED':
-        bg = AppColors.danger.withOpacity(0.1);
-        fg = AppColors.danger;
-        break;
-      default:
-        bg = Colors.grey.withOpacity(0.1);
-        fg = Colors.grey;
-    }
+  // ═══ SINGLE ORDER ITEM ROW (Shopee-style) ═══
+  Widget _orderItemRow(dynamic item) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        status[0] + status.substring(1).toLowerCase(),
-        style: TextStyle(color: fg, fontSize: 11, fontWeight: FontWeight.w700),
-      ),
-    );
-  }
-
-  Widget _emptyState() {
-    return Container(
-      padding: const EdgeInsets.all(40),
-      child: Column(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.shopping_bag_outlined,
-            size: 60,
-            color: AppColors.primary.withOpacity(0.2),
+          // Product image
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: item['image_url'] != null
+                ? Image.network(
+                    item['image_url'],
+                    width: 72,
+                    height: 72,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _imagePlaceholder(),
+                  )
+                : _imagePlaceholder(),
           ),
-          const SizedBox(height: 12),
-          Text(
-            'No orders found',
-            style: AppTextStyles.heading.copyWith(fontSize: 17),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Your orders will appear here',
-            style: AppTextStyles.muted,
+          const SizedBox(width: 12),
+          // Product details
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item['name'] ?? '',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF333333),
+                    height: 1.3,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                if (item['category'] != null)
+                  Text(
+                    item['category'],
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey.shade500,
+                    ),
+                  ),
+                const SizedBox(height: 6),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '₱${(item['price'] as num).toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    Text(
+                      'x${item['quantity']}',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
+  Widget _imagePlaceholder() {
+    return Container(
+      width: 72,
+      height: 72,
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Icon(
+        Icons.restaurant_rounded,
+        color: AppColors.primary.withOpacity(0.4),
+        size: 28,
+      ),
+    );
+  }
+
+  Widget _miniTag(String label, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11, color: Colors.grey.shade600),
+          const SizedBox(width: 3),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _actionButton(
+    String label,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
+            border: Border.all(color: color.withOpacity(0.4)),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14, color: color),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _primaryActionButton(String label, VoidCallback onTap) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ═══ EMPTY STATE ═══
+  Widget _emptyState(String tabLabel) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.receipt_long_rounded,
+              size: 48,
+              color: Colors.grey.shade400,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No ${tabLabel.toLowerCase()} orders',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Your orders will appear here',
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey.shade500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ═══ REVIEW DIALOG ═══
   void _showReviewDialog(int orderId) {
     int rating = 5;
     final commentCtrl = TextEditingController();
@@ -506,39 +750,89 @@ class _OrdersScreenState extends State<OrdersScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
-              title: const Text(
-                'Rate Your Order',
-                style: TextStyle(
-                  fontFamily: 'Georgia',
-                  fontWeight: FontWeight.bold,
-                ),
+              title: Row(
+                children: [
+                  Icon(Icons.star_rounded, color: const Color(0xFFF9A825)),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Rate Your Order',
+                    style: TextStyle(
+                      fontFamily: 'Georgia',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                ],
               ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  const Text(
+                    'How was your experience?',
+                    style: TextStyle(
+                      color: Colors.black54,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(
                       5,
                       (i) => GestureDetector(
-                        onTap: () => setDialogState(() => rating = i + 1),
+                        onTap: () =>
+                            setDialogState(() => rating = i + 1),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 4),
                           child: Icon(
-                            i < rating ? Icons.star : Icons.star_border,
-                            color: AppColors.gold,
-                            size: 36,
+                            i < rating
+                                ? Icons.star_rounded
+                                : Icons.star_border_rounded,
+                            color: const Color(0xFFF9A825),
+                            size: 40,
                           ),
                         ),
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    rating == 5
+                        ? 'Amazing!'
+                        : rating == 4
+                            ? 'Great!'
+                            : rating == 3
+                                ? 'Good'
+                                : rating == 2
+                                    ? 'Fair'
+                                    : 'Poor',
+                    style: TextStyle(
+                      color: const Color(0xFFF9A825),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
                     ),
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: commentCtrl,
                     maxLines: 3,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: 'Share your experience (optional)',
+                      hintStyle: TextStyle(
+                        color: Colors.grey.shade400,
+                        fontSize: 13,
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade200),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade200),
+                      ),
                     ),
                   ),
                 ],
@@ -546,30 +840,44 @@ class _OrdersScreenState extends State<OrdersScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Cancel'),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(color: Colors.grey.shade600),
+                  ),
                 ),
                 ElevatedButton(
                   onPressed: () async {
                     final userId = await AuthService.getUserId();
-                    final res =
-                        await ApiService.post('/api/order/$orderId/review', {
-                          'user_id': userId,
-                          'rating': rating,
-                          'comment': commentCtrl.text.trim(),
-                        });
+                    final res = await ApiService.post(
+                        '/api/order/$orderId/review', {
+                      'user_id': userId,
+                      'rating': rating,
+                      'comment': commentCtrl.text.trim(),
+                    });
                     if (!ctx.mounted) return;
                     Navigator.pop(ctx);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(res['message'] ?? 'Review submitted!'),
+                        content:
+                            Text(res['message'] ?? 'Review submitted!'),
                         backgroundColor: res['success'] == true
-                            ? AppColors.success
-                            : AppColors.danger,
+                            ? const Color(0xFF2E7D32)
+                            : const Color(0xFFC62828),
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     );
                     _loadOrders();
                   },
-                  child: const Text('Submit'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: const Text('Submit Review'),
                 ),
               ],
             );

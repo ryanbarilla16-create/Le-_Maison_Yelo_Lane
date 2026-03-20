@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../services/api_service.dart';
@@ -8,6 +9,7 @@ import 'orders_screen.dart';
 import 'reserve_screen.dart';
 import 'profile_screen.dart';
 import 'cart_screen.dart';
+import 'notifications_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -23,11 +25,34 @@ class _HomeScreenState extends State<HomeScreen> {
   List<dynamic> _featured = [];
   bool _loading = true;
   int _currentIndex = 0;
+  int _unreadNotifCount = 0;
+  Timer? _notifTimer;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    _loadUnreadCount();
+    // Poll for new notifications every 15 seconds
+    _notifTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      _loadUnreadCount();
+    });
+  }
+
+  @override
+  void dispose() {
+    _notifTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadUnreadCount() async {
+    final userId = await AuthService.getUserId();
+    if (userId == null) return;
+    final res = await ApiService.get('/api/user/$userId/notifications/unread-count');
+    if (!mounted) return;
+    if (res != null && res['success'] == true) {
+      setState(() => _unreadNotifCount = res['count'] ?? 0);
+    }
   }
 
   Future<void> _loadData() async {
@@ -142,78 +167,95 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ═══ HERO BANNER ═══
+            // ═══ PREMIUM HOME HEADER ═══
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(24, 60, 24, 30),
+              padding: const EdgeInsets.fromLTRB(26, 65, 26, 35),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [AppColors.primary, AppColors.primaryLight],
+                  colors: [AppColors.primary, Color(0xFF6D4C41)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(28),
-                  bottomRight: Radius.circular(28),
+                  bottomLeft: Radius.circular(35),
+                  bottomRight: Radius.circular(35),
                 ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Welcome back,',
-                            style: TextStyle(
-                              color: AppColors.accent,
-                              fontFamily: 'Georgia',
-                              fontStyle: FontStyle.italic,
-                              fontSize: 14,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Good Day,',
+                              style: TextStyle(
+                                color: AppColors.accent.withOpacity(0.8),
+                                fontSize: 13,
+                                letterSpacing: 1.2,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '${_user?['first_name'] ?? ''} ${_user?['last_name'] ?? ''}',
-                            style: const TextStyle(
-                              fontFamily: 'Georgia',
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                            const SizedBox(height: 4),
+                            Text(
+                              '${_user?['first_name'] ?? 'Guest'}',
+                              style: const TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                letterSpacing: -0.5,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                      GestureDetector(
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const CartScreen()),
-                        ),
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.shopping_cart,
-                            color: Colors.white,
-                            size: 22,
-                          ),
-                        ),
+                      _headerIcon(
+                        Icons.notifications_outlined,
+                        badgeCount: _unreadNotifCount,
+                        onTap: () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+                          );
+                          _loadUnreadCount();
+                        },
+                      ),
+                      const SizedBox(width: 12),
+                      _headerIcon(
+                        Icons.shopping_cart_outlined,
+                        onTap: () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const CartScreen()),
+                          );
+                          if (result == 1) {
+                            setState(() => _currentIndex = 1);
+                          } else if (result == true) {
+                            _loadData();
+                          }
+                        },
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Le Maison de Yelo Lane',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.6),
-                      fontSize: 12,
-                      letterSpacing: 2,
+                  const SizedBox(height: 15),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'LE MAISON YELO LANE',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 4,
+                      ),
                     ),
                   ),
                 ],
@@ -843,6 +885,26 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _headerIcon(IconData icon, {int badgeCount = 0, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.15),
+          shape: BoxShape.circle,
+        ),
+        child: badgeCount > 0
+            ? Badge(
+                label: Text('$badgeCount', style: const TextStyle(fontSize: 8)),
+                backgroundColor: AppColors.danger,
+                child: Icon(icon, color: Colors.white, size: 20),
+              )
+            : Icon(icon, color: Colors.white, size: 20),
       ),
     );
   }

@@ -101,6 +101,19 @@ def reserve():
         )
         db.session.add(new_res)
         db.session.commit()
+        
+        # Notify all admins
+        from models import User
+        from utils import create_notification
+        admin_users = User.query.filter(User.role == 'ADMIN').all()
+        for admin in admin_users:
+            create_notification(
+                admin.id,
+                'New Reservation Request! 📅',
+                f'A new reservation for {res_date.strftime("%b %d, %Y")} at {res_time.strftime("%I:%M %p")} needs your approval.',
+                'RESERVATION'
+            )
+            
         flash("Reservation submitted successfully and is pending admin approval.", "success")
         return redirect(url_for('main.reserve'))
 

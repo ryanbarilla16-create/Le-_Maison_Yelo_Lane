@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'theme.dart';
 import 'services/auth_service.dart';
 import 'screens/login_screen.dart';
@@ -8,6 +9,7 @@ import 'screens/cart_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   await CartScreen.loadCart();
   runApp(const MyApp());
 }
@@ -89,8 +91,8 @@ class _SplashScreenState extends State<SplashScreen>
           gradient: LinearGradient(
             colors: [
               AppColors.primary,
-              AppColors.primaryLight,
-              Color(0xFF5D4037),
+              Color(0xFF6D4C41),
+              Color(0xFF4E342E),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -103,24 +105,32 @@ class _SplashScreenState extends State<SplashScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 20,
+                        spreadRadius: 5,
+                      )
+                    ],
                   ),
                   child: const Icon(
-                    Icons.coffee,
+                    Icons.coffee_rounded,
                     color: Colors.white,
-                    size: 50,
+                    size: 60,
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 30),
                 const Text(
-                  'Le Maison',
+                  'LE MAISON',
                   style: TextStyle(
                     fontFamily: 'Georgia',
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 36,
+                    letterSpacing: 4,
+                    fontWeight: FontWeight.w900,
                     color: Colors.white,
                   ),
                 ),
@@ -129,17 +139,17 @@ class _SplashScreenState extends State<SplashScreen>
                   style: TextStyle(
                     fontSize: 14,
                     color: AppColors.accent,
-                    letterSpacing: 6,
+                    letterSpacing: 8,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(height: 30),
+                const SizedBox(height: 40),
                 const SizedBox(
-                  width: 28,
-                  height: 28,
+                  width: 32,
+                  height: 32,
                   child: CircularProgressIndicator(
                     color: AppColors.accent,
-                    strokeWidth: 2.5,
+                    strokeWidth: 2,
                   ),
                 ),
               ],

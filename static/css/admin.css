@@ -4,18 +4,18 @@
    ═══════════════════════════════════════════════════ */
 
 :root {
-    --admin-bg: #faf6f1;
-    --admin-surface: #ffffff;
+    --admin-bg: linear-gradient(135deg, #fdfbf9 0%, #e8dccb 100%);
+    --admin-surface: rgba(248, 241, 235, 0.85); /* Frosted aesthetic */
     --admin-surface-hover: #f5efe8;
-    --admin-border: rgba(139, 69, 19, 0.1);
-    --admin-accent: #8B4513;
-    --admin-accent-light: rgba(139, 69, 19, 0.08);
-    --admin-text: #3e2723;
-    --admin-text-muted: #8d6e63;
-    --admin-green: #2e7d32;
-    --admin-red: #c62828;
-    --admin-yellow: #e65100;
-    --admin-blue: #1565c0;
+    --admin-border: rgba(139, 69, 19, 0.15);
+    --admin-accent: #8b634b; /* Primary brown */
+    --admin-accent-light: rgba(139, 99, 75, 0.1);
+    --admin-text: #4a3b32; /* Dark brown shade */
+    --admin-text-muted: #8b634b;
+    --admin-green: #5c3a21; /* Shifted to dark brown to maintain theme, or keep green if required for system status */
+    --admin-red: #8b634b;
+    --admin-yellow: #a0522d;
+    --admin-blue: #8b634b;
     --sidebar-width: 250px;
     --sidebar-collapsed: 68px;
 }
@@ -161,26 +161,12 @@ body.sidebar-collapsed .admin-topbar {
     left: var(--sidebar-collapsed);
 }
 
-.topbar-toggle {
-    background: none;
-    border: none;
-    color: var(--admin-text-muted);
-    font-size: 1.2rem;
-    cursor: pointer;
-    padding: 0.4rem;
-    border-radius: 8px;
-    transition: 0.15s;
-}
-
-.topbar-toggle:hover {
-    color: var(--admin-accent);
-    background: var(--admin-surface-hover);
-}
 
 .topbar-right {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 1.25rem;
+    margin-left: auto; /* Pushes the block to the right */
 }
 
 .topbar-avatar {

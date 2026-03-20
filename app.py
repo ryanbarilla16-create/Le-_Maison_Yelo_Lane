@@ -5,7 +5,8 @@ from models import db, User
 from flask_login import LoginManager
 from routes import main_bp
 import os
-from sync import setup_supabase_sync
+from flask_cors import CORS
+# from sync import setup_supabase_sync
 from flask_mail import Mail
 from utils import get_ph_time
 
@@ -15,6 +16,9 @@ app = Flask(__name__)
 # Tell Flask it is behind a proxy (like LocalTunnel) so redirects use the correct url
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 app.config.from_object(Config)
+
+# Enable CORS for cross-origin requests from Flutter Web or mobile API
+CORS(app, supports_credentials=True, resources={r"/api/*": {"origins": "*"}})
 
 # Equivalent to PHP Session Properties configured
 app.config['SESSION_PERMANENT'] = False
@@ -34,7 +38,7 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 # Initialize realtime mirroring to Supabase via Event Hooks
-setup_supabase_sync()
+# setup_supabase_sync()
 
 # Register blueprints
 app.register_blueprint(main_bp)
