@@ -276,11 +276,15 @@
 
         // Helper to update the cart number badge in the header/navbar
         function updateCartBadge(count) {
-            // Find the cart badge (you may need to adjust the selector to match your actual navbar cart badge)
-            const badges = document.querySelectorAll('.cart-badge, .fa-shopping-cart + span.badge, .fa-cart-shopping + span.badge, .fa-shopping-cart + span, a[href*="/cart"] span.badge');
+            const badges = document.querySelectorAll('.cart-badge');
             badges.forEach(badge => {
-                badge.innerText = count;
-                badge.style.display = 'inline-block';
+                if (count > 0) {
+                    badge.innerText = count;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.innerText = '';
+                    badge.style.display = 'none';
+                }
             });
         }
     </script>

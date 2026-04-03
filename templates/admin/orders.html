@@ -3,436 +3,946 @@
 {% block title %}Order Management{% endblock %}
 
 {% block content %}
-<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
-    <h1 style="font-family: 'Georgia', serif; color: var(--text-main); font-size: 2rem; font-weight: bold; margin: 0;">
-        Order Management</h1>
-    <div class="d-flex flex-wrap gap-2">
-        <button class="btn btn-sm btn-outline-secondary fw-bold rounded-pill shadow-sm px-3 py-2"
-            onclick="document.getElementById('shiftReportModal').style.display='flex'">
-            <i class="fas fa-cash-register me-2"></i>Shift Report
-        </button>
-        <a href="{{ url_for('admin.reservations') }}"
-            class="btn btn-sm fw-bold rounded-pill shadow-sm px-3 py-2 text-white" style="background: #2a3d45;">
-            <i class="fas fa-calendar-alt me-2"></i>Check Reservation
-        </a>
-        <a href="{{ url_for('admin.walkin_order') }}"
-            class="btn btn-sm fw-bold text-white rounded-pill shadow-sm px-4 py-2"
-            style="background: linear-gradient(135deg, #8B4513, #A0522D);">
-            <i class="fas fa-plus me-2"></i>New Walk-In
-        </a>
-    </div>
-</div>
-
-<!-- QUICK STATS -->
-<div class="row g-3 mb-4">
-    <div class="col-md-4">
-        <div class="card border-0 shadow-sm"
-            style="border-radius: 12px; border-left: 4px solid var(--admin-green) !important;">
-            <div class="card-body p-3 d-flex align-items-center">
-                <div class="me-3" style="font-size: 2rem; color: var(--admin-green);"><i class="fas fa-sack-dollar"></i>
-                </div>
-                <div>
-                    <div
-                        style="font-size: 0.8rem; text-transform: uppercase; color: var(--admin-text-light); font-weight: 600;">
-                        Gross Sales (Today)</div>
-                    <h3 class="m-0 fw-bold">₱{{ "{:,.2f}".format(total_sales_today) }}</h3>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card border-0 shadow-sm" style="border-radius: 12px; border-left: 4px solid #f59e0b !important;">
-            <div class="card-body p-3 d-flex align-items-center">
-                <div class="me-3" style="font-size: 2rem; color: #f59e0b;"><i class="fas fa-clock"></i></div>
-                <div>
-                    <div
-                        style="font-size: 0.8rem; text-transform: uppercase; color: var(--admin-text-light); font-weight: 600;">
-                        Pending Actions</div>
-                    <h3 class="m-0 fw-bold">{{ pending_count }} <span
-                            style="font-size: 1rem; color: var(--admin-text-light);">Orders</span></h3>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card border-0 shadow-sm" style="border-radius: 12px; border-left: 4px solid #3b82f6 !important;">
-            <div class="card-body p-3 d-flex align-items-center">
-                <div class="me-3" style="font-size: 2rem; color: #3b82f6;"><i class="fas fa-bell-concierge"></i></div>
-                <div>
-                    <div
-                        style="font-size: 0.8rem; text-transform: uppercase; color: var(--admin-text-light); font-weight: 600;">
-                        Ready/Completed Today</div>
-                    <h3 class="m-0 fw-bold">{{ completed_count }} <span
-                            style="font-size: 1rem; color: var(--admin-text-light);">Orders</span></h3>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
 <style>
-    @keyframes blink-ready {
-        0% {
-            transform: scale(1);
-            box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
-        }
+    /* ═══════════════════════════════════════════════
+       ORDERS PAGE — Premium Cashier Redesign
+       ═══════════════════════════════════════════════ */
 
-        50% {
-            transform: scale(1.05);
-            box-shadow: 0 0 10px 5px rgba(76, 175, 80, 0);
-        }
-
-        100% {
-            transform: scale(1);
-            box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
-        }
+    .orders-page-header {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.75rem;
+        gap: 1rem;
     }
 
-    .status-completed-blink {
-        animation: blink-ready 2s infinite;
-        display: inline-block;
+    .orders-page-header h1 {
+        font-family: 'Georgia', serif;
+        color: var(--admin-text);
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin: 0;
+        letter-spacing: -0.3px;
+    }
+
+    .orders-header-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .orders-header-actions .btn-header {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1.15rem;
+        border-radius: 10px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        text-decoration: none;
+        border: 1px solid var(--admin-border);
+        background: #fff;
+        color: var(--admin-text);
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .orders-header-actions .btn-header:hover {
+        border-color: var(--admin-accent);
+        color: var(--admin-accent);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(139, 69, 19, 0.08);
+    }
+
+    .orders-header-actions .btn-header-primary {
+        background: var(--admin-accent);
+        color: #fff;
+        border-color: var(--admin-accent);
+    }
+
+    .orders-header-actions .btn-header-primary:hover {
+        background: #6d3410;
+        border-color: #6d3410;
+        color: #fff;
+    }
+
+    /* ─── Stat Cards ───────── */
+    .order-stats-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .order-stat-card {
+        background: #fff;
+        border: 1px solid var(--admin-border);
+        border-radius: 14px;
+        padding: 1.15rem 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: transform 0.2s, box-shadow 0.2s;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .order-stat-card::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        border-radius: 14px 0 0 14px;
+    }
+
+    .order-stat-card:nth-child(1)::before { background: var(--admin-accent); }
+    .order-stat-card:nth-child(2)::before { background: #bcaaa4; }
+    .order-stat-card:nth-child(3)::before { background: #a1887f; }
+
+    .order-stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(139, 69, 19, 0.06);
+    }
+
+    .order-stat-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+
+    .order-stat-card:nth-child(1) .order-stat-icon {
+        background: rgba(139, 69, 19, 0.08);
+        color: var(--admin-accent);
+    }
+
+    .order-stat-card:nth-child(2) .order-stat-icon {
+        background: rgba(188, 170, 164, 0.2);
+        color: #8d6e63;
+    }
+
+    .order-stat-card:nth-child(3) .order-stat-icon {
+        background: rgba(161, 136, 127, 0.15);
+        color: #6d4c41;
+    }
+
+    .order-stat-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #bcaaa4;
+        font-weight: 600;
+        margin-bottom: 0.15rem;
+    }
+
+    .order-stat-value {
+        font-size: 1.45rem;
+        font-weight: 800;
+        color: var(--admin-text);
+        line-height: 1.2;
+    }
+
+    .order-stat-value small {
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: #bcaaa4;
+        margin-left: 0.15rem;
+    }
+
+    /* ─── Orders Table Card ───────── */
+    .orders-card {
+        background: #fff;
+        border: 1px solid var(--admin-border);
+        border-radius: 14px;
+        overflow: hidden;
+    }
+
+    .orders-card-header {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--admin-border);
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        background: #faf8f5;
+    }
+
+    .orders-card-header h5 {
+        margin: 0;
+        font-weight: 700;
+        font-size: 1rem;
+        color: var(--admin-text);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .orders-card-header h5 i {
+        color: var(--admin-accent);
+        font-size: 0.85rem;
+    }
+
+    .orders-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    /* Search */
+    .orders-search {
+        position: relative;
+    }
+
+    .orders-search input {
+        border: 1px solid var(--admin-border);
+        border-radius: 10px;
+        padding: 0.45rem 0.85rem 0.45rem 2.25rem;
+        font-size: 0.82rem;
+        width: 220px;
+        background: #fff;
+        color: var(--admin-text);
+        outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .orders-search input:focus {
+        border-color: var(--admin-accent);
+        box-shadow: 0 0 0 3px rgba(139, 69, 19, 0.06);
+    }
+
+    .orders-search input::placeholder {
+        color: #bcaaa4;
+    }
+
+    .orders-search i {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #bcaaa4;
+        font-size: 0.8rem;
+    }
+
+    /* Filter Tabs */
+    .orders-filter-tabs {
+        display: flex;
+        gap: 0.25rem;
+        background: rgba(139, 69, 19, 0.04);
+        padding: 3px;
+        border-radius: 10px;
+    }
+
+    .orders-filter-tabs a {
+        padding: 0.35rem 0.85rem;
+        border-radius: 8px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        text-decoration: none;
+        color: #8d6e63;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+    .orders-filter-tabs a:hover {
+        background: rgba(139, 69, 19, 0.06);
+        color: var(--admin-accent);
+    }
+
+    .orders-filter-tabs a.active {
+        background: var(--admin-accent);
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(139, 69, 19, 0.15);
+    }
+
+    /* ─── Table ───────── */
+    .orders-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .orders-table thead th {
+        padding: 0.7rem 1.25rem;
+        text-align: left;
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+        color: #bcaaa4;
+        background: #faf8f5;
+        border-bottom: 1px solid var(--admin-border);
+        white-space: nowrap;
+    }
+
+    .orders-table tbody tr {
+        transition: background 0.15s ease;
+        cursor: pointer;
+    }
+
+    .orders-table tbody tr:hover {
+        background: rgba(139, 69, 19, 0.025);
+    }
+
+    .orders-table tbody td {
+        padding: 0.85rem 1.25rem;
+        font-size: 0.87rem;
+        border-bottom: 1px solid rgba(139, 69, 19, 0.06);
+        vertical-align: middle;
+        color: var(--admin-text);
+    }
+
+    .orders-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    /* Order ID */
+    .order-id-cell {
+        font-weight: 700;
+        font-size: 0.9rem;
+        color: var(--admin-accent);
+        font-family: 'Inter', monospace;
+    }
+
+    /* Customer */
+    .customer-name {
+        font-weight: 600;
+        color: var(--admin-text);
+        font-size: 0.88rem;
+    }
+
+    .customer-walkin-tag {
+        font-size: 0.72rem;
+        color: #bcaaa4;
+        font-weight: 500;
+    }
+
+    /* Items Badge */
+    .items-count-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.3rem 0.75rem;
+        border-radius: 8px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        background: rgba(139, 69, 19, 0.06);
+        color: var(--admin-accent);
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .items-count-badge:hover {
+        background: rgba(139, 69, 19, 0.1);
+    }
+
+    .items-count-badge i {
+        font-size: 0.7rem;
+        opacity: 0.7;
+    }
+
+    /* Item details collapse */
+    .order-items-detail {
+        background: #faf8f5;
+        border: 1px solid rgba(139, 69, 19, 0.08);
+        border-radius: 10px;
+        padding: 0.75rem;
+        margin-top: 0.65rem;
+    }
+
+    .order-items-detail ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .order-items-detail li {
+        padding: 0.25rem 0;
+        font-size: 0.82rem;
+        color: #5d4037;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .order-items-detail li .item-qty {
+        font-weight: 700;
+        color: var(--admin-accent);
+        min-width: 24px;
+    }
+
+    .order-items-detail .order-note {
+        margin-top: 0.5rem;
+        padding-top: 0.5rem;
+        border-top: 1px solid rgba(139, 69, 19, 0.08);
+        font-size: 0.75rem;
+        color: #8d6e63;
+        font-style: italic;
+    }
+
+    /* Order tags (dine-in, pickup, payment) */
+    .order-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        margin-top: 0.5rem;
+    }
+
+    .order-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.2rem 0.55rem;
+        border-radius: 6px;
+        font-size: 0.68rem;
+        font-weight: 600;
+        background: rgba(139, 69, 19, 0.05);
+        color: #8d6e63;
+        letter-spacing: 0.2px;
+    }
+
+    .order-tag i {
+        font-size: 0.6rem;
+        opacity: 0.65;
+    }
+
+    /* Total */
+    .order-total {
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: var(--admin-text);
+        font-family: 'Inter', monospace;
+    }
+
+    /* Date */
+    .order-date {
+        font-size: 0.82rem;
+        color: #8d6e63;
+        line-height: 1.5;
+    }
+
+    .order-date .date-line {
+        font-weight: 600;
+        color: var(--admin-text);
+    }
+
+    /* ─── Status Badges ───────── */
+    .order-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.3rem 0.75rem;
+        border-radius: 8px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .order-status i { font-size: 0.6rem; }
+
+    .status-pending {
+        background: #faf0e4;
+        color: #a0522d;
+    }
+
+    .status-preparing {
+        background: rgba(139, 99, 75, 0.08);
+        color: #6d4c41;
+    }
+
+    .status-completed {
+        background: rgba(93, 64, 55, 0.08);
+        color: #4e342e;
+    }
+
+    .status-cancelled {
+        background: rgba(188, 170, 164, 0.2);
+        color: #8d6e63;
+        text-decoration: line-through;
+    }
+
+    .status-hold {
+        background: #faf0e4;
+        color: #bf360c;
+    }
+
+    @keyframes gentle-pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+
+    .status-completed {
+        animation: gentle-pulse 2.5s ease-in-out infinite;
+    }
+
+    /* ─── Action Buttons ───────── */
+    .order-actions {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.4rem;
+    }
+
+    .order-actions .action-row {
+        display: flex;
+        gap: 0.35rem;
+    }
+
+    .btn-action {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.3rem 0.7rem;
+        border-radius: 8px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        border: 1px solid var(--admin-border);
+        background: #fff;
+        color: #8d6e63;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.15s ease;
+    }
+
+    .btn-action:hover {
+        border-color: var(--admin-accent);
+        color: var(--admin-accent);
+        background: rgba(139, 69, 19, 0.03);
+    }
+
+    .btn-action i {
+        font-size: 0.65rem;
+        opacity: 0.7;
+    }
+
+    /* Status dropdown */
+    .status-select {
+        border: 1px solid var(--admin-border);
+        border-radius: 8px;
+        padding: 0.3rem 0.5rem;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--admin-text);
+        background: #faf8f5;
+        outline: none;
+        cursor: pointer;
+        transition: border-color 0.2s;
+        min-width: 100px;
+    }
+
+    .status-select:focus {
+        border-color: var(--admin-accent);
+        box-shadow: 0 0 0 2px rgba(139, 69, 19, 0.06);
+    }
+
+    /* Empty state */
+    .orders-empty {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #bcaaa4;
+    }
+
+    .orders-empty i {
+        font-size: 2.5rem;
+        margin-bottom: 0.75rem;
+        opacity: 0.3;
+    }
+
+    .orders-empty p {
+        font-size: 0.9rem;
+        margin: 0;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .order-stats-row {
+            grid-template-columns: 1fr;
+        }
+
+        .orders-toolbar {
+            width: 100%;
+        }
+
+        .orders-search input {
+            width: 100%;
+        }
     }
 </style>
 
-<div class="card border-0 shadow-sm" style="border-radius: 12px;">
-    <div class="card-header bg-white border-bottom p-3">
-        <div class="d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 fw-bold" style="color: var(--text-main);">Recent Orders</h5>
+<!-- Page Header -->
+<div class="orders-page-header">
+    <h1>Order Management</h1>
+    <div class="orders-header-actions">
+        <button class="btn-header"
+            onclick="document.getElementById('shiftReportModal').style.display='flex'">
+            <i class="fas fa-cash-register"></i>Shift Report
+        </button>
+        <a href="{{ url_for('admin.reservations') }}" class="btn-header">
+            <i class="fas fa-calendar-alt"></i>Reservations
+        </a>
+        <a href="{{ url_for('admin.walkin_order') }}" class="btn-header btn-header-primary">
+            <i class="fas fa-plus"></i>New Walk-In
+        </a>
+    </div>
+</div>
 
-            <div class="d-flex align-items-center gap-3">
-                <div class="input-group input-group-sm" style="width: 250px;">
-                    <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
-                    <input type="text" id="orderSearch" class="form-control border-start-0 ps-0"
-                        placeholder="Search Order ID or Customer..." onkeyup="filterOrders()">
-                </div>
+<!-- Quick Stats -->
+<div class="order-stats-row">
+    <div class="order-stat-card">
+        <div class="order-stat-icon">
+            <i class="fas fa-sack-dollar"></i>
+        </div>
+        <div>
+            <div class="order-stat-label">Gross Sales Today</div>
+            <div class="order-stat-value">₱{{ "{:,.2f}".format(total_sales_today) }}</div>
+        </div>
+    </div>
+    <div class="order-stat-card">
+        <div class="order-stat-icon">
+            <i class="fas fa-clock"></i>
+        </div>
+        <div>
+            <div class="order-stat-label">Pending Actions</div>
+            <div class="order-stat-value">{{ pending_count }}<small>orders</small></div>
+        </div>
+    </div>
+    <div class="order-stat-card">
+        <div class="order-stat-icon">
+            <i class="fas fa-check-double"></i>
+        </div>
+        <div>
+            <div class="order-stat-label">Ready / Completed</div>
+            <div class="order-stat-value">{{ completed_count }}<small>today</small></div>
+        </div>
+    </div>
+</div>
 
-                <div class="btn-group" role="group">
-                    <a href="{{ url_for('admin.orders', status='ALL') }}"
-                        class="btn btn-sm btn-outline-dark {% if status_filter == 'ALL' %}active{% endif %}">All</a>
-                    <a href="{{ url_for('admin.orders', status='PENDING') }}"
-                        class="btn btn-sm btn-outline-warning {% if status_filter == 'PENDING' %}active{% endif %}">Pending</a>
-                    <a href="{{ url_for('admin.orders', status='PREPARING') }}"
-                        class="btn btn-sm btn-outline-info {% if status_filter == 'PREPARING' %}active{% endif %}">Preparing</a>
-                    <a href="{{ url_for('admin.orders', status='COMPLETED') }}"
-                        class="btn btn-sm btn-outline-success {% if status_filter == 'COMPLETED' %}active{% endif %}">Completed</a>
-                    <a href="{{ url_for('admin.orders', status='CANCELLED') }}"
-                        class="btn btn-sm btn-outline-danger {% if status_filter == 'CANCELLED' %}active{% endif %}">Cancelled</a>
-                </div>
+<!-- Orders Table -->
+<div class="orders-card">
+    <div class="orders-card-header">
+        <h5><i class="fas fa-receipt"></i> Recent Orders</h5>
+
+        <div class="orders-toolbar">
+            <div class="orders-search">
+                <i class="fas fa-search"></i>
+                <input type="text" id="orderSearch" placeholder="Search orders…" onkeyup="filterOrders()">
+            </div>
+
+            <div class="orders-filter-tabs">
+                <a href="{{ url_for('admin.orders', status='ALL') }}"
+                    class="{% if status_filter == 'ALL' %}active{% endif %}">All</a>
+                <a href="{{ url_for('admin.orders', status='PENDING') }}"
+                    class="{% if status_filter == 'PENDING' %}active{% endif %}">Pending</a>
+                <a href="{{ url_for('admin.orders', status='PREPARING') }}"
+                    class="{% if status_filter == 'PREPARING' %}active{% endif %}">Preparing</a>
+                <a href="{{ url_for('admin.orders', status='COMPLETED') }}"
+                    class="{% if status_filter == 'COMPLETED' %}active{% endif %}">Completed</a>
+                <a href="{{ url_for('admin.orders', status='CANCELLED') }}"
+                    class="{% if status_filter == 'CANCELLED' %}active{% endif %}">Cancelled</a>
             </div>
         </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead style="background-color: rgba(0,0,0,0.02);">
-                        <tr>
-                            <th class="ps-4">Order ID</th>
-                            <th>Customer</th>
-                            <th>Items</th>
-                            <th>Total</th>
-                            <th>Date & Time</th>
-                            <th>Status</th>
-                            <th class="pe-4 text-end">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="ordersTableBody">
-                        {% for order in orders %}
-                        <tr class="order-row filter-row" style="cursor: pointer;"
-                            onclick="toggleOrderItems('{{ order.id }}', event)">
-                            <td class="ps-4 fw-bold row-order-id">#{{ order.id }}</td>
-                            <td class="row-customer-name">
-                                {% if order.user %}
-                                <div class="fw-bold" style="color: var(--text-main);">{{ order.user.first_name }} {{
-                                    order.user.last_name }}</div>
-                                {% else %}
-                                <div class="fw-bold" style="color: var(--text-main);"><i
-                                        class="fas fa-walking me-1 text-muted"></i>{{ order.customer_name or 'Walk-in'
-                                    }}
-                                </div>
-                                <small class="text-muted">Walk-in Customer</small>
-                                {% endif %}
-                            </td>
-                            <td style="max-width: 280px; white-space: normal;">
-                                <button
-                                    class="btn btn-sm text-secondary fw-bold rounded-pill border shadow-sm px-3 py-1"
-                                    type="button" data-bs-toggle="collapse"
-                                    data-bs-target="#collapseItems{{ order.id }}" aria-expanded="false"
-                                    aria-controls="collapseItems{{ order.id }}"
-                                    style="font-size: 0.8rem; background: #fff;">
-                                    <i class="fas fa-shopping-basket me-1" style="color: var(--admin-accent);"></i> {{
-                                    order.items|length }} Items
-                                </button>
+    </div>
 
-                                <div class="collapse mt-2" id="collapseItems{{ order.id }}">
-                                    <div class="p-2 border rounded shadow-sm"
-                                        style="background: #fafafa; border-color: #eee !important;">
-                                        <ul class="list-unstyled mb-0" style="font-size: 0.85rem; color: #444;">
-                                            {% for item in order.items %}
-                                            <li class="mb-1"><span class="fw-bold" style="color: var(--text-main);">{{
-                                                    item.quantity }}x</span> {{ item.menu_item.name }}</li>
-                                            {% endfor %}
-                                        </ul>
-                                        {% if order.notes %}
-                                        <hr class="my-1 border-secondary opacity-25">
-                                        <small class="text-muted d-block" style="font-size: 0.75rem;"><i
-                                                class="fas fa-sticky-note me-1"></i> <em>{{ order.notes }}</em></small>
-                                        {% endif %}
-                                    </div>
-                                </div>
-
-                                <div class="mt-2 d-flex flex-wrap gap-1">
-                                    {% if order.dining_option == 'DINE_IN' %}
-                                    <span
-                                        class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
-                                        style="font-size: 0.70rem;"><i class="fas fa-utensils me-1"></i>Dine In</span>
-                                    {% else %}
-                                    <span
-                                        class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
-                                        style="font-size: 0.70rem;"><i
-                                            class="fas fa-shopping-bag me-1"></i>Pick-up</span>
-                                    {% endif %}
-
-                                    {% if order.payment_method == 'COUNTER' %}
-                                    <span
-                                        class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
-                                        style="font-size: 0.70rem;"><i class="fas fa-cash-register me-1"></i>Pay at
-                                        Counter</span>
-                                    {% else %}
-                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle"
-                                        style="font-size: 0.70rem;"><i class="fas fa-mobile-alt me-1"></i>Online
-                                        Payment</span>
-                                    {% endif %}
-                                </div>
-                            </td>
-                            <td class="fw-bold text-success">₱{{ "%.2f"|format(order.total_amount) }}</td>
-                            <td style="font-size: 0.9rem;" class="text-muted">
-                                {{ order.created_at.strftime('%b %d, %Y') }}<br>
-                                {{ order.created_at.strftime('%I:%M %p') }}
-                            </td>
-                            <td>
-                                {% if order.status == 'PENDING' %}
-                                <span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i>Pending</span>
-                                {% elif order.status == 'PREPARING' %}
-                                <span class="badge" style="background-color: #2196F3; color: white;"><i
-                                        class="fas fa-fire-burner me-1"></i>Preparing</span>
-                                {% elif order.status == 'COMPLETED' %}
-                                <span class="badge bg-success status-completed-blink"
-                                    style="box-shadow: 0 0 8px rgba(76,175,80,0.5);"><i
-                                        class="fas fa-check-circle me-1"></i>Completed / Ready</span>
-                                {% else %}
-                                <span class="badge bg-danger"><i class="fas fa-times me-1"></i>{{ order.status }}</span>
-                                {% endif %}
-                            </td>
-                            <td class="pe-4 text-end">
-                                <div class="d-flex flex-column gap-2 align-items-end">
-                                    <a href="{{ url_for('admin.print_receipt', order_id=order.id) }}"
-                                        class="btn btn-sm btn-outline-secondary rounded-pill shadow-sm"
-                                        style="font-size: 0.75rem;" onclick="event.stopPropagation()"><i
-                                            class="fas fa-receipt me-1"></i>Receipt</a>
-                                    <button type="button"
-                                        class="btn btn-sm btn-outline-primary rounded-pill shadow-sm split-btn"
-                                        style="font-size: 0.75rem;" data-order-id="{{ order.id }}" data-items='[
-                                            {% for item in order.items %}
-                                            {"id": {{ item.id }}, "name": "{{ item.menu_item.name|e }}", "qty": {{ item.quantity }}, "price": {{ item.price_at_time }}} {{ "," if not loop.last }}
-                                            {% endfor %}
-                                        ]' onclick="handleSplitClick(this); event.stopPropagation();">
-                                        <i class="fas fa-columns me-1"></i>Split
-                                    </button>
-                                    <form method="POST" action="{{ url_for('admin.update_order', order_id=order.id) }}"
-                                        class="d-inline" onclick="event.stopPropagation()">
-                                        <select name="status" onchange="this.form.submit()"
-                                            class="form-select form-select-sm d-inline-block w-auto rounded-pill border-0 shadow-sm"
-                                            style="font-size: 0.75rem; background-color: #f8f9fa;">
-                                            <option value="PENDING" {% if order.status=='PENDING' %}selected{% endif %}>
-                                                Pending</option>
-                                            <option value="PREPARING" {% if order.status=='PREPARING' %}selected{% endif
-                                                %}>
-                                                Preparing</option>
-                                            <option value="COMPLETED" {% if order.status=='COMPLETED' %}selected{% endif
-                                                %}>
-                                                Completed</option>
-                                            <option value="CANCELLED" {% if order.status=='CANCELLED' %}selected{% endif
-                                                %}>
-                                                Cancelled</option>
-                                        </select>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
+    <div style="overflow-x: auto;">
+        <table class="orders-table">
+            <thead>
+                <tr>
+                    <th style="padding-left: 1.5rem;">Order</th>
+                    <th>Customer</th>
+                    <th>Items</th>
+                    <th>Total</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th style="text-align: right; padding-right: 1.5rem;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="ordersTableBody">
+                {% for order in orders %}
+                <tr class="order-row filter-row" onclick="toggleOrderItems('{{ order.id }}', event)">
+                    <td style="padding-left: 1.5rem;">
+                        <span class="order-id-cell row-order-id">#{{ order.id }}</span>
+                    </td>
+                    <td class="row-customer-name">
+                        {% if order.user %}
+                        <div class="customer-name">{{ order.user.first_name }} {{ order.user.last_name }}</div>
                         {% else %}
-                        <tr>
-                            <td colspan="7" class="text-center py-4 text-muted">
-                                <i class="fas fa-shopping-bag fs-3 mb-2 opacity-50"></i><br>
-                                No orders found.
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- Split Bill Modal -->
-    <div class="modal fade" id="splitModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <form id="splitForm" method="POST" action="">
-                <div class="modal-content" style="border-radius: 15px;">
-                    <div class="modal-header border-0 pb-0">
-                        <h5 class="modal-title fw-bold" style="color: var(--text-main);">Split Bill</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p class="text-muted small mb-3">Select items to move to a NEW separate order.</p>
-                        <div id="splitItemsList" class="list-group list-group-flush">
-                            <!-- Items will be injected here -->
+                        <div class="customer-name">
+                            <i class="fas fa-walking" style="font-size: 0.75rem; opacity: 0.5; margin-right: 0.25rem;"></i>{{ order.customer_name or 'Walk-in' }}
                         </div>
-                    </div>
-                    <div class="modal-footer border-0">
-                        <button type="button" class="btn btn-light rounded-pill px-4"
-                            data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary rounded-pill px-4"
-                            style="background: #8B4513; border: none;">Confirm Split</button>
+                        <div class="customer-walkin-tag">Walk-in Customer</div>
+                        {% endif %}
+                    </td>
+                    <td style="max-width: 280px; white-space: normal;">
+                        <button class="items-count-badge" type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#collapseItems{{ order.id }}"
+                            aria-expanded="false"
+                            aria-controls="collapseItems{{ order.id }}">
+                            <i class="fas fa-cube"></i>
+                            {{ order.items|length }} item{{ 's' if order.items|length != 1 }}
+                        </button>
+
+                        <div class="collapse mt-2" id="collapseItems{{ order.id }}">
+                            <div class="order-items-detail">
+                                <ul>
+                                    {% for item in order.items %}
+                                    <li>
+                                        <span class="item-qty">{{ item.quantity }}×</span>
+                                        {{ item.menu_item.name }}
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                                {% if order.notes %}
+                                <div class="order-note">
+                                    <i class="fas fa-sticky-note" style="margin-right: 0.25rem;"></i>{{ order.notes }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="order-tags">
+                            {% if order.dining_option == 'DINE_IN' %}
+                            <span class="order-tag"><i class="fas fa-utensils"></i>Dine In</span>
+                            {% else %}
+                            <span class="order-tag"><i class="fas fa-shopping-bag"></i>Pick-up</span>
+                            {% endif %}
+
+                            {% if order.payment_method == 'COUNTER' %}
+                            <span class="order-tag"><i class="fas fa-coins"></i>Counter</span>
+                            {% else %}
+                            <span class="order-tag"><i class="fas fa-mobile-alt"></i>Online</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        <span class="order-total">₱{{ "%.2f"|format(order.total_amount) }}</span>
+                    </td>
+                    <td>
+                        <div class="order-date">
+                            <div class="date-line">{{ order.created_at.strftime('%b %d, %Y') }}</div>
+                            {{ order.created_at.strftime('%I:%M %p') }}
+                        </div>
+                    </td>
+                    <td>
+                        {% if order.status == 'PENDING' %}
+                        <span class="order-status status-pending">
+                            <i class="fas fa-clock"></i>Pending
+                        </span>
+                        {% elif order.status == 'PREPARING' %}
+                        <span class="order-status status-preparing">
+                            <i class="fas fa-fire-burner"></i>Preparing
+                        </span>
+                        {% elif order.status == 'COMPLETED' %}
+                        <span class="order-status status-completed">
+                            <i class="fas fa-check-circle"></i>Completed
+                        </span>
+                        {% elif order.status == 'HOLD' %}
+                        <span class="order-status status-hold">
+                            <i class="fas fa-pause-circle"></i>Hold
+                        </span>
+                        {% else %}
+                        <span class="order-status status-cancelled">
+                            <i class="fas fa-times"></i>{{ order.status }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td style="padding-right: 1.5rem;">
+                        <div class="order-actions">
+                            <div class="action-row">
+                                <a href="{{ url_for('admin.print_receipt', order_id=order.id) }}"
+                                    class="btn-action" onclick="event.stopPropagation()">
+                                    <i class="fas fa-receipt"></i>Receipt
+                                </a>
+                                <button type="button" class="btn-action split-btn"
+                                    data-order-id="{{ order.id }}" data-items='[
+                                        {% for item in order.items %}
+                                        {"id": {{ item.id }}, "name": "{{ item.menu_item.name|e }}", "qty": {{ item.quantity }}, "price": {{ item.price_at_time }}} {{ "," if not loop.last }}
+                                        {% endfor %}
+                                    ]' onclick="handleSplitClick(this); event.stopPropagation();">
+                                    <i class="fas fa-columns"></i>Split
+                                </button>
+                            </div>
+                            <form method="POST" action="{{ url_for('admin.update_order', order_id=order.id) }}"
+                                class="d-inline" onclick="event.stopPropagation()">
+                                <select name="status" onchange="this.form.submit()" class="status-select">
+                                    <option value="PENDING" {% if order.status=='PENDING' %}selected{% endif %}>
+                                        Pending</option>
+                                    <option value="PREPARING" {% if order.status=='PREPARING' %}selected{% endif %}>
+                                        Preparing</option>
+                                    <option value="COMPLETED" {% if order.status=='COMPLETED' %}selected{% endif %}>
+                                        Completed</option>
+                                    <option value="CANCELLED" {% if order.status=='CANCELLED' %}selected{% endif %}>
+                                        Cancelled</option>
+                                </select>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7">
+                        <div class="orders-empty">
+                            <i class="fas fa-shopping-bag d-block"></i>
+                            <p>No orders found.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Split Bill Modal -->
+<div class="modal fade" id="splitModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <form id="splitForm" method="POST" action="">
+            <div class="modal-content" style="border-radius: 16px; border: 1px solid var(--admin-border);">
+                <div class="modal-header border-0 pb-0" style="padding: 1.5rem 1.5rem 0;">
+                    <h5 class="modal-title fw-bold" style="color: var(--admin-text); font-family: 'Georgia', serif;">
+                        <i class="fas fa-columns me-2" style="color: var(--admin-accent); opacity: 0.7;"></i>Split Bill
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="padding: 1rem 1.5rem 1.5rem;">
+                    <p style="color: #bcaaa4; font-size: 0.82rem; margin-bottom: 1rem;">Select items to move to a new separate order.</p>
+                    <div id="splitItemsList" class="list-group list-group-flush">
+                        <!-- Items will be injected here -->
                     </div>
                 </div>
-            </form>
+                <div class="modal-footer border-0" style="padding: 0 1.5rem 1.5rem;">
+                    <button type="button" class="btn-action" style="padding: 0.5rem 1.25rem;"
+                        data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn-action" style="padding: 0.5rem 1.25rem; background: var(--admin-accent); color: #fff; border-color: var(--admin-accent);">
+                        Confirm Split</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- SHIFT REPORT MODAL -->
+<div id="shiftReportModal" class="admin-modal" style="display: none; align-items:center;">
+    <div class="admin-modal-content" style="max-width: 450px; border-radius: 16px; padding: 0; overflow: hidden; border: 1px solid var(--admin-border);">
+        <div style="background: var(--admin-accent); padding: 1.25rem 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0; color: #fff; font-family: 'Georgia', serif; font-size: 1.1rem; font-weight: 700;">
+                <i class="fas fa-file-invoice-dollar me-2" style="opacity: 0.8;"></i>End of Shift Report
+            </h3>
+            <span style="cursor: pointer; color: rgba(255,255,255,0.6); font-size: 1.5rem; line-height: 1; transition: color 0.2s;"
+                onclick="document.getElementById('shiftReportModal').style.display='none'"
+                onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.6)'">&times;</span>
+        </div>
+        <div style="padding: 1.5rem;">
+            <p style="color: #8d6e63; font-size: 0.85rem; margin-bottom: 1.25rem;">
+                Today's collection summary. Verify your cash drawer before logging out.
+            </p>
+
+            <div style="background: #faf8f5; border: 1px solid var(--admin-border); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #bcaaa4;">
+                    <i class="fas fa-coins me-2"></i>Cash Expected
+                </span>
+                <span style="font-weight: 800; font-size: 1.25rem; color: var(--admin-text);">₱{{ "{:,.2f}".format(cash_sales) }}</span>
+            </div>
+
+            <div style="background: #faf8f5; border: 1px solid var(--admin-border); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #bcaaa4;">
+                    <i class="fas fa-mobile-alt me-2"></i>Online Expected
+                </span>
+                <span style="font-weight: 800; font-size: 1.25rem; color: var(--admin-text);">₱{{ "{:,.2f}".format(online_sales) }}</span>
+            </div>
+
+            <div style="border-top: 1px solid var(--admin-border); padding-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: 700; font-size: 1rem; color: var(--admin-text);">Total Gross</span>
+                <span style="font-weight: 800; font-size: 1.5rem; color: var(--admin-accent);">₱{{ "{:,.2f}".format(total_sales_today) }}</span>
+            </div>
+        </div>
+        <div style="padding: 0 1.5rem 1.5rem; display: flex; justify-content: flex-end; gap: 0.5rem;">
+            <button class="btn-action" style="padding: 0.5rem 1.25rem;"
+                onclick="document.getElementById('shiftReportModal').style.display='none'">Close</button>
+            <button class="btn-action" style="padding: 0.5rem 1.25rem; background: var(--admin-accent); color: #fff; border-color: var(--admin-accent);"
+                onclick="window.print()">
+                <i class="fas fa-print"></i>Print Report</button>
         </div>
     </div>
+</div>
 
-    <!-- SHIFT REPORT MODAL -->
-    <div id="shiftReportModal" class="admin-modal" style="display: none; align-items:center;">
-        <div class="admin-modal-content" style="max-width: 450px; border-radius: 12px; padding: 24px;">
-            <div class="admin-modal-header border-bottom pb-3 mb-3 d-flex justify-content-between">
-                <h3 class="m-0" style="color: var(--text-main); font-family: 'Georgia', serif;">
-                    <i class="fas fa-file-invoice-dollar me-2 text-primary"></i>End of Shift Report
-                </h3>
-                <span class="admin-close fs-4" style="cursor: pointer;"
-                    onclick="document.getElementById('shiftReportModal').style.display='none'">&times;</span>
-            </div>
-            <div class="modal-body py-3">
-                <p class="text-muted mb-4 fs-6">Today's collection summary. Verify your cash drawer before logging out.
-                </p>
+<script>
+    function filterOrders() {
+        let input = document.getElementById('orderSearch').value.toLowerCase();
+        let rows = document.querySelectorAll('.filter-row');
 
-                <div
-                    class="d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded shadow-sm border border-secondary-subtle">
-                    <span class="fw-bold text-secondary text-uppercase"
-                        style="letter-spacing: 0.5px; font-size: 0.85rem;"><i class="fas fa-cash-register me-2"></i>Cash
-                        Expected</span>
-                    <span class="fw-bold fs-4 text-success">₱{{ "{:,.2f}".format(cash_sales) }}</span>
-                </div>
+        rows.forEach(row => {
+            let orderId = row.querySelector('.row-order-id').innerText.toLowerCase();
+            let customerName = row.querySelector('.row-customer-name').innerText.toLowerCase();
 
-                <div
-                    class="d-flex justify-content-between align-items-center mb-4 p-3 bg-light rounded shadow-sm border border-secondary-subtle">
-                    <span class="fw-bold text-secondary text-uppercase"
-                        style="letter-spacing: 0.5px; font-size: 0.85rem;"><i class="fas fa-mobile-alt me-2"></i>Online
-                        Expected</span>
-                    <span class="fw-bold fs-4 text-primary">₱{{ "{:,.2f}".format(online_sales) }}</span>
-                </div>
-
-                <hr class="opacity-25">
-                <div class="d-flex justify-content-between align-items-center mt-3">
-                    <span class="fw-bold fs-5 text-dark">Total Gross</span>
-                    <span class="fw-bold fs-3 text-dark">₱{{ "{:,.2f}".format(total_sales_today) }}</span>
-                </div>
-            </div>
-            <div class="mt-4 pt-3 border-top text-end">
-                <button class="btn btn-outline-secondary rounded-pill px-4"
-                    onclick="document.getElementById('shiftReportModal').style.display='none'">Close</button>
-                <button class="btn btn-primary rounded-pill px-4" onclick="window.print()">Print Report</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        function filterOrders() {
-            let input = document.getElementById('orderSearch').value.toLowerCase();
-            let rows = document.querySelectorAll('.filter-row');
-
-            rows.forEach(row => {
-                let orderId = row.querySelector('.row-order-id').innerText.toLowerCase();
-                let customerName = row.querySelector('.row-customer-name').innerText.toLowerCase();
-
-                if (orderId.includes(input) || customerName.includes(input)) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        }
-    </script>
-    {% endblock %}
-
-    {% block scripts %}
-    <script>
-        function handleSplitClick(btn) {
-            const orderId = btn.getAttribute('data-order-id');
-            const items = JSON.parse(btn.getAttribute('data-items'));
-            openSplitModal(orderId, items);
-        }
-
-        function openSplitModal(orderId, items) {
-            const modalEl = document.getElementById('splitModal');
-            const modal = new bootstrap.Modal(modalEl);
-            const list = document.getElementById('splitItemsList');
-            const form = document.getElementById('splitForm');
-
-            form.action = `/admin/orders/split/${orderId}`;
-            list.innerHTML = '';
-
-            items.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'list-group-item d-flex justify-content-between align-items-center border-0 px-0';
-                div.innerHTML = `
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="split_item_ids" value="${item.id}" id="split_${item.id}">
-                <label class="form-check-label ms-2" for="split_${item.id}">
-                    ${item.qty}x ${item.name}
-                </label>
-            </div>
-            <span class="fw-bold">₱${(item.price * item.qty).toFixed(2)}</span>
-        `;
-                list.appendChild(div);
-            });
-
-            modal.show();
-        }
-    </script>
-    <script>
-        function toggleOrderItems(orderId, event) {
-            // Don't toggle if clicking a button, link, or within a dropdown
-            if (event.target.closest('button') || event.target.closest('a') || event.target.closest('.dropdown-menu')) {
-                return;
+            if (orderId.includes(input) || customerName.includes(input)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
             }
+        });
+    }
+</script>
+{% endblock %}
 
-            const collapseEl = document.getElementById('collapseItems' + orderId);
-            const bsCollapse = bootstrap.Collapse.getOrCreateInstance(collapseEl);
-            bsCollapse.toggle();
+{% block scripts %}
+<script>
+    function handleSplitClick(btn) {
+        const orderId = btn.getAttribute('data-order-id');
+        const items = JSON.parse(btn.getAttribute('data-items'));
+        openSplitModal(orderId, items);
+    }
 
-            // Optional: Toggle row highlight
-            const row = event.target.closest('tr');
-            row.style.backgroundColor = collapseEl.classList.contains('show') ? 'transparent' : 'rgba(139, 69, 19, 0.03)';
+    function openSplitModal(orderId, items) {
+        const modalEl = document.getElementById('splitModal');
+        const modal = new bootstrap.Modal(modalEl);
+        const list = document.getElementById('splitItemsList');
+        const form = document.getElementById('splitForm');
+
+        form.action = `/admin/orders/split/${orderId}`;
+        list.innerHTML = '';
+
+        items.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'list-group-item d-flex justify-content-between align-items-center border-0 px-0';
+            div.style.cssText = 'padding: 0.5rem 0; border-bottom: 1px solid rgba(139,69,19,0.06) !important;';
+            div.innerHTML = `
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="split_item_ids" value="${item.id}" id="split_${item.id}"
+                        style="border-color: var(--admin-border);">
+                    <label class="form-check-label ms-2" for="split_${item.id}" style="font-size: 0.85rem; color: var(--admin-text);">
+                        ${item.qty}× ${item.name}
+                    </label>
+                </div>
+                <span style="font-weight: 700; color: var(--admin-accent); font-size: 0.85rem;">₱${(item.price * item.qty).toFixed(2)}</span>
+            `;
+            list.appendChild(div);
+        });
+
+        modal.show();
+    }
+</script>
+<script>
+    function toggleOrderItems(orderId, event) {
+        if (event.target.closest('button') || event.target.closest('a') || event.target.closest('.dropdown-menu') || event.target.closest('select') || event.target.closest('form')) {
+            return;
         }
-    </script>
 
-    <style>
-        .order-row:hover {
-            background-color: rgba(139, 69, 19, 0.05) !important;
-            transition: background-color 0.2s ease;
-        }
+        const collapseEl = document.getElementById('collapseItems' + orderId);
+        const bsCollapse = bootstrap.Collapse.getOrCreateInstance(collapseEl);
+        bsCollapse.toggle();
 
-        .order-row.active {
-            background-color: rgba(139, 69, 19, 0.08) !important;
-        }
-
-        .order-row td {
-            border-bottom: 1px solid #f8f9fa;
-        }
-
-        .collapse-items-container {
-            background: #fff;
-            border: 1px solid #eee;
-            border-radius: 12px;
-            margin-top: 8px;
-            padding: 12px;
-        }
-    </style>
-    {% endblock %}
+        const row = event.target.closest('tr');
+        row.style.backgroundColor = collapseEl.classList.contains('show') ? 'transparent' : 'rgba(139, 69, 19, 0.02)';
+    }
+</script>
+{% endblock %}

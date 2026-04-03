@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Analytics | Le Maison Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/admin.css" rel="stylesheet">
+    
+    <!-- Leaflet CSS & JS for Maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+
+<body class="admin-body">
+
+    <!-- SIDEBAR -->
+    <aside class="admin-sidebar" id="adminSidebar">
+        <div class="sidebar-brand">
+            <i class="fas fa-coffee"></i>
+            <span class="brand-text">
+                Le Maison Admin
+            </span>
+        </div>
+
+        <!-- MAIN -->
+        <div class="sidebar-group-title">Main</div>
+        <ul class="sidebar-nav">
+            
+            <li><a href="/admin/overview"
+                    class=""><i
+                        class="fas fa-th-large"></i><span class="sidebar-label">Overview</span></a></li>
+            <li><a href="/admin/analytics"
+                    class="active"><i
+                        class="fas fa-chart-line"></i><span class="sidebar-label">Analytics</span></a></li>
+            
+
+            
+            <li><a href="/admin/menu"
+                    class=""><i
+                        class="fas fa-utensils"></i><span class="sidebar-label">Menu</span></a></li>
+            
+        </ul>
+
+        <!-- MANAGEMENT -->
+        <div class="sidebar-group-title">Management</div>
+        <ul class="sidebar-nav">
+            
+            <li><a href="/admin/approvals"
+                    class=""><i
+                        class="fas fa-user-check"></i><span class="sidebar-label">Account Approvals</span></a></li>
+            <li><a href="/admin/users"
+                    class=""><i
+                        class="fas fa-users-cog"></i><span class="sidebar-label">User Management</span></a></li>
+            <li><a href="/admin/reservations"
+                    class=""><i
+                        class="fas fa-calendar-alt"></i><span class="sidebar-label">Reservations</span></a></li>
+            
+
+            
+            <li><a href="/admin/orders"
+                    class=""><i
+                        class="fas fa-shopping-bag"></i><span class="sidebar-label">Orders</span></a></li>
+            <li><a href="/admin/walkin-order"
+                    class=""><i
+                        class="fas fa-walking"></i><span class="sidebar-label">Walk-In Order</span></a></li>
+            
+
+            
+
+            
+            <li><a href="/admin/deliveries"
+                    class=""><i
+                        class="fas fa-truck"></i><span class="sidebar-label">Deliveries</span></a></li>
+            
+
+            
+            <li><a href="/admin/inventory"
+                    class=""><i
+                        class="fas fa-boxes-stacked"></i><span class="sidebar-label">Inventory</span></a></li>
+            
+
+            
+            <li><a href="/admin/reviews"
+                    class=""><i
+                        class="fas fa-star-half-alt"></i><span class="sidebar-label">Reviews</span></a></li>
+            
+        </ul>
+
+        <!-- SYSTEM -->
+        <div class="sidebar-spacer"></div>
+        <div class="sidebar-group-title">System</div>
+        <ul class="sidebar-nav" style="margin-bottom: 1.5rem;">
+            
+            <li><a href="/admin/settings"
+                    class=""><i
+                        class="fas fa-gear"></i><span class="sidebar-label">Settings</span></a></li>
+            
+            <li><a href="/" target="_blank"><i class="fas fa-external-link-alt"></i><span
+                        class="sidebar-label">View Live Site</span></a></li>
+            <li><a href="/admin/logout"><i class="fas fa-sign-out-alt"></i><span
+                        class="sidebar-label">Logout</span></a></li>
+        </ul>
+    </aside>
+
+    <!-- TOP BAR -->
+    <header class="admin-topbar">
+        <div class="topbar-right">
+            <span style="font-size: 0.85rem; color: var(--admin-text-muted);">
+                <i class="fas fa-clock me-1"></i> <span id="liveDateTime"></span>
+            </span>
+
+            <!-- NOTIFICATION BELL -->
+            <div class="notif-bell-wrapper" style="position: relative; margin-left: 16px;">
+                <button id="adminNotifBell" onclick="toggleNotifPanel()" style="background: none; border: none; cursor: pointer; position: relative; padding: 8px;">
+                    <i class="fas fa-bell" style="font-size: 1.25rem; color: var(--admin-text-muted); transition: color 0.2s;"></i>
+                    <span id="adminNotifBadge" style="display:none; position: absolute; top: 2px; right: 2px; background: #dc3545; color: #fff; font-size: 0.6rem; font-weight: 700; border-radius: 50%; min-width: 18px; height: 18px; line-height: 18px; text-align: center; padding: 0 4px; box-shadow: 0 2px 6px rgba(220,53,69,0.4); animation: notifPulse 2s infinite;">0</span>
+                </button>
+
+                <!-- Notification Dropdown Panel -->
+                <div id="adminNotifPanel" style="display:none; position: absolute; right: 0; top: 48px; width: 370px; max-height: 480px; background: #fff; border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,0.15); z-index: 9999; overflow: hidden; border: 1px solid rgba(0,0,0,0.08);">
+                    <div style="padding: 16px 20px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #8B4513, #A0522D);">
+                        <span style="font-weight: 700; font-size: 0.95rem; color: #fff;"><i class="fas fa-bell me-2"></i>Notifications</span>
+                        <button onclick="markAllNotifRead()" style="background: rgba(255,255,255,0.2); border: none; color: #fff; font-size: 0.75rem; cursor: pointer; padding: 4px 12px; border-radius: 20px; font-weight: 600; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">Mark all read</button>
+                    </div>
+                    <!-- Live counts summary -->
+                    <div id="adminLiveCountsBar" style="display:none; padding: 10px 20px; background: #faf6f2; border-bottom: 1px solid #f0e6d9; font-size: 0.75rem; color: #8B4513;"></div>
+                    <div id="adminNotifList" style="max-height: 380px; overflow-y: auto; padding: 8px 0;"></div>
+                    <div id="adminNotifEmpty" style="display:none; text-align: center; padding: 40px 20px; color: #999;">
+                        <i class="fas fa-bell-slash" style="font-size: 2rem; margin-bottom: 10px; opacity: 0.3;"></i>
+                        <p style="margin: 0; font-size: 0.85rem;">No notifications yet</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="topbar-avatar">R</div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="admin-main">
+        <div class="admin-content">
+            
+            
+            
+
+            
+<div class="page-header">
+    <h1>Analytics</h1>
+    <p>Detailed sales insights and customer metrics.</p>
+</div>
+
+<!-- CATEGORY STATS -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(200,121,65,0.15); color: var(--admin-accent);"><i
+                class="fas fa-users"></i></div>
+        <div class="stat-label">Total Customers</div>
+        <div class="stat-value">8</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(59,130,246,0.15); color: var(--admin-blue);"><i
+                class="fas fa-utensils"></i></div>
+        <div class="stat-label">Menu Items</div>
+        <div class="stat-value">182</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(34,197,94,0.12); color: var(--admin-green);"><i
+                class="fas fa-peso-sign"></i></div>
+        <div class="stat-label">Total Revenue</div>
+        <div class="stat-value">&#8369;21597</div>
+    </div>
+</div>
+
+<div class="stats-grid">
+    
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(139,92,246,0.15); color: #8b5cf6;"><i class="fas fa-tag"></i>
+        </div>
+        <div class="stat-label">All Day Breakfast</div>
+        <div class="stat-value">9</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(139,92,246,0.15); color: #8b5cf6;"><i class="fas fa-tag"></i>
+        </div>
+        <div class="stat-label">Milk Tea</div>
+        <div class="stat-value">2</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(139,92,246,0.15); color: #8b5cf6;"><i class="fas fa-tag"></i>
+        </div>
+        <div class="stat-label">Hot Coffee</div>
+        <div class="stat-value">7</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(139,92,246,0.15); color: #8b5cf6;"><i class="fas fa-tag"></i>
+        </div>
+        <div class="stat-label">Best Sellers</div>
+        <div class="stat-value">8</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(139,92,246,0.15); color: #8b5cf6;"><i class="fas fa-tag"></i>
+        </div>
+        <div class="stat-label">Sweet Breakfast</div>
+        <div class="stat-value">5</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(139,92,246,0.15); color: #8b5cf6;"><i class="fas fa-tag"></i>
+        </div>
+        <div class="stat-label">Iced Coffee</div>
+        <div class="stat-value">10</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(139,92,246,0.15); color: #8b5cf6;"><i class="fas fa-tag"></i>
+        </div>
+        <div class="stat-label">Cakes &amp; Pastries</div>
+        <div class="stat-value">13</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(139,92,246,0.15); color: #8b5cf6;"><i class="fas fa-tag"></i>
+        </div>
+        <div class="stat-label">Fruit Shakes &amp; Yogurt Drinks</div>
+        <div class="stat-value">11</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(139,92,246,0.15); color: #8b5cf6;"><i class="fas fa-tag"></i>
+        </div>
+        <div class="stat-label">Thin Crust Pizza</div>
+        <div class="stat-value">11</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(139,92,246,0.15); color: #8b5cf6;"><i class="fas fa-tag"></i>
+        </div>
+        <div class="stat-label">Rice Plates</div>
+        <div class="stat-value">10</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(139,92,246,0.15); color: #8b5cf6;"><i class="fas fa-tag"></i>
+        </div>
+        <div class="stat-label">Iced Beverages</div>
+        <div class="stat-value">9</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(139,92,246,0.15); color: #8b5cf6;"><i class="fas fa-tag"></i>
+        </div>
+        <div class="stat-label">Milkshakes &amp; Smoothies</div>
+        <div class="stat-value">9</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(139,92,246,0.15); color: #8b5cf6;"><i class="fas fa-tag"></i>
+        </div>
+        <div class="stat-label">Cocktails</div>
+        <div class="stat-value">17</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(139,92,246,0.15); color: #8b5cf6;"><i class="fas fa-tag"></i>
+        </div>
+        <div class="stat-label">Pasta &amp; Salads</div>
+        <div class="stat-value">12</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(139,92,246,0.15); color: #8b5cf6;"><i class="fas fa-tag"></i>
+        </div>
+        <div class="stat-label">Starters &amp; Sandwiches</div>
+        <div class="stat-value">12</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(139,92,246,0.15); color: #8b5cf6;"><i class="fas fa-tag"></i>
+        </div>
+        <div class="stat-label">Frappes</div>
+        <div class="stat-value">8</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(139,92,246,0.15); color: #8b5cf6;"><i class="fas fa-tag"></i>
+        </div>
+        <div class="stat-label">Steaks</div>
+        <div class="stat-value">9</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(139,92,246,0.15); color: #8b5cf6;"><i class="fas fa-tag"></i>
+        </div>
+        <div class="stat-label">Desserts</div>
+        <div class="stat-value">20</div>
+    </div>
+    
+</div>
+
+<!-- ROW 1 : Revenue Trend + Order Status -->
+<div class="admin-cards-grid">
+    <div class="admin-card chart-card">
+        <h3><i class="fas fa-chart-line me-2" style="color: var(--admin-green);"></i> Revenue Trend <span
+                class="chart-subtitle">Last 7 Days</span></h3>
+        <div class="chart-container"><canvas id="revenueTrendChart"></canvas></div>
+    </div>
+    <div class="admin-card chart-card">
+        <h3><i class="fas fa-chart-pie me-2" style="color: var(--admin-blue);"></i> Order Status</h3>
+        <div class="chart-container chart-container-sm"><canvas id="orderStatusChart"></canvas></div>
+    </div>
+</div>
+
+<!-- ROW 2 : Daily Orders -->
+<div class="admin-cards-grid" style="grid-template-columns: 1fr;">
+    <div class="admin-card chart-card">
+        <h3><i class="fas fa-chart-bar me-2" style="color: var(--admin-accent);"></i> Daily Orders <span
+                class="chart-subtitle">Last 7 Days</span></h3>
+        <div class="chart-container"><canvas id="dailyOrdersChart"></canvas></div>
+    </div>
+</div>
+
+<!-- ROW 3 : Busy Times + Top 5 -->
+<div class="admin-cards-grid">
+    <div class="admin-card chart-card">
+        <h3><i class="fas fa-fire me-2" style="color: var(--admin-yellow);"></i> Busy Times <span
+                class="chart-subtitle">Orders by Hour</span></h3>
+        <div class="chart-container"><canvas id="busyTimesChart"></canvas></div>
+    </div>
+    <div class="admin-card chart-card">
+        <h3><i class="fas fa-trophy me-2" style="color: #f59e0b;"></i> Top 5 Best Selling Dishes</h3>
+        <div class="chart-container"><canvas id="topDishesChart"></canvas></div>
+    </div>
+</div>
+
+<!-- ROW 4 : Monthly Revenue + Customer Loyalty -->
+<div class="admin-cards-grid">
+    <div class="admin-card chart-card">
+        <h3><i class="fas fa-money-bill-trend-up me-2" style="color: var(--admin-green);"></i> Monthly Revenue <span
+                class="chart-subtitle">Last 6 Months</span></h3>
+        <div class="chart-container"><canvas id="monthlyRevenueChart"></canvas></div>
+    </div>
+    <div class="admin-card chart-card">
+        <h3><i class="fas fa-heart me-2" style="color: #ef4444;"></i> Customer Loyalty</h3>
+        <div class="chart-container chart-container-sm"><canvas id="loyaltyChart"></canvas></div>
+    </div>
+</div>
+
+<!-- ROW 5 : Existing Menu Analytics -->
+<div class="admin-cards-grid">
+    <div class="admin-card chart-card">
+        <h3><i class="fas fa-chart-pie me-2" style="color: var(--admin-accent);"></i> Revenue by Category</h3>
+        <div class="chart-container chart-container-sm"><canvas id="categoryChart"></canvas></div>
+    </div>
+    <div class="admin-card chart-card">
+        <h3><i class="fas fa-chart-bar me-2" style="color: var(--admin-blue);"></i> Menu Distribution</h3>
+        <div class="chart-container"><canvas id="menuChart"></canvas></div>
+    </div>
+</div>
+
+        </div>
+    </main>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function toggleSidebar() {
+            document.getElementById('adminSidebar').classList.toggle('collapsed');
+            document.body.classList.toggle('sidebar-collapsed');
+        }
+
+        // Live clock
+        function updateClock() {
+            const now = new Date();
+            const el = document.getElementById('liveDateTime');
+            if (el) el.textContent = now.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+        updateClock();
+        setInterval(updateClock, 30000);
+
+        // ==========================================
+        // SINGLE PAGE APPLICATION (SPA) FAST LOADER
+        // ==========================================
+        let pageTimeouts = [];
+        let pageIntervals = [];
+
+        // Safe wrappers for pages with loops/fetching like Kitchen View and Deliveries
+        window.registerTimeout = function (fn, delay) { const id = setTimeout(fn, delay); pageTimeouts.push(id); return id; };
+        window.registerInterval = function (fn, delay) { const id = setInterval(fn, delay); pageIntervals.push(id); return id; };
+
+        function clearPageTimers() {
+            pageTimeouts.forEach(clearTimeout); pageTimeouts = [];
+            pageIntervals.forEach(clearInterval); pageIntervals = [];
+        }
+
+        window.addEventListener('popstate', (e) => {
+            if (e.state && e.state.spa) adminLoadPage(window.location.href, false);
+        });
+
+        document.body.addEventListener('click', function (e) {
+            const link = e.target.closest('a');
+            if (!link) return;
+
+            // Ignore if it's external, logout, anchors, or Bootstrap toggles
+            if (link.hostname !== window.location.hostname ||
+                link.getAttribute('target') === '_blank' ||
+                link.href.includes('#') ||
+                link.href.includes('logout') ||
+                link.getAttribute('data-bs-toggle')) {
+                return;
+            }
+
+            // Only SPA handle the admin routes
+            if (link.href.includes('/admin/')) {
+                e.preventDefault();
+                adminLoadPage(link.href, true);
+            }
+        });
+
+        async function adminLoadPage(url, push) {
+            try {
+                if (!document.getElementById('spaLoader')) {
+                    const l = document.createElement('div');
+                    l.id = 'spaLoader';
+                    l.style = 'position:fixed;top:0;left:0;height:4px;background:#8B4513;z-index:99999;transition:width 0.2s;width:0%;';
+                    document.body.appendChild(l);
+                }
+                const loader = document.getElementById('spaLoader');
+                loader.style.width = '30%';
+
+                const resp = await fetch(url);
+                if (!resp.ok && resp.status >= 400 || (resp.redirected && resp.url.includes('login'))) {
+                    window.location.href = resp.url || url; // Fallback to full reload
+                    return;
+                }
+
+                const html = await resp.text();
+                loader.style.width = '70%';
+
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+
+                // Clear any running background intervals from previous page
+                clearPageTimers();
+
+                const newContent = doc.querySelector('.admin-content');
+                if (!newContent) { window.location.href = url; return; }
+
+                // Swap Content
+                document.querySelector('.admin-content').innerHTML = newContent.innerHTML;
+                document.title = doc.title;
+
+                // Sync the Sidebar Highlights
+                document.querySelectorAll('.sidebar-nav a').forEach(a => {
+                    const cleanUrl = url.split('?')[0];
+                    if (a.href === url || a.href === cleanUrl) a.classList.add('active');
+                    else a.classList.remove('active');
+                });
+
+                if (push) history.pushState({ spa: true }, doc.title, url);
+
+                // Run Scripts imported by the new html content safely
+                document.querySelector('.admin-content').querySelectorAll('script').forEach(s => {
+                    const newScript = document.createElement('script');
+                    if (s.src) newScript.src = s.src;
+                    else newScript.textContent = s.textContent;
+                    document.body.appendChild(newScript);
+                    newScript.remove();
+                });
+
+                loader.style.width = '100%';
+                setTimeout(() => loader.style.width = '0', 300);
+
+            } catch (err) {
+                console.error("SPA Loader Error:", err);
+                window.location.href = url;
+            }
+        }
+    </script>
+
+    <!-- Admin Notification Bell JS -->
+    <style>
+        @keyframes notifPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+        #adminNotifBell:hover i { color: #8B4513 !important; }
+        #adminNotifPanel::-webkit-scrollbar { width: 4px; }
+        #adminNotifPanel::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+    </style>
+    <script>
+        let _notifPanelOpen = false;
+
+        function toggleNotifPanel() {
+            const panel = document.getElementById('adminNotifPanel');
+            _notifPanelOpen = !_notifPanelOpen;
+            panel.style.display = _notifPanelOpen ? 'block' : 'none';
+            if (_notifPanelOpen) fetchAdminNotifs();
+        }
+
+        // Close panel when clicking outside
+        document.addEventListener('click', function(e) {
+            const wrapper = document.querySelector('.notif-bell-wrapper');
+            if (wrapper && !wrapper.contains(e.target)) {
+                _notifPanelOpen = false;
+                document.getElementById('adminNotifPanel').style.display = 'none';
+            }
+        });
+
+        function _notifIcon(type) {
+            const icons = {
+                'ORDER': '<i class="fas fa-shopping-bag" style="color:#8B4513;"></i>',
+                'RESERVATION': '<i class="fas fa-calendar-check" style="color:#17a2b8;"></i>',
+                'DELIVERY': '<i class="fas fa-truck" style="color:#28a745;"></i>',
+                'SYSTEM': '<i class="fas fa-cog" style="color:#6c757d;"></i>',
+            };
+            return icons[type] || icons['SYSTEM'];
+        }
+
+        async function fetchAdminNotifs() {
+            try {
+                const resp = await fetch('/admin/api/notifications');
+                const data = await resp.json();
+                const list = document.getElementById('adminNotifList');
+                const empty = document.getElementById('adminNotifEmpty');
+
+                if (!data.notifications || data.notifications.length === 0) {
+                    list.innerHTML = '';
+                    empty.style.display = 'block';
+                    return;
+                }
+                empty.style.display = 'none';
+                list.innerHTML = data.notifications.map(n => `
+                    <div style="padding: 12px 20px; border-bottom: 1px solid #f5f5f5; display: flex; gap: 12px; align-items: flex-start; background: ${n.is_read ? '#fff' : '#faf6f2'}; transition: background 0.2s; cursor: default;"
+                         onmouseover="this.style.background='#f5f0eb'" onmouseout="this.style.background='${n.is_read ? '#fff' : '#faf6f2'}'">
+                        <div style="width: 36px; height: 36px; border-radius: 50%; background: ${n.is_read ? '#f0f0f0' : 'rgba(139,69,19,0.1)'}; display:flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.85rem;">
+                            ${_notifIcon(n.type)}
+                        </div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-weight: ${n.is_read ? '400' : '600'}; font-size: 0.82rem; color: #333; margin-bottom: 2px;">${n.title}</div>
+                            <div style="font-size: 0.75rem; color: #777; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${n.message}</div>
+                            <div style="font-size: 0.65rem; color: #aaa; margin-top: 4px;"><i class="far fa-clock me-1"></i>${n.created_at}</div>
+                        </div>
+                        ${!n.is_read ? '<div style="width:8px;height:8px;border-radius:50%;background:#8B4513;flex-shrink:0;margin-top:6px;"></div>' : ''}
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error('Notif fetch error:', e);
+            }
+        }
+
+        async function fetchAdminUnreadCount() {
+            try {
+                const resp = await fetch('/admin/api/notifications/unread-count');
+                const data = await resp.json();
+                const badge = document.getElementById('adminNotifBadge');
+                if (data.count > 0) {
+                    badge.textContent = data.count > 99 ? '99+' : data.count;
+                    badge.style.display = 'block';
+                } else {
+                    badge.style.display = 'none';
+                }
+
+                // Show live counts bar for admin
+                const bar = document.getElementById('adminLiveCountsBar');
+                let parts = [];
+                if (data.pending_users) parts.push(`<i class="fas fa-user-clock me-1"></i>${data.pending_users} pending approvals`);
+                if (data.pending_orders) parts.push(`<i class="fas fa-shopping-bag me-1"></i>${data.pending_orders} pending orders`);
+                if (data.preparing_orders) parts.push(`<i class="fas fa-fire me-1"></i>${data.preparing_orders} preparing`);
+                if (data.pending_reservations) parts.push(`<i class="fas fa-calendar me-1"></i>${data.pending_reservations} pending reservations`);
+                if (data.pending_reviews) parts.push(`<i class="fas fa-star me-1"></i>${data.pending_reviews} pending reviews`);
+                if (data.waiting_deliveries) parts.push(`<i class="fas fa-truck me-1"></i>${data.waiting_deliveries} waiting deliveries`);
+
+                if (parts.length > 0) {
+                    bar.style.display = 'block';
+                    bar.innerHTML = parts.join(' &nbsp;·&nbsp; ');
+                } else {
+                    bar.style.display = 'none';
+                }
+            } catch (e) {}
+        }
+
+        async function markAllNotifRead() {
+            try {
+                await fetch('/admin/api/notifications/mark-all-read', { method: 'POST' });
+                fetchAdminUnreadCount();
+                fetchAdminNotifs();
+            } catch (e) {}
+        }
+
+        // Initial load + auto-poll every 15 seconds
+        fetchAdminUnreadCount();
+        setInterval(fetchAdminUnreadCount, 15000);
+    </script>
+
+    
+<div id="chartServerData" style="display: none;" data-revenue-trend-labels="[&#34;Mar 15&#34;, &#34;Mar 16&#34;, &#34;Mar 17&#34;, &#34;Mar 18&#34;, &#34;Mar 19&#34;, &#34;Mar 20&#34;, &#34;Mar 21&#34;]"
+    data-revenue-trend-data="[0.0, 0.0, 0.0, 0.0, 0.0, 385.0, 1834.0]" data-order-status-labels="[&#34;COMPLETED&#34;, &#34;PENDING&#34;, &#34;PREPARING&#34;]"
+    data-order-status-data="[8, 9, 9]" data-daily-orders-labels="[&#34;Mar 15&#34;, &#34;Mar 16&#34;, &#34;Mar 17&#34;, &#34;Mar 18&#34;, &#34;Mar 19&#34;, &#34;Mar 20&#34;, &#34;Mar 21&#34;]"
+    data-daily-orders-data="[0, 0, 0, 0, 0, 1, 5]" data-busy-times-labels="[&#34;00:00&#34;, &#34;01:00&#34;, &#34;02:00&#34;, &#34;03:00&#34;, &#34;04:00&#34;, &#34;05:00&#34;, &#34;06:00&#34;, &#34;07:00&#34;, &#34;08:00&#34;, &#34;09:00&#34;, &#34;10:00&#34;, &#34;11:00&#34;, &#34;12:00&#34;, &#34;13:00&#34;, &#34;14:00&#34;, &#34;15:00&#34;, &#34;16:00&#34;, &#34;17:00&#34;, &#34;18:00&#34;, &#34;19:00&#34;, &#34;20:00&#34;, &#34;21:00&#34;, &#34;22:00&#34;, &#34;23:00&#34;]"
+    data-busy-times-data="[6, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 7, 1, 0, 3, 0, 0, 1, 0, 2, 0, 3]" data-top-dishes-labels="[&#34;Four Cheese&#34;, &#34;Baby Back Ribs&#34;, &#34;Italian Carbonara&#34;, &#34;Bangus Belly&#34;, &#34;Banana Nutella Waffles&#34;]"
+    data-top-dishes-data="[7, 5, 4, 3, 2]" data-monthly-rev-labels="[&#34;Oct 2025&#34;, &#34;Nov 2025&#34;, &#34;Dec 2025&#34;, &#34;Jan 2026&#34;, &#34;Feb 2026&#34;, &#34;Mar 2026&#34;]"
+    data-monthly-rev-data="[0.0, 0.0, 0.0, 0.0, 0.0, 21597.0]" data-loyalty-labels="[&#34;Repeat Customers&#34;, &#34;One-time Customers&#34;]"
+    data-loyalty-data="[4, 4]"
+    data-categories="[&#34;All Day Breakfast&#34;, &#34;Milk Tea&#34;, &#34;Hot Coffee&#34;, &#34;Best Sellers&#34;, &#34;Sweet Breakfast&#34;, &#34;Iced Coffee&#34;, &#34;Cakes \u0026 Pastries&#34;, &#34;Fruit Shakes \u0026 Yogurt Drinks&#34;, &#34;Thin Crust Pizza&#34;, &#34;Rice Plates&#34;, &#34;Iced Beverages&#34;, &#34;Milkshakes \u0026 Smoothies&#34;, &#34;Cocktails&#34;, &#34;Pasta \u0026 Salads&#34;, &#34;Starters \u0026 Sandwiches&#34;, &#34;Frappes&#34;, &#34;Steaks&#34;, &#34;Desserts&#34;]"
+    data-counts="[9, 2, 7, 8, 5, 10, 13, 11, 11, 10, 9, 9, 17, 12, 12, 8, 9, 20]"></div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // ═══════════════════════════════════════════════════
+    // CHART.JS GLOBAL DEFAULTS (Cafe Theme)
+    // ═══════════════════════════════════════════════════
+    Chart.defaults.font.family = "'Inter', -apple-system, sans-serif";
+    Chart.defaults.font.size = 12;
+    Chart.defaults.color = '#8d6e63';
+    Chart.defaults.plugins.legend.labels.usePointStyle = true;
+    Chart.defaults.plugins.legend.labels.padding = 16;
+    Chart.defaults.plugins.tooltip.backgroundColor = '#3e2723';
+    Chart.defaults.plugins.tooltip.cornerRadius = 10;
+    Chart.defaults.plugins.tooltip.padding = 10;
+    Chart.defaults.plugins.tooltip.titleFont = { weight: '600' };
+    Chart.defaults.elements.point.radius = 4;
+    Chart.defaults.elements.point.hoverRadius = 6;
+    Chart.defaults.animation.duration = 800;
+    Chart.defaults.animation.easing = 'easeOutQuart';
+
+    // ── Palette ──────────────────────────────────────
+    var CAFE_BROWN = '#8B4513';
+    var CAFE_LATTE = '#c87941';
+    var CAFE_GREEN = '#2e7d32';
+    var CAFE_BLUE = '#1565c0';
+    var CAFE_ORANGE = '#e65100';
+    var CAFE_RED = '#c62828';
+    var CAFE_PURPLE = '#8b5cf6';
+    var CAFE_GOLD = '#f59e0b';
+    var CAFE_TEAL = '#0d9488';
+    var CAFE_PINK = '#ec4899';
+
+    var STATUS_COLORS = {
+        'PENDING': '#f59e0b',
+        'PREPARING': '#3b82f6',
+        'COMPLETED': '#22c55e',
+        'CANCELLED': '#ef4444',
+        'No Data': '#d4d4d8'
+    };
+
+    const defaultColors = ['#c87941', '#3b82f6', '#22c55e', '#f59e0b', '#8b5cf6', '#ef4444'];
+
+    // ── Helper: gradient fill ────────────────────────
+    function hexToRgb(hex) {
+        if (!hex) return [0, 0, 0];
+        var r = parseInt(hex.slice(1, 3), 16);
+        var g = parseInt(hex.slice(3, 5), 16);
+        var b = parseInt(hex.slice(5, 7), 16);
+        return [r, g, b];
+    }
+
+    function gradientFill(ctx, hex, a1, a2) {
+        if (a1 === undefined) a1 = 0.35;
+        if (a2 === undefined) a2 = 0.02;
+        var rgb = hexToRgb(hex);
+        var grad = ctx.createLinearGradient(0, 0, 0, ctx.canvas.clientHeight || 280);
+        grad.addColorStop(0, 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + a1 + ')');
+        grad.addColorStop(1, 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + a2 + ')');
+        return grad;
+    }
+
+    // ── Grid / Scale defaults ────────────────────────
+    var scaleX = { ticks: { color: '#a1887f', font: { size: 11 } }, grid: { display: false } };
+    var scaleY = { ticks: { color: '#a1887f', font: { size: 11 } }, grid: { color: 'rgba(139,69,19,0.06)' }, beginAtZero: true };
+
+    // ═══ Data from server ═══
+    var _cd = document.getElementById('chartServerData').dataset;
+    var revenueTrendLabels = JSON.parse(_cd.revenueTrendLabels);
+    var revenueTrendData = JSON.parse(_cd.revenueTrendData);
+    var orderStatusLabels = JSON.parse(_cd.orderStatusLabels);
+    var orderStatusData = JSON.parse(_cd.orderStatusData);
+    var dailyOrdersLabels = JSON.parse(_cd.dailyOrdersLabels);
+    var dailyOrdersData = JSON.parse(_cd.dailyOrdersData);
+    var busyTimesLabels = JSON.parse(_cd.busyTimesLabels);
+    var busyTimesData = JSON.parse(_cd.busyTimesData);
+    var topDishesLabels = JSON.parse(_cd.topDishesLabels);
+    var topDishesData = JSON.parse(_cd.topDishesData);
+    var monthlyRevLabels = JSON.parse(_cd.monthlyRevLabels);
+    var monthlyRevData = JSON.parse(_cd.monthlyRevData);
+    var loyaltyLabels = JSON.parse(_cd.loyaltyLabels);
+    var loyaltyData = JSON.parse(_cd.loyaltyData);
+
+    // ═══════════════════════════════════════════════════
+    // 1) REVENUE TREND (Line — Last 7 Days)
+    // ═══════════════════════════════════════════════════
+    (function () {
+        var ctx = document.getElementById('revenueTrendChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: revenueTrendLabels,
+                datasets: [{
+                    label: 'Revenue',
+                    data: revenueTrendData,
+                    borderColor: CAFE_GREEN,
+                    backgroundColor: gradientFill(ctx, CAFE_GREEN),
+                    borderWidth: 2.5,
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: CAFE_GREEN,
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { x: scaleX, y: scaleY },
+                plugins: { legend: { display: false } }
+            }
+        });
+    })();
+
+    // ═══════════════════════════════════════════════════
+    // 2) ORDER STATUS (Donut)
+    // ═══════════════════════════════════════════════════
+    (function () {
+        var colors = orderStatusLabels.map(function (l) { return STATUS_COLORS[l] || '#a1887f'; });
+        new Chart(document.getElementById('orderStatusChart'), {
+            type: 'doughnut',
+            data: {
+                labels: orderStatusLabels,
+                datasets: [{
+                    data: orderStatusData,
+                    backgroundColor: colors,
+                    borderWidth: 0,
+                    hoverOffset: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '68%',
+                plugins: {
+                    legend: { position: 'bottom', labels: { padding: 14, font: { size: 12 } } }
+                }
+            }
+        });
+    })();
+
+    // ═══════════════════════════════════════════════════
+    // 3) DAILY ORDERS (Bar — Last 7 Days)
+    // ═══════════════════════════════════════════════════
+    (function () {
+        var ctx = document.getElementById('dailyOrdersChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: dailyOrdersLabels,
+                datasets: [{
+                    label: 'Orders',
+                    data: dailyOrdersData,
+                    backgroundColor: CAFE_LATTE + '55',
+                    borderColor: CAFE_LATTE,
+                    borderWidth: 2,
+                    borderRadius: 10,
+                    hoverBackgroundColor: CAFE_LATTE + 'aa'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { x: scaleX, y: scaleY },
+                plugins: { legend: { display: false } }
+            }
+        });
+    })();
+
+    // ═══════════════════════════════════════════════════
+    // 4) BUSY TIMES (Line — Orders by Hour)
+    // ═══════════════════════════════════════════════════
+    (function () {
+        var ctx = document.getElementById('busyTimesChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: busyTimesLabels,
+                datasets: [{
+                    label: 'Orders',
+                    data: busyTimesData,
+                    borderColor: CAFE_ORANGE,
+                    backgroundColor: gradientFill(ctx, CAFE_ORANGE, 0.25, 0.01),
+                    borderWidth: 2.5,
+                    tension: 0.35,
+                    fill: true,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: CAFE_ORANGE,
+                    pointBorderWidth: 2,
+                    pointRadius: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { ticks: { color: '#a1887f', font: { size: 11 }, maxTicksLimit: 12 }, grid: { display: false } },
+                    y: scaleY
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    })();
+
+    // ═══════════════════════════════════════════════════
+    // 5) TOP 5 BEST SELLING DISHES (Horizontal Bar)
+    // ═══════════════════════════════════════════════════
+    (function () {
+        var palette = [CAFE_GOLD, CAFE_BROWN, CAFE_LATTE, CAFE_TEAL, CAFE_PURPLE];
+        new Chart(document.getElementById('topDishesChart'), {
+            type: 'bar',
+            data: {
+                labels: topDishesLabels,
+                datasets: [{
+                    label: 'Qty Sold',
+                    data: topDishesData,
+                    backgroundColor: palette.map(function (c) { return c + '44'; }),
+                    borderColor: palette,
+                    borderWidth: 2,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                scales: {
+                    x: { ticks: { color: '#a1887f', font: { size: 11 } }, grid: { color: 'rgba(139,69,19,0.06)' }, beginAtZero: true },
+                    y: { ticks: { color: '#5d4037', font: { size: 11, weight: '600' } }, grid: { display: false } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    })();
+
+    // ═══════════════════════════════════════════════════
+    // 6) MONTHLY REVENUE (Area — Last 6 Months)
+    // ═══════════════════════════════════════════════════
+    (function () {
+        var ctx = document.getElementById('monthlyRevenueChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: monthlyRevLabels,
+                datasets: [{
+                    label: 'Revenue',
+                    data: monthlyRevData,
+                    borderColor: CAFE_BLUE,
+                    backgroundColor: gradientFill(ctx, CAFE_BLUE, 0.3, 0.02),
+                    borderWidth: 2.5,
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: CAFE_BLUE,
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { x: scaleX, y: scaleY },
+                plugins: { legend: { display: false } }
+            }
+        });
+    })();
+
+    // ═══════════════════════════════════════════════════
+    // 7) CUSTOMER LOYALTY (Donut)
+    // ═══════════════════════════════════════════════════
+    (function () {
+        var loyaltyColors = loyaltyLabels.length === 1 ? ['#d4d4d8'] : [CAFE_GREEN, CAFE_LATTE];
+        new Chart(document.getElementById('loyaltyChart'), {
+            type: 'doughnut',
+            data: {
+                labels: loyaltyLabels,
+                datasets: [{
+                    data: loyaltyData,
+                    backgroundColor: loyaltyColors,
+                    borderWidth: 0,
+                    hoverOffset: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '68%',
+                plugins: {
+                    legend: { position: 'bottom', labels: { padding: 14, font: { size: 12 } } }
+                }
+            }
+        });
+    })();
+
+    // ═══════════════════════════════════════════════════
+    // EXISTING MENU CHARTS
+    // ═══════════════════════════════════════════════════
+    (function () {
+        const categories = JSON.parse(_cd.categories);
+        const counts = JSON.parse(_cd.counts);
+
+        new Chart(document.getElementById('categoryChart'), {
+            type: 'doughnut',
+            data: { labels: categories, datasets: [{ data: counts, backgroundColor: defaultColors, borderWidth: 0, hoverOffset: 8 }] },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { position: 'bottom', labels: { padding: 14 } } } }
+        });
+
+        new Chart(document.getElementById('menuChart'), {
+            type: 'bar',
+            data: { labels: categories, datasets: [{ label: 'Items', data: counts, backgroundColor: defaultColors.map(c => c + '33'), borderColor: defaultColors, borderWidth: 2, borderRadius: 8 }] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { x: scaleX, y: scaleY }, plugins: { legend: { display: false } } }
+        });
+    })();
+</script>
+
+</body>
+
+</html>

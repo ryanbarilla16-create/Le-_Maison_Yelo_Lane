@@ -69,6 +69,18 @@ class _CartScreenState extends State<CartScreen> {
   final _notesCtrl = TextEditingController();
   final _addressCtrl = TextEditingController();
   bool _loading = false;
+  Set<int> _selectedIds = {};
+  bool _selectAll = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIds = CartScreen._cartItems.map((i) => i['id'] as int).toSet();
+  }
+
+  double get _selectedTotal => CartScreen._cartItems
+      .where((i) => _selectedIds.contains(i['id']))
+      .fold(0.0, (sum, i) => sum + (i['price'] as num) * (i['quantity'] as int));
   
   final Map<String, List<String>> _locationData = {
     'Santa Cruz': ['Alipit', 'Bagong Bayan', 'Bubukal', 'Calios', 'Duhat', 'Gatid', 'Giling-Giling', 'Labuin', 'Malinao', 'Matalatala', 'Oogong', 'Pagsawitan', 'Palanas', 'Poblacion I', 'Poblacion II', 'Poblacion III', 'Poblacion IV', 'Poblacion V', 'San Jose', 'San Juan', 'San Nicolas', 'San Pablo Norte', 'San Pablo Sur', 'Santisima Cruz', 'Santo Angel Central', 'Santo Angel Norte', 'Santo Angel Sur'],
@@ -99,8 +111,12 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   Future<void> _checkout() async {
-    if (CartScreen._cartItems.isEmpty) {
-      _showMsg('Your cart is empty.', false);
+    final selectedItems = CartScreen._cartItems
+        .where((ci) => _selectedIds.contains(ci['id']))
+        .toList();
+
+    if (selectedItems.isEmpty) {
+      _showMsg('Please select at least one item to checkout.', false);
       return;
     }
 
@@ -118,7 +134,7 @@ class _CartScreenState extends State<CartScreen> {
 
     final res = await ApiService.post('/api/order/checkout', {
       'user_id': userId,
-      'items': CartScreen._cartItems
+      'items': selectedItems
           .map((ci) => {'menu_item_id': ci['id'], 'quantity': ci['quantity']})
           .toList(),
       'notes': _notesCtrl.text.trim(),
@@ -131,7 +147,10 @@ class _CartScreenState extends State<CartScreen> {
     setState(() => _loading = false);
 
     if (res['success'] == true) {
-      CartScreen.clear();
+      // Remove only the checked-out items, keep the rest
+      CartScreen._cartItems.removeWhere((ci) => _selectedIds.contains(ci['id']));
+      _selectedIds.clear();
+      CartScreen.saveCart();
       
       // Handle Xendit Payment Redirection (In-App WebView)
       if (res['invoice_url'] != null) {
@@ -232,6 +251,80 @@ class _CartScreenState extends State<CartScreen> {
                   child: ListView(
                     padding: const EdgeInsets.all(16),
                     children: [
+                      // Select All & Delete Selected Bar
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 24, height: 24,
+                              child: Checkbox(
+                                value: _selectAll,
+                                activeColor: AppColors.primary,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                                onChanged: (v) {
+                                  setState(() {
+                                    _selectAll = v ?? false;
+                                    if (_selectAll) {
+                                      _selectedIds = CartScreen._cartItems.map((i) => i['id'] as int).toSet();
+                                    } else {
+                                      _selectedIds.clear();
+                                    }
+                                  });
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Select All',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                            const Spacer(),
+                            if (_selectedIds.isNotEmpty)
+                              TextButton.icon(
+                                onPressed: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (ctx) => AlertDialog(
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                      title: const Text('Delete Selected'),
+                                      content: Text('Remove ${_selectedIds.length} selected item(s) from cart?'),
+                                      actions: [
+                                        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+                                        TextButton(
+                                          onPressed: () {
+                                            setState(() {
+                                              CartScreen._cartItems.removeWhere((i) => _selectedIds.contains(i['id']));
+                                              _selectedIds.clear();
+                                              _selectAll = false;
+                                              CartScreen.saveCart();
+                                            });
+                                            Navigator.pop(ctx);
+                                          },
+                                          child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                                label: const Text('Delete', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600, fontSize: 13)),
+                              ),
+                          ],
+                        ),
+                      ),
                       ...CartScreen._cartItems.asMap().entries.map((entry) {
                         final i = entry.key;
                         final item = entry.value;
@@ -478,7 +571,7 @@ class _CartScreenState extends State<CartScreen> {
                         children: [
                           const Text('Total', style: AppTextStyles.muted),
                           Text(
-                            '₱${CartScreen.total.toStringAsFixed(2)}',
+                            '₱${_selectedTotal.toStringAsFixed(2)}',
                             style: TextStyle(
                               fontFamily: 'Georgia',
                               fontWeight: FontWeight.bold,
@@ -529,6 +622,25 @@ class _CartScreenState extends State<CartScreen> {
       ),
       child: Row(
         children: [
+          SizedBox(
+            width: 24, height: 24,
+            child: Checkbox(
+              value: _selectedIds.contains(item['id']),
+              activeColor: AppColors.primary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+              onChanged: (v) {
+                setState(() {
+                  if (v == true) {
+                    _selectedIds.add(item['id'] as int);
+                  } else {
+                    _selectedIds.remove(item['id'] as int);
+                  }
+                  _selectAll = _selectedIds.length == CartScreen._cartItems.length;
+                });
+              },
+            ),
+          ),
+          const SizedBox(width: 8),
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: item['image_url'] != null
@@ -590,6 +702,8 @@ class _CartScreenState extends State<CartScreen> {
                     item['quantity']--;
                   } else {
                     CartScreen._cartItems.removeAt(index);
+                    _selectedIds.remove(item['id'] as int);
+                    _selectAll = _selectedIds.length == CartScreen._cartItems.length && CartScreen._cartItems.isNotEmpty;
                   }
                   CartScreen.saveCart();
                 });

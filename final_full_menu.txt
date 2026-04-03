@@ -1,0 +1,218 @@
+### All Day Breakfast
+- Bangus Belly - P385.00
+- Beef Sirloin - P325.00
+- Beef Teriyaki Doria - P285.00
+- Big Breakfast - P369.00
+- Breakfast Sausage - P289.00
+- Chicken Teriyaki Doria - P285.00
+- Dark Chocolate Champorado - P229.00
+- Lucban Longganisa - P319.00
+- Salmon Teriyaki Doria - P349.00
+
+### Best Sellers
+- Angus Beef Pepper Rice - P325.00
+- Baby Back Ribs - P425.00
+- Bacon Rice - P325.00
+- Four Cheese - P485.00
+- Italian Carbonara - P329.00
+- Meatlovers - P565.00
+- Quattro Formaggi - P565.00
+- USDA Ribeye Steak - P1795.00
+
+### Cakes & Pastries
+- Blueberry Danish - P180.00
+- Carrot Cake - P980.00
+- Chocolate Fudge Cake - P1000.00
+- Chocolate-Dipped Potato Chips - P290.00
+- New York Style Cheesecake - P880.00
+- No Bake Blueberry Cheesecake - P780.00
+- No Bake Chocolate Cheesecake - P780.00
+- No Bake Pistachio Cheesecake - P980.00
+- Pistachio Sansrival - P1200.00
+- Red Velvet - P780.00
+- S'mores - P780.00
+- Strawberry Danish - P180.00
+- Strawberry Shortcake - P980.00
+
+### Cocktails
+- Blue Moscow Mule - P260.00
+- Classic Margarita - P200.00
+- Concord Sour - P200.00
+- Flat White Martini - P220.00
+- Florida Sunset - P260.00
+- Frozen Cucumber Margarita - P220.00
+- Frozen Mango Margarita - P260.00
+- Frozen Margarita - P200.00
+- Ginger Highball - P200.00
+- Jack Coke - P260.00
+- Midnight Purple - P200.00
+- Mojito - P220.00
+- Muslide - P220.00
+- Pineapple Whiskey Smash - P200.00
+- Sangria - P260.00
+- Strawberry Daiquiri - P220.00
+- Tequila Sunrise - P260.00
+
+### Desserts
+- Affogato - P99.00
+- Baked Blueberry Cheesecake - P200.00
+- Carrot Cake - P200.00
+- Chocolate Fudge Cake - P200.00
+- Mango Belle - P280.00
+- Mango Bingsu - P425.00
+- Mango Bingsu Petite - P285.00
+- Mango Float - P290.00
+- No Bake Blueberry Cheesecake - P180.00
+- No Bake Chocolate Cheesecake - P180.00
+- No Bake Oreo Cheesecake - P180.00
+- No Bake Pistachio Cheesecake - P165.00
+- Oreo Bingsu - P345.00
+- Oreo Bingsu Petite - P265.00
+- Oreo Cake - P200.00
+- Pistachio Sansrival - P250.00
+- Red Velvet Cake - P200.00
+- S'mores - P180.00
+- Strawberry Bingsu - P425.00
+- Strawberry Bingsu Petite - P265.00
+
+### Frappes
+- Caramel - P160.00
+- Dark Mocha - P170.00
+- Double Chocolate - P170.00
+- Java Chip - P170.00
+- Matcha - P190.00
+- Mixed Berry - P200.00
+- Salted Caramel - P160.00
+- White Mocha - P170.00
+
+### Fruit Shakes & Yogurt Drinks
+- Apple Shake - P150.00
+- Avocado Shake - P180.00
+- Blueberry Yogurt - P220.00
+- Mango Dalgona - P180.00
+- Mango Matcha Milk - P220.00
+- Mango Mule - P170.00
+- Mango Yogurt - P220.00
+- Ripe Mango Shake - P180.00
+- Strawberry Matcha - P220.00
+- Strawberry Yogurt - P220.00
+- Watermelon Shake - P150.00
+
+### Hot Coffee
+- Better Than Ex Chocolate - P240.00
+- Caramel Macchiato - P170.00
+- Classic Hot Chocolate - P200.00
+- Flat White - P150.00
+- Mocha - P200.00
+- Nutella Latte - P220.00
+- Salted Caramel Latte - P200.00
+
+### Iced Beverages
+- Blueberry Lemonade - P140.00
+- Cucumber Lemonade - P120.00
+- Cucumber Lemonade Pitcher - P280.00
+- Fresh Lemon Iced Tea - P120.00
+- Fresh Lemonade - P120.00
+- Fresh Lemonade Pitcher - P250.00
+- Iced Tea Pitcher - P280.00
+- Passionfruit Lemonade - P140.00
+- Strawberry Lemonade - P140.00
+
+### Iced Coffee
+- Americano - P90.00
+- Cappuccino - P140.00
+- Caramel Macchiato - P160.00
+- Dark Chocolate Mocha - P160.00
+- Latte - P140.00
+- Le Maison Latte - P150.00
+- Matcha Latte - P160.00
+- Salted Caramel Macchiato - P160.00
+- Spanish Latte - P150.00
+- White Mocha - P160.00
+
+### Milk Tea
+- Okinawa Milk Tea - P140.00
+- Oreo X Okinawa - P150.00
+
+### Milkshakes & Smoothies
+- Banana Milkshake - P229.00
+- Blueberry Smoothie - P229.00
+- Chocolate Milkshake - P229.00
+- Melon Coolers - P229.00
+- Nutella Milkshake - P249.00
+- Oreo Milkshake - P229.00
+- Strawberry Banana Smoothie - P229.00
+- Strawberry Milkshake - P229.00
+- Vanilla Milkshake - P229.00
+
+### Pasta & Salads
+- Bolognese - P365.00
+- Caesar Salad - P385.00
+- Carbonara - P325.00
+- Chicken Salad - P495.00
+- Creamy Tomato Penne - P229.00
+- Filipino Spaghetti - P295.00
+- Gourmet Tuyo Spaghetti - P295.00
+- Lasagna - P365.00
+- Pesto - P325.00
+- Puttanesca - P295.00
+- Truffle Bacon - P325.00
+- Wagyu Salad - P525.00
+
+### Rice Plates
+- Baby Back Ribs - P425.00
+- Beef Salpicao - P495.00
+- Beef Schintzel - P449.00
+- Black Pepper Pork Steak - P385.00
+- Brown Butter Fish Fillet - P345.00
+- Chicken Drumsticks - P365.00
+- Chicken Wings w/ Rice - P329.00
+- Grilled Herb Chicken - P365.00
+- Grilled Salmon Steak - P425.00
+- Lechon Kawali - P365.00
+
+### Starters & Sandwiches
+- Chicken Wings - P285.00
+- Clubhouse Sandwich - P289.00
+- Croissant Sandwich - P349.00
+- Croque Monsieur - P269.00
+- Fish & Chips - P345.00
+- Flavored Fries - P195.00
+- French Fries - P165.00
+- Le Maison Burger - P375.00
+- Mojos - P225.00
+- Mushroom Soup - P295.00
+- Nachos - P365.00
+- Pork Sisig - P395.00
+
+### Steaks
+- Angus Beef Pepper Rice - P325.00
+- Angus Ribeye Steak - P785.00
+- Brazilian Ribeye Steak - P385.00
+- Grilled Burger Steak - P395.00
+- Grilled Porterhouse Steak - P445.00
+- Grilled T-Bone Steak - P425.00
+- Saikoro Wagyu Cubes - P345.00
+- Steaks & Fries - P895.00
+- USDA Ribeye Steak - P1795.00
+
+### Sweet Breakfast
+- Banana Nutella Pancakes - P325.00
+- Banana Nutella Waffles - P249.00
+- Classic Maple Pancakes - P265.00
+- Classic Maple Waffles - P199.00
+- Nutella Banana Crepe - P325.00
+
+### Thin Crust Pizza
+- Chicken Pesto - P429.00
+- Four Cheese - P485.00
+- Garlic Shrimp - P449.00
+- Hawaiian - P525.00
+- Loaded - P565.00
+- Meatlovers - P565.00
+- Miele Al Tartufo - P585.00
+- Pepperoni - P515.00
+- Prosciutto Cotto - P449.00
+- Quattro Formaggi - P565.00
+- Shawarma - P449.00
+

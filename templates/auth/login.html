@@ -3,212 +3,157 @@
 {% block title %}Log In{% endblock %}
 
 {% block content %}
-<div class="login-wrapper row w-100 justify-content-center align-items-center m-0">
-    <div class="col-12 col-md-8 col-lg-5 col-xxl-4 p-3">
-        <!-- Glassmorphism Card -->
-        <div class="card login-glass-card shadow-lg border-0">
-             
-            <div class="card-header text-center border-0 bg-transparent login-header">
-                <h2 class="fw-bold mb-2 login-title">Welcome Back.</h2>
-                <p class="text-muted login-subtitle">Breathe, relax, and log in to continue.</p>
+<div class="row w-100 m-0 login-split-layout">
+    <!-- Left Section: Image (Hidden on small screens) -->
+    <div class="col-12 col-md-6 d-none d-md-block login-image-section position-relative p-0">
+        <div class="login-image-overlay position-absolute top-0 start-0 w-100 h-100 d-flex flex-column justify-content-center align-items-center text-center p-5">
+            <h1 class="text-white fw-bold mb-3" style="font-family: 'Georgia', serif; font-size: 3.5rem;">Welcome Back</h1>
+            <p class="text-white fs-5 mb-5" style="max-width: 80%;">Settle in, relax, and log in to your account. We've missed your presence at our tables.</p>
+            <a href="{{ url_for('main.about_page') }}" class="text-white text-decoration-none border-bottom border-white pb-1 fw-semibold" style="letter-spacing: 0.5px;">About Le Maison &rarr;</a>
+        </div>
+    </div>
+    
+    <!-- Right Section: Form -->
+    <div class="col-12 col-md-6 d-flex flex-column align-items-center justify-content-center bg-white p-4 p-md-5 position-relative border-start border-light border-2">
+        <div class="login-form-container w-100" style="max-width: 420px; z-index: 2;">
+            <div class="text-start mb-4 pb-2">
+                <h2 class="fw-bold mb-2 text-dark" style="font-family: 'Inter', sans-serif; font-size: 2.2rem; letter-spacing: -0.5px;">Sign In</h2>
+                <p class="text-muted" style="font-size: 1rem;">Access your account to manage reservations and orders.</p>
             </div>
 
-            <div class="card-body p-4 p-md-5 pt-2">
-
-                <!-- Social Login Buttons -->
-                <div class="row g-3 mb-4 mt-1">
-                    <div class="col-6">
-                        <button type="button" onclick="handleGoogleLogin()"
-                            class="btn btn-social w-100 rounded-pill d-flex align-items-center justify-content-center gap-2">
-                            <img src="https://cdn-icons-png.flaticon.com/512/300/300221.png" alt="Google" class="social-icon">
-                            <span class="fw-semibold social-text">Google</span>
-                        </button>
-                    </div>
-                    <div class="col-6">
-                        <button type="button" onclick="handleFacebookLogin()"
-                            class="btn btn-social w-100 rounded-pill d-flex align-items-center justify-content-center gap-2">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/b/b8/2021_Facebook_icon.svg" alt="Facebook" class="social-icon">
-                            <span class="fw-semibold social-text">Facebook</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="d-flex align-items-center mb-4">
-                    <hr class="flex-grow-1 divider-line">
-                    <span class="mx-3 text-muted fw-semibold divider-text">or log in with email</span>
-                    <hr class="flex-grow-1 divider-line">
-                </div>
-
-                <form method="POST" action="{{ url_for('main.login') }}">
-                    <!-- Email field -->
-                    <div class="form-group mb-4">
-                        <label for="email" class="fw-semibold mb-2 form-label-custom">Email Address</label>
-                        <input type="email" id="email" name="email" class="form-control glass-input"
-                            required placeholder="hello@example.com">
-                    </div>
-
-                    <!-- Password field -->
-                    <div class="form-group mb-4 position-relative">
-                        <div class="d-flex justify-content-between align-items-center mb-2 px-1">
-                            <label for="password" class="fw-semibold mb-0 form-label-custom">Password</label>
-                            <a href="{{ url_for('main.forgot_password') }}" class="fw-semibold text-decoration-none forgot-link">Forgot Password?</a>
-                        </div>
-                        <div class="position-relative">
-                            <input type="password" id="password" name="password" class="form-control glass-input password-input"
-                                required placeholder="••••••••">
-                            <i class="fas fa-eye text-muted toggle-password" onclick="togglePasswordVisibility('password', this)"></i>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary-gradient w-100 rounded-pill fw-bold text-white shadow-sm mt-2">
-                        Sign In
+            <!-- Social Login Buttons -->
+            <div class="row g-3 mb-4">
+                <div class="col-6">
+                    <button type="button" onclick="handleGoogleLogin()"
+                        class="btn btn-outline-secondary text-dark w-100 rounded-3 d-flex align-items-center justify-content-center gap-2 shadow-sm btn-social-new border-opacity-50">
+                        <img src="https://cdn-icons-png.flaticon.com/512/300/300221.png" alt="Google" style="width: 20px; height: 20px;">
+                        <span class="fw-bold" style="font-size: 0.95rem;">Google</span>
                     </button>
-                </form>
+                </div>
+                <div class="col-6">
+                    <button type="button" onclick="handleFacebookLogin()"
+                        class="btn btn-outline-secondary text-dark w-100 rounded-3 d-flex align-items-center justify-content-center gap-2 shadow-sm btn-social-new border-opacity-50">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/b/b8/2021_Facebook_icon.svg" alt="Facebook" style="width: 20px; height: 20px;">
+                        <span class="fw-bold" style="font-size: 0.95rem;">Facebook</span>
+                    </button>
+                </div>
+            </div>
 
-                <div class="text-center mt-4 pt-3 border-top border-subtle">
-                    <p class="text-muted fw-medium mb-0 bottom-text">
-                        New to Le Maison? 
-                        <a href="{{ url_for('main.signup') }}" class="fw-bold text-decoration-none create-account-link">
-                            Create an account
-                        </a>
-                    </p>
+            <div class="d-flex align-items-center mb-4 pb-1 mt-2">
+                <hr class="flex-grow-1 divider-line m-0">
+                <span class="mx-3 fw-bold divider-text" style="font-size: 0.75rem; color: #a18a7a;">OR USE YOUR EMAIL</span>
+                <hr class="flex-grow-1 divider-line m-0">
+            </div>
+
+            <form method="POST" action="{{ url_for('main.login') }}">
+                <!-- Email field -->
+                <div class="form-group mb-4">
+                    <input type="email" id="email" name="email" class="form-control rounded-3 p-3 border-opacity-50"
+                        required placeholder="Email Address">
                 </div>
 
+                <!-- Password field -->
+                <div class="form-group mb-5 position-relative">
+                    <div class="position-relative">
+                        <input type="password" id="password" name="password" class="form-control rounded-3 p-3 border-opacity-50 password-input"
+                            required placeholder="Password">
+                        <!-- Custom eye icon color to match the design -->
+                        <i class="fas fa-eye text-muted toggle-password" onclick="togglePasswordVisibility('password', this)" style="position: absolute; right: 1.2rem; top: 50%; transform: translateY(-50%); cursor: pointer; color: #b38b6d !important;"></i>
+                    </div>
+                    <div class="text-end mt-3">
+                        <a href="{{ url_for('main.forgot_password') }}" class="text-decoration-none fw-bold" style="font-size: 0.85rem; color: #8b5a2b; letter-spacing: 0.3px;">Forgot Password?</a>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn w-100 rounded-3 fw-bold text-white shadow py-3 btn-primary-custom" style="font-size: 1.1rem; letter-spacing: 0.3px;">
+                    Sign In
+                </button>
+            </form>
+
+            <div class="text-center mt-5">
+                <p class="text-muted fw-medium mb-0" style="font-size: 0.95rem;">
+                    New to Le Maison? 
+                    <a href="{{ url_for('main.signup') }}" class="fw-bold text-decoration-none border-bottom border-dark pb-1" style="color: #4a3b32; margin-left: 5px;">
+                        Create an account
+                    </a>
+                </p>
             </div>
         </div>
     </div>
 </div>
 
 <style>
-/* --- Login Page specific styles --- */
-.login-wrapper {
-    min-height: 80vh;
+/* Reset Container Padding for Full Width */
+.main-container {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
 }
 
-/* Glassmorphism Card (Warm Brown Vibe) */
-.login-glass-card {
-    border-radius: 32px;
-    background: rgba(248, 241, 235, 0.85); /* Calm light beige/brown base */
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.5) !important;
-    box-shadow: 0 25px 50px -12px rgba(139, 90, 43, 0.15); /* Soft brown shadow */
-    overflow: hidden;
-    transition: all 0.3s ease;
+/* Base override to let splitting stretch */
+.login-split-layout {
+    min-height: 850px; /* Fixed height to match signup perfectly */
 }
 
-/* Header Typography */
-.login-header {
-    padding: 3.5rem 2rem 1.5rem;
+/* Left Image Section */
+.login-image-section {
+    background-image: url('https://i.postimg.cc/PqLbFYhr/9.webp');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
-.login-title {
-    font-family: 'Georgia', serif;
-    color: #4a3b32; /* Dark shade brown */
-    font-size: 2.25rem;
-    letter-spacing: -0.5px;
+.login-image-overlay {
+    background: rgba(0, 0, 0, 0.4); /* Stronger dark overlay for improved text contrast */
 }
 
-.login-subtitle {
-    font-size: 1.05rem;
-    font-weight: 400;
-    color: #8b634b; /* Primary brown */
-}
-
-/* Social Buttons */
-.btn-social {
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid rgba(139, 99, 75, 0.2);
-    padding: 0.75rem;
-    box-shadow: 0 4px 6px -1px rgba(92, 58, 33, 0.05);
-    transition: all 0.2s ease;
-}
-
-.btn-social:hover {
+/* Form Section Buttons & Inputs */
+.btn-social-new {
     background: #ffffff;
-    transform: translateY(-1px);
-    box-shadow: 0 6px 10px -2px rgba(92, 58, 33, 0.1);
+    border-color: #dee2e6;
+    transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+    height: 52px;
+}
+.btn-social-new:hover {
+    background: #f8f9fa;
+    border-color: #adb5bd;
 }
 
-.social-icon {
-    width: 22px;
-    height: 22px;
-    object-fit: contain;
-}
-
-.social-text {
-    font-size: 0.95rem;
-    color: #5c3a21; /* Dark brown */
-}
-
-/* Divider styling */
-.divider-line {
-    border-top: 1px solid rgba(139, 99, 75, 0.2);
-}
-
-.divider-text {
-    font-size: 0.75rem;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: #8b634b;
-}
-
-/* Input Styles */
-.form-label-custom {
-    font-size: 0.85rem;
-    color: #5c3a21;
-    margin-left: 0.5rem;
-    font-weight: 600;
-}
-
-.glass-input {
-    background: rgba(255, 255, 255, 0.6);
-    border: 1px solid rgba(139, 99, 75, 0.2);
-    border-radius: 16px;
-    padding: 1rem 1.25rem;
+.form-control {
     font-size: 1rem;
     color: #4a3b32;
-    box-shadow: inset 0 2px 4px rgba(92, 58, 33, 0.02);
     transition: all 0.3s ease;
+    border-color: #ced4da;
+    height: 54px;
 }
 
-.password-input {
-    padding-right: 3rem;
+.form-control::placeholder {
+    color: #a18a7a;
+    font-weight: 500;
 }
 
-.glass-input:focus {
-    background: #ffffff;
-    border-color: #8b634b;
-    box-shadow: 0 0 0 4px rgba(139, 99, 75, 0.15);
+.form-control:focus {
+    border-color: #8b5a2b;
+    box-shadow: 0 0 0 4px rgba(139, 90, 43, 0.1);
     outline: none;
 }
 
-/* Forgot Password Link */
-.forgot-link {
-    font-size: 0.85rem;
-    color: #8b634b;
-    transition: color 0.2s;
-    opacity: 0.9;
+.divider-line {
+    border-top: 2px solid rgba(139, 99, 75, 0.15);
 }
 
-.forgot-link:hover {
-    color: #5c3a21;
-    opacity: 1;
+.divider-text {
+    letter-spacing: 1.5px;
 }
 
-/* Password Eye Icon */
+.password-input {
+    padding-right: 3rem !important;
+}
+
 .toggle-password {
-    position: absolute;
-    right: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    cursor: pointer;
-    font-size: 1.1rem;
-    z-index: 10;
+    background: transparent;
     padding: 0.5rem;
     border-radius: 50%;
     transition: background 0.2s ease, color 0.2s ease;
-    color: #8b634b !important;
 }
 
 .toggle-password:hover {
@@ -216,57 +161,17 @@
     color: #5c3a21 !important;
 }
 
-/* Primary Gradient Button */
-.btn-primary-gradient {
-    background: linear-gradient(135deg, #8b634b 0%, #5c3a21 100%);
-    padding: 1rem;
-    border: none;
-    font-size: 1.05rem;
-    letter-spacing: 0.5px;
+/* Custom Sign In Button */
+.btn-primary-custom {
+    background-color: #8b5a2b;
+    border-color: #8b5a2b;
     transition: all 0.3s ease;
-    box-shadow: 0 10px 15px -3px rgba(92, 58, 33, 0.25);
 }
-
-.btn-primary-gradient:hover {
+.btn-primary-custom:hover {
+    background-color: #6d4622;
+    border-color: #6d4622;
     transform: translateY(-2px);
-    box-shadow: 0 15px 20px -3px rgba(92, 58, 33, 0.35);
-    color: white;
-}
-
-/* Bottom elements */
-.border-subtle {
-    border-color: rgba(139, 99, 75, 0.15) !important;
-}
-
-.bottom-text {
-    font-size: 0.95rem;
-    color: #5c3a21 !important;
-}
-
-.create-account-link {
-    color: #8b634b;
-    position: relative;
-    padding-bottom: 2px;
-    margin-left: 0.25rem;
-}
-
-.create-account-link::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background: #8b634b;
-    border-radius: 2px;
-    transform: scaleX(0);
-    transform-origin: right;
-    transition: transform 0.3s ease;
-}
-
-.create-account-link:hover::after {
-    transform: scaleX(1);
-    transform-origin: left;
+    box-shadow: 0 10px 15px -3px rgba(139, 90, 43, 0.3) !important;
 }
 
 /* Chrome Autofill adjustment */
@@ -274,37 +179,19 @@ input:-webkit-autofill,
 input:-webkit-autofill:hover, 
 input:-webkit-autofill:focus, 
 input:-webkit-autofill:active{
-    -webkit-box-shadow: 0 0 0 30px #fdfbfa inset !important;
+    -webkit-box-shadow: 0 0 0 30px #ffffff inset !important;
     -webkit-text-fill-color: #4a3b32 !important;
-    border-radius: 16px;
+    border-radius: 0.5rem !important;
 }
 
-/* Modal and global button alignment perfection */
-.modal-content {
-    border-radius: 28px !important;
-    border: 1px solid rgba(255, 255, 255, 0.6) !important;
-    box-shadow: 0 25px 50px -12px rgba(139, 90, 43, 0.2) !important;
-    background: rgba(248, 241, 235, 0.98) !important;
-    backdrop-filter: blur(20px) !important;
-    -webkit-backdrop-filter: blur(20px) !important;
-    overflow: hidden;
+/* Hide auth background if it interferes */
+.auth-bg {
+    display: none !important;
 }
-.modal-header {
-    border-bottom: 1px solid rgba(139, 99, 75, 0.1) !important;
-    padding: 1.5rem 2rem !important;
-}
-.modal-footer {
-    border-top: 1px solid rgba(139, 99, 75, 0.1) !important;
-    padding: 1.25rem 2rem !important;
-}
-.modal-body {
-    padding: 2rem !important;
-}
-.btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
+
+/* Remove footer top margin to connect perfectly */
+footer {
+    margin-top: 0 !important;
 }
 </style>
 <script>

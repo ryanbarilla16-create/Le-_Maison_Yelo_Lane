@@ -159,8 +159,7 @@
         display: flex;
         flex-direction: column;
         height: 100%;
-        /* Force height to match grid row */
-        min-height: 520px;
+        min-height: 0;
         position: relative;
     }
 
@@ -204,19 +203,28 @@
     /* ITEM SCROLL AREA - This keeps containers uniform */
     .moCard-items-wrap {
         flex: 1;
-        /* Takes up all available space to push tags to bottom */
         overflow-y: auto;
+        max-height: 260px;
         margin-bottom: 1rem;
-        padding-right: 8px;
+        padding-right: 6px;
     }
 
     .moCard-items-wrap::-webkit-scrollbar {
         width: 4px;
     }
 
+    .moCard-items-wrap::-webkit-scrollbar-track {
+        background: rgba(93, 64, 55, 0.03);
+        border-radius: 10px;
+    }
+
     .moCard-items-wrap::-webkit-scrollbar-thumb {
-        background: rgba(0, 0, 0, 0.05);
-        border-radius: 4px;
+        background: rgba(93, 64, 55, 0.15);
+        border-radius: 10px;
+    }
+
+    .moCard-items-wrap::-webkit-scrollbar-thumb:hover {
+        background: rgba(93, 64, 55, 0.35);
     }
 
     .moCard-items {
@@ -227,24 +235,80 @@
 
     .moCard-items li {
         display: flex;
-        justify-content: space-between;
+        align-items: center;
+        gap: 0.75rem;
         padding: 0.6rem 0;
-        font-size: 0.9rem;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.02);
+        font-size: 0.88rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.03);
     }
 
     .moCard-items li:last-child {
         border-bottom: none;
     }
 
-    .moCard-items li .qty {
+    .moItem-img {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        object-fit: cover;
+        flex-shrink: 0;
+        border: 1px solid rgba(93, 64, 55, 0.08);
+    }
+
+    .moItem-noImg {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
         background: rgba(93, 64, 55, 0.06);
-        color: var(--primary-color);
-        padding: 1px 6px;
-        border-radius: 4px;
-        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        border: 1px solid rgba(93, 64, 55, 0.08);
+    }
+
+    .moItem-noImg i {
+        color: rgba(93, 64, 55, 0.25);
+        font-size: 1rem;
+    }
+
+    .moItem-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .moItem-name {
+        font-weight: 600;
+        color: #3E2723;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 0.88rem;
+    }
+
+    .moItem-sub {
         font-size: 0.75rem;
-        margin-right: 8px;
+        color: var(--text-muted);
+        margin-top: 1px;
+    }
+
+    .moCard-items li .qty {
+        background: rgba(93, 64, 55, 0.08);
+        color: var(--primary-color);
+        padding: 2px 7px;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.72rem;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .moItem-price {
+        color: var(--text-muted);
+        font-weight: 600;
+        font-size: 0.82rem;
+        white-space: nowrap;
+        flex-shrink: 0;
     }
 
     .moCard-notes {
@@ -508,9 +572,17 @@
                     <ul class="moCard-items">
                         {% for item in order.items %}
                         <li>
-                            <span><span class="qty">{{ item.quantity }}x</span> {{ item.menu_item.name }}</span>
-                            <span style="color: var(--text-muted);">₱{{ "%.2f"|format(item.price_at_time *
-                                item.quantity) }}</span>
+                            {% if item.menu_item and item.menu_item.image_url %}
+                            <img src="{{ item.menu_item.image_url }}" alt="{{ item.menu_item.name }}" class="moItem-img">
+                            {% else %}
+                            <div class="moItem-noImg"><i class="fas fa-utensils"></i></div>
+                            {% endif %}
+                            <div class="moItem-info">
+                                <div class="moItem-name">{{ item.menu_item.name if item.menu_item else 'Item Unavailable' }}</div>
+                                <div class="moItem-sub">₱{{ "%.2f"|format(item.price_at_time) }} each</div>
+                            </div>
+                            <span class="qty">{{ item.quantity }}x</span>
+                            <span class="moItem-price">₱{{ "%.2f"|format(item.price_at_time * item.quantity) }}</span>
                         </li>
                         {% endfor %}
                     </ul>

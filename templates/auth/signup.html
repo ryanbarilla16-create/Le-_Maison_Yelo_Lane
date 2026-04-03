@@ -3,277 +3,197 @@
 {% block title %}Sign Up{% endblock %}
 
 {% block content %}
-<div class="login-wrapper row w-100 justify-content-center align-items-center m-0">
-    <div class="col-12 col-md-10 col-lg-7 col-xl-6 p-3">
-        <!-- Glassmorphism Card (Warm Brown Vibe) -->
-        <div class="card login-glass-card shadow-lg border-0">
-            <div class="card-header text-center border-0 bg-transparent login-header">
-                
-                <h2 class="fw-bold mb-2 login-title" style="color: blue !important;">Create an Account - Test</h2>
-                <p class="text-muted login-subtitle">Join our exclusive dining community.</p>
+<div class="row w-100 m-0 login-split-layout">
+    <!-- Left Section: Image (Hidden on small screens) -->
+    <div class="col-12 col-md-6 d-none d-md-block login-image-section position-relative p-0">
+        <div class="login-image-overlay position-absolute top-0 start-0 w-100 h-100 d-flex flex-column justify-content-center align-items-center text-center p-5">
+            <h1 class="text-white fw-bold mb-3" style="font-family: 'Georgia', serif; font-size: 3.5rem;">Join Le Maison</h1>
+            <p class="text-white fs-5 mb-5" style="max-width: 80%;">Experience the art of premium dining. Create an account to manage your reservations and orders.</p>
+            <a href="{{ url_for('main.about_page') }}" class="text-white text-decoration-none border-bottom border-white pb-1 fw-semibold" style="letter-spacing: 0.5px;">About Le Maison &rarr;</a>
+        </div>
+    </div>
+    
+    <!-- Right Section: Form -->
+    <div class="col-12 col-md-6 d-flex flex-column align-items-center justify-content-center bg-white p-4 p-md-5 position-relative border-start border-light border-2">
+        <div class="login-form-container w-100" style="max-width: 420px; z-index: 2;">
+            <div class="text-start mb-4 pb-2">
+                <h2 class="fw-bold mb-2 text-dark" style="font-family: 'Inter', sans-serif; font-size: 2.2rem; letter-spacing: -0.5px;">Create an Account</h2>
+                <p class="text-muted" style="font-size: 1rem;">Join our exclusive dining community.</p>
             </div>
 
-            <div class="card-body p-4 p-md-5 pt-3">
-
-                <div class="row g-3 mb-4 mt-2">
-                    <div class="col-6">
-                        <button type="button" id="google-signup-btn" onclick="handleGoogleLogin()"
-                            class="btn btn-social w-100 rounded-pill d-flex align-items-center justify-content-center gap-2">
-                            <img src="https://cdn-icons-png.flaticon.com/512/300/300221.png" alt="Google" class="social-icon">
-                            <span class="fw-semibold social-text">Google</span>
-                        </button>
-                    </div>
-                    <div class="col-6">
-                        <button type="button" id="facebook-signup-btn" onclick="handleFacebookLogin()"
-                            class="btn btn-social w-100 rounded-pill d-flex align-items-center justify-content-center gap-2">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/b/b8/2021_Facebook_icon.svg" alt="Facebook" class="social-icon">
-                            <span class="fw-semibold social-text">Facebook</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="d-flex align-items-center mb-4">
-                    <hr class="flex-grow-1 divider-line">
-                    <span class="mx-3 text-muted fw-semibold divider-text">or sign up with email</span>
-                    <hr class="flex-grow-1 divider-line">
-                </div>
-
-                <form method="POST" action="{{ url_for('main.signup') }}" onsubmit="return validateForm()">
-
-                    <h5 class="fw-bold fs-6 border-bottom pb-2 mb-4" style="color: #5c3a21;">Personal Information</h5>
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-4">
-                            <label for="first_name" class="fw-semibold text-muted mb-2 form-label-custom">First Name</label>
-                            <input type="text" id="first_name" name="first_name"
-                                class="form-control glass-input" maxlength="50" required
-                                value="{{ request.form.get('first_name', '') }}">
-                        </div>
-                        <div class="col-md-4">
-                            <label for="middle_name" class="fw-semibold text-muted mb-2 form-label-custom">Middle Name</label>
-                            <input type="text" id="middle_name" name="middle_name"
-                                class="form-control glass-input" maxlength="50" placeholder="(Optional)"
-                                value="{{ request.form.get('middle_name', '') }}">
-                        </div>
-                        <div class="col-md-4">
-                            <label for="last_name" class="fw-semibold text-muted mb-2 form-label-custom">Last Name</label>
-                            <input type="text" id="last_name" name="last_name"
-                                class="form-control glass-input" maxlength="50" required
-                                value="{{ request.form.get('last_name', '') }}">
-                        </div>
-                    </div>
-
-                    <h5 class="fw-bold fs-6 border-bottom pb-2 mb-4 mt-5" style="color: #5c3a21;">Contact Details</h5>
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-6">
-                            <label for="email" class="fw-semibold text-muted mb-2 form-label-custom">Email Address</label>
-                            <input type="email" id="email" name="email"
-                                class="form-control glass-input" required value="{{ request.form.get('email', '') }}">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="phone_number" class="fw-semibold text-muted mb-2 form-label-custom">Phone Number</label>
-                            <input type="text" id="phone_number" name="phone_number"
-                                class="form-control glass-input" required maxlength="11"
-                                value="{{ request.form.get('phone_number', '') }}">
-                            <div id="phoneError" class="text-danger small mt-1"
-                                style="display: none; padding-left: 5px;">Invalid phone number</div>
-                        </div>
-                    </div>
-
-                    <h5 class="fw-bold fs-6 border-bottom pb-2 mb-4 mt-5" style="color: #5c3a21;">Account Details</h5>
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-12">
-                            <label for="username" class="fw-semibold text-muted mb-2 form-label-custom">Username</label>
-                            <input type="text" id="username" name="username"
-                                class="form-control glass-input" minlength="5" maxlength="20" required
-                                value="{{ request.form.get('username', '') }}">
-                        </div>
-                    </div>
-
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-4">
-                            <label for="birthday" class="fw-semibold text-muted mb-2 form-label-custom">Birthday</label>
-                            {% set today = get_ph_time().date() %}
-                            {% set min_date = (today.year - 80) ~ "-01-01" %}
-                            {% set max_date = today.strftime('%Y-%m-%d') %}
-                            <input type="date" id="birthday" name="birthday"
-                                class="form-control glass-input" required min="{{ min_date }}" max="{{ max_date }}"
-                                value="{{ request.form.get('birthday', '') }}">
-                        </div>
-                        <div class="col-md-4">
-                            <label for="password" class="fw-semibold text-muted mb-2 form-label-custom">Password</label>
-                            <div class="position-relative">
-                                <input type="password" id="password" name="password"
-                                    class="form-control glass-input password-input" minlength="6" required
-                                    placeholder="••••••••" oninput="checkStrength()">
-                                <i class="fas fa-eye toggle-password" onclick="togglePasswordVisibility('password', this)"></i>
-                            </div>
-                            <div class="password-strength mt-2"
-                                style="height: 4px; background: rgba(139, 99, 75, 0.2); border-radius: 2px; overflow: hidden;">
-                                <div id="strength-bar" class="strength-bar h-100"
-                                    style="width: 0%; transition: 0.3s ease;"></div>
-                            </div>
-                            <div id="strength-text" class="strength-text small text-end mt-1"
-                                style="font-size: 0.75rem; color: #8b634b;">Password Strength</div>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="confirm_password" class="fw-semibold text-muted mb-2 form-label-custom">Confirm Password</label>
-                            <div class="position-relative">
-                                <input type="password" id="confirm_password" name="confirm_password"
-                                    class="form-control glass-input password-input" required placeholder="••••••••">
-                                <i class="fas fa-eye toggle-password" onclick="togglePasswordVisibility('confirm_password', this)"></i>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-check mt-3 mb-4">
-                        <input class="form-check-input glass-checkbox" type="checkbox" id="terms" name="terms" required>
-                        <label class="form-check-label small ms-2" for="terms" style="color: #5c3a21; font-weight: 500;">
-                            I confirm my agreement with the Site <a href="#" class="forgot-link">Terms of Service</a> & <a href="#" class="forgot-link">Privacy Policy</a>.
-                        </label>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary-gradient w-100 rounded-pill fw-bold text-white shadow-sm mt-2">
-                        Register Account
+            <!-- Social Login Buttons -->
+            <div class="row g-3 mb-4">
+                <div class="col-6">
+                    <button type="button" id="google-signup-btn" onclick="handleGoogleLogin()"
+                        class="btn btn-outline-secondary text-dark w-100 rounded-3 d-flex align-items-center justify-content-center gap-2 shadow-sm btn-social-new border-opacity-50">
+                        <img src="https://cdn-icons-png.flaticon.com/512/300/300221.png" alt="Google" style="width: 20px; height: 20px;">
+                        <span class="fw-bold" style="font-size: 0.95rem;">Google</span>
                     </button>
+                </div>
+                <div class="col-6">
+                    <button type="button" id="facebook-signup-btn" onclick="handleFacebookLogin()"
+                        class="btn btn-outline-secondary text-dark w-100 rounded-3 d-flex align-items-center justify-content-center gap-2 shadow-sm btn-social-new border-opacity-50">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/b/b8/2021_Facebook_icon.svg" alt="Facebook" style="width: 20px; height: 20px;">
+                        <span class="fw-bold" style="font-size: 0.95rem;">Facebook</span>
+                    </button>
+                </div>
+            </div>
 
-                    <div class="text-center mt-4 pt-3 border-top border-subtle">
-                        <p class="text-muted fw-medium mb-0 bottom-text">
-                            Already have an account? 
-                            <a href="{{ url_for('main.login') }}" class="fw-bold text-decoration-none create-account-link">
-                                Sign in instead
-                            </a>
-                        </p>
+            <div class="d-flex align-items-center mb-4 pb-1 mt-2">
+                <hr class="flex-grow-1 divider-line m-0">
+                <span class="mx-3 fw-bold divider-text" style="font-size: 0.75rem; color: #a18a7a;">OR SIGN UP WITH EMAIL</span>
+                <hr class="flex-grow-1 divider-line m-0">
+            </div>
+
+            <form method="POST" action="{{ url_for('main.signup') }}" onsubmit="return validateForm()">
+                
+                <div class="row g-2 mb-3">
+                    <div class="col-12 col-md-4">
+                        <input type="text" id="first_name" name="first_name" class="form-control rounded-3 p-3 border-opacity-50" placeholder="First Name" required value="{{ request.form.get('first_name', '') }}">
                     </div>
-                </form>
+                    <div class="col-12 col-md-4">
+                        <input type="text" id="middle_name" name="middle_name" class="form-control rounded-3 p-3 border-opacity-50" placeholder="Middle (Opt)" value="{{ request.form.get('middle_name', '') }}">
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <input type="text" id="last_name" name="last_name" class="form-control rounded-3 p-3 border-opacity-50" placeholder="Last Name" required value="{{ request.form.get('last_name', '') }}">
+                    </div>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-12 col-md-6">
+                        <input type="email" id="email" name="email" class="form-control rounded-3 p-3 border-opacity-50" placeholder="Email Address" required value="{{ request.form.get('email', '') }}">
+                    </div>
+                    <div class="col-12 col-md-6 position-relative">
+                        <input type="text" id="phone_number" name="phone_number" class="form-control rounded-3 p-3 border-opacity-50" placeholder="Phone (09xxxxxxxxx)" required maxlength="11" value="{{ request.form.get('phone_number', '') }}">
+                        <div id="phoneError" class="text-danger small mt-1 position-absolute" style="display: none; padding-left: 5px; font-size: 0.75rem;">Invalid phone number</div>
+                    </div>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-12 col-md-6">
+                        <input type="text" id="username" name="username" class="form-control rounded-3 p-3 border-opacity-50" placeholder="Username" minlength="5" maxlength="20" required value="{{ request.form.get('username', '') }}">
+                    </div>
+                    <div class="col-12 col-md-6">
+                        {% set today = get_ph_time().date() %}
+                        {% set min_date = (today.year - 80) ~ "-01-01" %}
+                        {% set max_date = today.strftime('%Y-%m-%d') %}
+                        <div class="position-relative">
+                            <input type="date" id="birthday" name="birthday" class="form-control rounded-3 p-3 border-opacity-50" required min="{{ min_date }}" max="{{ max_date }}" value="{{ request.form.get('birthday', '') }}" title="Birthday">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-2 mb-4">
+                    <div class="col-12 col-md-6 position-relative">
+                        <input type="password" id="password" name="password" class="form-control rounded-3 p-3 border-opacity-50 password-input" placeholder="Password" minlength="6" required oninput="checkStrength()">
+                        <i class="fas fa-eye text-muted toggle-password" onclick="togglePasswordVisibility('password', this)" style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); cursor: pointer; color: #b38b6d !important;"></i>
+                        <div class="password-strength mt-1" style="height: 3px; background: rgba(139, 99, 75, 0.2); border-radius: 2px; overflow: hidden;">
+                            <div id="strength-bar" class="strength-bar h-100" style="width: 0%; transition: 0.3s ease;"></div>
+                        </div>
+                        <div id="strength-text" class="strength-text small mt-1" style="font-size: 0.70rem; color: #8b634b; display: none; text-align: right;">Password Strength</div>
+                    </div>
+                    <div class="col-12 col-md-6 position-relative">
+                        <input type="password" id="confirm_password" name="confirm_password" class="form-control rounded-3 p-3 border-opacity-50 password-input" placeholder="Confirm Password" required>
+                        <i class="fas fa-eye text-muted toggle-password" onclick="togglePasswordVisibility('confirm_password', this)" style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); cursor: pointer; color: #b38b6d !important;"></i>
+                    </div>
+                </div>
+
+                <div class="form-check mb-4">
+                    <input class="form-check-input" type="checkbox" id="terms" name="terms" required style="border-color: #a18a7a; cursor: pointer;">
+                    <label class="form-check-label text-muted" for="terms" style="font-size: 0.85rem;">
+                        I agree to the <a href="#" class="text-decoration-none" style="color: #8b5a2b; font-weight: 500;">Terms of Service</a> & <a href="#" class="text-decoration-none" style="color: #8b5a2b; font-weight: 500;">Privacy Policy</a>.
+                    </label>
+                </div>
+
+                <button type="submit" class="btn w-100 rounded-3 fw-bold text-white shadow py-3 btn-primary-custom" style="font-size: 1.1rem; letter-spacing: 0.3px;">
+                    Register Account
+                </button>
+            </form>
+
+            <div class="text-center mt-4">
+                <p class="text-muted fw-medium mb-0" style="font-size: 0.95rem;">
+                    Already have an account? 
+                    <a href="{{ url_for('main.login') }}" class="fw-bold text-decoration-none border-bottom border-dark pb-1" style="color: #4a3b32; margin-left: 5px;">
+                        Sign in instead
+                    </a>
+                </p>
             </div>
         </div>
     </div>
 </div>
 
 <style>
-/* --- Login & Aesthetic Brown Chill Styles --- */
-.login-wrapper {
-    min-height: 80vh;
+/* Reset Container Padding for Full Width */
+.main-container {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
 }
 
-.login-glass-card {
-    border-radius: 32px;
-    background: rgba(248, 241, 235, 0.85);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.5) !important;
-    box-shadow: 0 25px 50px -12px rgba(139, 90, 43, 0.15);
-    overflow: hidden;
-    transition: all 0.3s ease;
+/* Base override to let splitting stretch */
+.login-split-layout {
+    min-height: 850px; /* Fixed height to match login perfectly */
 }
 
-.login-header {
-    padding: 3.5rem 2rem 1.5rem;
+/* Left Image Section */
+.login-image-section {
+    background-image: url('https://i.postimg.cc/PqLbFYhr/9.webp');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
-.login-title {
-    font-family: 'Georgia', serif;
-    color: #4a3b32;
-    font-size: 2.25rem;
-    letter-spacing: -0.5px;
+.login-image-overlay {
+    background: rgba(0, 0, 0, 0.4); /* Stronger dark overlay for improved text contrast */
 }
 
-.login-subtitle {
-    font-size: 1.05rem;
-    font-weight: 400;
-    color: #8b634b;
-}
-
-.btn-social {
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid rgba(139, 99, 75, 0.2);
-    padding: 0.75rem;
-    box-shadow: 0 4px 6px -1px rgba(92, 58, 33, 0.05);
-    transition: all 0.2s ease;
-}
-
-.btn-social:hover {
+/* Form Section Buttons & Inputs */
+.btn-social-new {
     background: #ffffff;
-    transform: translateY(-1px);
-    box-shadow: 0 6px 10px -2px rgba(92, 58, 33, 0.1);
+    border-color: #dee2e6;
+    transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+    height: 52px;
+}
+.btn-social-new:hover {
+    background: #f8f9fa;
+    border-color: #adb5bd;
 }
 
-.social-icon {
-    width: 22px;
-    height: 22px;
-    object-fit: contain;
-}
-
-.social-text {
+.form-control {
     font-size: 0.95rem;
-    color: #5c3a21;
-}
-
-.divider-line {
-    border-top: 1px solid rgba(139, 99, 75, 0.2);
-}
-
-.divider-text {
-    font-size: 0.75rem;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: #8b634b;
-}
-
-.form-label-custom {
-    font-size: 0.85rem;
-    color: #5c3a21;
-    margin-left: 0.5rem;
-    font-weight: 600;
-}
-
-.glass-input {
-    background: rgba(255, 255, 255, 0.6);
-    border: 1px solid rgba(139, 99, 75, 0.2);
-    border-radius: 16px;
-    padding: 1rem 1.25rem;
-    font-size: 1rem;
     color: #4a3b32;
-    box-shadow: inset 0 2px 4px rgba(92, 58, 33, 0.02);
     transition: all 0.3s ease;
+    border-color: #ced4da;
+    height: 52px;
 }
 
-.password-input {
-    padding-right: 3rem;
+.form-control::placeholder {
+    color: #a18a7a;
+    font-weight: 500;
 }
 
-.glass-input:focus {
-    background: #ffffff;
-    border-color: rgba(139, 99, 75, 0.5);
-    box-shadow: 0 0 0 4px rgba(139, 99, 75, 0.15);
+.form-control:focus {
+    border-color: #8b5a2b;
+    box-shadow: 0 0 0 4px rgba(139, 90, 43, 0.1);
     outline: none;
 }
 
-.forgot-link {
-    font-size: 0.85rem;
-    color: #8b634b;
-    transition: color 0.2s;
-    opacity: 0.9;
-    text-decoration: none;
+.divider-line {
+    border-top: 2px solid rgba(139, 99, 75, 0.15);
 }
 
-.forgot-link:hover {
-    color: #5c3a21;
-    opacity: 1;
+.divider-text {
+    letter-spacing: 1.5px;
+}
+
+.password-input {
+    padding-right: 2.5rem !important;
 }
 
 .toggle-password {
-    position: absolute;
-    right: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    cursor: pointer;
-    font-size: 1.1rem;
-    z-index: 10;
+    background: transparent;
     padding: 0.5rem;
     border-radius: 50%;
     transition: background 0.2s ease, color 0.2s ease;
-    color: #8b634b !important;
 }
 
 .toggle-password:hover {
@@ -281,79 +201,50 @@
     color: #5c3a21 !important;
 }
 
-.btn-primary-gradient {
-    background: linear-gradient(135deg, #8b634b 0%, #5c3a21 100%);
-    padding: 1rem;
-    border: none;
-    font-size: 1.05rem;
-    letter-spacing: 0.5px;
+/* Custom Button */
+.btn-primary-custom {
+    background-color: #8b5a2b;
+    border-color: #8b5a2b;
     transition: all 0.3s ease;
-    box-shadow: 0 10px 15px -3px rgba(92, 58, 33, 0.25);
 }
-
-.btn-primary-gradient:hover {
+.btn-primary-custom:hover {
+    background-color: #6d4622;
+    border-color: #6d4622;
     transform: translateY(-2px);
-    box-shadow: 0 15px 20px -3px rgba(92, 58, 33, 0.35);
-    color: white;
+    box-shadow: 0 10px 15px -3px rgba(139, 90, 43, 0.3) !important;
 }
 
-.border-subtle {
-    border-color: rgba(139, 99, 75, 0.15) !important;
-}
-
-.bottom-text {
-    font-size: 0.95rem;
-    color: #5c3a21 !important;
-}
-
-.create-account-link {
-    color: #8b634b;
-    position: relative;
-    padding-bottom: 2px;
-    margin-left: 0.25rem;
-}
-
-.create-account-link::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background: #8b634b;
-    border-radius: 2px;
-    transform: scaleX(0);
-    transform-origin: right;
-    transition: transform 0.3s ease;
-}
-
-.create-account-link:hover::after {
-    transform: scaleX(1);
-    transform-origin: left;
-}
-
-.glass-checkbox {
-    border: 1px solid rgba(139, 99, 75, 0.4);
-    background: rgba(255, 255, 255, 0.6);
-    cursor: pointer; 
-    transform: scale(1.1); 
-    margin-top: 0.25rem;
-}
-
-.glass-checkbox:checked {
-    background-color: #8b634b;
-    border-color: #5c3a21;
-}
-
+/* Chrome Autofill adjustment */
 input:-webkit-autofill,
 input:-webkit-autofill:hover, 
 input:-webkit-autofill:focus, 
 input:-webkit-autofill:active{
-    -webkit-box-shadow: 0 0 0 30px #fdfbfa inset !important;
+    -webkit-box-shadow: 0 0 0 30px #ffffff inset !important;
     -webkit-text-fill-color: #4a3b32 !important;
-    border-radius: 16px;
+    border-radius: 0.5rem !important;
+}
+
+/* Hide auth background if it interferes */
+.auth-bg {
+    display: none !important;
+}
+
+/* Remove footer top margin to connect perfectly */
+footer {
+    margin-top: 0 !important;
+}
+
+/* Date Input specific text color fix */
+input[type="date"] {
+    color: #4a3b32;
+}
+
+/* Form validation error styling */
+input.is-invalid {
+    border-color: #dc3545 !important;
 }
 </style>
+
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         // Auto-fill from social login if pending
@@ -397,23 +288,32 @@ input:-webkit-autofill:active{
             errorDiv.id = fieldId + '-error';
             errorDiv.className = 'text-danger small mt-1';
             errorDiv.style.paddingLeft = '5px';
+            errorDiv.style.fontSize = '0.8rem';
             input.parentElement.appendChild(errorDiv);
         }
         errorDiv.textContent = msg;
         errorDiv.style.display = 'block';
-        input.style.border = '2px solid #ef4444';
+        input.classList.add('is-invalid');
         input.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
     function clearErrors() {
         document.querySelectorAll('.text-danger.small.mt-1').forEach(el => el.style.display = 'none');
-        document.querySelectorAll('.glass-input').forEach(el => el.style.border = '');
+        document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
     }
 
     function checkStrength() {
         const pwd = document.getElementById('password').value;
         const bar = document.getElementById('strength-bar');
         const txt = document.getElementById('strength-text');
+        
+        if (pwd.length === 0) {
+            txt.style.display = 'none';
+            bar.style.width = '0%';
+            return;
+        }
+
+        txt.style.display = 'block';
 
         let strength = 0;
         if (pwd.length >= 6) strength += 25;
@@ -437,7 +337,7 @@ input:-webkit-autofill:active{
 
         const phRegex = /^09\d{9}$/;
         if (!phRegex.test(phone)) {
-            showFieldError('phone_number', "Needs to be exactly 11 digits and start with 09.");
+            showFieldError('phone_number', "Needs to be 11 digits starting with 09.");
             isValid = false;
         } else {
             const digitsOnly = phone.substring(2);
@@ -455,7 +355,7 @@ input:-webkit-autofill:active{
                 isValid = false;
             }
         });
-        
+
         const middlename = document.getElementById('middle_name').value;
         if (middlename && !nameRegex.test(middlename)) {
             showFieldError('middle_name', "Names can only contain letters, spaces, and dashes.");
@@ -500,7 +400,7 @@ input:-webkit-autofill:active{
 
         const pwd = document.getElementById('password').value;
         const confirmResult = document.getElementById('confirm_password').value;
-        
+
         if (pwd.startsWith(' ') || pwd.endsWith(' ')) {
             showFieldError('password', "Password cannot start or end with spaces.");
             isValid = false;
@@ -511,7 +411,7 @@ input:-webkit-autofill:active{
             showFieldError('password', "Password must be at least 6 characters.");
             isValid = false;
         }
-        
+
         if (pwd && confirmResult && pwd !== confirmResult) {
             showFieldError('confirm_password', "Passwords do not match.");
             isValid = false;

@@ -154,13 +154,12 @@
             <li class="nav-item">
                 <a href="{{ url_for('main.view_cart') }}" class="btn navIcon position-relative">
                     <i class="fas fa-shopping-cart"></i>
-                    {% set cart_count = session.get('cart', {})|length %}
-                    {% if cart_count > 0 %}
-                    <span class="position-absolute badge rounded-pill bg-danger shadow-sm"
-                        style="font-size: 0.6rem; top: -2px; right: -4px; min-width: 18px;">
-                        {{ cart_count }}
+                    {% set cart_data = session.get('cart', {}) %}
+                    {% set cart_total_qty = cart_data.values()|list|sum if cart_data else 0 %}
+                    <span class="cart-badge position-absolute badge rounded-pill bg-danger shadow-sm"
+                        style="font-size: 0.6rem; top: -2px; right: -4px; min-width: 18px;{{ ' display: none;' if cart_total_qty == 0 else '' }}">
+                        {{ cart_total_qty if cart_total_qty > 0 else '' }}
                     </span>
-                    {% endif %}
                 </a>
             </li>
             <!-- NOTIFICATION BELL -->

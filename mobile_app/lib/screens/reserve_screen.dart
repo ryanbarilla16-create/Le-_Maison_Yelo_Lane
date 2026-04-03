@@ -73,10 +73,26 @@ class _ReserveScreenState extends State<ReserveScreen> {
     }).toList();
   }
 
+  bool get _isTodayClosed {
+    final now = DateTime.now();
+    // Check if any time slots are still available for today
+    final todaySlots = _timeSlots.where((t) {
+      final p = t.split(':');
+      final h = int.parse(p[0]);
+      final m = int.parse(p[1]);
+      return (h > now.hour) || (h == now.hour && m > now.minute);
+    }).toList();
+    return todaySlots.isEmpty;
+  }
+
   Future<void> _pickDate() async {
     final now = DateTime.now();
     final isExclusive = _bookingType == 'EXCLUSIVE';
-    final firstDay = isExclusive ? now.add(const Duration(days: 1)) : now;
+    final todayClosed = _isTodayClosed;
+
+    // If restaurant is closed for today or exclusive booking, start from tomorrow
+    final tomorrow = DateTime(now.year, now.month, now.day).add(const Duration(days: 1));
+    final firstDay = (isExclusive || todayClosed) ? tomorrow : now;
     
     DateTime initial = _date ?? firstDay;
     if (initial.isBefore(firstDay)) initial = firstDay;
@@ -257,6 +273,24 @@ class _ReserveScreenState extends State<ReserveScreen> {
                       ),
                     ),
                   ),
+                  if (_isTodayClosed)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6, left: 4),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline, size: 14, color: Colors.orange.shade700),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Today is unavailable — restaurant is closed.',
+                            style: TextStyle(
+                              color: Colors.orange.shade700,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   const SizedBox(height: 14),
                   // Time
                   DropdownButtonFormField<String>(

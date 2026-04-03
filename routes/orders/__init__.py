@@ -44,6 +44,7 @@ def add_to_cart(item_id):
         cart[item_id_str] = quantity
         
     session['cart'] = cart
+    session.modified = True
     
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         total_items = sum(cart.values())
@@ -59,13 +60,14 @@ def update_cart(item_id):
     item_id_str = str(item_id)
     
     if item_id_str in cart:
-        action = request.form.get('action')
+        action = request.form.get('cart_action')
         if action == 'increment':
             cart[item_id_str] += 1
         elif action == 'decrement' and cart[item_id_str] > 1:
             cart[item_id_str] -= 1
         
         session['cart'] = cart
+        session.modified = True
         
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             total_items = sum(cart.values())
@@ -98,8 +100,24 @@ def remove_from_cart(item_id):
     if item_id_str in cart:
         del cart[item_id_str]
         session['cart'] = cart
+        session.modified = True
         flash("Item removed from cart.", "success")
     return redirect(url_for('main.view_cart'))
+
+@main_bp.route('/cart/remove_multiple', methods=['POST'])
+def remove_multiple_from_cart():
+    cart = session.get('cart', {})
+    item_ids = request.form.getlist('item_ids[]')
+    removed_any = False
+    for i_id in item_ids:
+        if str(i_id) in cart:
+            del cart[str(i_id)]
+            removed_any = True
+    if removed_any:
+        session['cart'] = cart
+        session.modified = True
+        return {"status": "success", "message": "Selected items removed."}
+    return {"status": "error", "message": "No items removed."}
 
 @main_bp.route('/checkout', methods=['POST'])
 @login_required
@@ -107,6 +125,20 @@ def checkout():
     cart = session.get('cart', {})
     if not cart:
         flash("Your cart is empty!", "danger")
+        return redirect(url_for('main.view_cart'))
+        
+    selected_items = request.form.getlist('selected_items')
+    if not selected_items:
+        flash("Please select at least one item to checkout.", "warning")
+        return redirect(url_for('main.view_cart'))
+        
+    items_to_checkout = {}
+    for i_id in selected_items:
+        if str(i_id) in cart:
+            items_to_checkout[str(i_id)] = cart[str(i_id)]
+            
+    if not items_to_checkout:
+        flash("No valid items selected for checkout.", "danger")
         return redirect(url_for('main.view_cart'))
         
     notes = request.form.get('notes', '')
@@ -117,7 +149,7 @@ def checkout():
     delivery_address_input = request.form.get('delivery_address', '')
     
     # --- ORDER VALIDATION LOGIC ---
-    items_data = [{'menu_item_id': int(id), 'quantity': qty} for id, qty in cart.items()]
+    items_data = [{'menu_item_id': int(id), 'quantity': qty} for id, qty in items_to_checkout.items()]
     is_valid, msg, status_override = validate_order(items_data, dining_option, payment_method, is_pos=False)
     
     if not is_valid:
@@ -128,7 +160,7 @@ def checkout():
     total = 0
     order_items = []
     
-    for item_id, quantity in cart.items():
+    for item_id, quantity in items_to_checkout.items():
         menu_item = MenuItem.query.get(int(item_id))
         if menu_item and menu_item.is_available:
             price = menu_item.price
@@ -173,8 +205,13 @@ def checkout():
         
     db.session.commit()
     
+    # Remove checked out items from cart
+    for item_id in items_to_checkout:
+        del cart[item_id]
+    session['cart'] = cart
+    session.modified = True
+    
     if payment_method == 'COUNTER':
-        session['cart'] = {}
         msg = "Order placed successfully! Please pay at the counter." if dining_option != 'DELIVERY' else "Order placed successfully! Please prepare exact payment upon delivery."
         flash(msg, "success")
         return redirect(url_for('main.index'))
@@ -210,8 +247,6 @@ def checkout():
                 new_order.xendit_invoice_id = invoice_data.get('id')
                 db.session.commit()
                 
-                # Clear cart and redirect to payment
-                session['cart'] = {}
                 return redirect(new_order.xendit_invoice_url)
             else:
                 flash(f"Failed to generate payment link: {response.json().get('message')}", "danger")
@@ -222,8 +257,6 @@ def checkout():
         # Fallback if no valid API key is present
         flash("Order placed successfully! Note: Payment gateway not configured. We'll contact you for payment.", "warning")
 
-    # Clear cart
-    session['cart'] = {}
     return redirect(url_for('main.index'))
 
 @main_bp.route('/payment-success/<int:order_id>')

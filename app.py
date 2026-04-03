@@ -18,9 +18,16 @@ from flask_talisman import Talisman
 from extensions import socketio
 from flasgger import Swagger
 import _json
+from flask_compress import Compress
 
 app = Flask(__name__)
 # Initialize extensions
+Compress(app)
+# Application Optimizations
+app.config['COMPRESS_REGISTER'] = True
+app.config['COMPRESS_ALGORITHM'] = ['gzip', 'br', 'deflate']
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 31536000 # Cache static resources for 1 year
+
 socketio.init_app(app, async_mode='eventlet')
 # Tell Flask it is behind a proxy (like LocalTunnel) so redirects use the correct url
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
