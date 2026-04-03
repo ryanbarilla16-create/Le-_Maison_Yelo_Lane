@@ -17,7 +17,6 @@ from flask_limiter.util import get_remote_address
 from flask_talisman import Talisman
 from extensions import socketio
 from flasgger import Swagger
-import _json
 from flask_compress import Compress
 
 app = Flask(__name__)
