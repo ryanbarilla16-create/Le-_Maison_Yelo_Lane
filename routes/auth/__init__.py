@@ -746,7 +746,7 @@ def facebook_callback():
             social_provider='Facebook'
         )
         new_user.set_password(secrets.token_hex(16))
-        from extensions import db
+        from models import db
         db.session.add(new_user)
         db.session.commit()
         mobile_sessions[session_id]['user'] = {
