@@ -618,27 +618,38 @@ def approve_user(user_id):
             recipients=[user.email]
         )
         msg.html = f"""
-        <div style="font-family: 'Georgia', serif; max-width: 500px; margin: 0 auto; padding: 40px 30px; background: #ffffff; border-radius: 12px; border: 1px solid #e0d5c7;">
-            <div style="text-align: center; margin-bottom: 30px;">
-                <h1 style="color: #8B4513; margin: 0; font-size: 1.5rem;">☕ Le Maison Yelo Lane</h1>
-                <p style="color: #999; font-size: 0.85rem; margin-top: 5px;">Account Notification</p>
+        <div style="background-color: #f8f5f2; padding: 40px 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6;">
+            <div style="max-width: 550px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(93, 64, 55, 0.08); border: 1px solid #e8e0d8;">
+                <div style="background-color: #5d4037; padding: 30px; text-align: center;">
+                    <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 300; letter-spacing: 1px;">LE MAISON YELO LANE</h1>
+                </div>
+                <div style="padding: 40px 35px; color: #4e342e;">
+                    <div style="text-align: center; margin-bottom: 25px;">
+                        <span style="display: inline-block; background-color: #e8f5e9; color: #2e7d32; width: 60px; height: 60px; border-radius: 50%; line-height: 60px; font-size: 30px;">✓</span>
+                    </div>
+                    <h2 style="text-align: center; color: #2e7d32; font-size: 22px; margin-bottom: 20px;">Account Approved!</h2>
+                    <p style="font-size: 16px; margin-bottom: 20px;">Hello <strong>{user.first_name}</strong>,</p>
+                    <p style="font-size: 15px; color: #6d4c41;">Great news! Your account has been reviewed and approved by our team. You now have full access to everything Le Maison Yelo Lane has to offer:</p>
+                    <div style="background-color: #fcfaf8; border-radius: 12px; padding: 20px; margin: 25px 0; border: 1px inset #efebe9;">
+                        <ul style="margin: 0; padding: 0; list-style: none;">
+                            <li style="margin-bottom: 12px; padding-left: 25px; position: relative;">
+                                <span style="position: absolute; left: 0; color: #8d6e63;">☕</span> Browse and order from our menu
+                            </li>
+                            <li style="margin-bottom: 12px; padding-left: 25px; position: relative;">
+                                <span style="position: absolute; left: 0; color: #8d6e63;">📅</span> Make table reservations
+                            </li>
+                            <li style="margin-bottom: 0; padding-left: 25px; position: relative;">
+                                <span style="position: absolute; left: 0; color: #8d6e63;">⭐</span> Rate and review your favorite dishes
+                            </li>
+                        </ul>
+                    </div>
+                    <div style="text-align: center; margin: 35px 0;">
+                        <a href="https://le-maison-yelo-lane.loca.lt/login" style="display: inline-block; background-color: #5d4037; color: #ffffff; font-weight: 600; text-decoration: none; padding: 15px 45px; border-radius: 30px; font-size: 16px; transition: background 0.3s;">Access My Account</a>
+                    </div>
+                    <hr style="border: 0; border-top: 1px solid #efebe9; margin: 30px 0;">
+                    <p style="font-size: 13px; color: #a1887f; text-align: center; margin: 0;">We're excited to have you with us!<br><strong>Le Maison Yelo Lane</strong></p>
+                </div>
             </div>
-            <div style="text-align: center; margin-bottom: 25px;">
-                <div style="display: inline-block; background: linear-gradient(135deg, #28a745, #20c997); width: 60px; height: 60px; border-radius: 50%; line-height: 60px; font-size: 1.8rem;">✓</div>
-            </div>
-            <h2 style="text-align: center; color: #28a745; font-size: 1.3rem; margin-bottom: 15px;">Account Approved!</h2>
-            <p style="color: #333; font-size: 1rem;">Hello <strong>{user.first_name}</strong>,</p>
-            <p style="color: #555; font-size: 0.95rem;">Great news! Your account has been reviewed and approved by our admin team. You can now enjoy all the features of Le Maison Yelo Lane:</p>
-            <ul style="color: #555; font-size: 0.9rem; line-height: 2;">
-                <li>🍽️ Browse and order from our menu</li>
-                <li>📅 Make table reservations</li>
-                <li>⭐ Rate and review your orders</li>
-            </ul>
-            <div style="text-align: center; margin: 30px 0;">
-                <a href="http://127.0.0.1:5000/login" style="display: inline-block; background: linear-gradient(135deg, #8B4513, #A0522D); color: #fff; font-weight: bold; text-decoration: none; padding: 12px 35px; border-radius: 50px; font-size: 0.95rem;">Log In Now</a>
-            </div>
-            <hr style="border: none; border-top: 1px solid #e0d5c7; margin: 25px 0;">
-            <p style="color: #bbb; font-size: 0.75rem; text-align: center;">Thank you for choosing Le Maison Yelo Lane!</p>
         </div>
         """
         mail.send(msg)
@@ -721,16 +732,23 @@ def broadcast():
                 bcc=emails
             )
             msg.html = f"""
-            <div style="font-family: 'Georgia', serif; max-width: 500px; margin: 0 auto; padding: 40px 30px; background: #ffffff; border-radius: 12px; border: 1px solid #e0d5c7;">
-                <div style="text-align: center; margin-bottom: 25px;">
-                    <h1 style="color: #8B4513; margin: 0; font-size: 1.5rem;">☕ Le Maison Yelo Lane</h1>
+            <div style="background-color: #f8f5f2; padding: 40px 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6;">
+                <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(93, 64, 55, 0.08); border: 1px solid #e8e0d8;">
+                    <div style="background-color: #5d4037; padding: 30px; text-align: center;">
+                        <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 300; letter-spacing: 1px;">LE MAISON YELO LANE</h1>
+                    </div>
+                    <div style="padding: 45px 40px; color: #4e342e;">
+                        <p style="font-size: 16px; margin-bottom: 25px;">Hello,</p>
+                        <div style="font-size: 15px; color: #4e342e; line-height: 1.8; background-color: #fcfaf8; padding: 25px; border-radius: 12px; border-left: 4px solid #8d6e63;">
+                            {message_content.replace(chr(10), '<br>')}
+                        </div>
+                        <hr style="border: 0; border-top: 1px solid #efebe9; margin: 35px 0;">
+                        <div style="text-align: center; color: #a1887f; font-size: 12px;">
+                            <p style="margin-bottom: 5px;"><strong>Le Maison Yelo Lane</strong></p>
+                            <p style="margin: 0;">Pagsanjan, Laguna · Philippines</p>
+                        </div>
+                    </div>
                 </div>
-                <p style="color: #333; font-size: 1rem;">Hello,</p>
-                <div style="color: #555; font-size: 0.95rem; line-height: 1.6;">
-                    {message_content.replace(chr(10), '<br>')}
-                </div>
-                <hr style="border: none; border-top: 1px solid #e0d5c7; margin: 25px 0;">
-                <p style="color: #bbb; font-size: 0.75rem; text-align: center;">Le Maison Yelo Lane · Pagsanjan, Laguna</p>
             </div>
             """
             mail.send(msg)

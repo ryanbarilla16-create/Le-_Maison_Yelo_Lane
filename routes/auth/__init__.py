@@ -133,19 +133,26 @@ def signup():
                 recipients=[email]
             )
             msg.html = f"""
-            <div style="font-family: 'Georgia', serif; max-width: 500px; margin: 0 auto; padding: 40px 30px; background: #ffffff; border-radius: 12px; border: 1px solid #e0d5c7;">
-                <div style="text-align: center; margin-bottom: 30px;">
-                    <h1 style="color: #8B4513; margin: 0; font-size: 1.5rem;">☕ Le Maison Yelo Lane</h1>
-                    <p style="color: #999; font-size: 0.85rem; margin-top: 5px;">Email Verification</p>
+            <div style="background-color: #f8f5f2; padding: 40px 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6;">
+                <div style="max-width: 550px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(93, 64, 55, 0.08); border: 1px solid #e8e0d8;">
+                    <div style="background-color: #5d4037; padding: 30px; text-align: center;">
+                        <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 300; letter-spacing: 1px;">LE MAISON YELO LANE</h1>
+                    </div>
+                    <div style="padding: 40px 35px; color: #4e342e;">
+                        <h2 style="margin-top: 0; font-weight: 600; font-size: 20px; color: #5d4037;">Verification Code</h2>
+                        <p style="font-size: 16px; margin-bottom: 25px;">Hello <strong>{first_name}</strong>,</p>
+                        <p style="font-size: 15px; color: #6d4c41;">Welcome to Le Maison Yelo Lane! To complete your registration and secure your account, please use the following verification code:</p>
+                        <div style="text-align: center; margin: 40px 0;">
+                            <div style="display: inline-block; background-color: #efebe9; border: 2px dashed #8d6e63; color: #5d4037; font-size: 36px; font-weight: bold; letter-spacing: 10px; padding: 20px 40px; border-radius: 12px;">{otp}</div>
+                        </div>
+                        <p style="font-size: 14px; color: #8d6e63; text-align: center;">This code is valid for <strong>10 minutes</strong>. Please do not share it with anyone.</p>
+                        <hr style="border: 0; border-top: 1px solid #efebe9; margin: 30px 0;">
+                        <p style="font-size: 13px; color: #a1887f; text-align: center; margin: 0;">If you didn't create an account, you can safely ignore this email.</p>
+                    </div>
                 </div>
-                <p style="color: #333; font-size: 1rem;">Hello <strong>{first_name}</strong>,</p>
-                <p style="color: #555; font-size: 0.95rem;">Thank you for registering! Please use the following OTP code to verify your email address:</p>
-                <div style="text-align: center; margin: 30px 0;">
-                    <span style="display: inline-block; background: linear-gradient(135deg, #8B4513, #A0522D); color: #fff; font-size: 2rem; font-weight: bold; letter-spacing: 8px; padding: 15px 35px; border-radius: 10px;">{otp}</span>
+                <div style="max-width: 550px; margin: 20px auto; text-align: center; color: #a1887f; font-size: 12px;">
+                    <p>© 2024 Le Maison Yelo Lane · Pagsanjan, Laguna</p>
                 </div>
-                <p style="color: #999; font-size: 0.8rem; text-align: center;">This code will expire in 10 minutes. Do not share it with anyone.</p>
-                <hr style="border: none; border-top: 1px solid #e0d5c7; margin: 25px 0;">
-                <p style="color: #bbb; font-size: 0.75rem; text-align: center;">If you did not request this, please ignore this email.</p>
             </div>
             """
             mail.send(msg)
@@ -217,19 +224,23 @@ def resend_otp(user_id):
             recipients=[user.email]
         )
         msg.html = f"""
-        <div style="font-family: 'Georgia', serif; max-width: 500px; margin: 0 auto; padding: 40px 30px; background: #ffffff; border-radius: 12px; border: 1px solid #e0d5c7;">
-            <div style="text-align: center; margin-bottom: 30px;">
-                <h1 style="color: #8B4513; margin: 0; font-size: 1.5rem;">☕ Le Maison Yelo Lane</h1>
-                <p style="color: #999; font-size: 0.85rem; margin-top: 5px;">New Verification Code</p>
+        <div style="background-color: #f8f5f2; padding: 40px 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6;">
+            <div style="max-width: 550px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(93, 64, 55, 0.08); border: 1px solid #e8e0d8;">
+                <div style="background-color: #5d4037; padding: 30px; text-align: center;">
+                    <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 300; letter-spacing: 1px;">LE MAISON YELO LANE</h1>
+                </div>
+                <div style="padding: 40px 35px; color: #4e342e;">
+                    <h2 style="margin-top: 0; font-weight: 600; font-size: 20px; color: #5d4037;">New Verification Code</h2>
+                    <p style="font-size: 16px; margin-bottom: 25px;">Hello <strong>{user.first_name}</strong>,</p>
+                    <p style="font-size: 15px; color: #6d4c41;">We received a request for a new verification code. Please use the following code:</p>
+                    <div style="text-align: center; margin: 40px 0;">
+                        <div style="display: inline-block; background-color: #efebe9; border: 2px dashed #8d6e63; color: #5d4037; font-size: 36px; font-weight: bold; letter-spacing: 10px; padding: 20px 40px; border-radius: 12px;">{otp}</div>
+                    </div>
+                    <p style="font-size: 14px; color: #8d6e63; text-align: center;">This code is valid for <strong>10 minutes</strong>. If you did not request this, please secure your account.</p>
+                    <hr style="border: 0; border-top: 1px solid #efebe9; margin: 30px 0;">
+                    <p style="font-size: 13px; color: #a1887f; text-align: center; margin: 0;">Warm regards,<br>The Le Maison Yelo Lane Team</p>
+                </div>
             </div>
-            <p style="color: #333; font-size: 1rem;">Hello <strong>{user.first_name}</strong>,</p>
-            <p style="color: #555; font-size: 0.95rem;">Here is your new OTP verification code:</p>
-            <div style="text-align: center; margin: 30px 0;">
-                <span style="display: inline-block; background: linear-gradient(135deg, #8B4513, #A0522D); color: #fff; font-size: 2rem; font-weight: bold; letter-spacing: 8px; padding: 15px 35px; border-radius: 10px;">{otp}</span>
-            </div>
-            <p style="color: #999; font-size: 0.8rem; text-align: center;">This code will expire in 10 minutes. Do not share it with anyone.</p>
-            <hr style="border: none; border-top: 1px solid #e0d5c7; margin: 25px 0;">
-            <p style="color: #bbb; font-size: 0.75rem; text-align: center;">If you did not request this, please ignore this email.</p>
         </div>
         """
         mail.send(msg)
@@ -382,17 +393,23 @@ def forgot_password():
                 recipients=[email]
             )
             msg.html = f"""
-            <div style="font-family: 'Georgia', serif; max-width: 500px; margin: 0 auto; padding: 40px 30px; background: #ffffff; border-radius: 12px; border: 1px solid #e0d5c7;">
-                <div style="text-align: center; margin-bottom: 30px;">
-                    <h1 style="color: #8B4513; margin: 0; font-size: 1.5rem;">Le Maison Yelo Lane</h1>
-                    <p style="color: #999; font-size: 0.85rem; margin-top: 5px;">Password Reset</p>
+            <div style="background-color: #f8f5f2; padding: 40px 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6;">
+                <div style="max-width: 550px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(93, 64, 55, 0.08); border: 1px solid #e8e0d8;">
+                    <div style="background-color: #5d4037; padding: 30px; text-align: center;">
+                        <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 300; letter-spacing: 1px;">LE MAISON YELO LANE</h1>
+                    </div>
+                    <div style="padding: 40px 35px; color: #4e342e;">
+                        <h2 style="margin-top: 0; font-weight: 600; font-size: 20px; color: #5d4037;">Password Reset</h2>
+                        <p style="font-size: 16px; margin-bottom: 25px;">Hello <strong>{user.first_name}</strong>,</p>
+                        <p style="font-size: 15px; color: #6d4c41;">You requested to reset your password. Use the following code to proceed with the reset:</p>
+                        <div style="text-align: center; margin: 40px 0;">
+                            <div style="display: inline-block; background-color: #efebe9; border: 2px dashed #8d6e63; color: #5d4037; font-size: 36px; font-weight: bold; letter-spacing: 10px; padding: 20px 40px; border-radius: 12px;">{otp}</div>
+                        </div>
+                        <p style="font-size: 14px; color: #8d6e63; text-align: center;">This code is valid for <strong>5 minutes</strong>. If you didn't request this, no further action is needed.</p>
+                        <hr style="border: 0; border-top: 1px solid #efebe9; margin: 30px 0;">
+                        <p style="font-size: 13px; color: #a1887f; text-align: center; margin: 0;">For security, never share this code with anyone.</p>
+                    </div>
                 </div>
-                <p style="color: #333;">Hello <strong>{user.first_name}</strong>,</p>
-                <p style="color: #555;">You requested a password reset. Use the following OTP code to reset your password:</p>
-                <div style="text-align: center; margin: 30px 0;">
-                    <span style="display: inline-block; background: linear-gradient(135deg, #8B4513, #A0522D); color: #fff; font-size: 2rem; font-weight: bold; letter-spacing: 8px; padding: 15px 35px; border-radius: 10px;">{otp}</span>
-                </div>
-                <p style="color: #999; font-size: 0.8rem; text-align: center;">This code will expire in 5 minutes. If you didn't request this, please ignore this email.</p>
             </div>
             """
             mail.send(msg)
@@ -471,17 +488,20 @@ def resend_reset_otp(user_id):
             recipients=[user.email]
         )
         msg.html = f"""
-        <div style="font-family: 'Georgia', serif; max-width: 500px; margin: 0 auto; padding: 40px 30px; background: #ffffff; border-radius: 12px; border: 1px solid #e0d5c7;">
-            <div style="text-align: center; margin-bottom: 30px;">
-                <h1 style="color: #8B4513; margin: 0; font-size: 1.5rem;">Le Maison Yelo Lane</h1>
-                <p style="color: #999; font-size: 0.85rem; margin-top: 5px;">New Password Reset Code</p>
+        <div style="background-color: #f8f5f2; padding: 40px 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6;">
+            <div style="max-width: 550px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(93, 64, 55, 0.08); border: 1px solid #e8e0d8;">
+                <div style="background-color: #5d4037; padding: 30px; text-align: center;">
+                    <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 300; letter-spacing: 1px;">LE MAISON YELO LANE</h1>
+                </div>
+                <div style="padding: 40px 35px; color: #4e342e;">
+                    <h2 style="margin-top: 0; font-weight: 600; font-size: 20px; color: #5d4037;">New Reset Code</h2>
+                    <p style="font-size: 16px; margin-bottom: 25px;">Hello <strong>{user.first_name}</strong>,</p>
+                    <p style="font-size: 15px; color: #6d4c41;">As requested, here is your new password reset code:</p>
+                    <div style="text-align: center; margin: 40px 0;">
+                        <div style="display: inline-block; background-color: #efebe9; border: 2px dashed #8d6e63; color: #5d4037; font-size: 36px; font-weight: bold; letter-spacing: 10px; padding: 20px 40px; border-radius: 12px;">{otp}</div>
+                    </div>
+                </div>
             </div>
-            <p style="color: #333;">Hello <strong>{user.first_name}</strong>,</p>
-            <p style="color: #555;">Here is your new OTP code to reset your password:</p>
-            <div style="text-align: center; margin: 30px 0;">
-                <span style="display: inline-block; background: linear-gradient(135deg, #8B4513, #A0522D); color: #fff; font-size: 2rem; font-weight: bold; letter-spacing: 8px; padding: 15px 35px; border-radius: 10px;">{otp}</span>
-            </div>
-            <p style="color: #999; font-size: 0.8rem; text-align: center;">This code will expire in 5 minutes. If you didn't request this, please ignore this email.</p>
         </div>
         """
         mail.send(msg)
