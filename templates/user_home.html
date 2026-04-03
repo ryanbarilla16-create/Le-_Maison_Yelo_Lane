@@ -682,7 +682,7 @@
 <main>
     <!-- ═══ CINEMATIC HERO ═══ -->
     <section class="dashHero">
-        <img src="https://images.unsplash.com/photo-1600093463592-8e36ae95ef56?q=80&w=2070&auto=format&fit=crop"
+        <img loading="lazy" decoding="async" src="https://images.unsplash.com/photo-1600093463592-8e36ae95ef56?q=80&w=2070&auto=format&fit=crop"
             alt="Restaurant Ambiance">
         <div class="dashHero-content">
             <div class="dashHero-text">
@@ -832,7 +832,7 @@
             <div class="dashMenuCard">
                 {% if item.image_url %}
                 <div class="mcImg">
-                    <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                    <img loading="lazy" decoding="async" src="{{ item.image_url }}" alt="{{ item.name }}">
                     <span class="mcBadge"><i class="fas fa-fire me-1"></i>Popular</span>
                 </div>
                 {% else %}
@@ -900,7 +900,7 @@
             <div class="dashMenuCard">
                 {% if item.image_url %}
                 <div class="mcImg">
-                    <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                    <img loading="lazy" decoding="async" src="{{ item.image_url }}" alt="{{ item.name }}">
                 </div>
                 {% else %}
                 <div class="mcNoImg">
@@ -931,7 +931,7 @@
             {% for cat in categories %}
             <a href="{{ url_for('main.menu_page') }}" class="dashCatCard">
                 {% if cat.sample_image %}
-                <div class="ccImg"><img src="{{ cat.sample_image }}" alt="{{ cat.category }}"></div>
+                <div class="ccImg"><img loading="lazy" decoding="async" src="{{ cat.sample_image }}" alt="{{ cat.category }}"></div>
                 {% else %}
                 <div class="ccImg"
                     style="background: linear-gradient(135deg, #5D4037, #8D6E63, #D4A862); display: flex; align-items: center; justify-content: center;">

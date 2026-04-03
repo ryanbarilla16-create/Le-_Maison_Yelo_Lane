@@ -59,13 +59,13 @@
                 <div class="profAvatar">
                     <div class="avatarWrap">
                         {% if current_user.profile_picture_url %}
-                        <img id="profile-pic-preview" src="{{ current_user.profile_picture_url }}">
+                        <img loading="lazy" decoding="async" id="profile-pic-preview" src="{{ current_user.profile_picture_url }}">
                         <div id="profile-pic-preview-div" style="display: none;"></div>
                         {% else %}
                         <div id="profile-pic-preview-div" class="avatarFallback">
                             {{ current_user.first_name[:1] }}{{ current_user.last_name[:1] }}
                         </div>
-                        <img id="profile-pic-preview" style="display: none;">
+                        <img loading="lazy" decoding="async" id="profile-pic-preview" style="display: none;">
                         {% endif %}
                         <label for="profile_picture" class="camBtn"><i class="fas fa-camera"></i></label>
                         <input type="file" id="profile_picture" name="profile_picture" class="d-none" accept="image/*" onchange="previewProfileImage(event)">

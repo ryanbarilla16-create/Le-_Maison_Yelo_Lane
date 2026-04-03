@@ -6,7 +6,7 @@
 <!-- Beautiful Hero Section for the Menu -->
 <div class="position-relative w-100 shadow-lg"
     style="height: 400px; border-radius: 20px; overflow: hidden; margin-bottom: 4rem;">
-    <img src="https://images.unsplash.com/photo-1559925393-8be0ec4767c8?q=80&w=2071&auto=format&fit=crop"
+    <img loading="lazy" decoding="async" src="https://images.unsplash.com/photo-1559925393-8be0ec4767c8?q=80&w=2071&auto=format&fit=crop"
         class="w-100 h-100" style="object-fit: cover; filter: brightness(0.6);" alt="Menu Banner">
     <div class="position-absolute top-50 start-50 translate-middle text-center w-100 px-3">
         <h1
@@ -48,7 +48,7 @@
 
                 <div style="height: 200px; overflow: hidden; position: relative; flex-shrink: 0;">
                     {% if info.image %}
-                    <img src="{{ info.image }}" class="w-100 h-100 category-img"
+                    <img loading="lazy" decoding="async" src="{{ info.image }}" class="w-100 h-100 category-img"
                         style="object-fit: cover; transition: transform 0.6s ease;" alt="{{ cat_name }}">
                     {% else %}
                     <div class="w-100 h-100 d-flex align-items-center justify-content-center"
@@ -99,7 +99,7 @@
 
                     {% if item.image_url %}
                     <div style="height: 250px; overflow: hidden; position: relative; flex-shrink: 0;">
-                        <img src="{{ item.image_url }}" class="w-100 h-100"
+                        <img loading="lazy" decoding="async" src="{{ item.image_url }}" class="w-100 h-100"
                             style="object-fit: cover; transition: transform 0.6s ease;"
                             onmouseover="this.style.transform='scale(1.1)'"
                             onmouseout="this.style.transform='scale(1)'">

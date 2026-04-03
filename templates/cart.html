@@ -509,7 +509,7 @@
                     </div>
                 
                 {% if c_item.item.image_url %}
-                <img src="{{ c_item.item.image_url }}" alt="{{ c_item.item.name }}" class="cartItem-img">
+                <img loading="lazy" decoding="async" src="{{ c_item.item.image_url }}" alt="{{ c_item.item.name }}" class="cartItem-img">
                 {% else %}
                 <div class="cartItem-noImg"><i class="fas fa-utensils"></i></div>
                 {% endif %}

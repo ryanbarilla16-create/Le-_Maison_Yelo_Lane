@@ -211,7 +211,7 @@
                     id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false"
                     style="color: var(--text-main);">
                     {% if current_user.profile_picture_url %}
-                    <img src="{{ current_user.profile_picture_url }}" alt="Profile" class="navProfile"
+                    <img loading="lazy" decoding="async" src="{{ current_user.profile_picture_url }}" alt="Profile" class="navProfile"
                         style="width: 42px; height: 42px; object-fit: cover;">
                     {% else %}
                     <div class="navProfile"

@@ -573,7 +573,7 @@
                         {% for item in order.items %}
                         <li>
                             {% if item.menu_item and item.menu_item.image_url %}
-                            <img src="{{ item.menu_item.image_url }}" alt="{{ item.menu_item.name }}" class="moItem-img">
+                            <img loading="lazy" decoding="async" src="{{ item.menu_item.image_url }}" alt="{{ item.menu_item.name }}" class="moItem-img">
                             {% else %}
                             <div class="moItem-noImg"><i class="fas fa-utensils"></i></div>
                             {% endif %}
