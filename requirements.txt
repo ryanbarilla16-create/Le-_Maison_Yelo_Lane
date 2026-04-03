@@ -18,7 +18,5 @@ requests==2.31.0
 werkzeug==3.0.0
 python-dotenv==1.0.0
 Brotli==1.1.0
-decimal (built-in)
-secrets (built-in)
 socketio==5.10.0
 greenlet==3.0.1
