@@ -480,174 +480,42 @@
 
         <div class="cartSummary">
             <h5>Order Summary</h5>
-            <div class="sumRow"><span>Items Subtotal</span><span id="itemsSubtotalDisplay">₱{{ "%.2f"|format(total)
-                    }}</span></div>
+            <div class="sumRow"><span>Items Subtotal</span><span id="itemsSubtotalDisplay">₱{{ "%.2f"|format(total) }}</span></div>
             <div class="sumRow"><span>Tax & Fees</span><span style="font-style:italic;">At store</span></div>
-            <div class="sumRow" id="delivery_fee_row" style="display: none !important;"><span>Delivery
-                    Fee</span><span>₱50.00</span></div>
-            <div class="sumTotal"><span>Total</span><span id="totalAmountDisplay">₱{{ "%.2f"|format(total) }}</span>
-            </div>
+            <div class="sumTotal"><span>Total</span><span id="totalAmountDisplay">₱{{ "%.2f"|format(total) }}</span></div>
 
-            <form action="{{ url_for('main.checkout') }}" method="POST" style="margin-top: 1.5rem;">
-                <label class="form-label">Dining Option</label>
-                <div class="cartOpt">
-                    <input type="radio" class="btn-check" name="dining_option" id="dine_in" value="DINE_IN" checked>
-                    <label for="dine_in"><i class="fas fa-utensils me-1"></i>Dine In</label>
-                    <input type="radio" class="btn-check" name="dining_option" id="take_out" value="TAKE_OUT">
-                    <label for="take_out"><i class="fas fa-shopping-bag me-1"></i>Pick-up</label>
-                    <input type="radio" class="btn-check" name="dining_option" id="delivery" value="DELIVERY">
-                    <label for="delivery"><i class="fas fa-motorcycle me-1"></i>Delivery</label>
-                </div>
-
-                <div id="delivery_fields" style="display: none;" class="mb-3">
-                    <div
-                        style="background: rgba(93,64,55,0.03); border-radius: 14px; padding: 1rem; border: 1px solid rgba(93,64,55,0.06);">
-                        <label class="form-label" style="font-size: 0.85rem;"><i class="fas fa-map-marker-alt"
-                                style="color:var(--primary-color);"></i> Select Delivery Area</label>
-                        <div class="row mb-2">
-                            <div class="col-6">
-                                <select id="select_municipality" class="form-select form-select-sm"
-                                    style="border-radius: 8px; border: 1px solid var(--border-color);">
-                                    <option value="">Municipality</option>
-                                    <option value="Santa Cruz">Santa Cruz</option>
-                                    <option value="Pila">Pila</option>
-                                    <option value="Victoria">Victoria</option>
-                                    <option value="Lumban">Lumban</option>
-                                    <option value="Magdalena">Magdalena</option>
-                                </select>
-                            </div>
-                            <div class="col-6">
-                                <select id="select_barangay" class="form-select form-select-sm"
-                                    style="border-radius: 8px; border: 1px solid var(--border-color);" disabled>
-                                    <option value="">Barangay</option>
-                                </select>
-                            </div>
-                        </div>
-                        <label class="form-label mt-2" style="font-size: 0.85rem;">House No. / Street / Landmark</label>
-                        <textarea id="street_address" class="form-control mb-2" rows="2"
-                            placeholder="e.g. 123 Main St, Near Plaza..."
-                            style="border-radius: 10px; border: 1px solid var(--border-color); resize: none;"></textarea>
-
-                        <label class="form-label mt-2" style="font-size: 0.85rem;">Pin Exact Location (Optional)</label>
-                        <div id="delivery_map"
-                            style="height: 200px; border-radius: 10px; border: 1px solid var(--border-color); margin-bottom: 0.5rem; z-index: 1;">
-                        </div>
-
-                        <!-- Combined address sent to backend -->
-                        <textarea name="delivery_address" id="delivery_address" style="display:none;"></textarea>
-                        <input type="hidden" name="delivery_area" id="delivery_area_hidden">
-                    </div>
-                </div>
-
-                <label class="form-label">Payment Method</label>
-                <div class="cartPay">
-                    <input type="radio" class="btn-check" name="payment_method" id="pay_counter" value="COUNTER"
-                        checked>
-                    <label for="pay_counter">
-                        <div class="payTitle"><i class="fas fa-cash-register" style="color: #2E7D32;"></i> <span
-                                id="label_pay_counter">Pay at Counter</span></div>
-                        <div class="payDesc" id="desc_pay_counter">Pay cash or card in-store.</div>
-                    </label>
-                    <input type="radio" class="btn-check" name="payment_method" id="pay_online" value="ONLINE">
-                    <label for="pay_online">
-                        <div class="payTitle"><i class="fas fa-mobile-alt" style="color: #1565C0;"></i> Online Payment
-                            (GCash)</div>
-                        <div class="payDesc" id="desc_pay_online">Pay securely via e-wallet.</div>
-                    </label>
-                </div>
-
-
+            <div style="margin-top: 2rem;">
                 {% if current_user.is_authenticated %}
-                <button type="submit" class="cartSubmit"><i class="fas fa-check-circle me-2"></i>Submit Order</button>
+                <a href="{{ url_for('main.checkout_page') }}" class="cartSubmit" style="text-decoration: none; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-shopping-cart me-2"></i> Proceed to Checkout
+                </a>
                 {% else %}
                 <button type="button" class="cartSubmit" style="background: linear-gradient(135deg,#333,#555);"
-                    onclick="$('#termsModal').modal('show'); window.authIntent = 'login';">Sign in to Checkout</button>
+                    onclick="$('#termsModal').modal('show'); window.authIntent = 'login';">
+                    <i class="fas fa-sign-in-alt me-2"></i> Sign in to Checkout
+                </button>
                 {% endif %}
-            </form>
-            <div class="text-center mt-3">
+            </div>
+
+            <div class="text-center mt-4">
                 <a href="{{ url_for('main.menu_page') }}"
-                    style="color: var(--text-muted); font-size: 0.85rem; text-decoration: none; transition: color 0.2s;"
+                    style="color: var(--text-muted); font-size: 0.88rem; text-decoration: none; transition: all 0.3s;"
                     onmouseover="this.style.color='var(--primary-color)'"
-                    onmouseout="this.style.color='var(--text-muted)'"><i class="fas fa-arrow-left me-1"></i> Continue
-                    Shopping</a>
+                    onmouseout="this.style.color='var(--text-muted)'">
+                    <i class="fas fa-arrow-left me-1"></i> Continue Shopping
+                </a>
             </div>
         </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // --- State Management ---
             let currentBaseTotal = parseFloat("{{ total }}");
-            const deliveryFee = 50.00;
 
-            // --- Delivery & Map Management ---
-            let map, marker, mapInitialized = false, deliveryAllowed = false;
-            const locationData = {
-                'Santa Cruz': ['Alipit', 'Bagong Bayan', 'Bubukal', 'Calios', 'Duhat', 'Gatid', 'Giling-Giling', 'Labuin', 'Malinao', 'Matalatala', 'Oogong', 'Pagsawitan', 'Palanas', 'Poblacion I', 'Poblacion II', 'Poblacion III', 'Poblacion IV', 'Poblacion V', 'San Jose', 'San Juan', 'San Nicolas', 'San Pablo Norte', 'San Pablo Sur', 'Santisima Cruz', 'Santo Angel Central', 'Santo Angel Norte', 'Santo Angel Sur'],
-                'Pila': ['Aplaya', 'Bagong Pook', 'Bukal', 'Bulilan Sur', 'Concepcion', 'Labuin', 'Linga', 'Masico', 'Mojon', 'Pansol', 'Pinagbayanan', 'Poblacion', 'San Antonio', 'San Miguel', 'Santa Clara Norte', 'Santa Clara Sur', 'Tubuan'],
-                'Victoria': ['Banca-banca', 'Daniw', 'Masapang', 'Nanhaya', 'Pagalangan', 'San Francisco', 'San Roque', 'San Nicolas', 'Santa Cruz'],
-                'Lumban': ['Bagong Silang', 'Balimbingan', 'Balubad', 'Caliraya', 'Concepcion', 'Luwac', 'Maracta', 'Maytalang I', 'Maytalang II', 'Primeiro Distrito', 'Salac', 'Santo Niño', 'Segundo Distrito', 'Talahib', 'Talongue', 'Wawa'],
-                'Magdalena': ['Alipit', 'Baanan', 'Balanac', 'Bucal', 'Buenavista', 'Bungkol', 'Burol', 'Capayapaan', 'Cigaras', 'Halayhayin', 'Ibabang Atingay', 'Ibabang Butnong', 'Ilayang Atingay', 'Ilayang Butnong', 'Ilog', 'Malaking Ambling', 'Mali-mali', 'Mamatid', 'Poblacion', 'Sabang', 'Salaking', 'San Antonio', 'San Francisco', 'Tipunan']
-            };
-            const townCoordinates = { 'Santa Cruz': [14.2833, 121.4167], 'Pila': [14.2333, 121.3667], 'Victoria': [14.2250, 121.3283], 'Lumban': [14.2981, 121.4608], 'Magdalena': [14.2000, 121.4333] };
-
-            function initMap() {
-                if (mapInitialized) return;
-                mapInitialized = true;
-                map = L.map('delivery_map').setView([14.2833, 121.4167], 12);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
-                marker = L.marker([14.2833, 121.4167], { draggable: true }).addTo(map);
-                marker.on('dragend', validateForm);
-                map.on('click', e => { marker.setLatLng(e.latlng); validateForm(); });
-            }
-
-            // --- UI Update Helpers ---
             function refreshTotalsDisplay() {
-                const isDel = document.getElementById('delivery').checked;
-                const finalTotal = isDel ? currentBaseTotal + deliveryFee : currentBaseTotal;
-
                 document.getElementById('itemsSubtotalDisplay').innerText = '₱' + currentBaseTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                document.getElementById('totalAmountDisplay').innerText = '₱' + finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                document.getElementById('delivery_fee_row').style.setProperty('display', isDel ? 'flex' : 'none', 'important');
-
-                // Update Labels
-                document.getElementById('label_pay_counter').innerHTML = isDel ? '<i class="fas fa-hand-holding-usd text-success me-2"></i>Cash on Delivery' : '<i class="fas fa-cash-register text-success me-2"></i>Pay at Counter';
-                document.getElementById('desc_pay_counter').innerText = isDel ? 'Pay cash when your order arrives.' : 'Pay cash or card in-store.';
+                document.getElementById('totalAmountDisplay').innerText = '₱' + currentBaseTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             }
-
-            function validateForm() {
-                const isDel = document.getElementById('delivery').checked;
-                const submitBtn = document.querySelector('.cartSubmit');
-                if (isDel) {
-                    const muni = document.getElementById('select_municipality').value;
-                    const brgy = document.getElementById('select_barangay').value;
-                    const street = document.getElementById('street_address').value.trim();
-                    if (muni && brgy && street) {
-                        deliveryAllowed = true;
-                        let addr = `${street}, Brgy. ${brgy}, ${muni}, Laguna.`;
-                        if (marker) addr += ` (Map Pin: ${marker.getLatLng().lat.toFixed(5)}, ${marker.getLatLng().lng.toFixed(5)})`;
-                        document.getElementById('delivery_address').value = addr;
-                        document.getElementById('delivery_area_hidden').value = muni;
-                    } else deliveryAllowed = false;
-                }
-                if (submitBtn) {
-                    submitBtn.disabled = isDel && !deliveryAllowed;
-                    submitBtn.style.opacity = (isDel && !deliveryAllowed) ? '0.5' : '1';
-                }
-            }
-
-            // --- Event Listeners: Dining Option ---
-            document.querySelectorAll('input[name="dining_option"]').forEach(r => {
-                r.addEventListener('change', function () {
-                    const isDel = this.value === 'DELIVERY';
-                    document.getElementById('delivery_fields').style.display = isDel ? 'block' : 'none';
-                    if (isDel) setTimeout(() => { if (!map) initMap(); else map.invalidateSize(); }, 200);
-                    refreshTotalsDisplay();
-                    validateForm();
-                    const ad = document.getElementById('delivery_address');
-                    if (ad) ad.required = isDel;
-                });
-            });
 
             // --- Event Listeners: Quantity AJAX ---
             document.querySelectorAll('.qty-update-form').forEach(form => {
@@ -668,30 +536,29 @@
                         body: new FormData(this),
                         headers: { 'X-Requested-With': 'XMLHttpRequest' }
                     })
-                        .then(r => r.json())
-                        .then(data => {
-                            if (data.status === 'success') {
-                                document.getElementById(`qty-${rowId}`).innerText = data.new_quantity;
-                                document.getElementById(`subtotal-${rowId}`).innerText = data.item_subtotal;
-                                currentBaseTotal = parseFloat(data.grand_total.replace(/[^0-9.]/g, ''));
-                                refreshTotalsDisplay();
-                                updateCartBadge(data.cart_count);
-                            } else window.location.reload();
-                        })
-                        .catch(() => window.location.reload())
-                        .finally(() => {
-                            const currQty = parseInt(document.getElementById(`qty-${rowId}`).innerText) || 1;
-                            row.querySelectorAll('.qty-update-form').forEach(f => {
-                                const btn = f.querySelector('.qty-btn');
-                                const isDec = f.querySelector('input[name="action"]').value === 'decrement';
-                                btn.disabled = (isDec && currQty <= 1);
-                                btn.style.opacity = (isDec && currQty <= 1) ? '0.5' : '1';
-                            });
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            document.getElementById(`qty-${rowId}`).innerText = data.new_quantity;
+                            document.getElementById(`subtotal-${rowId}`).innerText = data.item_subtotal;
+                            currentBaseTotal = parseFloat(data.grand_total.replace(/[^0-9.]/g, ''));
+                            refreshTotalsDisplay();
+                            updateCartBadge(data.cart_count);
+                        } else window.location.reload();
+                    })
+                    .catch(() => window.location.reload())
+                    .finally(() => {
+                        const currQty = parseInt(document.getElementById(`qty-${rowId}`).innerText) || 1;
+                        row.querySelectorAll('.qty-update-form').forEach(f => {
+                            const btn = f.querySelector('.qty-btn');
+                            const isDec = f.querySelector('input[name="action"]').value === 'decrement';
+                            btn.disabled = (isDec && currQty <= 1);
+                            btn.style.opacity = (isDec && currQty <= 1) ? '0.5' : '1';
                         });
+                    });
                 };
             });
 
-            // --- Utility: Navbar Update ---
             function updateCartBadge(count) {
                 const badges = document.querySelectorAll('.cart-badge, a[href*="/cart"] span.badge');
                 badges.forEach(badge => {
@@ -700,29 +567,7 @@
                 });
             }
 
-            // --- Initialize ---
-            const selMuni = document.getElementById('select_municipality');
-            const selBrgy = document.getElementById('select_barangay');
-            selMuni.addEventListener('change', function () {
-                const muni = this.value;
-                selBrgy.innerHTML = '<option value="">Barangay</option>';
-                if (muni && locationData[muni]) {
-                    selBrgy.disabled = false;
-                    locationData[muni].forEach(b => {
-                        const opt = document.createElement('option');
-                        opt.value = opt.textContent = b;
-                        selBrgy.appendChild(opt);
-                    });
-                    if (map && townCoordinates[muni]) map.flyTo(townCoordinates[muni], 14);
-                } else selBrgy.disabled = true;
-                validateForm();
-            });
-            selBrgy.addEventListener('change', validateForm);
-            document.getElementById('street_address').addEventListener('input', validateForm);
-
             refreshTotalsDisplay();
-            const co = document.querySelector('input[name="dining_option"]:checked');
-            if (co && co.value === 'DELIVERY') co.dispatchEvent(new Event('change'));
         });
     </script>
     {% else %}

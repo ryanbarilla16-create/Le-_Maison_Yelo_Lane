@@ -1,400 +1,373 @@
 {% extends "layouts/base.html" %}
 
-{% block title %}Log In{% endblock %}
+{% block title %}Log In - Le Maison Yelo Lane{% endblock %}
 
 {% block content %}
-<div class="login-wrapper row w-100 justify-content-center align-items-center m-0">
-    <div class="col-12 col-md-8 col-lg-5 col-xxl-4 p-3">
-        <!-- Glassmorphism Card -->
-        <div class="card login-glass-card shadow-lg border-0">
-             
-            <div class="card-header text-center border-0 bg-transparent login-header">
-                <h2 class="fw-bold mb-2 login-title">Welcome Back.</h2>
-                <p class="text-muted login-subtitle">Breathe, relax, and log in to continue.</p>
+<div class="signup-container">
+    <div class="split-layout">
+        <!-- Left Side: Visual/Welcome -->
+        <div class="visual-side">
+            <div class="overlay"></div>
+            <div class="welcome-content">
+                <h1 class="welcome-title">Welcome Back</h1>
+                <p class="welcome-text">Settle in, relax, and log in to your account. We've missed your presence at our tables.</p>
+                <a href="{{ url_for('main.about_page') }}" class="learn-more-link">About Le Maison <i class="fas fa-arrow-right"></i></a>
             </div>
+        </div>
 
-            <div class="card-body p-4 p-md-5 pt-2">
-
-                <!-- Social Login Buttons -->
-                <div class="row g-3 mb-4 mt-1">
-                    <div class="col-6">
-                        <button type="button" onclick="handleGoogleLogin()"
-                            class="btn btn-social w-100 rounded-pill d-flex align-items-center justify-content-center gap-2">
-                            <img src="https://cdn-icons-png.flaticon.com/512/300/300221.png" alt="Google" class="social-icon">
-                            <span class="fw-semibold social-text">Google</span>
-                        </button>
-                    </div>
-                    <div class="col-6">
-                        <button type="button" onclick="handleFacebookLogin()"
-                            class="btn btn-social w-100 rounded-pill d-flex align-items-center justify-content-center gap-2">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/b/b8/2021_Facebook_icon.svg" alt="Facebook" class="social-icon">
-                            <span class="fw-semibold social-text">Facebook</span>
-                        </button>
-                    </div>
+        <!-- Right Side: Login Form -->
+        <div class="form-side">
+            <div class="form-scroll-container">
+                <div class="form-header">
+                    <h2 class="register-title">Sign In</h2>
+                    <p class="register-subtitle">Access your account to manage reservations and orders.</p>
                 </div>
 
-                <div class="d-flex align-items-center mb-4">
-                    <hr class="flex-grow-1 divider-line">
-                    <span class="mx-3 text-muted fw-semibold divider-text">or log in with email</span>
-                    <hr class="flex-grow-1 divider-line">
+                <!-- Social Login -->
+                <div class="social-signup-row">
+                    <button type="button" onclick="handleGoogleLogin()" class="social-btn google">
+                        <img src="https://cdn-icons-png.flaticon.com/512/300/300221.png" alt="Google">
+                        Google
+                    </button>
+                    <button type="button" onclick="handleFacebookLogin()" class="social-btn facebook">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/b/b8/2021_Facebook_icon.svg" alt="Facebook">
+                        Facebook
+                    </button>
+                </div>
+
+                <div class="divider">
+                    <span>or use your email</span>
                 </div>
 
                 <form method="POST" action="{{ url_for('main.login') }}">
-                    <!-- Email field -->
-                    <div class="form-group mb-4">
-                        <label for="email" class="fw-semibold mb-2 form-label-custom">Email Address</label>
-                        <input type="email" id="email" name="email" class="form-control glass-input"
-                            required placeholder="hello@example.com">
-                    </div>
-
-                    <!-- Password field -->
-                    <div class="form-group mb-4 position-relative">
-                        <div class="d-flex justify-content-between align-items-center mb-2 px-1">
-                            <label for="password" class="fw-semibold mb-0 form-label-custom">Password</label>
-                            <a href="{{ url_for('main.forgot_password') }}" class="fw-semibold text-decoration-none forgot-link">Forgot Password?</a>
-                        </div>
-                        <div class="position-relative">
-                            <input type="password" id="password" name="password" class="form-control glass-input password-input"
-                                required placeholder="••••••••">
-                            <i class="fas fa-eye text-muted toggle-password" onclick="togglePasswordVisibility('password', this)"></i>
+                    <!-- Email -->
+                    <div class="form-row">
+                        <div class="form-group full">
+                            <input type="email" id="email" name="email" placeholder="Email Address" required>
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-primary-gradient w-100 rounded-pill fw-bold text-white shadow-sm mt-2">
-                        Sign In
-                    </button>
+                    <!-- Password -->
+                    <div class="form-row">
+                        <div class="form-group full password-container">
+                            <input type="password" id="password" name="password" placeholder="Password" required>
+                            <i class="fas fa-eye toggle-password" onclick="togglePasswordVisibility('password', this)"></i>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end mb-4">
+                        <a href="{{ url_for('main.forgot_password') }}" class="forgot-link">Forgot Password?</a>
+                    </div>
+
+                    <button type="submit" class="register-btn">Sign In</button>
+
+                    <div class="form-footer">
+                        New to Le Maison? <a href="{{ url_for('main.signup') }}">Create an account</a>
+                    </div>
                 </form>
-
-                <div class="text-center mt-4 pt-3 border-top border-subtle">
-                    <p class="text-muted fw-medium mb-0 bottom-text">
-                        New to Le Maison? 
-                        <a href="{{ url_for('main.signup') }}" class="fw-bold text-decoration-none create-account-link">
-                            Create an account
-                        </a>
-                    </p>
-                </div>
-
             </div>
         </div>
     </div>
 </div>
 
 <style>
-/* --- Login Page specific styles --- */
-.login-wrapper {
-    min-height: 80vh;
+.main-container {
+    padding: 0 !important;
+    max-width: 100% !important;
 }
 
-/* Glassmorphism Card (Warm Brown Vibe) */
-.login-glass-card {
-    border-radius: 32px;
-    background: rgba(248, 241, 235, 0.85); /* Calm light beige/brown base */
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.5) !important;
-    box-shadow: 0 25px 50px -12px rgba(139, 90, 43, 0.15); /* Soft brown shadow */
+.signup-container {
+    min-height: calc(100vh - 56px);
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    background: #fff;
+    padding: 0;
+    font-family: 'Inter', sans-serif;
+}
+
+.split-layout {
+    display: flex;
+    width: 100%;
+    min-height: calc(100vh - 56px);
+    background: #fff;
+    border-radius: 0;
     overflow: hidden;
-    transition: all 0.3s ease;
+    box-shadow: none;
 }
 
-/* Header Typography */
-.login-header {
-    padding: 3.5rem 2rem 1.5rem;
-}
-
-.login-title {
-    font-family: 'Georgia', serif;
-    color: #4a3b32; /* Dark shade brown */
-    font-size: 2.25rem;
-    letter-spacing: -0.5px;
-}
-
-.login-subtitle {
-    font-size: 1.05rem;
-    font-weight: 400;
-    color: #8b634b; /* Primary brown */
-}
-
-/* Social Buttons */
-.btn-social {
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid rgba(139, 99, 75, 0.2);
-    padding: 0.75rem;
-    box-shadow: 0 4px 6px -1px rgba(92, 58, 33, 0.05);
-    transition: all 0.2s ease;
-}
-
-.btn-social:hover {
-    background: #ffffff;
-    transform: translateY(-1px);
-    box-shadow: 0 6px 10px -2px rgba(92, 58, 33, 0.1);
-}
-
-.social-icon {
-    width: 22px;
-    height: 22px;
-    object-fit: contain;
-}
-
-.social-text {
-    font-size: 0.95rem;
-    color: #5c3a21; /* Dark brown */
-}
-
-/* Divider styling */
-.divider-line {
-    border-top: 1px solid rgba(139, 99, 75, 0.2);
-}
-
-.divider-text {
-    font-size: 0.75rem;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: #8b634b;
-}
-
-/* Input Styles */
-.form-label-custom {
-    font-size: 0.85rem;
-    color: #5c3a21;
-    margin-left: 0.5rem;
-    font-weight: 600;
-}
-
-.glass-input {
-    background: rgba(255, 255, 255, 0.6);
-    border: 1px solid rgba(139, 99, 75, 0.2);
-    border-radius: 16px;
-    padding: 1rem 1.25rem;
-    font-size: 1rem;
-    color: #4a3b32;
-    box-shadow: inset 0 2px 4px rgba(92, 58, 33, 0.02);
-    transition: all 0.3s ease;
-}
-
-.password-input {
-    padding-right: 3rem;
-}
-
-.glass-input:focus {
-    background: #ffffff;
-    border-color: #8b634b;
-    box-shadow: 0 0 0 4px rgba(139, 99, 75, 0.15);
-    outline: none;
-}
-
-/* Forgot Password Link */
-.forgot-link {
-    font-size: 0.85rem;
-    color: #8b634b;
-    transition: color 0.2s;
-    opacity: 0.9;
-}
-
-.forgot-link:hover {
-    color: #5c3a21;
-    opacity: 1;
-}
-
-/* Password Eye Icon */
-.toggle-password {
-    position: absolute;
-    right: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    cursor: pointer;
-    font-size: 1.1rem;
-    z-index: 10;
-    padding: 0.5rem;
-    border-radius: 50%;
-    transition: background 0.2s ease, color 0.2s ease;
-    color: #8b634b !important;
-}
-
-.toggle-password:hover {
-    background: rgba(139, 99, 75, 0.1);
-    color: #5c3a21 !important;
-}
-
-/* Primary Gradient Button */
-.btn-primary-gradient {
-    background: linear-gradient(135deg, #8b634b 0%, #5c3a21 100%);
-    padding: 1rem;
-    border: none;
-    font-size: 1.05rem;
-    letter-spacing: 0.5px;
-    transition: all 0.3s ease;
-    box-shadow: 0 10px 15px -3px rgba(92, 58, 33, 0.25);
-}
-
-.btn-primary-gradient:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 15px 20px -3px rgba(92, 58, 33, 0.35);
+.visual-side {
+    flex: 1;
+    background: url('https://images.unsplash.com/photo-1559925393-8be0ec41b5ec?q=80&w=2070&auto=format&fit=crop') no-repeat center center/cover;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px;
     color: white;
 }
 
-/* Bottom elements */
-.border-subtle {
-    border-color: rgba(139, 99, 75, 0.15) !important;
-}
-
-.bottom-text {
-    font-size: 0.95rem;
-    color: #5c3a21 !important;
-}
-
-.create-account-link {
-    color: #8b634b;
-    position: relative;
-    padding-bottom: 2px;
-    margin-left: 0.25rem;
-}
-
-.create-account-link::after {
-    content: '';
+.visual-side .overlay {
     position: absolute;
-    bottom: 0;
-    left: 0;
+    inset: 0;
+    background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.7));
+}
+
+.welcome-content {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    max-width: 450px;
+    animation: fadeIn 1s ease-out;
+}
+
+.welcome-title {
+    font-size: 3.5rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    font-family: 'Playfair Display', serif;
+}
+
+.welcome-text {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 30px;
+    opacity: 0.9;
+}
+
+.learn-more-link {
+    color: #F5E6D3;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s;
+}
+
+.learn-more-link:hover {
+    color: white;
+    text-decoration: underline;
+}
+
+.form-side {
+    flex: 1;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    padding: 60px;
+}
+
+.form-scroll-container {
     width: 100%;
-    height: 2px;
-    background: #8b634b;
-    border-radius: 2px;
-    transform: scaleX(0);
-    transform-origin: right;
-    transition: transform 0.3s ease;
+    max-width: 400px;
+    margin: auto;
+    animation: slideUp 0.8s ease-out;
 }
 
-.create-account-link:hover::after {
-    transform: scaleX(1);
-    transform-origin: left;
+.form-header {
+    margin-bottom: 30px;
+    text-align: left;
 }
 
-/* Chrome Autofill adjustment */
-input:-webkit-autofill,
-input:-webkit-autofill:hover, 
-input:-webkit-autofill:focus, 
-input:-webkit-autofill:active{
-    -webkit-box-shadow: 0 0 0 30px #fdfbfa inset !important;
-    -webkit-text-fill-color: #4a3b32 !important;
-    border-radius: 16px;
+.register-title {
+    font-size: 2.5rem;
+    font-weight: 600;
+    color: #3E2723;
+    margin-bottom: 10px;
 }
 
-/* Modal and global button alignment perfection */
-.modal-content {
-    border-radius: 28px !important;
-    border: 1px solid rgba(255, 255, 255, 0.6) !important;
-    box-shadow: 0 25px 50px -12px rgba(139, 90, 43, 0.2) !important;
-    background: rgba(248, 241, 235, 0.98) !important;
-    backdrop-filter: blur(20px) !important;
-    -webkit-backdrop-filter: blur(20px) !important;
-    overflow: hidden;
+.register-subtitle {
+    color: #5D4037;
+    font-size: 1rem;
+    opacity: 0.7;
 }
-.modal-header {
-    border-bottom: 1px solid rgba(139, 99, 75, 0.1) !important;
-    padding: 1.5rem 2rem !important;
+
+.social-signup-row {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 25px;
 }
-.modal-footer {
-    border-top: 1px solid rgba(139, 99, 75, 0.1) !important;
-    padding: 1.25rem 2rem !important;
-}
-.modal-body {
-    padding: 2rem !important;
-}
-.btn {
-    display: inline-flex;
+
+.social-btn {
+    flex: 1;
+    display: flex;
     align-items: center;
     justify-content: center;
+    gap: 10px;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(139, 69, 19, 0.2);
+    background: white;
+    font-weight: 600;
+    color: #5D4037;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.social-btn img {
+    width: 20px;
+}
+
+.social-btn:hover {
+    background: #fdfaf7;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.divider {
     text-align: center;
+    border-bottom: 1px solid rgba(139, 69, 19, 0.1);
+    line-height: 0.1em;
+    margin: 30px 0;
+}
+
+.divider span {
+    background: #fff;
+    padding: 0 15px;
+    color: #8B4513;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.form-row {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.form-group.full { flex: 1; width: 100%; }
+
+input {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(139, 69, 19, 0.2);
+    font-size: 1rem;
+    background: #fff;
+    color: #3E2723;
+    transition: all 0.3s;
+}
+
+input:focus {
+    outline: none;
+    border-color: #8B4513;
+    box-shadow: 0 0 0 4px rgba(139, 69, 19, 0.1);
+}
+
+.password-container { position: relative; }
+.toggle-password {
+    position: absolute;
+    right: 15px;
+    top: 18px;
+    cursor: pointer;
+    color: #8B4513;
+    opacity: 0.6;
+}
+
+.forgot-link {
+    font-size: 0.9rem;
+    color: #8B4513;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.forgot-link:hover { text-decoration: underline; }
+
+.register-btn {
+    width: 100%;
+    padding: 16px;
+    background: #8B4513;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-top: 10px;
+    box-shadow: 0 10px 15px -3px rgba(139, 69, 19, 0.3);
+}
+
+.register-btn:hover {
+    background: #5c3a21;
+    transform: translateY(-2px);
+    box-shadow: 0 15px 20px -3px rgba(139, 69, 19, 0.4);
+}
+
+.form-footer {
+    text-align: center;
+    margin-top: 30px;
+    color: #5D4037;
+}
+
+.form-footer a {
+    color: #8B4513;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+@media (max-width: 900px) {
+    .visual-side { display: none; }
+    .form-side { padding: 40px 20px; }
 }
 </style>
+
 <script>
-    // --- Social Login Integration ---
+    function togglePasswordVisibility(fieldId, icon) {
+        const input = document.getElementById(fieldId);
+        if (input.type === "password") {
+            input.type = "text";
+            icon.classList.remove("fa-eye");
+            icon.classList.add("fa-eye-slash");
+        } else {
+            input.type = "password";
+            icon.classList.remove("fa-eye-slash");
+            icon.classList.add("fa-eye");
+        }
+    }
+</script>
+<script>
+    // Social Login functions...
     function sendSocialAuth(provider, email, firstName, lastName, pictureUrl) {
         fetch('/social_auth', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                provider: provider,
-                email: email,
-                first_name: firstName,
-                last_name: lastName,
+                provider: provider, email: email,
+                first_name: firstName, last_name: lastName,
                 picture_url: pictureUrl
             })
         })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    window.location.href = data.redirect;
-                } else if (data.needs_registration) {
-                    // If they tried to log in but don't exist, redirect to signup
-                    alert(data.message + "\n\nRedirecting to sign up page...");
-
-                    // Construct a URL to prefill signup
-                    sessionStorage.setItem('social_signup_pending', JSON.stringify(data.data));
-                    window.location.href = "{{ url_for('main.signup') }}";
-                } else {
-                    alert(data.message || "An error occurred during social login.");
-                }
-            });
-    }
-
-    // --- Facebook Setup ---
-    window.fbAsyncInit = function () {
-        FB.init({
-            appId: '{{ FACEBOOK_APP_ID }}',
-            cookie: true,
-            xfbml: true,
-            version: 'v18.0'
-        });
-    };
-    function handleFacebookLogin() {
-        if ('{{ FACEBOOK_APP_ID }}'.includes('HERE') || '{{ FACEBOOK_APP_ID }}' === 'None') {
-            alert("⚠️ Developer Setup Required:\nPlease set FACEBOOK_APP_ID in your .env file to enable actual Facebook authentication.");
-            return;
-        }
-        FB.login(function (response) {
-            if (response.authResponse) {
-                FB.api('/me', { fields: 'name,email,first_name,last_name,picture.type(large)' }, function (userResponse) {
-                    const pictureUrl = userResponse.picture && userResponse.picture.data ? userResponse.picture.data.url : null;
-                    sendSocialAuth('facebook', userResponse.email, userResponse.first_name, userResponse.last_name, pictureUrl);
-                });
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = data.redirect;
+            } else if (data.needs_registration) {
+                alert(data.message + "\n\nRedirecting to sign up page...");
+                sessionStorage.setItem('social_signup_pending', JSON.stringify(data.data));
+                window.location.href = "{{ url_for('main.signup') }}";
             } else {
-                console.log('User cancelled login or did not fully authorize.');
+                alert(data.message || "An error occurred during social login.");
             }
-        }, { scope: 'public_profile,email' });
+        });
     }
 
-    // --- Google Setup ---
-    let googleClient;
-    function handleGoogleLogin() {
-        if ('{{ GOOGLE_CLIENT_ID }}'.includes('HERE') || '{{ GOOGLE_CLIENT_ID }}' === 'None') {
-            alert("⚠️ Developer Setup Required:\nPlease set GOOGLE_CLIENT_ID in your .env file to enable actual Google authentication.");
-            return;
-        }
-
-        if (!googleClient) {
-            googleClient = google.accounts.oauth2.initTokenClient({
-                client_id: '{{ GOOGLE_CLIENT_ID }}',
-                scope: 'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
-                callback: (tokenResponse) => {
-                    if (tokenResponse && tokenResponse.access_token) {
-                        fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                            headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
-                        })
-                            .then(res => res.json())
-                            .then(userInfo => {
-                                sendSocialAuth('google', userInfo.email, userInfo.given_name, userInfo.family_name, userInfo.picture);
-                            })
-                            .catch(err => console.error('Error fetching Google user info:', err));
-                    }
-                }
-            });
-        }
+    function handleGoogleLogin() { 
+        if (typeof googleClient === 'undefined') return;
         googleClient.requestAccessToken();
     }
+    function handleFacebookLogin() {
+        FB.login(function(response) {
+            if (response.authResponse) {
+                FB.api('/me', { fields: 'name,email,first_name,last_name,picture.type(large)' }, function (u) {
+                    sendSocialAuth('facebook', u.email, u.first_name, u.last_name, u.picture?.data?.url);
+                });
+            }
+        }, {scope: 'public_profile,email'});
+    }
 </script>
-<script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
-<script src="https://accounts.google.com/gsi/client" async></script>
 {% endblock %}

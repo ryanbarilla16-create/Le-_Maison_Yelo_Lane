@@ -1,0 +1,503 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Checkout — Le Maison{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+    .checkoutPage {
+        max-width: 1100px;
+        margin: 6rem auto 3rem;
+        padding: 0 1.5rem;
+        min-height: 70vh;
+    }
+
+    .checkoutHead {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .checkoutHead h2 {
+        font-family: 'Playfair Display', 'Georgia', serif;
+        font-weight: 700;
+        font-size: 2.2rem;
+        margin: 0;
+        color: #3E2723;
+    }
+
+    .checkoutHead i {
+        color: var(--primary-color);
+        font-size: 1.8rem;
+    }
+
+    .checkoutGrid {
+        display: grid;
+        grid-template-columns: 1fr 400px;
+        gap: 2.5rem;
+        align-items: start;
+    }
+
+    .checkoutSection {
+        background: #fff;
+        border-radius: 24px;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.04);
+        padding: 2.5rem;
+        margin-bottom: 2rem;
+        animation: slideUp 0.6s ease-out forwards;
+    }
+
+    .sectionTitle {
+        font-family: 'Playfair Display', serif;
+        font-weight: 800;
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: #3E2723;
+        border-bottom: 2px solid rgba(139, 69, 19, 0.06);
+        padding-bottom: 1rem;
+    }
+
+    .sectionTitle i {
+        color: var(--primary-color);
+        font-size: 1.4rem;
+    }
+
+    .checkoutLabel {
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: #5D4037;
+        margin-bottom: 1rem;
+        display: block;
+    }
+
+    .checkoutOpt {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .checkoutOpt label {
+        flex: 1;
+        background: rgba(93, 64, 55, 0.04);
+        border: 2px solid transparent;
+        border-radius: 16px;
+        padding: 1.25rem 1rem;
+        text-align: center;
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .checkoutOpt label i {
+        font-size: 1.4rem;
+        opacity: 0.8;
+    }
+
+    .checkoutOpt input:checked+label {
+        border-color: var(--primary-color);
+        background: rgba(139, 69, 19, 0.08);
+        color: var(--primary-color);
+        transform: translateY(-4px);
+        box-shadow: 0 8px 20px rgba(139, 69, 19, 0.15);
+    }
+
+    .checkoutOpt input:checked+label i {
+        opacity: 1;
+    }
+
+    .checkoutPay {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .payMethod {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        background: rgba(93, 64, 55, 0.03);
+        border: 2px solid transparent;
+        border-radius: 18px;
+        padding: 1.5rem;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .payMethod i {
+        font-size: 1.8rem;
+        color: var(--primary-color);
+    }
+
+    .payDetails h6 {
+        font-weight: 800;
+        margin-bottom: 2px;
+        color: #3E2723;
+    }
+
+    .payDetails p {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        margin: 0;
+    }
+
+    .checkoutPay input:checked+label {
+        border-color: var(--primary-color);
+        background: rgba(139, 69, 19, 0.06);
+        box-shadow: 0 4px 12px rgba(139, 69, 19, 0.08);
+    }
+
+    .orderSummarySticky {
+        position: sticky;
+        top: 100px;
+        background: #fff;
+        border-radius: 24px;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 12px 48px rgba(0, 0, 0, 0.08);
+        padding: 2.5rem;
+    }
+
+    .summaryRow {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+        font-size: 0.95rem;
+        color: var(--text-muted);
+    }
+
+    .summaryTotal {
+        display: flex;
+        justify-content: space-between;
+        padding-top: 1.5rem;
+        margin-top: 1.5rem;
+        border-top: 2px dashed rgba(139, 69, 19, 0.15);
+    }
+
+    .summaryTotal span:first-child {
+        font-weight: 800;
+        font-size: 1.2rem;
+        color: #3E2723;
+    }
+
+    .summaryTotal span:last-child {
+        font-family: 'Playfair Display', serif;
+        font-weight: 800;
+        font-size: 1.8rem;
+        color: var(--primary-color);
+    }
+
+    .placeOrderBtn {
+        background: linear-gradient(135deg, #5D4037, #8B4513);
+        color: #fff;
+        font-weight: 800;
+        border: none;
+        border-radius: 50px;
+        padding: 1.2rem;
+        width: 100%;
+        font-size: 1.15rem;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin-top: 2rem;
+        box-shadow: 0 10px 30px rgba(93, 64, 55, 0.3);
+        letter-spacing: 0.8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+    }
+
+    .placeOrderBtn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 40px rgba(93, 64, 55, 0.4);
+    }
+
+    .placeOrderBtn:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+        box-shadow: none;
+        transform: none;
+    }
+
+    .itemReview {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid rgba(0,0,0,0.04);
+    }
+
+    .itemReview img {
+        width: 45px;
+        height: 45px;
+        border-radius: 10px;
+        object-fit: cover;
+    }
+
+    .itemReview-details {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .itemReview-name {
+        font-weight: 700;
+        font-size: 0.88rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .itemReview-price {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media(max-width: 900px) {
+        .checkoutGrid { grid-template-columns: 1fr; }
+        .orderSummarySticky { position: static; margin-top: 2rem; }
+    }
+</style>
+
+<div class="checkoutPage">
+    <div class="checkoutHead">
+        <i class="fas fa-lock"></i>
+        <h2>Secure Checkout</h2>
+    </div>
+
+    <form action="{{ url_for('main.checkout') }}" method="POST" id="checkoutForm">
+        <div class="checkoutGrid">
+            <div class="checkoutMain">
+                <!-- Section 1: Dining Option -->
+                <div class="checkoutSection">
+                    <h5 class="sectionTitle"><i class="fas fa-utensils"></i> Dining Preference</h5>
+                    <div class="checkoutOpt">
+                        <input type="radio" class="btn-check" name="dining_option" id="dine_in" value="DINE_IN" checked>
+                        <label for="dine_in"><i class="fas fa-store"></i>Dine In</label>
+                        
+                        <input type="radio" class="btn-check" name="dining_option" id="take_out" value="TAKE_OUT">
+                        <label for="take_out"><i class="fas fa-shopping-bag"></i>Pick-up</label>
+                        
+                        <input type="radio" class="btn-check" name="dining_option" id="delivery" value="DELIVERY">
+                        <label for="delivery"><i class="fas fa-motorcycle"></i>Delivery</label>
+                    </div>
+
+                    <!-- Delivery Fields -->
+                    <div id="delivery_fields" style="display: none;">
+                        <h6 class="checkoutLabel"><i class="fas fa-map-marker-alt me-2"></i>Delivery Address</h6>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <select id="select_municipality" class="form-select" required disabled>
+                                    <option value="">Select Municipality</option>
+                                    <option value="Santa Cruz">Santa Cruz</option>
+                                    <option value="Pila">Pila</option>
+                                    <option value="Victoria">Victoria</option>
+                                    <option value="Lumban">Lumban</option>
+                                    <option value="Magdalena">Magdalena</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <select id="select_barangay" class="form-select" required disabled>
+                                    <option value="">Select Barangay</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <textarea id="street_address" class="form-control" rows="2" placeholder="House No. / Street / Landmark" required disabled style="border-radius: 12px; resize: none;"></textarea>
+                            </div>
+                        </div>
+                        <div id="delivery_map" style="height: 250px; border-radius: 16px; border: 1px solid var(--border-color); margin-bottom: 1.5rem; z-index: 1;"></div>
+                        
+                        <textarea name="delivery_address" id="delivery_address" style="display:none;"></textarea>
+                        <input type="hidden" name="delivery_area" id="delivery_area_hidden">
+                    </div>
+                </div>
+
+                <!-- Section 2: Payment Method -->
+                <div class="checkoutSection">
+                    <h5 class="sectionTitle"><i class="fas fa-credit-card"></i> Payment Method</h5>
+                    <div class="checkoutPay">
+                        <input type="radio" class="btn-check" name="payment_method" id="pay_counter" value="COUNTER" checked>
+                        <label class="payMethod" for="pay_counter">
+                            <i class="fas fa-cash-register"></i>
+                            <div class="payDetails">
+                                <h6 id="label_pay_counter">Pay at Counter</h6>
+                                <p id="desc_pay_counter">Handle your payment directly at our cafe cashier.</p>
+                            </div>
+                        </label>
+
+                        <input type="radio" class="btn-check" name="payment_method" id="pay_online" value="ONLINE">
+                        <label class="payMethod" for="pay_online">
+                            <i class="fas fa-wallet" style="color: #007DFE;"></i>
+                            <div class="payDetails">
+                                <h6>Online Payment (GCash)</h6>
+                                <p>Securely pay via GCash through Xendit.</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Section 3: Extra Notes -->
+                <div class="checkoutSection">
+                    <h5 class="sectionTitle"><i class="fas fa-comment-alt"></i> Order Notes</h5>
+                    <textarea name="notes" class="form-control" rows="3" placeholder="Any special instructions for your order? (e.g. Allergy info, less ice, etc.)" style="border-radius: 16px; resize: none; padding: 1.2rem;"></textarea>
+                </div>
+            </div>
+
+            <!-- Sticky Sidebar: Summary -->
+            <div class="checkoutSidebar">
+                <div class="orderSummarySticky">
+                    <h5 class="sectionTitle" style="font-size: 1.3rem; margin-bottom: 2rem;">Order Review</h5>
+                    
+                    <div class="itemReviewList mb-4" style="max-height: 250px; overflow-y: auto; padding-right: 8px;">
+                        {% for c_item in cart_items %}
+                        <div class="itemReview">
+                            {% if c_item.item.image_url %}
+                            <img src="{{ c_item.item.image_url }}" alt="{{ c_item.item.name }}">
+                            {% else %}
+                            <div style="width:45px;height:45px;background:#f5f5f5;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#ccc;"><i class="fas fa-utensils"></i></div>
+                            {% endif %}
+                            <div class="itemReview-details">
+                                <div class="itemReview-name">{{ c_item.item.name }}</div>
+                                <div class="itemReview-price">{{ c_item.quantity }}x — ₱{{ "%.2f"|format(c_item.item.price) }}</div>
+                            </div>
+                            <div style="font-weight:700;font-size:0.9rem;">₱{{ "%.2f"|format(c_item.subtotal) }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="summaryRow"><span>Subtotal</span><span id="itemsSubtotalDisplay">₱{{ "%.2f"|format(total) }}</span></div>
+                    <div id="delivery_fee_row" class="summaryRow" style="display: none;"><span>Delivery Fee</span><span>₱50.00</span></div>
+                    <div class="summaryRow"><span>Tax & Service</span><span style="font-style: italic;">Included</span></div>
+                    
+                    <div class="summaryTotal">
+                        <span>Total</span>
+                        <span id="totalAmountDisplay">₱{{ "%.2f"|format(total) }}</span>
+                    </div>
+
+                    <p style="font-size: 0.75rem; color: #888; margin-top: 1.5rem; line-height: 1.5; text-align: center;">
+                        <i class="fas fa-info-circle me-1"></i> By placing an order, you agree to our Terms of Use and Privacy Policy.
+                    </p>
+
+                    <button type="submit" class="placeOrderBtn" id="placeOrderBtn">
+                        <i class="fas fa-check-circle"></i>
+                        Place Order
+                    </button>
+                    
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('main.view_cart') }}" style="color: var(--text-muted); font-size: 0.88rem; text-decoration: none;">
+                            <i class="fas fa-arrow-left me-1"></i> Back to Cart
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const total = parseFloat("{{ total }}");
+    const deliveryFee = 50.00;
+    let map, marker;
+    
+    const locationData = {
+        'Santa Cruz': ['Alipit', 'Bagong Bayan', 'Bubukal', 'Calios', 'Duhat', 'Gatid', 'Giling-Giling', 'Labuin', 'Malinao', 'Matalatala', 'Oogong', 'Pagsawitan', 'Palanas', 'Poblacion I', 'Poblacion II', 'Poblacion III', 'Poblacion IV', 'Poblacion V', 'San Jose', 'San Juan', 'San Nicolas', 'San Pablo Norte', 'San Pablo Sur', 'Santisima Cruz', 'Santo Angel Central', 'Santo Angel Norte', 'Santo Angel Sur'],
+        'Pila': ['Aplaya', 'Bagong Pook', 'Bukal', 'Bulilan Sur', 'Concepcion', 'Labuin', 'Linga', 'Masico', 'Mojon', 'Pansol', 'Pinagbayanan', 'Poblacion', 'San Antonio', 'San Miguel', 'Santa Clara Norte', 'Santa Clara Sur', 'Tubuan'],
+        'Victoria': ['Banca-banca', 'Daniw', 'Masapang', 'Nanhaya', 'Pagalangan', 'San Francisco', 'San Roque', 'San Nicolas', 'Santa Cruz'],
+        'Lumban': ['Bagong Silang', 'Balimbingan', 'Balubad', 'Caliraya', 'Concepcion', 'Luwac', 'Maracta', 'Maytalang I', 'Maytalang II', 'Primeiro Distrito', 'Salac', 'Santo Niño', 'Segundo Distrito', 'Talahib', 'Talongue', 'Wawa'],
+        'Magdalena': ['Alipit', 'Baanan', 'Balanac', 'Bucal', 'Buenavista', 'Bungkol', 'Burol', 'Capayapaan', 'Cigaras', 'Halayhayin', 'Ibabang Atingay', 'Ibabang Butnong', 'Ilayang Atingay', 'Ilayang Butnong', 'Ilog', 'Malaking Ambling', 'Mali-mali', 'Mamatid', 'Poblacion', 'Sabang', 'Salaking', 'San Antonio', 'San Francisco', 'Tipunan']
+    };
+    const townCoordinates = { 'Santa Cruz': [14.2833, 121.4167], 'Pila': [14.2333, 121.3667], 'Victoria': [14.2250, 121.3283], 'Lumban': [14.2981, 121.4608], 'Magdalena': [14.2000, 121.4333] };
+
+    function initMap() {
+        if (map) return;
+        map = L.map('delivery_map').setView([14.2833, 121.4167], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        marker = L.marker([14.2833, 121.4167], { draggable: true }).addTo(map);
+        marker.on('dragend', updateAddress);
+        map.on('click', (e) => { marker.setLatLng(e.latlng); updateAddress(); });
+    }
+
+    function updateAddress() {
+        const muni = document.getElementById('select_municipality').value;
+        const brgy = document.getElementById('select_barangay').value;
+        const street = document.getElementById('street_address').value.trim();
+        if (muni && brgy && street) {
+            let addr = `${street}, Brgy. ${brgy}, ${muni}, Laguna.`;
+            if (marker) addr += ` (Map Pin: ${marker.getLatLng().lat.toFixed(5)}, ${marker.getLatLng().lng.toFixed(5)})`;
+            document.getElementById('delivery_address').value = addr;
+            document.getElementById('delivery_area_hidden').value = muni;
+            document.getElementById('placeOrderBtn').disabled = false;
+        } else {
+            if (document.getElementById('delivery').checked) {
+                document.getElementById('placeOrderBtn').disabled = true;
+            }
+        }
+    }
+
+    document.querySelectorAll('input[name="dining_option"]').forEach(r => {
+        r.addEventListener('change', function() {
+            const isDel = this.value === 'DELIVERY';
+            document.getElementById('delivery_fields').style.display = isDel ? 'block' : 'none';
+            document.getElementById('delivery_fee_row').style.display = isDel ? 'flex' : 'none';
+            
+            const fields = ['select_municipality', 'select_barangay', 'street_address'];
+            fields.forEach(f => {
+                const el = document.getElementById(f);
+                el.required = isDel;
+                el.disabled = !isDel;
+            });
+
+            if (isDel) {
+                initMap();
+                setTimeout(() => map.invalidateSize(), 100);
+                document.getElementById('label_pay_counter').innerText = 'Cash on Delivery';
+                document.getElementById('desc_pay_counter').innerText = 'Pay cash when your order arrives.';
+                updateAddress();
+            } else {
+                document.getElementById('label_pay_counter').innerText = 'Pay at Counter';
+                document.getElementById('desc_pay_counter').innerText = 'Handle your payment directly at our cafe cashier.';
+                document.getElementById('placeOrderBtn').disabled = false;
+            }
+
+            const totalAmount = isDel ? total + deliveryFee : total;
+            document.getElementById('totalAmountDisplay').innerText = '₱' + totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 });
+        });
+    });
+
+    const muniSel = document.getElementById('select_municipality');
+    const brgySel = document.getElementById('select_barangay');
+    muniSel.addEventListener('change', function() {
+        const muni = this.value;
+        brgySel.innerHTML = '<option value="">Select Barangay</option>';
+        if (muni && locationData[muni]) {
+            brgySel.disabled = false;
+            locationData[muni].forEach(b => {
+                const opt = document.createElement('option');
+                opt.value = opt.textContent = b;
+                brgySel.appendChild(opt);
+            });
+            if (townCoordinates[muni]) map.flyTo(townCoordinates[muni], 14);
+        }
+        updateAddress();
+    });
+
+    brgySel.addEventListener('change', updateAddress);
+    document.getElementById('street_address').addEventListener('input', updateAddress);
+});
+</script>
+{% endblock %}

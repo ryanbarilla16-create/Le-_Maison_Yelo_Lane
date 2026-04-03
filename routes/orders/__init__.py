@@ -101,6 +101,29 @@ def remove_from_cart(item_id):
         flash("Item removed from cart.", "success")
     return redirect(url_for('main.view_cart'))
 
+@main_bp.route('/checkout', methods=['GET'])
+@login_required
+def checkout_page():
+    cart = session.get('cart', {})
+    if not cart:
+        flash("Your cart is empty!", "danger")
+        return redirect(url_for('main.view_cart'))
+    
+    cart_items = []
+    total = 0
+    for item_id, quantity in cart.items():
+        menu_item = MenuItem.query.get(int(item_id))
+        if menu_item:
+            subtotal = menu_item.price * quantity
+            total += subtotal
+            cart_items.append({
+                'item': menu_item,
+                'quantity': quantity,
+                'subtotal': subtotal
+            })
+            
+    return render_template('checkout.html', cart_items=cart_items, total=total)
+
 @main_bp.route('/checkout', methods=['POST'])
 @login_required
 def checkout():
@@ -199,7 +222,8 @@ def checkout():
             'description': f"Order #{new_order.id} from Le Maison",
             'success_redirect_url': success_url,
             'failure_redirect_url': failure_url,
-            'currency': 'PHP'
+            'currency': 'PHP',
+            'payment_methods': ['GCASH']
         }
         
         try:

@@ -6,7 +6,7 @@ from flask_login import LoginManager
 from routes import main_bp
 import os
 from flask_cors import CORS
-# from sync import setup_supabase_sync
+from sync import setup_supabase_sync
 from flask_mail import Mail
 from utils import get_ph_time
 
@@ -60,7 +60,7 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 # Initialize realtime mirroring to Supabase via Event Hooks
-# setup_supabase_sync()
+setup_supabase_sync()
 
 # Register blueprints
 app.register_blueprint(main_bp)
@@ -91,4 +91,21 @@ def inject_config():
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
+    
+    # Get local IP address
+    import socket
+    hostname = socket.gethostname()
+    local_ip = socket.gethostbyname(hostname)
+    
+    # Print accessible URLs
+    print("\n" + "="*60)
+    print("🚀 Le Maison Flask App is Running!")
+    print("="*60)
+    print(f"📱 Local Access:        http://localhost:5000")
+    print(f"📱 Local IP Access:     http://127.0.0.1:5000")
+    print(f"🌐 Network Access:      http://{local_ip}:5000")
+    print("="*60 + "\n")
+    
+    # Run with debug=True for development only
+    debug_mode = os.environ.get('FLASK_ENV') != 'production'
+    socketio.run(app, debug=debug_mode, host='0.0.0.0', port=5000)

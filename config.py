@@ -15,7 +15,11 @@ class Config:
     _db_url = os.environ.get("NEON_DATABASE_URL")
     
     if not _db_url:
-        raise ValueError("NEON_DATABASE_URL is missing! Please configure it in your .env file.")
+        # Fallback to SQLite for local development
+        import sys
+        if 'pytest' not in sys.modules:
+            print("⚠️  Warning: NEON_DATABASE_URL not set. Using SQLite for development.")
+        _db_url = "sqlite:///lemaisondb.db"
     
     # Neon strings often use `postgres://`, but SQLAlchemy requires `postgresql://`
     if _db_url.startswith("postgres://"):
