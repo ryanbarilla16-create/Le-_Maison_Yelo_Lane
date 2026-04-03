@@ -6,7 +6,7 @@ from flask_login import LoginManager
 from routes import main_bp
 import os
 from flask_cors import CORS
-from sync import setup_supabase_sync
+# from sync import setup_supabase_sync
 from flask_mail import Mail
 from utils import get_ph_time
 
@@ -66,7 +66,7 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 # Initialize realtime mirroring to Supabase via Event Hooks
-setup_supabase_sync()
+# setup_supabase_sync()
 
 # Register blueprints
 app.register_blueprint(main_bp)
