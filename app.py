@@ -77,6 +77,10 @@ app.register_blueprint(admin_bp)
 from routes.api import api_bp
 app.register_blueprint(api_bp)
 
+# Ensure database tables exist (critical for Render/gunicorn which skips __main__)
+with app.app_context():
+    db.create_all()
+
 @app.before_request
 def init_session():
     """Initialize session - equivalent to PHP session_start()"""
