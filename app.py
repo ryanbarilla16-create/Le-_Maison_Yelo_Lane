@@ -79,7 +79,15 @@ app.register_blueprint(api_bp)
 
 # Ensure database tables exist (critical for Render/gunicorn which skips __main__)
 with app.app_context():
-    db.create_all()
+    db_uri = app.config.get('SQLALCHEMY_DATABASE_URI', 'Unknown')
+    clean_uri = db_uri.split('@')[-1] if '@' in db_uri else db_uri # Hide password
+    print(f"--- DB INIT: Connecting to {clean_uri} ---")
+    try:
+        db.create_all()
+        print("--- DB INIT: Tables verified/created successfully ---")
+    except Exception as e:
+        print(f"--- DB INIT ERROR: {e} ---")
+
 
 @app.before_request
 def init_session():
@@ -97,6 +105,23 @@ def inject_config():
         get_ph_time=get_ph_time,
         site=load_site_settings()
     )
+
+import traceback
+import sys
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    # Pass through HTTP errors
+    from werkzeug.exceptions import HTTPException
+    if isinstance(e, HTTPException):
+        return e
+    
+    # Log the full traceback to the Render logs
+    print("🚨 TRACEBACK ERROR LOGGED BY ANTIGRAVITY:", file=sys.stderr)
+    traceback.print_exc()
+    
+    # Try to render the 500 error page if it exists, else return text
+    return "Internal Server Error - Check Render Logs for the Antigravity Traceback", 500
 
 if __name__ == '__main__':
     with app.app_context():
