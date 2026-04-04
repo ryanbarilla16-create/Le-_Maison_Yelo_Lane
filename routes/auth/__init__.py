@@ -6,7 +6,7 @@ import re
 import random
 import traceback
 from datetime import datetime, date
-from utils import get_ph_time
+from utils import get_ph_time, safe_elapsed
 from .. import main_bp
 
 # --- VALIDATION HELPERS ---
@@ -178,7 +178,7 @@ def verify_otp(user_id):
     # Calculate remaining cooldown seconds for the resend button
     cooldown_remaining = 0
     if user.otp_created_at:
-        elapsed = (get_ph_time() - user.otp_created_at).total_seconds()
+        elapsed = safe_elapsed(user.otp_created_at)
         cooldown_remaining = max(0, int(300 - elapsed))  # 300 seconds = 5 minutes
     
     return render_template('auth/verify_otp.html', user=user, cooldown_remaining=cooldown_remaining)
@@ -193,7 +193,7 @@ def resend_otp(user_id):
     
     # 5-minute cooldown check
     if user.otp_created_at:
-        elapsed = (get_ph_time() - user.otp_created_at).total_seconds()
+        elapsed = safe_elapsed(user.otp_created_at)
         if elapsed < 300:  # 300 seconds = 5 minutes
             remaining = int(300 - elapsed)
             minutes = remaining // 60
@@ -361,7 +361,7 @@ def forgot_password():
             
         # Rate-limit OTP (wait 60 seconds between requests)
         if user.otp_created_at:
-            elapsed = (get_ph_time() - user.otp_created_at).total_seconds()
+            elapsed = safe_elapsed(user.otp_created_at)
             if elapsed < 60:
                 flash(f"Please wait {int(60 - elapsed)}s before requesting a new code.", "warning")
                 return redirect(url_for('main.verify_reset_otp', user_id=user.id))
@@ -420,7 +420,7 @@ def verify_reset_otp(user_id):
         
         # Check OTP expiry (5 minutes)
         if user.otp_created_at:
-            elapsed = (get_ph_time() - user.otp_created_at).total_seconds()
+            elapsed = safe_elapsed(user.otp_created_at)
             if elapsed > 300:
                 flash("OTP has expired. Please request a new one.", "danger")
                 return redirect(url_for('main.verify_reset_otp', user_id=user.id))
@@ -434,7 +434,7 @@ def verify_reset_otp(user_id):
             
     cooldown_remaining = 0
     if user.otp_created_at:
-        elapsed = (get_ph_time() - user.otp_created_at).total_seconds()
+        elapsed = safe_elapsed(user.otp_created_at)
         cooldown_remaining = max(0, int(60 - elapsed))
         
     return render_template('auth/verify_reset_otp.html', user=user, cooldown_remaining=cooldown_remaining)
@@ -449,7 +449,7 @@ def resend_reset_otp(user_id):
     user = User.query.get_or_404(user_id)
     
     if user.otp_created_at:
-        elapsed = (get_ph_time() - user.otp_created_at).total_seconds()
+        elapsed = safe_elapsed(user.otp_created_at)
         if elapsed < 60:
             remaining = int(60 - elapsed)
             flash(f"Please wait {remaining}s before requesting a new code.", "warning")
@@ -505,7 +505,7 @@ def reset_password():
         
         # Check OTP expiry (5 minutes) - extra safety
         if user.otp_created_at:
-            elapsed = (get_ph_time() - user.otp_created_at).total_seconds()
+            elapsed = safe_elapsed(user.otp_created_at)
             if elapsed > 300:
                 flash("Your password reset session has expired (5 minutes). Please start over.", "danger")
                 session.pop('reset_user_id', None)

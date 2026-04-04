@@ -5,6 +5,16 @@ from datetime import datetime, timedelta
 def get_ph_time():
     return datetime.utcnow() + timedelta(hours=8)
 
+def safe_elapsed(dt_value):
+    """Safely calculate seconds elapsed since dt_value, handling timezone-aware vs naive datetimes."""
+    if dt_value is None:
+        return 999999  # Treat as very old
+    now = get_ph_time()
+    # Strip timezone info if present (PostgreSQL may return timezone-aware datetimes)
+    if hasattr(dt_value, 'tzinfo') and dt_value.tzinfo is not None:
+        dt_value = dt_value.replace(tzinfo=None)
+    return (now - dt_value).total_seconds()
+
 def create_notification(user_id, title, message, notif_type='SYSTEM'):
     """Helper to create a notification for any user"""
     from models import db, Notification

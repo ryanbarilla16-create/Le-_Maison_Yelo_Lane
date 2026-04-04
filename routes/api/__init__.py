@@ -3,7 +3,7 @@ from flask_mail import Message
 from models import db, MenuItem, User, Reservation, Order, OrderItem, Review, Notification, ChatMessage, Voucher
 from werkzeug.security import generate_password_hash
 from datetime import datetime, date, time as dtime
-from utils import get_ph_time, create_notification
+from utils import get_ph_time, safe_elapsed, create_notification
 import re
 import random
 import traceback
@@ -314,7 +314,7 @@ def api_resend_otp():
         return jsonify({'success': False, 'message': 'Account already verified.'}), 400
     
     if user.otp_created_at:
-        elapsed = (get_ph_time() - user.otp_created_at).total_seconds()
+        elapsed = safe_elapsed(user.otp_created_at)
         if elapsed < 300:
             remaining = int(300 - elapsed)
             return jsonify({'success': False, 'message': f'Please wait {remaining // 60}m {remaining % 60}s before requesting a new code.'}), 429
@@ -1016,7 +1016,7 @@ def api_forgot_password():
     
     # Rate-limit OTP (wait 60 seconds between requests)
     if user.otp_created_at:
-        elapsed = (get_ph_time() - user.otp_created_at).total_seconds()
+        elapsed = safe_elapsed(user.otp_created_at)
         if elapsed < 60:
             remaining = int(60 - elapsed)
             return jsonify({'success': False, 'message': f'Please wait {remaining}s before requesting a new code.'}), 429
@@ -1070,7 +1070,7 @@ def api_forgot_password_verify_otp():
     
     # Check OTP expiry (5 minutes)
     if user.otp_created_at:
-        elapsed = (get_ph_time() - user.otp_created_at).total_seconds()
+        elapsed = safe_elapsed(user.otp_created_at)
         if elapsed > 300:
             return jsonify({'success': False, 'message': 'OTP has expired. Please request a new one.'}), 400
     
@@ -1098,7 +1098,7 @@ def api_forgot_password_reset():
         
     # Check OTP expiry (5 minutes)
     if user.otp_created_at:
-        elapsed = (get_ph_time() - user.otp_created_at).total_seconds()
+        elapsed = safe_elapsed(user.otp_created_at)
         if elapsed > 300:
             return jsonify({'success': False, 'message': 'OTP has expired. Please start over.'}), 400
     
