@@ -364,32 +364,59 @@
         var dateField = document.getElementById('date');
 
         var today = new Date();
-        var minExclusive = new Date(today); minExclusive.setDate(minExclusive.getDate() + 3);
-        var maxDate = new Date(today); maxDate.setDate(maxDate.getDate() + 60);
+        
+        // Calculate current time as HH:MM
+        var currHour = today.getHours();
+        var currMin = today.getMinutes();
+        var currTimeStr = (currHour < 10 ? '0' + currHour : currHour) + ':' + (currMin < 10 ? '0' + currMin : currMin);
+        
+        // If it's 8:30 PM (20:30) or later, same-day booking is closed, shift "effective today" to tomorrow.
+        var effectiveToday = new Date(today);
+        if (currTimeStr >= "20:30") {
+            effectiveToday.setDate(effectiveToday.getDate() + 1);
+        }
+
+        var minExclusive = new Date(effectiveToday); minExclusive.setDate(minExclusive.getDate() + 3);
+        var maxDate = new Date(effectiveToday); maxDate.setDate(maxDate.getDate() + 60);
 
         if (type === 'EXCLUSIVE') {
             guestInput.max = 50;
-            guestHint.innerText = 'Maximum of 50 guests for exclusive bookings.';
+            guestHint.innerHTML = '<i class="fas fa-chair me-2" style="color: #D4A862;"></i><strong>Seating Guide:</strong><br>Exclusive bookings block the entire venue.<br>Maximum of 50 guests.';
             maxGuestText.innerText = '50';
-            advanceText.innerText = '3 days to 2 months';
+            
+            if (currTimeStr >= "20:30") {
+                advanceText.innerText = '3 days to 2 months (Closed for today)';
+            } else {
+                advanceText.innerText = '3 days to 2 months';
+            }
 
             // Require 3 days advance
             var minStr = minExclusive.toISOString().split("T")[0];
             dateField.min = minStr;
 
-            // If currently selected date is before 3 days from now, clear it
+            // If currently selected date is before min date, clear it
             if (dateField.value && dateField.value < minStr) {
                 dateField.value = '';
             }
         } else {
             guestInput.max = 20;
             if (guestInput.value > 20) guestInput.value = 20;
-            guestHint.innerText = 'Maximum of 20 guests per reservation.';
+            guestHint.innerHTML = '<i class="fas fa-chair me-2" style="color: #D4A862;"></i><strong>Seating Guide:</strong><br>• 1-4 Persons: 1 Standard Table<br>• 5-8 Persons: 2 Combined Tables<br>• 9+ Persons: Group Banquet Seating';
             maxGuestText.innerText = '20';
-            advanceText.innerText = 'Same day to 2 months';
+            
+            if (currTimeStr >= "20:30") {
+                advanceText.innerHTML = 'Tomorrow to 2 months <span style="color:red;font-size:0.75rem;">(Closed for today)</span>';
+            } else {
+                advanceText.innerText = 'Same day to 2 months';
+            }
 
-            // Allow same day
-            dateField.min = today.toISOString().split("T")[0];
+            // Allow same day, OR tomorrow if already past 8:30 PM
+            var minStr = effectiveToday.toISOString().split("T")[0];
+            dateField.min = minStr;
+            
+            if (dateField.value && dateField.value < minStr) {
+                dateField.value = '';
+            }
         }
 
         dateField.max = maxDate.toISOString().split("T")[0];

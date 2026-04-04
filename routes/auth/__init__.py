@@ -125,41 +125,35 @@ def signup():
         print(f"--- OTP FOR {email} IS: {otp} ---")
         
         # Send OTP via Gmail
-        try:
-            mail = current_app.extensions['mail']
-            msg = Message(
-                subject='Le Maison Yelo Lane - Your OTP Verification Code',
-                sender=current_app.config['MAIL_USERNAME'],
-                recipients=[email]
-            )
-            msg.html = f"""
-            <div style="background-color: #f8f5f2; padding: 40px 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6;">
-                <div style="max-width: 550px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(93, 64, 55, 0.08); border: 1px solid #e8e0d8;">
-                    <div style="background-color: #5d4037; padding: 30px; text-align: center;">
-                        <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 300; letter-spacing: 1px;">LE MAISON YELO LANE</h1>
-                    </div>
-                    <div style="padding: 40px 35px; color: #4e342e;">
-                        <h2 style="margin-top: 0; font-weight: 600; font-size: 20px; color: #5d4037;">Verification Code</h2>
-                        <p style="font-size: 16px; margin-bottom: 25px;">Hello <strong>{first_name}</strong>,</p>
-                        <p style="font-size: 15px; color: #6d4c41;">Welcome to Le Maison Yelo Lane! To complete your registration and secure your account, please use the following verification code:</p>
-                        <div style="text-align: center; margin: 40px 0;">
-                            <div style="display: inline-block; background-color: #efebe9; border: 2px dashed #8d6e63; color: #5d4037; font-size: 36px; font-weight: bold; letter-spacing: 10px; padding: 20px 40px; border-radius: 12px;">{otp}</div>
-                        </div>
-                        <p style="font-size: 14px; color: #8d6e63; text-align: center;">This code is valid for <strong>10 minutes</strong>. Please do not share it with anyone.</p>
-                        <hr style="border: 0; border-top: 1px solid #efebe9; margin: 30px 0;">
-                        <p style="font-size: 13px; color: #a1887f; text-align: center; margin: 0;">If you didn't create an account, you can safely ignore this email.</p>
-                    </div>
+        from utils import send_email
+        html_msg = f"""
+        <div style="background-color: #f8f5f2; padding: 40px 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6;">
+            <div style="max-width: 550px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(93, 64, 55, 0.08); border: 1px solid #e8e0d8;">
+                <div style="background-color: #5d4037; padding: 30px; text-align: center;">
+                    <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 300; letter-spacing: 1px;">LE MAISON YELO LANE</h1>
                 </div>
-                <div style="max-width: 550px; margin: 20px auto; text-align: center; color: #a1887f; font-size: 12px;">
-                    <p>© 2024 Le Maison Yelo Lane · Pagsanjan, Laguna</p>
+                <div style="padding: 40px 35px; color: #4e342e;">
+                    <h2 style="margin-top: 0; font-weight: 600; font-size: 20px; color: #5d4037;">Verification Code</h2>
+                    <p style="font-size: 16px; margin-bottom: 25px;">Hello <strong>{first_name}</strong>,</p>
+                    <p style="font-size: 15px; color: #6d4c41;">Welcome to Le Maison Yelo Lane! To complete your registration and secure your account, please use the following verification code:</p>
+                    <div style="text-align: center; margin: 40px 0;">
+                        <div style="display: inline-block; background-color: #efebe9; border: 2px dashed #8d6e63; color: #5d4037; font-size: 36px; font-weight: bold; letter-spacing: 10px; padding: 20px 40px; border-radius: 12px;">{otp}</div>
+                    </div>
+                    <p style="font-size: 14px; color: #8d6e63; text-align: center;">This code is valid for <strong>10 minutes</strong>. Please do not share it with anyone.</p>
+                    <hr style="border: 0; border-top: 1px solid #efebe9; margin: 30px 0;">
+                    <p style="font-size: 13px; color: #a1887f; text-align: center; margin: 0;">If you didn't create an account, you can safely ignore this email.</p>
                 </div>
             </div>
-            """
-            mail.send(msg)
+            <div style="max-width: 550px; margin: 20px auto; text-align: center; color: #a1887f; font-size: 12px;">
+                <p>© 2024 Le Maison Yelo Lane · Pagsanjan, Laguna</p>
+            </div>
+        </div>
+        """
+        
+        success = send_email(email, 'Le Maison Yelo Lane - Your OTP Verification Code', html_msg)
+        if success:
             flash(f"An OTP has been sent to {email}. Please check your inbox.", "success")
-        except Exception as e:
-            print(f"Email sending failed: {e}")
-            traceback.print_exc()
+        else:
             flash(f"An OTP has been generated. (Email sending failed, check console for OTP)", "warning")
         
         return redirect(url_for('main.verify_otp', user_id=new_user.id))
@@ -216,38 +210,32 @@ def resend_otp(user_id):
     print(f"--- RESEND OTP FOR {user.email} IS: {otp} ---")
     
     # Send OTP via Gmail
-    try:
-        mail = current_app.extensions['mail']
-        msg = Message(
-            subject='Le Maison Yelo Lane - Your New OTP Code',
-            sender=current_app.config['MAIL_USERNAME'],
-            recipients=[user.email]
-        )
-        msg.html = f"""
-        <div style="background-color: #f8f5f2; padding: 40px 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6;">
-            <div style="max-width: 550px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(93, 64, 55, 0.08); border: 1px solid #e8e0d8;">
-                <div style="background-color: #5d4037; padding: 30px; text-align: center;">
-                    <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 300; letter-spacing: 1px;">LE MAISON YELO LANE</h1>
+    from utils import send_email
+    html_msg = f"""
+    <div style="background-color: #f8f5f2; padding: 40px 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6;">
+        <div style="max-width: 550px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(93, 64, 55, 0.08); border: 1px solid #e8e0d8;">
+            <div style="background-color: #5d4037; padding: 30px; text-align: center;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 300; letter-spacing: 1px;">LE MAISON YELO LANE</h1>
+            </div>
+            <div style="padding: 40px 35px; color: #4e342e;">
+                <h2 style="margin-top: 0; font-weight: 600; font-size: 20px; color: #5d4037;">New Verification Code</h2>
+                <p style="font-size: 16px; margin-bottom: 25px;">Hello <strong>{user.first_name}</strong>,</p>
+                <p style="font-size: 15px; color: #6d4c41;">We received a request for a new verification code. Please use the following code:</p>
+                <div style="text-align: center; margin: 40px 0;">
+                    <div style="display: inline-block; background-color: #efebe9; border: 2px dashed #8d6e63; color: #5d4037; font-size: 36px; font-weight: bold; letter-spacing: 10px; padding: 20px 40px; border-radius: 12px;">{otp}</div>
                 </div>
-                <div style="padding: 40px 35px; color: #4e342e;">
-                    <h2 style="margin-top: 0; font-weight: 600; font-size: 20px; color: #5d4037;">New Verification Code</h2>
-                    <p style="font-size: 16px; margin-bottom: 25px;">Hello <strong>{user.first_name}</strong>,</p>
-                    <p style="font-size: 15px; color: #6d4c41;">We received a request for a new verification code. Please use the following code:</p>
-                    <div style="text-align: center; margin: 40px 0;">
-                        <div style="display: inline-block; background-color: #efebe9; border: 2px dashed #8d6e63; color: #5d4037; font-size: 36px; font-weight: bold; letter-spacing: 10px; padding: 20px 40px; border-radius: 12px;">{otp}</div>
-                    </div>
-                    <p style="font-size: 14px; color: #8d6e63; text-align: center;">This code is valid for <strong>10 minutes</strong>. If you did not request this, please secure your account.</p>
-                    <hr style="border: 0; border-top: 1px solid #efebe9; margin: 30px 0;">
-                    <p style="font-size: 13px; color: #a1887f; text-align: center; margin: 0;">Warm regards,<br>The Le Maison Yelo Lane Team</p>
-                </div>
+                <p style="font-size: 14px; color: #8d6e63; text-align: center;">This code is valid for <strong>10 minutes</strong>. If you did not request this, please secure your account.</p>
+                <hr style="border: 0; border-top: 1px solid #efebe9; margin: 30px 0;">
+                <p style="font-size: 13px; color: #a1887f; text-align: center; margin: 0;">Warm regards,<br>The Le Maison Yelo Lane Team</p>
             </div>
         </div>
-        """
-        mail.send(msg)
+    </div>
+    """
+    
+    success = send_email(user.email, 'Le Maison Yelo Lane - Your New OTP Code', html_msg)
+    if success:
         flash(f"A new OTP has been sent to {user.email}. Please check your inbox.", "success")
-    except Exception as e:
-        print(f"Email sending failed: {e}")
-        traceback.print_exc()
+    else:
         flash(f"A new OTP has been generated. (Email sending failed, check console for OTP)", "warning")
     
     return redirect(url_for('main.verify_otp', user_id=user.id))
@@ -385,38 +373,32 @@ def forgot_password():
         
         print(f"--- WEB FORGOT PASSWORD OTP FOR {email} IS: {otp} ---")
         
-        try:
-            mail = current_app.extensions['mail']
-            msg = Message(
-                subject='Le Maison Yelo Lane - Password Reset Code',
-                sender=current_app.config['MAIL_USERNAME'],
-                recipients=[email]
-            )
-            msg.html = f"""
-            <div style="background-color: #f8f5f2; padding: 40px 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6;">
-                <div style="max-width: 550px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(93, 64, 55, 0.08); border: 1px solid #e8e0d8;">
-                    <div style="background-color: #5d4037; padding: 30px; text-align: center;">
-                        <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 300; letter-spacing: 1px;">LE MAISON YELO LANE</h1>
+        from utils import send_email
+        html_msg = f"""
+        <div style="background-color: #f8f5f2; padding: 40px 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6;">
+            <div style="max-width: 550px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(93, 64, 55, 0.08); border: 1px solid #e8e0d8;">
+                <div style="background-color: #5d4037; padding: 30px; text-align: center;">
+                    <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 300; letter-spacing: 1px;">LE MAISON YELO LANE</h1>
+                </div>
+                <div style="padding: 40px 35px; color: #4e342e;">
+                    <h2 style="margin-top: 0; font-weight: 600; font-size: 20px; color: #5d4037;">Password Reset</h2>
+                    <p style="font-size: 16px; margin-bottom: 25px;">Hello <strong>{user.first_name}</strong>,</p>
+                    <p style="font-size: 15px; color: #6d4c41;">You requested to reset your password. Use the following code to proceed with the reset:</p>
+                    <div style="text-align: center; margin: 40px 0;">
+                        <div style="display: inline-block; background-color: #efebe9; border: 2px dashed #8d6e63; color: #5d4037; font-size: 36px; font-weight: bold; letter-spacing: 10px; padding: 20px 40px; border-radius: 12px;">{otp}</div>
                     </div>
-                    <div style="padding: 40px 35px; color: #4e342e;">
-                        <h2 style="margin-top: 0; font-weight: 600; font-size: 20px; color: #5d4037;">Password Reset</h2>
-                        <p style="font-size: 16px; margin-bottom: 25px;">Hello <strong>{user.first_name}</strong>,</p>
-                        <p style="font-size: 15px; color: #6d4c41;">You requested to reset your password. Use the following code to proceed with the reset:</p>
-                        <div style="text-align: center; margin: 40px 0;">
-                            <div style="display: inline-block; background-color: #efebe9; border: 2px dashed #8d6e63; color: #5d4037; font-size: 36px; font-weight: bold; letter-spacing: 10px; padding: 20px 40px; border-radius: 12px;">{otp}</div>
-                        </div>
-                        <p style="font-size: 14px; color: #8d6e63; text-align: center;">This code is valid for <strong>5 minutes</strong>. If you didn't request this, no further action is needed.</p>
-                        <hr style="border: 0; border-top: 1px solid #efebe9; margin: 30px 0;">
-                        <p style="font-size: 13px; color: #a1887f; text-align: center; margin: 0;">For security, never share this code with anyone.</p>
-                    </div>
+                    <p style="font-size: 14px; color: #8d6e63; text-align: center;">This code is valid for <strong>5 minutes</strong>. If you didn't request this, no further action is needed.</p>
+                    <hr style="border: 0; border-top: 1px solid #efebe9; margin: 30px 0;">
+                    <p style="font-size: 13px; color: #a1887f; text-align: center; margin: 0;">For security, never share this code with anyone.</p>
                 </div>
             </div>
-            """
-            mail.send(msg)
+        </div>
+        """
+        
+        success = send_email(email, 'Le Maison Yelo Lane - Password Reset Code', html_msg)
+        if success:
             flash(f"An OTP has been sent to {email}. Please check your inbox.", "success")
-        except Exception as e:
-            print(f"Email sending failed: {e}")
-            traceback.print_exc()
+        else:
             flash("An OTP has been generated. (Email sending failed, check console for OTP)", "warning")
             
         session['reset_user_id'] = user.id
@@ -480,35 +462,29 @@ def resend_reset_otp(user_id):
     
     print(f"--- WEB RESEND FORGOT PASSWORD OTP FOR {user.email} IS: {otp} ---")
     
-    try:
-        mail = current_app.extensions['mail']
-        msg = Message(
-            subject='Le Maison Yelo Lane - New Password Reset Code',
-            sender=current_app.config['MAIL_USERNAME'],
-            recipients=[user.email]
-        )
-        msg.html = f"""
-        <div style="background-color: #f8f5f2; padding: 40px 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6;">
-            <div style="max-width: 550px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(93, 64, 55, 0.08); border: 1px solid #e8e0d8;">
-                <div style="background-color: #5d4037; padding: 30px; text-align: center;">
-                    <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 300; letter-spacing: 1px;">LE MAISON YELO LANE</h1>
-                </div>
-                <div style="padding: 40px 35px; color: #4e342e;">
-                    <h2 style="margin-top: 0; font-weight: 600; font-size: 20px; color: #5d4037;">New Reset Code</h2>
-                    <p style="font-size: 16px; margin-bottom: 25px;">Hello <strong>{user.first_name}</strong>,</p>
-                    <p style="font-size: 15px; color: #6d4c41;">As requested, here is your new password reset code:</p>
-                    <div style="text-align: center; margin: 40px 0;">
-                        <div style="display: inline-block; background-color: #efebe9; border: 2px dashed #8d6e63; color: #5d4037; font-size: 36px; font-weight: bold; letter-spacing: 10px; padding: 20px 40px; border-radius: 12px;">{otp}</div>
-                    </div>
+    from utils import send_email
+    html_msg = f"""
+    <div style="background-color: #f8f5f2; padding: 40px 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6;">
+        <div style="max-width: 550px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(93, 64, 55, 0.08); border: 1px solid #e8e0d8;">
+            <div style="background-color: #5d4037; padding: 30px; text-align: center;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 300; letter-spacing: 1px;">LE MAISON YELO LANE</h1>
+            </div>
+            <div style="padding: 40px 35px; color: #4e342e;">
+                <h2 style="margin-top: 0; font-weight: 600; font-size: 20px; color: #5d4037;">New Reset Code</h2>
+                <p style="font-size: 16px; margin-bottom: 25px;">Hello <strong>{user.first_name}</strong>,</p>
+                <p style="font-size: 15px; color: #6d4c41;">As requested, here is your new password reset code:</p>
+                <div style="text-align: center; margin: 40px 0;">
+                    <div style="display: inline-block; background-color: #efebe9; border: 2px dashed #8d6e63; color: #5d4037; font-size: 36px; font-weight: bold; letter-spacing: 10px; padding: 20px 40px; border-radius: 12px;">{otp}</div>
                 </div>
             </div>
         </div>
-        """
-        mail.send(msg)
+    </div>
+    """
+    
+    success = send_email(user.email, 'Le Maison Yelo Lane - New Password Reset Code', html_msg)
+    if success:
         flash(f"A new OTP has been sent to {user.email}. Please check your inbox.", "success")
-    except Exception as e:
-        print(f"Email sending failed: {e}")
-        traceback.print_exc()
+    else:
         flash("A new OTP has been generated. (Email sending failed, check console for OTP)", "warning")
         
     return redirect(url_for('main.verify_reset_otp', user_id=user.id))

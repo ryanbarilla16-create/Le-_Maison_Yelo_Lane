@@ -6,9 +6,9 @@ load_dotenv()
 
 class Config:
     # Security Key for Flask Session tracking
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'super_secret_key_123'
-    FACEBOOK_APP_ID = os.environ.get('FACEBOOK_APP_ID') or 'YOUR_FACEBOOK_APP_ID_HERE'
-    GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID') or 'YOUR_GOOGLE_CLIENT_ID_HERE'
+    SECRET_KEY = os.environ.get('SECRET_KEY')
+    FACEBOOK_APP_ID = os.environ.get('FACEBOOK_APP_ID')
+    GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
     
     
     # Neon PostgreSQL (Primary Database)
@@ -40,6 +40,6 @@ class Config:
     _mail_port = os.environ.get('MAIL_PORT', '587')
     MAIL_PORT = int(_mail_port) if _mail_port and _mail_port.isdigit() else 587
     MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'True').lower() in ['true', 'on', '1']
-    MAIL_USERNAME = os.environ.get('MAIL_USERNAME', 'ryanbarilla254@gmail.com')
-    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD', 'smqnvgtyfgwzipqr')
-    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_USERNAME', 'ryanbarilla254@gmail.com')
+    MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
+    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
+    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_USERNAME')

@@ -34,11 +34,11 @@
 <!-- ═══ SUMMARY STAT CARDS ═══ -->
 <div class="perf-row">
     {% set stats = [
-        ('fas fa-users', '#8B4513,#A0522D', total_staff, 'Total Staff'),
-        ('fas fa-receipt', '#2563EB,#3B82F6', total_orders_processed, 'Orders Processed'),
-        ('fas fa-peso-sign', '#059669,#10B981', '₱' ~ "%.2f"|format(total_revenue_generated), 'Total Revenue'),
-        ('fas fa-truck', '#D97706,#F59E0B', total_deliveries_completed, 'Deliveries Done'),
-        ('fas fa-boxes-stacked', '#7C3AED,#8B5CF6', total_inv_actions, 'Inventory Actions')
+        ('fas fa-users', '#8d6e63,#a1887f', total_staff, 'Total Staff'),
+        ('fas fa-receipt', '#8f6d54,#b08d72', total_orders_processed, 'Orders Processed'),
+        ('fas fa-peso-sign', '#526b48,#6d8c61', '₱' ~ "%.2f"|format(total_revenue_generated), 'Total Revenue'),
+        ('fas fa-truck', '#a8613d,#c97e59', total_deliveries_completed, 'Deliveries Done'),
+        ('fas fa-boxes-stacked', '#5e4a50,#7a636a', total_inv_actions, 'Inventory Actions')
     ] %}
     {% for icon, grad, value, label in stats %}
     <div class="stat-mini perf-card">
@@ -56,8 +56,8 @@
     <!-- CASHIER -->
     <div class="perf-half perf-card">
         <div class="card-header">
-            <h6 class="fw-bold mb-0"><i class="fas fa-cash-register me-2 text-primary"></i>Cashier Productivity</h6>
-            <span class="perf-badge" style="background:rgba(37,99,235,0.1);color:#2563EB;">{{ cashier_stats|length }} staff</span>
+            <h6 class="fw-bold mb-0"><i class="fas fa-cash-register me-2" style="color:#8f6d54;"></i>Cashier Productivity</h6>
+            <span class="perf-badge" style="background:rgba(143,109,84,0.1);color:#8f6d54;">{{ cashier_stats|length }} staff</span>
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -69,13 +69,13 @@
                     {% for c in cashier_stats %}
                     <tr>
                         <td><div class="d-flex align-items-center">
-                            <div class="staff-avatar" style="background:linear-gradient(135deg,#2563EB,#3B82F6);">{{ c.name.split()[0][0] }}{{ c.name.split()[-1][0] if c.name.split()|length > 1 else '' }}</div>
+                            <div class="staff-avatar" style="background:linear-gradient(135deg,#8f6d54,#b08d72);">{{ c.name.split()[0][0] }}{{ c.name.split()[-1][0] if c.name.split()|length > 1 else '' }}</div>
                             <span class="fw-bold">{{ c.name }}</span>
                         </div></td>
-                        <td style="text-align:center;"><span class="perf-badge" style="background:rgba(37,99,235,0.1);color:#2563EB;">{{ c.count }}</span></td>
-                        <td style="text-align:center;"><span class="perf-badge" style="background:rgba(5,150,105,0.1);color:#059669;">{{ c.today_orders }}</span></td>
+                        <td style="text-align:center;"><span class="perf-badge" style="background:rgba(143,109,84,0.1);color:#8f6d54;">{{ c.count }}</span></td>
+                        <td style="text-align:center;"><span class="perf-badge" style="background:rgba(82,107,72,0.1);color:#526b48;">{{ c.today_orders }}</span></td>
                         <td style="text-align:right;color:#888;font-size:0.82rem;">₱{{ "%.2f"|format(c.avg_order) }}</td>
-                        <td style="text-align:right;font-weight:700;color:#059669;">₱{{ "%.2f"|format(c.sales) }}</td>
+                        <td style="text-align:right;font-weight:700;color:#526b48;">₱{{ "%.2f"|format(c.sales) }}</td>
                     </tr>
                     {% endfor %}
                     {% if not cashier_stats %}
@@ -92,8 +92,8 @@
     <!-- RIDER -->
     <div class="perf-half perf-card">
         <div class="card-header">
-            <h6 class="fw-bold mb-0"><i class="fas fa-motorcycle me-2 text-warning"></i>Rider Deliveries</h6>
-            <span class="perf-badge" style="background:rgba(217,119,6,0.1);color:#D97706;">{{ rider_stats|length }} riders</span>
+            <h6 class="fw-bold mb-0"><i class="fas fa-motorcycle me-2" style="color:#a8613d;"></i>Rider Deliveries</h6>
+            <span class="perf-badge" style="background:rgba(168,97,61,0.1);color:#a8613d;">{{ rider_stats|length }} riders</span>
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -105,16 +105,16 @@
                     {% for r in rider_stats %}
                     <tr>
                         <td><div class="d-flex align-items-center">
-                            <div class="staff-avatar" style="background:linear-gradient(135deg,#D97706,#F59E0B);">{{ r.name.split()[0][0] }}{{ r.name.split()[-1][0] if r.name.split()|length > 1 else '' }}</div>
+                            <div class="staff-avatar" style="background:linear-gradient(135deg,#a8613d,#c97e59);">{{ r.name.split()[0][0] }}{{ r.name.split()[-1][0] if r.name.split()|length > 1 else '' }}</div>
                             <div><span class="fw-bold d-block" style="line-height:1.2;">{{ r.name }}</span><small class="text-muted">₱{{ "%.2f"|format(r.earnings) }} earned</small></div>
                         </div></td>
-                        <td style="text-align:center;"><span class="perf-badge" style="background:rgba(5,150,105,0.1);color:#059669;">{{ r.count }}</span></td>
+                        <td style="text-align:center;"><span class="perf-badge" style="background:rgba(82,107,72,0.1);color:#526b48;">{{ r.count }}</span></td>
                         <td style="text-align:center;">
-                            {% if r.pending > 0 %}<span class="perf-badge" style="background:rgba(217,119,6,0.12);color:#92400E;">{{ r.pending }}</span>{% else %}<span class="text-muted">—</span>{% endif %}
+                            {% if r.pending > 0 %}<span class="perf-badge" style="background:rgba(168,97,61,0.12);color:#8a4d2e;">{{ r.pending }}</span>{% else %}<span class="text-muted">—</span>{% endif %}
                         </td>
                         <td style="text-align:right;">
-                            {% if r.success_rate >= 80 %}<span class="perf-badge" style="background:#059669;color:#fff;">{{ r.success_rate }}%</span>
-                            {% elif r.success_rate >= 50 %}<span class="perf-badge" style="background:#D97706;color:#fff;">{{ r.success_rate }}%</span>
+                            {% if r.success_rate >= 80 %}<span class="perf-badge" style="background:#526b48;color:#fff;">{{ r.success_rate }}%</span>
+                            {% elif r.success_rate >= 50 %}<span class="perf-badge" style="background:#a8613d;color:#fff;">{{ r.success_rate }}%</span>
                             {% else %}<span class="perf-badge" style="background:#9CA3AF;color:#fff;">{{ r.success_rate }}%</span>{% endif %}
                         </td>
                     </tr>
@@ -136,8 +136,8 @@
     <!-- INVENTORY -->
     <div class="perf-half perf-card">
         <div class="card-header">
-            <h6 class="fw-bold mb-0"><i class="fas fa-boxes-stacked me-2" style="color:#7C3AED;"></i>Inventory Staff Activity</h6>
-            <span class="perf-badge" style="background:rgba(124,58,237,0.1);color:#7C3AED;">{{ inventory_stats|length }} staff</span>
+            <h6 class="fw-bold mb-0"><i class="fas fa-boxes-stacked me-2" style="color:#5e4a50;"></i>Inventory Staff Activity</h6>
+            <span class="perf-badge" style="background:rgba(94,74,80,0.1);color:#5e4a50;">{{ inventory_stats|length }} staff</span>
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -149,16 +149,16 @@
                     {% for s in inventory_stats %}
                     <tr>
                         <td><div class="d-flex align-items-center">
-                            <div class="staff-avatar" style="background:linear-gradient(135deg,#7C3AED,#8B5CF6);">{{ s.name.split()[0][0] }}{{ s.name.split()[-1][0] if s.name.split()|length > 1 else '' }}</div>
+                            <div class="staff-avatar" style="background:linear-gradient(135deg,#5e4a50,#7a636a);">{{ s.name.split()[0][0] }}{{ s.name.split()[-1][0] if s.name.split()|length > 1 else '' }}</div>
                             <span class="fw-bold">{{ s.name }}</span>
                         </div></td>
-                        <td style="text-align:center;"><span class="perf-badge" style="background:rgba(124,58,237,0.1);color:#7C3AED;">{{ s.total_actions }}</span></td>
-                        <td style="text-align:center;color:#059669;font-weight:700;"><i class="fas fa-arrow-up me-1" style="font-size:0.6rem;"></i>{{ s.adds }}</td>
-                        <td style="text-align:center;color:#2563EB;font-weight:700;"><i class="fas fa-arrow-down me-1" style="font-size:0.6rem;"></i>{{ s.deducts }}</td>
+                        <td style="text-align:center;"><span class="perf-badge" style="background:rgba(94,74,80,0.1);color:#5e4a50;">{{ s.total_actions }}</span></td>
+                        <td style="text-align:center;color:#526b48;font-weight:700;"><i class="fas fa-arrow-up me-1" style="font-size:0.6rem;"></i>{{ s.adds }}</td>
+                        <td style="text-align:center;color:#8f6d54;font-weight:700;"><i class="fas fa-arrow-down me-1" style="font-size:0.6rem;"></i>{{ s.deducts }}</td>
                         <td style="text-align:center;">
-                            {% if s.spoiled > 0 %}<span class="perf-badge" style="background:rgba(220,38,38,0.1);color:#DC2626;">{{ s.spoiled }}</span>{% else %}<span class="text-muted">0</span>{% endif %}
+                            {% if s.spoiled > 0 %}<span class="perf-badge" style="background:rgba(160,82,45,0.1);color:#a0522d;">{{ s.spoiled }}</span>{% else %}<span class="text-muted">0</span>{% endif %}
                         </td>
-                        <td style="text-align:right;font-weight:700;color:#7C3AED;">{{ s.items_managed }}</td>
+                        <td style="text-align:right;font-weight:700;color:#5e4a50;">{{ s.items_managed }}</td>
                     </tr>
                     {% endfor %}
                     {% if not inventory_stats %}
@@ -175,25 +175,25 @@
     <!-- KITCHEN -->
     <div class="perf-half perf-card">
         <div class="card-header">
-            <h6 class="fw-bold mb-0"><i class="fas fa-fire-burner me-2" style="color:#DC2626;"></i>Kitchen Staff</h6>
-            <span class="perf-badge" style="background:rgba(220,38,38,0.1);color:#DC2626;">{{ kitchen_stats|length }} staff</span>
+            <h6 class="fw-bold mb-0"><i class="fas fa-fire-burner me-2" style="color:#9e4439;"></i>Kitchen Staff</h6>
+            <span class="perf-badge" style="background:rgba(158,68,57,0.1);color:#9e4439;">{{ kitchen_stats|length }} staff</span>
         </div>
         <div class="card-body">
             <!-- Mini kitchen metrics -->
             <div class="d-flex gap-2 mb-3">
                 <div class="kitchen-metric flex-fill">
-                    <i class="fas fa-check-circle" style="color:#059669;font-size:1rem;"></i>
-                    <h4 style="color:#059669;">{{ kitchen_completed_today }}</h4>
+                    <i class="fas fa-check-circle" style="color:#526b48;font-size:1rem;"></i>
+                    <h4 style="color:#526b48;">{{ kitchen_completed_today }}</h4>
                     <small>Done Today</small>
                 </div>
                 <div class="kitchen-metric flex-fill">
-                    <i class="fas fa-fire" style="color:#D97706;font-size:1rem;"></i>
-                    <h4 style="color:#D97706;">{{ kitchen_preparing_now }}</h4>
+                    <i class="fas fa-fire" style="color:#a8613d;font-size:1rem;"></i>
+                    <h4 style="color:#a8613d;">{{ kitchen_preparing_now }}</h4>
                     <small>Preparing</small>
                 </div>
                 <div class="kitchen-metric flex-fill">
-                    <i class="fas fa-clock" style="color:#2563EB;font-size:1rem;"></i>
-                    <h4 style="color:#2563EB;">{{ avg_prep_minutes }}<small style="font-size:0.6rem;"> min</small></h4>
+                    <i class="fas fa-clock" style="color:#8f6d54;font-size:1rem;"></i>
+                    <h4 style="color:#8f6d54;">{{ avg_prep_minutes }}<small style="font-size:0.6rem;"> min</small></h4>
                     <small>Avg Prep</small>
                 </div>
             </div>
@@ -204,10 +204,10 @@
                     {% for k in kitchen_stats %}
                     <tr>
                         <td><div class="d-flex align-items-center">
-                            <div class="staff-avatar" style="background:linear-gradient(135deg,#DC2626,#EF4444);">{{ k.name.split()[0][0] }}{{ k.name.split()[-1][0] if k.name.split()|length > 1 else '' }}</div>
+                            <div class="staff-avatar" style="background:linear-gradient(135deg,#9e4439,#c25a4d);">{{ k.name.split()[0][0] }}{{ k.name.split()[-1][0] if k.name.split()|length > 1 else '' }}</div>
                             <span class="fw-bold">{{ k.name }}</span>
                         </div></td>
-                        <td style="text-align:right;"><span class="perf-badge" style="background:rgba(5,150,105,0.1);color:#059669;"><i class="fas fa-circle me-1" style="font-size:0.4rem;vertical-align:middle;"></i>Active</span></td>
+                        <td style="text-align:right;"><span class="perf-badge" style="background:rgba(82,107,72,0.1);color:#526b48;"><i class="fas fa-circle me-1" style="font-size:0.4rem;vertical-align:middle;"></i>Active</span></td>
                     </tr>
                     {% endfor %}
                     {% if not kitchen_stats %}
@@ -225,11 +225,11 @@
 <!-- ═══ ROW 3: CHARTS (equal height) ═══ -->
 <div class="perf-row">
     <div class="perf-half perf-card">
-        <div class="card-header"><h6 class="fw-bold mb-0"><i class="fas fa-chart-bar me-2 text-primary"></i>Orders &amp; Sales by Cashier</h6></div>
+        <div class="card-header"><h6 class="fw-bold mb-0"><i class="fas fa-chart-bar me-2" style="color:#8f6d54;"></i>Orders &amp; Sales by Cashier</h6></div>
         <div class="card-body" style="min-height:260px;"><canvas id="cashierChart"></canvas></div>
     </div>
     <div class="perf-half perf-card">
-        <div class="card-header"><h6 class="fw-bold mb-0"><i class="fas fa-chart-pie me-2 text-warning"></i>Deliveries by Rider</h6></div>
+        <div class="card-header"><h6 class="fw-bold mb-0"><i class="fas fa-chart-pie me-2" style="color:#a8613d;"></i>Deliveries by Rider</h6></div>
         <div class="card-body" style="min-height:260px;"><canvas id="riderChart"></canvas></div>
     </div>
 </div>
@@ -273,11 +273,11 @@
             datasets: [{
                 label: 'Orders',
                 data: {{ cashier_chart_data|safe }},
-                backgroundColor: 'rgba(37,99,235,0.7)', borderColor: 'rgba(37,99,235,1)', borderWidth: 1, borderRadius: 8, barPercentage: 0.5,
+                backgroundColor: 'rgba(143,109,84,0.7)', borderColor: 'rgba(143,109,84,1)', borderWidth: 1, borderRadius: 8, barPercentage: 0.5,
             }, {
                 label: 'Sales ₱',
                 data: {{ cashier_sales_data|safe }},
-                backgroundColor: 'rgba(5,150,105,0.7)', borderColor: 'rgba(5,150,105,1)', borderWidth: 1, borderRadius: 8, barPercentage: 0.5, yAxisID: 'y1',
+                backgroundColor: 'rgba(82,107,72,0.7)', borderColor: 'rgba(82,107,72,1)', borderWidth: 1, borderRadius: 8, barPercentage: 0.5, yAxisID: 'y1',
             }]
         },
         options: {
@@ -296,7 +296,7 @@
         type: 'doughnut',
         data: {
             labels: {{ rider_chart_labels|safe }},
-            datasets: [{ data: {{ rider_chart_data|safe }}, backgroundColor: ['#D97706','#F59E0B','#FBBF24','#FCD34D','#FDE68A'], borderWidth: 2, borderColor: '#fff', hoverOffset: 8 }]
+            datasets: [{ data: {{ rider_chart_data|safe }}, backgroundColor: ['#a8613d','#b8704c','#c97e59','#d98d69','#e89b78'], borderWidth: 2, borderColor: '#fff', hoverOffset: 8 }]
         },
         options: { responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 14, font: { size: 11, ...sharedFont } } } } }
     });
@@ -306,7 +306,7 @@
         type: 'polarArea',
         data: {
             labels: {{ role_dist_labels|safe }},
-            datasets: [{ data: {{ role_dist_data|safe }}, backgroundColor: ['rgba(37,99,235,0.6)','rgba(217,119,6,0.6)','rgba(124,58,237,0.6)','rgba(220,38,38,0.6)'], borderWidth: 2, borderColor: '#fff' }]
+            datasets: [{ data: {{ role_dist_data|safe }}, backgroundColor: ['rgba(143,109,84,0.6)','rgba(168,97,61,0.6)','rgba(94,74,80,0.6)','rgba(158,68,57,0.6)'], borderWidth: 2, borderColor: '#fff' }]
         },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 14, font: { size: 11, ...sharedFont } } } }, scales: { r: { grid: { color: gridColor }, ticks: { display: false } } } }
     });

@@ -159,3 +159,46 @@ def validate_order(items_data, dining_option, payment_method, is_pos=False):
             return True, "Large order detected. Please wait for staff verification at your table.", 'HOLD'
 
     return True, "Valid order.", 'PENDING'
+
+def send_email(to_email, subject, html_content):
+    import os
+    from flask import current_app
+    sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
+    
+    if sendgrid_api_key:
+        from sendgrid import SendGridAPIClient
+        from sendgrid.helpers.mail import Mail as SGMail
+        try:
+            sg = SendGridAPIClient(sendgrid_api_key)
+            sender = current_app.config.get('MAIL_DEFAULT_SENDER', 'ryanbarilla254@gmail.com')
+            msg = SGMail(
+                from_email=sender,
+                to_emails=to_email,
+                subject=subject,
+                html_content=html_content
+            )
+            sg.send(msg)
+            return True
+        except Exception as e:
+            print(f"SendGrid error: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+    else:
+        # Fallback to Flask-Mail (e.g. for local dev using Gmail SMTP)
+        from flask_mail import Message
+        try:
+            mail = current_app.extensions['mail']
+            msg = Message(
+                subject=subject,
+                sender=current_app.config.get('MAIL_DEFAULT_SENDER', 'ryanbarilla254@gmail.com'),
+                recipients=[to_email]
+            )
+            msg.html = html_content
+            mail.send(msg)
+            return True
+        except Exception as e:
+            print(f"Flask-Mail error: {e}")
+            import traceback
+            traceback.print_exc()
+            return False

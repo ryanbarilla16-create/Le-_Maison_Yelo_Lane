@@ -310,7 +310,7 @@ class _MenuScreenState extends State<MenuScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  'Browse Selection',
+                  'See More',
                   style: AppTextStyles.muted.copyWith(
                     fontSize: 10,
                     color: AppColors.primary,
