@@ -441,58 +441,66 @@ def verify_reset_otp(user_id):
 
 @main_bp.route('/resend-reset-otp/<int:user_id>', methods=['POST'])
 def resend_reset_otp(user_id):
-    print(f"DEBUG: Starting resend_reset_otp for user_id={user_id}")
-    from flask import session
-    print(f"DEBUG: Session reset_user_id={session.get('reset_user_id')}")
-    if session.get('reset_user_id') != user_id:
-        flash("Invalid session. Please start the password reset process again.", "danger")
-        return redirect(url_for('main.forgot_password'))
-        
-    user = User.query.get_or_404(user_id)
-    print(f"DEBUG: Found user {user.email}")
-    
-    if user.otp_created_at:
-        elapsed = safe_elapsed(user.otp_created_at)
-        print(f"DEBUG: OTP elapsed={elapsed}")
-        if elapsed < 60:
-            remaining = int(60 - elapsed)
-            flash(f"Please wait {remaining}s before requesting a new code.", "warning")
-            return redirect(url_for('main.verify_reset_otp', user_id=user.id))
+    try:
+        print(f"DEBUG: Starting resend_reset_otp for user_id={user_id}")
+        from flask import session
+        print(f"DEBUG: Session reset_user_id={session.get('reset_user_id')}")
+        if session.get('reset_user_id') != user_id:
+            flash("Invalid session. Please start the password reset process again.", "danger")
+            return redirect(url_for('main.forgot_password'))
             
-    otp = f"{random.randint(100000, 999999)}"
-    user.otp_code = otp
-    user.otp_created_at = get_ph_time()
-    db.session.commit()
-    print(f"DEBUG: DB committed new OTP for {user.email}")
-    
-    print(f"--- WEB RESEND FORGOT PASSWORD OTP FOR {user.email} IS: {otp} ---")
-    
-    from utils import send_email
-    html_msg = f"""
-    <div style="background-color: #f8f5f2; padding: 40px 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6;">
-        <div style="max-width: 550px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(93, 64, 55, 0.08); border: 1px solid #e8e0d8;">
-            <div style="background-color: #5d4037; padding: 30px; text-align: center;">
-                <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 300; letter-spacing: 1px;">LE MAISON YELO LANE</h1>
-            </div>
-            <div style="padding: 40px 35px; color: #4e342e;">
-                <h2 style="margin-top: 0; font-weight: 600; font-size: 20px; color: #5d4037;">New Reset Code</h2>
-                <p style="font-size: 16px; margin-bottom: 25px;">Hello <strong>{user.first_name}</strong>,</p>
-                <p style="font-size: 15px; color: #6d4c41;">As requested, here is your new password reset code:</p>
-                <div style="text-align: center; margin: 40px 0;">
-                    <div style="display: inline-block; background-color: #efebe9; border: 2px dashed #8d6e63; color: #5d4037; font-size: 36px; font-weight: bold; letter-spacing: 10px; padding: 20px 40px; border-radius: 12px;">{otp}</div>
+        user = User.query.get_or_404(user_id)
+        print(f"DEBUG: Found user {user.email}")
+        
+        if user.otp_created_at:
+            elapsed = safe_elapsed(user.otp_created_at)
+            print(f"DEBUG: OTP elapsed={elapsed}")
+            if elapsed < 60:
+                remaining = int(60 - elapsed)
+                flash(f"Please wait {remaining}s before requesting a new code.", "warning")
+                return redirect(url_for('main.verify_reset_otp', user_id=user.id))
+                
+        otp = f"{random.randint(100000, 999999)}"
+        user.otp_code = otp
+        user.otp_created_at = get_ph_time()
+        db.session.commit()
+        print(f"DEBUG: DB committed new OTP for {user.email}")
+        
+        print(f"--- WEB RESEND FORGOT PASSWORD OTP FOR {user.email} IS: {otp} ---")
+        
+        from utils import send_email
+        html_msg = f"""
+        <div style="background-color: #f8f5f2; padding: 40px 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6;">
+            <div style="max-width: 550px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(93, 64, 55, 0.08); border: 1px solid #e8e0d8;">
+                <div style="background-color: #5d4037; padding: 30px; text-align: center;">
+                    <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 300; letter-spacing: 1px;">LE MAISON YELO LANE</h1>
+                </div>
+                <div style="padding: 40px 35px; color: #4e342e;">
+                    <h2 style="margin-top: 0; font-weight: 600; font-size: 20px; color: #5d4037;">New Reset Code</h2>
+                    <p style="font-size: 16px; margin-bottom: 25px;">Hello <strong>{user.first_name}</strong>,</p>
+                    <p style="font-size: 15px; color: #6d4c41;">As requested, here is your new password reset code:</p>
+                    <div style="text-align: center; margin: 40px 0;">
+                        <div style="display: inline-block; background-color: #efebe9; border: 2px dashed #8d6e63; color: #5d4037; font-size: 36px; font-weight: bold; letter-spacing: 10px; padding: 20px 40px; border-radius: 12px;">{otp}</div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-    """
-    
-    success = send_email(user.email, 'Le Maison Yelo Lane - New Password Reset Code', html_msg)
-    if success:
-        flash(f"A new OTP has been sent to {user.email}. Please check your inbox.", "success")
-    else:
-        flash("A new OTP has been generated. (Email sending failed, check console for OTP)", "warning")
+        """
         
-    return redirect(url_for('main.verify_reset_otp', user_id=user.id))
+        success = send_email(user.email, 'Le Maison Yelo Lane - New Password Reset Code', html_msg)
+        if success:
+            flash(f"A new OTP has been sent to {user.email}. Please check your inbox.", "success")
+        else:
+            flash("A new OTP has been generated. (Email sending failed, check console for OTP)", "warning")
+            
+        return redirect(url_for('main.verify_reset_otp', user_id=user.id))
+
+    except Exception as e:
+        print(f"ERROR in resend_reset_otp: {e}")
+        import traceback
+        traceback.print_exc()
+        flash(f"An internal error occurred: {str(e)}", "danger")
+        return redirect(url_for('main.login'))
 
 @main_bp.route('/reset-password', methods=['GET', 'POST'])
 def reset_password():
