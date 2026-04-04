@@ -441,15 +441,19 @@ def verify_reset_otp(user_id):
 
 @main_bp.route('/resend-reset-otp/<int:user_id>', methods=['POST'])
 def resend_reset_otp(user_id):
+    print(f"DEBUG: Starting resend_reset_otp for user_id={user_id}")
     from flask import session
+    print(f"DEBUG: Session reset_user_id={session.get('reset_user_id')}")
     if session.get('reset_user_id') != user_id:
         flash("Invalid session. Please start the password reset process again.", "danger")
         return redirect(url_for('main.forgot_password'))
         
     user = User.query.get_or_404(user_id)
+    print(f"DEBUG: Found user {user.email}")
     
     if user.otp_created_at:
         elapsed = safe_elapsed(user.otp_created_at)
+        print(f"DEBUG: OTP elapsed={elapsed}")
         if elapsed < 60:
             remaining = int(60 - elapsed)
             flash(f"Please wait {remaining}s before requesting a new code.", "warning")
@@ -459,6 +463,7 @@ def resend_reset_otp(user_id):
     user.otp_code = otp
     user.otp_created_at = get_ph_time()
     db.session.commit()
+    print(f"DEBUG: DB committed new OTP for {user.email}")
     
     print(f"--- WEB RESEND FORGOT PASSWORD OTP FOR {user.email} IS: {otp} ---")
     
