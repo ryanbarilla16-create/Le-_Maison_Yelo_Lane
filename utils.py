@@ -173,47 +173,55 @@ def validate_order(items_data, dining_option, payment_method, is_pos=False):
 def send_email(to_email, subject, html_content):
     import os
     from flask import current_app
-    sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
-    sender = current_app.config.get('MAIL_DEFAULT_SENDER') or 'ryanbarilla16@gmail.com'
     
-    # Try SendGrid first
-    if sendgrid_api_key:
-        from sendgrid import SendGridAPIClient
-        from sendgrid.helpers.mail import Mail as SGMail
-        try:
-            sg = SendGridAPIClient(sendgrid_api_key)
-            msg = SGMail(
-                from_email=sender,
-                to_emails=to_email,
-                subject=subject,
-                html_content=html_content
-            )
-            sg.send(msg)
-            print(f"✅ Email sent via SendGrid to {to_email}")
-            return True
-        except Exception as e:
-            print(f"❌ SendGrid error: {e}")
-            # Do NOT return False here, allow fallback to Flask-Mail below
-    
-    # Fallback to Flask-Mail (e.g. for local dev or if SendGrid fails)
-    from flask_mail import Message
     try:
-        # Check if mail extension exists before trying to send
-        if 'mail' in current_app.extensions:
-            mail = current_app.extensions['mail']
-            msg = Message(
-                subject=subject,
-                sender=sender,
-                recipients=[to_email]
-            )
-            msg.html = html_content
-            mail.send(msg)
-            print(f"✅ Email sent via Flask-Mail fallback to {to_email}")
-            return True
-        else:
-            print("❌ Flask-Mail extension not found in current_app.extensions.")
+        sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
+        sender = current_app.config.get('MAIL_DEFAULT_SENDER') or 'ryanbarilla16@gmail.com'
+        
+        # Try SendGrid first if API key exists
+        if sendgrid_api_key:
+            try:
+                from sendgrid import SendGridAPIClient
+                from sendgrid.helpers.mail import Mail as SGMail
+                sg = SendGridAPIClient(sendgrid_api_key)
+                msg = SGMail(
+                    from_email=sender,
+                    to_emails=to_email,
+                    subject=subject,
+                    html_content=html_content
+                )
+                sg.send(msg)
+                print(f"✅ Email sent via SendGrid to {to_email}")
+                return True
+            except Exception as e:
+                print(f"❌ SendGrid error: {e}")
+                import traceback
+                traceback.print_exc()
+        
+        # Fallback to Flask-Mail (e.g. Gmail SMTP)
+        try:
+            from flask_mail import Message
+            # Use 'mail' key in current_app.extensions
+            mail = current_app.extensions.get('mail')
+            if mail:
+                msg = Message(
+                    subject=subject,
+                    sender=sender,
+                    recipients=[to_email]
+                )
+                msg.html = html_content
+                mail.send(msg)
+                print(f"✅ Email sent via Flask-Mail fallback to {to_email}")
+                return True
+            else:
+                print("❌ Flask-Mail extension not found in current_app.extensions.")
+        except Exception as e:
+            print(f"❌ Flask-Mail error: {e}")
+            import traceback
+            traceback.print_exc()
+            
     except Exception as e:
-        print(f"❌ Flask-Mail error: {e}")
+        print(f"❌ Critical error in send_email: {e}")
         import traceback
         traceback.print_exc()
         
