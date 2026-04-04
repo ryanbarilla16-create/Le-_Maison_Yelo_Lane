@@ -308,8 +308,79 @@ navbar {
     border-top: 1px solid rgba(139, 69, 19, 0.2);
 }
 
-.divider-icon {
+
+/* Progress Stepper */
+.stepper {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2.5rem;
+    position: relative;
+}
+
+.stepper::before {
+    content: '';
+    position: absolute;
+    top: 20px; /* Half of step-icon height */
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: rgba(139, 69, 19, 0.1);
+    z-index: 1;
+}
+
+.step {
+    position: relative;
+    z-index: 2;
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+.step-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid rgba(139, 69, 19, 0.2);
     display: flex;
     align-items: center;
-    gap: 10px;
+    justify-content: center;
+    color: var(--text-muted);
+    font-weight: 700;
+    transition: all 0.3s ease;
+}
+
+.step.active .step-icon {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: #fff;
+    box-shadow: 0 0 15px rgba(139, 69, 19, 0.3);
+}
+
+.step.completed .step-icon {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: #fff;
+}
+
+.step.completed .step-icon i {
+    font-size: 0.9rem;
+}
+
+.step-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: var(--bg-card);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.step.active .step-label {
+    color: var(--primary-color);
 }
