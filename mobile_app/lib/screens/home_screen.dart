@@ -770,37 +770,71 @@ class _HomeScreenState extends State<HomeScreen> {
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(14),
                 ),
-                child: item['image_url'] != null
-                    ? Image.network(
-                        item['image_url'],
-                        height: 120,
-                        width: 170,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
+                child: ColorFiltered(
+                  colorFilter: ColorFilter.mode(
+                    item['is_out_of_stock'] == true ? Colors.grey : Colors.transparent,
+                    BlendMode.saturation,
+                  ),
+                  child: item['image_url'] != null
+                      ? Image.network(
+                          item['image_url'],
                           height: 120,
                           width: 170,
-                          color: AppColors.primary.withOpacity(0.1),
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            height: 120,
+                            width: 170,
+                            color: AppColors.primary.withOpacity(0.1),
+                            child: const Icon(
+                              Icons.restaurant,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        )
+                      : Container(
+                          height: 120,
+                          width: 170,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [AppColors.primary, AppColors.primaryLight],
+                            ),
+                          ),
                           child: const Icon(
                             Icons.restaurant,
-                            color: AppColors.primary,
+                            color: Colors.white54,
+                            size: 35,
                           ),
                         ),
-                      )
-                    : Container(
-                        height: 120,
-                        width: 170,
+                ),
+              ),
+              if (item['is_out_of_stock'] == true)
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.2),
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(14),
+                      ),
+                    ),
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [AppColors.primary, AppColors.primaryLight],
-                          ),
+                          color: AppColors.danger,
+                          borderRadius: BorderRadius.circular(4),
                         ),
-                        child: const Icon(
-                          Icons.restaurant,
-                          color: Colors.white54,
-                          size: 35,
+                        child: const Text(
+                          'OUT OF STOCK',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 7,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-              ),
+                    ),
+                  ),
+                ),
               if (badge != null)
                 Positioned(
                   top: 6,
@@ -877,13 +911,21 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                     ),
-                    Text(
-                      '₱${item['price']?.toStringAsFixed(0) ?? ''}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.primary,
-                        fontSize: 14,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          '₱${item['price']?.toStringAsFixed(0) ?? ''}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.primary,
+                            fontSize: 14,
+                          ),
+                        ),
+                        if (item['is_out_of_stock'] != true) ...[
+                          const SizedBox(width: 4),
+                          _addIcon(() => _addToCart(item)),
+                        ],
+                      ],
                     ),
                   ],
                 ),
@@ -933,4 +975,33 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  Widget _addIcon(VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: const BoxDecoration(
+          color: AppColors.primary,
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(Icons.add, color: Colors.white, size: 16),
+      ),
+    );
+  }
+
+  void _addToCart(dynamic item) {
+    setState(() {
+      CartScreen.addItem(item);
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${item['name']} added to cart!'),
+        backgroundColor: AppColors.success,
+        duration: const Duration(seconds: 1),
+      ),
+    );
+  }
 }
+
+

@@ -15,7 +15,7 @@
         <div class="stat-value">{{ total_items }}</div>
     </div>
     <div class="stat-card">
-        <div class="stat-icon" style="background: rgba(139,69,19,0.15); color: #8B4513;"><i class="fas fa-leaf"></i>
+        <div class="stat-icon" style="background: rgba(139, 99, 75,0.15); color: #8b634b;"><i class="fas fa-leaf"></i>
         </div>
         <div class="stat-label">Ingredients</div>
         <div class="stat-value">{{ ingredients|length }}</div>
@@ -128,7 +128,7 @@
                                     {% endif %}
                                 </form>
                                 <button class="btn-admin"
-                                    style="font-size: 0.72rem; padding: 4px 8px; background: rgba(139,69,19,0.08); border: 1px solid rgba(139,69,19,0.2); color: #8B4513;"
+                                    style="font-size: 0.72rem; padding: 4px 8px; background: rgba(139, 99, 75,0.08); border: 1px solid rgba(139, 99, 75,0.2); color: #8b634b;"
                                     onclick="openRecipeModal({{ item.id }}, '{{ item.name|e }}')"><i
                                         class="fas fa-list"></i> Recipe</button>
                             </div>
@@ -147,9 +147,9 @@
     <div class="admin-table-wrap">
         <div class="admin-table-header d-flex justify-content-between align-items-center flex-wrap gap-3">
             <h3 class="m-0">Ingredient Stock</h3>
-            <div class="d-flex gap-2 align-items-center">
+        <div class="d-flex gap-2 align-items-center">
                 {% if current_user.role|upper not in ['CASHIER', 'STAFF'] %}
-                <a href="{{ url_for('admin.generate_purchase_order') }}" class="btn-admin btn-admin-success text-nowrap"
+                <a href="{{ url_for('admin.generate_purchase_order') }}" class="btn-admin-primary text-nowrap text-decoration-none"
                     style="border-radius: 10px; font-size: 0.85rem; padding: 0.5rem 1rem;">
                     <i class="fas fa-file-pdf me-1"></i> Generate PO (PDF)
                 </a>
@@ -166,10 +166,10 @@
                     style="border-radius: 10px; display: none;"
                     onclick="if(confirm('Delete all selected ingredients?')) document.getElementById('bulkDeleteIngredientsForm').submit();"><i
                         class="fas fa-trash me-1"></i>Selected</button>
-                <a href="{{ url_for('admin.inventory_audit_logs') }}" class="btn-admin"
-                    style="border-radius: 10px; text-decoration: none; padding: 0.5rem 1rem; background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.2); color: var(--admin-blue);"><i
+                <a href="{{ url_for('admin.inventory_audit_logs') }}" class="btn-admin text-decoration-none"
+                    style="border-radius: 10px; padding: 0.5rem 1rem; background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.2); color: var(--admin-blue);"><i
                         class="fas fa-history me-1"></i>Audit Logs</a>
-                <button class="btn-admin btn-admin-primary text-nowrap" style="border-radius: 10px;"
+                <button class="btn-admin-primary text-nowrap" style="border-radius: 10px; border: none;"
                     onclick="document.getElementById('addIngredientForm').style.display = document.getElementById('addIngredientForm').style.display === 'none' ? 'block' : 'none'"><i
                         class="fas fa-plus me-1"></i>Add Ingredient</button>
                 {% endif %}
@@ -178,7 +178,7 @@
 
         <!-- Add Ingredient Form (hidden by default) -->
         <div id="addIngredientForm"
-            style="display:none; padding: 1.25rem; background: rgba(139,69,19,0.03); border-radius: 12px; margin-bottom: 1rem; border: 1px solid rgba(139,69,19,0.08);">
+            style="display:none; padding: 1.25rem; background: rgba(139, 99, 75,0.03); border-radius: 12px; margin-bottom: 1rem; border: 1px solid rgba(139, 99, 75,0.08);">
             <form method="POST" action="{{ url_for('admin.add_ingredient') }}">
                 <div class="row g-2 align-items-end">
                     <div class="col-md-2">
@@ -364,7 +364,7 @@
         </div>
 
         <div id="addSupplierForm"
-            style="display:none; padding: 1.25rem; background: rgba(139,69,19,0.03); border-radius: 12px; margin-bottom: 1rem; border: 1px solid rgba(139,69,19,0.08);">
+            style="display:none; padding: 1.25rem; background: rgba(139, 99, 75,0.03); border-radius: 12px; margin-bottom: 1rem; border: 1px solid rgba(139, 99, 75,0.08);">
             <form method="POST" action="{{ url_for('admin.add_supplier') }}">
                 <div class="row g-2 align-items-end">
                     <div class="col-md-2">
@@ -648,7 +648,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 20px 60px rgba(0,0,0,0.2);">
             <div class="modal-header"
-                style="background: linear-gradient(135deg, #5D4037, #795548); border-radius: 16px 16px 0 0; border: none; padding: 1.25rem;">
+                style="background: linear-gradient(135deg, #8b634b, #8b634b); border-radius: 16px 16px 0 0; border: none; padding: 1.25rem;">
                 <h5 class="modal-title text-white" style="font-size: 0.95rem;"><i
                         class="fas fa-receipt me-2"></i>Recipe: <span id="recipeItemName"></span></h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -657,7 +657,7 @@
                 <div id="recipeList" style="margin-bottom: 1rem;"></div>
                 <hr>
                 <h6 style="font-size: 0.82rem; font-weight: 700; margin-bottom: 0.75rem;"><i class="fas fa-plus me-1"
-                        style="color: #8B4513;"></i>Add Ingredient to Recipe</h6>
+                        style="color: #8b634b;"></i>Add Ingredient to Recipe</h6>
                 <form id="addRecipeForm" method="POST">
                     <div class="row g-2 align-items-end">
                         <div class="col-6">
@@ -878,3 +878,7 @@
 </script>
 {% endblock %}
 {% endblock %}
+
+
+
+

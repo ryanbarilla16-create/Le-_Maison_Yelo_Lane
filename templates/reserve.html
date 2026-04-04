@@ -19,7 +19,7 @@
     }
 
     .resHeader {
-        background: linear-gradient(135deg, rgba(93, 64, 55, 0.04), rgba(212, 168, 98, 0.06));
+        background: linear-gradient(135deg, rgba(139, 99, 75, 0.04), rgba(212, 168, 98, 0.06));
         padding: 2.5rem 2.5rem 1.5rem;
         text-align: center;
     }
@@ -29,7 +29,7 @@
         font-weight: 700;
         font-size: 2rem;
         margin-bottom: 0.5rem;
-        background: linear-gradient(135deg, #5D4037, #D4A862);
+        background: linear-gradient(135deg, #5D4037, #795548);
         -webkit-background-clip: text;
         background-clip: text;
         -webkit-text-fill-color: transparent;
@@ -44,9 +44,9 @@
     .resPolicies {
         margin: 0 2rem;
         padding: 1.5rem;
-        background: rgba(93, 64, 55, 0.03);
+        background: rgba(139, 99, 75, 0.03);
         border-radius: 16px;
-        border: 1px solid rgba(93, 64, 55, 0.06);
+        border: 1px solid rgba(139, 99, 75, 0.06);
     }
 
     .resPolicies h6 {
@@ -81,7 +81,7 @@
     }
 
     .resPolicies .polItem strong i {
-        color: #D4A862;
+        color: #8B634B;
         font-size: 0.8rem;
     }
 
@@ -96,7 +96,7 @@
 
     .resPolicies .polFull {
         grid-column: 1 / -1;
-        border-top: 1px solid rgba(93, 64, 55, 0.08);
+        border-top: 1px solid rgba(139, 99, 75, 0.08);
         padding-top: 0.75rem;
         margin-top: 0.25rem;
     }
@@ -127,7 +127,7 @@
     .resField input,
     .resField select,
     .resField textarea {
-        border: 1.5px solid rgba(93, 64, 55, 0.12);
+        border: 1.5px solid rgba(139, 99, 75, 0.12);
         border-radius: 12px;
         padding: 0.7rem 1rem;
         font-size: 0.9rem;
@@ -143,7 +143,7 @@
     .resField select:focus,
     .resField textarea:focus {
         border-color: var(--primary-color);
-        box-shadow: 0 0 0 3px rgba(93, 64, 55, 0.08);
+        box-shadow: 0 0 0 3px rgba(139, 99, 75, 0.08);
         outline: none;
     }
 
@@ -166,14 +166,15 @@
         font-size: 1rem;
         cursor: pointer;
         transition: all 0.3s;
-        box-shadow: 0 6px 20px rgba(93, 64, 55, 0.2);
+        box-shadow: 0 4px 14px rgba(93, 64, 55, 0.25);
+        border: none !important;
         letter-spacing: 0.5px;
         margin-top: 0.5rem;
     }
 
     .resSubmit:hover {
         transform: translateY(-2px);
-        box-shadow: 0 10px 30px rgba(93, 64, 55, 0.3);
+        box-shadow: 0 8px 24px rgba(93, 64, 55, 0.35);
     }
 
     @media(max-width: 600px) {
@@ -209,10 +210,10 @@
 
         <!-- Enhanced Reservation Policies Section -->
         <div class="resPolicies"
-            style="background: #fff; border: 1.5px solid rgba(139, 69, 19, 0.08); padding: 1.8rem; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.02); margin: 0 2rem 1.5rem;">
+            style="background: #fff; border: 1.5px solid rgba(139, 99, 75, 0.08); padding: 1.8rem; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.02); margin: 0 2rem 1.5rem;">
             <div class="d-flex align-items-center gap-2 mb-4">
                 <div
-                    style="background: #8B4513; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                    style="background: #5D4037; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
                     <i class="fas fa-info-circle text-white" style="font-size: 0.9rem;"></i>
                 </div>
                 <h5 class="mb-0 fw-bold"
@@ -224,14 +225,14 @@
                 <!-- Lead Time & Hours -->
                 <div class="col-md-6">
                     <div class="d-flex gap-3">
-                        <div style="color: #D4A862; font-size: 1.2rem; min-width: 24px;"><i
+                        <div style="color: #8B634B; font-size: 1.2rem; min-width: 24px;"><i
                                 class="fas fa-calendar-check"></i></div>
                         <div>
                             <h6 class="fw-bold mb-1" style="font-size: 0.88rem; color: #5D4037;">Booking Schedule</h6>
                             <p class="mb-0 text-muted" style="font-size: 0.8rem; line-height: 1.4;">
-                                <span id="advance-text" class="fw-bold" style="color: #8B4513;">Same day to 2
+                                <span id="advance-text" class="fw-bold" style="color: #5D4037;">Same day to 2
                                     months</span> in advance.<br>
-                                Slots available from <span class="fw-bold" style="color: #8B4513;">11:30 AM to 8:30
+                                Slots available from <span class="fw-bold" style="color: #5D4037;">11:30 AM to 8:30
                                     PM</span>.
                             </p>
                         </div>
@@ -241,13 +242,13 @@
                 <!-- Capacity -->
                 <div class="col-md-6">
                     <div class="d-flex gap-3">
-                        <div style="color: #D4A862; font-size: 1.2rem; min-width: 24px;"><i class="fas fa-users"></i>
+                        <div style="color: #8B634B; font-size: 1.2rem; min-width: 24px;"><i class="fas fa-users"></i>
                         </div>
                         <div>
-                            <h6 class="fw-bold mb-1" style="font-size: 0.88rem; color: #5D4037;">Guest Capacity</h6>
+                            <h6 class="fw-bold mb-1" style="font-size: 0.88rem; color: #8b634b;">Guest Capacity</h6>
                             <p class="mb-0 text-muted" style="font-size: 0.8rem; line-height: 1.4;">
                                 Accommodates up to <span id="max-guest-text" class="fw-bold"
-                                    style="color: #8B4513;">20</span> guests per booking.<br>
+                                    style="color: #8b634b;">20</span> guests per booking.<br>
                                 <span style="font-size: 0.72rem;">*Subject to real-time seat availability checks.</span>
                             </p>
                         </div>
@@ -255,16 +256,16 @@
                 </div>
 
                 <!-- Approval Status -->
-                <div class="col-12 mt-3 pt-3" style="border-top: 1px dashed rgba(139, 69, 19, 0.15);">
+                <div class="col-12 mt-3 pt-3" style="border-top: 1px dashed rgba(139, 99, 75, 0.15);">
                     <div class="d-flex gap-3 align-items-center">
-                        <div style="color: #D4A862; font-size: 1.2rem; min-width: 24px;"><i
+                        <div style="color: #8B634B; font-size: 1.2rem; min-width: 24px;"><i
                                 class="fas fa-shield-alt"></i></div>
                         <div
                             style="background: rgba(212,168,98,0.06); padding: 10px 15px; border-radius: 12px; border: 1px solid rgba(212,168,98,0.1); width: 100%;">
-                            <p class="mb-0" style="font-size: 0.8rem; line-height: 1.4; color: #5D4037;">
+                            <p class="mb-0" style="font-size: 0.8rem; line-height: 1.4; color: #8b634b;">
                                 <i class="fas fa-clock-rotate-left me-2" style="font-size: 0.75rem;"></i>
                                 All bookings are initially tagged as <strong
-                                    style="color: #A0522D; text-transform: uppercase; font-size: 0.75rem; background: #fff; padding: 2px 6px; border-radius: 4px; border: 1px solid #A0522D;">Pending</strong>.
+                                    style="color: #8b634b; text-transform: uppercase; font-size: 0.75rem; background: #fff; padding: 2px 6px; border-radius: 4px; border: 1px solid #8b634b;">Pending</strong>.
                                 Our team will review and approve your request shortly.
                             </p>
                         </div>
@@ -287,7 +288,7 @@
                     <input type="number" id="guest_count" name="guest_count" min="1" max="50" step="1" required
                         placeholder="Total number of guests">
                     <div id="guestHint"
-                        style="background: rgba(139, 69, 19, 0.05); border: 1px solid rgba(139, 69, 19, 0.1); border-radius: 8px; padding: 10px; margin-top: 0.5rem; font-size: 0.78rem; color: #5D4037; line-height: 1.5;">
+                        style="background: rgba(139, 99, 75, 0.05); border: 1px solid rgba(139, 99, 75, 0.1); border-radius: 8px; padding: 10px; margin-top: 0.5rem; font-size: 0.78rem; color: #8b634b; line-height: 1.5;">
                         <i class="fas fa-chair me-2" style="color: #D4A862;"></i><strong>Seating Guide:</strong><br>
                         • 1-4 Persons: 1 Standard Table<br>
                         • 5-8 Persons: 2 Combined Tables<br>
@@ -401,7 +402,7 @@
         } else {
             guestInput.max = 20;
             if (guestInput.value > 20) guestInput.value = 20;
-            guestHint.innerHTML = '<i class="fas fa-chair me-2" style="color: #D4A862;"></i><strong>Seating Guide:</strong><br>• 1-4 Persons: 1 Standard Table<br>• 5-8 Persons: 2 Combined Tables<br>• 9+ Persons: Group Banquet Seating';
+            guestHint.innerHTML = '<i class="fas fa-chair me-2" style="color: #8B634B;"></i><strong>Seating Guide:</strong><br>• 1-4 Persons: 1 Standard Table<br>• 5-8 Persons: 2 Combined Tables<br>• 9+ Persons: Group Banquet Seating';
             maxGuestText.innerText = '20';
             
             if (currTimeStr >= "20:30") {
@@ -473,3 +474,7 @@
     });
 </script>
 {% endblock %}
+
+
+
+

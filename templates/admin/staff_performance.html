@@ -156,7 +156,7 @@
                         <td style="text-align:center;color:#526b48;font-weight:700;"><i class="fas fa-arrow-up me-1" style="font-size:0.6rem;"></i>{{ s.adds }}</td>
                         <td style="text-align:center;color:#8f6d54;font-weight:700;"><i class="fas fa-arrow-down me-1" style="font-size:0.6rem;"></i>{{ s.deducts }}</td>
                         <td style="text-align:center;">
-                            {% if s.spoiled > 0 %}<span class="perf-badge" style="background:rgba(160,82,45,0.1);color:#a0522d;">{{ s.spoiled }}</span>{% else %}<span class="text-muted">0</span>{% endif %}
+                            {% if s.spoiled > 0 %}<span class="perf-badge" style="background:rgba(160,82,45,0.1);color:#8b634b;">{{ s.spoiled }}</span>{% else %}<span class="text-muted">0</span>{% endif %}
                         </td>
                         <td style="text-align:right;font-weight:700;color:#5e4a50;">{{ s.items_managed }}</td>
                     </tr>
@@ -237,10 +237,10 @@
 <!-- ═══ ROW 4: ROLE DISTRIBUTION + TIP ═══ -->
 <div class="perf-row">
     <div class="perf-half perf-card">
-        <div class="card-header"><h6 class="fw-bold mb-0"><i class="fas fa-user-tag me-2" style="color:#8B4513;"></i>Staff Role Distribution</h6></div>
+        <div class="card-header"><h6 class="fw-bold mb-0"><i class="fas fa-user-tag me-2" style="color:#8b634b;"></i>Staff Role Distribution</h6></div>
         <div class="card-body d-flex align-items-center justify-content-center" style="min-height:220px;"><canvas id="roleChart"></canvas></div>
     </div>
-    <div class="perf-half perf-card" style="background:linear-gradient(135deg,#8B4513,#A0522D);color:#fff;">
+    <div class="perf-half perf-card" style="background:linear-gradient(135deg,#8b634b,#8b634b);color:#fff;">
         <div class="card-body d-flex flex-column justify-content-center p-4">
             <div class="d-flex align-items-start mb-3">
                 <i class="fas fa-lightbulb fa-2x me-3" style="opacity:0.5;"></i>
@@ -313,3 +313,7 @@
 })();
 </script>
 {% endblock %}
+
+
+
+

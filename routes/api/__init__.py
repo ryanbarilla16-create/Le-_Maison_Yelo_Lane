@@ -102,7 +102,7 @@ def get_menu():
               image_url: {type: string}
     """
     try:
-        items = MenuItem.query.filter_by(is_available=True).all()
+        items = MenuItem.query.all()
         menu_list = []
         for item in items:
             menu_list.append({
@@ -111,7 +111,8 @@ def get_menu():
                 'description': item.description,
                 'price': float(item.price),
                 'category': item.category,
-                'image_url': item.image_url
+                'image_url': item.image_url,
+                'is_out_of_stock': (not item.is_available or item.is_out_of_stock)
             })
         return jsonify(menu_list), 200
     except Exception as e:
@@ -132,7 +133,7 @@ def get_categories():
             MenuItem.category,
             func.count(MenuItem.id).label('count'),
             func.min(MenuItem.image_url).label('sample_image')
-        ).filter(MenuItem.is_available == True).group_by(MenuItem.category).all()
+        ).group_by(MenuItem.category).all()
         
         result = [{'category': c.category, 'count': c.count, 'sample_image': c.sample_image} for c in cats]
         return jsonify(result), 200
@@ -142,8 +143,8 @@ def get_categories():
 @api_bp.route('/menu/bestsellers', methods=['GET'])
 def get_bestsellers():
     try:
-        items = MenuItem.query.filter_by(is_available=True, category='Best Sellers').all()
-        result = [{'id': i.id, 'name': i.name, 'description': i.description, 'price': float(i.price), 'category': i.category, 'image_url': i.image_url} for i in items]
+        items = MenuItem.query.filter_by(category='Best Sellers').all()
+        result = [{'id': i.id, 'name': i.name, 'description': i.description, 'price': float(i.price), 'category': i.category, 'image_url': i.image_url, 'is_out_of_stock': (not i.is_available or i.is_out_of_stock)} for i in items]
         return jsonify(result), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -152,8 +153,8 @@ def get_bestsellers():
 def get_featured():
     try:
         from sqlalchemy import func
-        items = MenuItem.query.filter_by(is_available=True).order_by(func.random()).limit(6).all()
-        result = [{'id': i.id, 'name': i.name, 'description': i.description, 'price': float(i.price), 'category': i.category, 'image_url': i.image_url} for i in items]
+        items = MenuItem.query.order_by(func.random()).limit(6).all()
+        result = [{'id': i.id, 'name': i.name, 'description': i.description, 'price': float(i.price), 'category': i.category, 'image_url': i.image_url, 'is_out_of_stock': (not i.is_available or i.is_out_of_stock)} for i in items]
         return jsonify(result), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -643,7 +644,7 @@ def api_checkout():
     order_items = []
     for ci in cart_items:
         menu_item = MenuItem.query.get(ci['menu_item_id'])
-        if menu_item and menu_item.is_available:
+        if menu_item and not menu_item.is_out_of_stock:
             price = float(menu_item.price)
             subtotal = price * ci['quantity']
             total += subtotal
@@ -978,27 +979,74 @@ def api_update_profile(user_id):
     
     data = request.json
     first_name = (data.get('first_name') or '').strip()
+    middle_name = (data.get('middle_name') or '').strip()
     last_name = (data.get('last_name') or '').strip()
     username = (data.get('username') or '').strip()
     email = (data.get('email') or '').strip()
     phone_number = (data.get('phone_number') or '').strip()
     
+    current_password = data.get('current_password', '')
+    new_password = data.get('new_password', '')
+    confirm_new_password = data.get('confirm_new_password', '')
+
+    # --- VALIDATIONS ---
     if not all([first_name, last_name, username, email, phone_number]):
-        return jsonify({'success': False, 'message': 'All fields are required.'}), 400
+        return jsonify({'success': False, 'message': 'All profile fields are required.'}), 400
     
+    # Validate Names
+    for name, label in [(first_name, 'First Name'), (last_name, 'Last Name')]:
+        err = validate_name(name, label)
+        if err: return jsonify({'success': False, 'message': err}), 400
+    if middle_name:
+        err = validate_name(middle_name, 'Middle Name')
+        if err: return jsonify({'success': False, 'message': err}), 400
+
+    # Validate Email
+    err = validate_email(email)
+    if err: return jsonify({'success': False, 'message': err}), 400
+
+    # Validate Username
+    err = validate_username(username, first_name, last_name)
+    if err: return jsonify({'success': False, 'message': err}), 400
+
+    # Conflicts
     if email != user.email and User.query.filter_by(email=email).first():
         return jsonify({'success': False, 'message': 'Email already registered.'}), 400
     if username != user.username and User.query.filter_by(username=username).first():
         return jsonify({'success': False, 'message': 'Username already taken.'}), 400
     
+    # Password Change
+    if new_password:
+        if not current_password:
+            return jsonify({'success': False, 'message': 'Current password is required to change password.'}), 400
+        if not user.check_password(current_password):
+            return jsonify({'success': False, 'message': 'Incorrect current password.'}), 400
+        
+        err = validate_password(new_password, confirm_new_password)
+        if err: return jsonify({'success': False, 'message': err}), 400
+        
+        user.set_password(new_password)
+    
     user.first_name = first_name
+    user.middle_name = middle_name
     user.last_name = last_name
     user.username = username
     user.email = email
     user.phone_number = phone_number
     db.session.commit()
     
-    return jsonify({'success': True, 'message': 'Profile updated!'}), 200
+    return jsonify({
+        'success': True, 
+        'message': 'Profile updated!',
+        'user': {
+            'first_name': user.first_name,
+            'middle_name': user.middle_name,
+            'last_name': user.last_name,
+            'username': user.username,
+            'email': user.email,
+            'phone_number': user.phone_number
+        }
+    }), 200
 
 # ═══ FORGOT PASSWORD API ═══
 @api_bp.route('/auth/forgot-password', methods=['POST'])

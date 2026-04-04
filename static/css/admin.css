@@ -8,7 +8,7 @@
     --admin-surface: rgba(248, 241, 235, 0.85);
     /* Frosted aesthetic */
     --admin-surface-hover: #f5efe8;
-    --admin-border: rgba(139, 69, 19, 0.15);
+    --admin-border: rgba(139, 99, 75, 0.15);
     --admin-accent: #8b634b;
     /* Primary brown */
     --admin-accent-light: rgba(139, 99, 75, 0.1);
@@ -18,7 +18,7 @@
     --admin-green: #5c3a21;
     /* Shifted to dark brown to maintain theme, or keep green if required for system status */
     --admin-red: #8b634b;
-    --admin-yellow: #a0522d;
+    --admin-yellow: #8b634b;
     --admin-blue: #8b634b;
     --sidebar-width: 250px;
     --sidebar-collapsed: 68px;
@@ -52,7 +52,7 @@ body.admin-body {
     z-index: 1000;
     overflow-x: hidden;
     overflow-y: auto;
-    box-shadow: 2px 0 12px rgba(139, 69, 19, 0.04);
+    box-shadow: 2px 0 12px rgba(139, 99, 75, 0.04);
 }
 
 .admin-sidebar.collapsed {
@@ -158,7 +158,7 @@ body.admin-body {
     padding: 0 1.75rem;
     z-index: 999;
     transition: left 0.25s ease;
-    box-shadow: 0 1px 6px rgba(139, 69, 19, 0.04);
+    box-shadow: 0 1px 6px rgba(139, 99, 75, 0.04);
 }
 
 body.sidebar-collapsed .admin-topbar {
@@ -238,7 +238,7 @@ body.sidebar-collapsed .admin-main {
 
 .stat-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(139, 69, 19, 0.08);
+    box-shadow: 0 6px 20px rgba(139, 99, 75, 0.08);
 }
 
 .stat-card .stat-icon {
@@ -532,7 +532,7 @@ body.sidebar-collapsed .admin-main {
 }
 
 .admin-modal-header {
-    border-bottom: 2px solid rgba(139, 69, 19, 0.08);
+    border-bottom: 2px solid rgba(139, 99, 75, 0.08);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -605,7 +605,7 @@ body.sidebar-collapsed .admin-main {
     font-size: 0.72rem;
     font-weight: 500;
     color: #bcaaa4;
-    background: rgba(139, 69, 19, 0.06);
+    background: rgba(139, 99, 75, 0.06);
     padding: 0.15rem 0.55rem;
     border-radius: 20px;
     margin-left: auto;
@@ -649,3 +649,6 @@ body.sidebar-collapsed .admin-main {
         grid-template-columns: 1fr;
     }
 }
+
+
+

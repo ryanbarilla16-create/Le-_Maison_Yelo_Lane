@@ -3,23 +3,23 @@
 <div id="chatbot-container" style="position: fixed; bottom: 25px; right: 25px; z-index: 1050;">
     <!-- Chat Button (Toggle) -->
     <button id="chat-toggle-btn" class="btn shadow-lg d-flex align-items-center justify-content-center"
-        style="width: 65px; height: 65px; background: linear-gradient(135deg, #3E2723, #5D4037); color: white; border: 2px solid rgba(255,255,255,0.1); border-radius: 50%; transition: all 0.3s ease;">
+        style="width: 65px; height: 65px; background: linear-gradient(135deg, #3E2723, #8b634b); color: white; border: 2px solid rgba(255,255,255,0.1); border-radius: 50%; transition: all 0.3s ease;">
         <i class="fas fa-comment-dots fs-2"></i>
     </button>
 
     <!-- Chat Window -->
     <div id="chat-window" class="card shadow-2xl d-none"
-        style="position: absolute; bottom: 85px; right: 0; width: 380px; height: 500px; border-radius: 24px; overflow: hidden; border: 1px solid rgba(139, 69, 19, 0.15); box-shadow: 0 20px 60px rgba(0,0,0,0.2);">
+        style="position: absolute; bottom: 85px; right: 0; width: 380px; height: 500px; border-radius: 24px; overflow: hidden; border: 1px solid rgba(139, 99, 75, 0.15); box-shadow: 0 20px 60px rgba(0,0,0,0.2);">
 
         <!-- Header -->
         <div class="card-header text-white d-flex align-items-center"
-            style="background: #8B4513; border-bottom: none; padding: 10px 18px; height: 60px; position: relative;">
+            style="background: #8b634b; border-bottom: none; padding: 10px 18px; height: 60px; position: relative;">
             <div class="d-flex align-items-center gap-2">
                 <div style="position: relative;">
                     <img loading="lazy" decoding="async" src="https://ui-avatars.com/api/?name=L+M&background=D4A862&color=fff" class="rounded-circle"
                         style="width: 32px; height: 32px; border: 1.5px solid rgba(255,255,255,0.3);">
                     <div class="bg-success rounded-circle"
-                        style="width: 9px; height: 9px; position: absolute; bottom: 0; right: 0; border: 1.5px solid #8B4513;">
+                        style="width: 9px; height: 9px; position: absolute; bottom: 0; right: 0; border: 1.5px solid #8b634b;">
                     </div>
                 </div>
                 <div style="line-height: 1.1;">
@@ -49,15 +49,15 @@
         </div>
 
         <!-- Footer (Input Area) -->
-        <div class="card-footer bg-white p-3" style="border-top: 1px solid rgba(139, 69, 19, 0.08);">
+        <div class="card-footer bg-white p-3" style="border-top: 1px solid rgba(139, 99, 75, 0.08);">
             <form id="chat-form" class="d-flex gap-2 m-0" onsubmit="return false;">
                 <div class="input-group">
                     <input type="text" id="chat-input" class="form-control"
                         placeholder="Type a message or use buttons..."
-                        style="border: 1px solid rgba(139, 69, 19, 0.1); border-radius: 50px; padding: 12px 20px; font-size: 0.85rem; background: #faf8f6; box-shadow: none;"
+                        style="border: 1px solid rgba(139, 99, 75, 0.1); border-radius: 50px; padding: 12px 20px; font-size: 0.85rem; background: #faf8f6; box-shadow: none;"
                         autocomplete="off" required>
                     <button type="submit" class="btn ms-2 d-flex align-items-center justify-content-center shadow-sm"
-                        style="width: 44px; height: 44px; border-radius: 50%; background: #8B4513; color: white; border: none; transition: all 0.3s;">
+                        style="width: 44px; height: 44px; border-radius: 50%; background: #8b634b; color: white; border: none; transition: all 0.3s;">
                         <i class="fas fa-paper-plane"></i>
                     </button>
                 </div>
@@ -81,13 +81,13 @@
     }
 
     #chat-messages::-webkit-scrollbar-thumb {
-        background: rgba(139, 69, 19, 0.1);
+        background: rgba(139, 99, 75, 0.1);
         border-radius: 4px;
     }
 
     .bot-quick-btn {
         background: #fff;
-        border: 1px solid rgba(139, 69, 19, 0.2);
+        border: 1px solid rgba(139, 99, 75, 0.2);
         color: #3E2723;
         padding: 8px 15px;
         border-radius: 12px;
@@ -104,16 +104,16 @@
 
     .bot-quick-btn:hover {
         background: #FDF5E6;
-        border-color: #8B4513;
-        color: #8B4513;
+        border-color: #8b634b;
+        color: #8b634b;
         transform: translateY(-2px);
-        box-shadow: 0 4px 10px rgba(139, 69, 19, 0.1);
+        box-shadow: 0 4px 10px rgba(139, 99, 75, 0.1);
     }
 
     .bot-label {
         font-size: 0.6rem;
         font-weight: 800;
-        color: #8B4513;
+        color: #8b634b;
         margin-bottom: 4px;
         text-transform: uppercase;
         letter-spacing: 1px;
@@ -156,7 +156,7 @@
     function renderMessage(msg, from = 'SYSTEM') {
         const isUser = msg.sender === 'USER';
         const alignClass = isUser ? 'ms-auto align-items-end' : 'me-auto align-items-start';
-        const bubbleBg = isUser ? 'background: linear-gradient(135deg, #5D4037, #8B4513); color: #fff;' : 'background: #fff; color: #3E2723; border: 1px solid rgba(139, 69, 19, 0.1);';
+        const bubbleBg = isUser ? 'background: linear-gradient(135deg, #8b634b, #8b634b); color: #fff;' : 'background: #fff; color: #3E2723; border: 1px solid rgba(139, 99, 75, 0.1);';
         const borderRadius = isUser ? 'border-radius: 18px 18px 4px 18px;' : 'border-radius: 18px 18px 18px 4px;';
 
         const labelText = from === 'BOT' ? '🤖 AI Assistant' : (isUser ? '' : '👤 Support Team');
@@ -341,3 +341,7 @@
     });
 </script>
 {% endif %}
+
+
+
+

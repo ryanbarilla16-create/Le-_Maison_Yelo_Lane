@@ -3,7 +3,7 @@ from flask_login import login_required, current_user, login_user, logout_user
 from flask_mail import Message
 from models import db, User, Reservation, MenuItem, Order, OrderItem, Review, Notification, Supplier, Ingredient, MenuItemIngredient, ChatMessage, AuditLog, Voucher, InventoryLog, WasteRecord, IngredientBatch, StockRequest
 from datetime import datetime, date, timedelta
-from utils import get_ph_time, create_notification
+from utils import get_ph_time, create_notification, validate_name, validate_email, validate_username, validate_password
 from sqlalchemy import func
 from functools import wraps
 import traceback
@@ -319,7 +319,8 @@ def analytics():
     menu_by_category = db.session.query(MenuItem.category, func.count(MenuItem.id)).group_by(MenuItem.category).all()
     
     # ── CHART DATA (Moved from overview) ──────────────────
-    today = date.today()
+    # Get PH today date for consistency with stored records
+    today = get_ph_time().date()
 
     # 1) Revenue Trend (Last 7 Days) — Line chart
     revenue_trend_labels = []
@@ -1304,12 +1305,18 @@ def update_order(order_id):
                 if ingredient:
                     deduction = float(r.quantity_needed) * oi.quantity
                     ingredient.stock_qty = max(0, float(ingredient.stock_qty) - deduction)
-                    # Auto-mark menu items out of stock if any ingredient is depleted
-                    if float(ingredient.stock_qty) <= 0:
-                        for mi_link in ingredient.menu_items:
-                            mi = MenuItem.query.get(mi_link.menu_item_id)
-                            if mi:
-                                mi.is_available = False
+                    
+                    # Deducting stock might make the ingredient insufficient for more orders
+                    if float(ingredient.stock_qty) < float(r.quantity_needed):
+                        # Re-scan all menu items that use this ingredient and disable them if needed
+                        affected_menu_items = MenuItemIngredient.query.filter_by(ingredient_id=ingredient.id).all()
+                        for ami in affected_menu_items:
+                            mi = MenuItem.query.get(ami.menu_item_id)
+                            if mi and mi.is_available:
+                                # We check if the ingredient that was just depleted is indeed insufficient for this model
+                                if float(ingredient.stock_qty) < float(ami.quantity_needed):
+                                    mi.is_available = False
+                                    db.session.commit()
     
     order.status = new_status
     db.session.commit()
@@ -1592,22 +1599,70 @@ def settings():
 @admin_bp.route('/settings/profile', methods=['POST'])
 @login_required
 def update_profile():
-    first_name = request.form.get('first_name')
-    last_name = request.form.get('last_name')
-    email = request.form.get('email')
-    password = request.form.get('password')
+    first_name = request.form.get('admin_first_name', '').strip()
+    middle_name = request.form.get('admin_middle_name', '').strip()
+    last_name = request.form.get('admin_last_name', '').strip()
+    username = request.form.get('admin_username', '').strip()
+    email = request.form.get('admin_email', '').strip()
+    phone_number = request.form.get('admin_phone_number', '').strip()
+    
+    current_password = request.form.get('admin_current_password', '')
+    new_password = request.form.get('admin_new_password', '')
+    confirm_new_password = request.form.get('admin_confirm_password', '')
 
-    if first_name and last_name and email:
-        current_user.first_name = first_name
-        current_user.last_name = last_name
-        current_user.email = email
-        if password:
-            current_user.set_password(password)
-        db.session.commit()
-        flash('Profile updated successfully!', 'success')
-    else:
-        flash('Missing required fields.', 'danger')
+    # --- VALIDATIONS ---
+    if not all([first_name, last_name, username, email, phone_number]):
+        flash("All profile fields are required.", "danger")
+        return redirect(url_for('admin.settings'))
+    
+    # Validate Names
+    for name, label in [(first_name, 'First Name'), (last_name, 'Last Name')]:
+        err = validate_name(name, label)
+        if err: flash(err, "danger"); return redirect(url_for('admin.settings'))
+    if middle_name:
+        err = validate_name(middle_name, 'Middle Name')
+        if err: flash(err, "danger"); return redirect(url_for('admin.settings'))
+
+    # Validate Email
+    err = validate_email(email)
+    if err: flash(err, "danger"); return redirect(url_for('admin.settings'))
+
+    # Validate Username
+    err = validate_username(username, first_name, last_name)
+    if err: flash(err, "danger"); return redirect(url_for('admin.settings'))
+
+    # Conflicts
+    if email != current_user.email and User.query.filter_by(email=email).first():
+        flash("Email already registered.", "danger")
+        return redirect(url_for('admin.settings'))
+    if username != current_user.username and User.query.filter_by(username=username).first():
+        flash("Username already taken.", "danger")
+        return redirect(url_for('admin.settings'))
+    
+    # Password Change
+    if new_password:
+        if not current_password:
+            flash("Current password is required to change password.", "danger")
+            return redirect(url_for('admin.settings'))
+        if not current_user.check_password(current_password):
+            flash("Incorrect current password.", "danger")
+            return redirect(url_for('admin.settings'))
         
+        err = validate_password(new_password, confirm_new_password)
+        if err: flash(err, "danger"); return redirect(url_for('admin.settings'))
+        
+        current_user.set_password(new_password)
+    
+    # Update Fields
+    current_user.first_name = first_name
+    current_user.middle_name = middle_name
+    current_user.last_name = last_name
+    current_user.username = username
+    current_user.email = email
+    current_user.phone_number = phone_number
+    
+    db.session.commit()
+    flash('Staff profile updated successfully!', 'success')
     return redirect(url_for('admin.settings'))
 
 # ─── ADMIN NOTIFICATIONS API ─────────────────────────
@@ -1822,19 +1877,21 @@ def restock_ingredient(ing_id):
         log_inventory_change(ing.id, 'ADD', add_qty, prev, reason)
         ing.stock_qty = prev + add_qty
         db.session.commit()
-        # Re-enable menu items whose ingredients are now in stock
-        for mi_link in ing.menu_items:
-            mi = MenuItem.query.get(mi_link.menu_item_id)
+
+        # Re-enable menu items that use this ingredient AND have all other ingredients in stock
+        menu_items_using_ing = MenuItemIngredient.query.filter_by(ingredient_id=ing.id).all()
+        for mi_ing in menu_items_using_ing:
+            mi = MenuItem.query.get(mi_ing.menu_item_id)
             if mi and not mi.is_available:
-                all_in_stock = True
-                for recipe in mi.ingredients:
-                    ri = Ingredient.query.get(recipe.ingredient_id)
-                    if ri and float(ri.stock_qty) <= 0:
-                        all_in_stock = False
+                can_enable = True
+                for other in mi.ingredients:
+                    if float(other.ingredient.stock_qty) < float(other.quantity_needed):
+                        can_enable = False
                         break
-                if all_in_stock:
+                if can_enable:
                     mi.is_available = True
-        db.session.commit()
+                    db.session.commit()
+
         flash(f'Restocked {add_qty} {ing.unit} of "{ing.name}".', 'success')
     return redirect(url_for('admin.inventory', tab='ingredients'))
 
@@ -1851,14 +1908,17 @@ def waste_ingredient(ing_id):
         prev = float(ing.stock_qty)
         log_inventory_change(ing.id, action, qty, prev, reason)
         ing.stock_qty = prev - qty
-        
-        # If stock empty, disable menu items
-        if ing.stock_qty <= 0:
-            for mi_link in ing.menu_items:
-                mi = MenuItem.query.get(mi_link.menu_item_id)
-                if mi: mi.is_available = False
-        
         db.session.commit()
+
+        # Disable menu items if this ingredient falls below required levels
+        menu_items_using_ing = MenuItemIngredient.query.filter_by(ingredient_id=ing.id).all()
+        for mi_ing in menu_items_using_ing:
+            if float(ing.stock_qty) < float(mi_ing.quantity_needed):
+                mi = MenuItem.query.get(mi_ing.menu_item_id)
+                if mi and mi.is_available:
+                    mi.is_available = False
+                    db.session.commit()
+
         flash(f'Recorded {qty} {ing.unit} as {action}.', 'warning')
     else:
         flash('Invalid quantity.', 'danger')

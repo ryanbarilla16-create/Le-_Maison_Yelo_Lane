@@ -123,12 +123,12 @@
 
                 <!-- Notification Dropdown Panel -->
                 <div id="adminNotifPanel" style="display:none; position: absolute; right: 0; top: 48px; width: 370px; max-height: 480px; background: #fff; border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,0.15); z-index: 9999; overflow: hidden; border: 1px solid rgba(0,0,0,0.08);">
-                    <div style="padding: 16px 20px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #8B4513, #A0522D);">
+                    <div style="padding: 16px 20px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #8b634b, #8b634b);">
                         <span style="font-weight: 700; font-size: 0.95rem; color: #fff;"><i class="fas fa-bell me-2"></i>Notifications</span>
                         <button onclick="markAllNotifRead()" style="background: rgba(255,255,255,0.2); border: none; color: #fff; font-size: 0.75rem; cursor: pointer; padding: 4px 12px; border-radius: 20px; font-weight: 600; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">Mark all read</button>
                     </div>
                     <!-- Live counts summary -->
-                    <div id="adminLiveCountsBar" style="display:none; padding: 10px 20px; background: #faf6f2; border-bottom: 1px solid #f0e6d9; font-size: 0.75rem; color: #8B4513;"></div>
+                    <div id="adminLiveCountsBar" style="display:none; padding: 10px 20px; background: #faf6f2; border-bottom: 1px solid #f0e6d9; font-size: 0.75rem; color: #8b634b;"></div>
                     <div id="adminNotifList" style="max-height: 380px; overflow-y: auto; padding: 8px 0;"></div>
                     <div id="adminNotifEmpty" style="display:none; text-align: center; padding: 40px 20px; color: #999;">
                         <i class="fas fa-bell-slash" style="font-size: 2rem; margin-bottom: 10px; opacity: 0.3;"></i>
@@ -430,7 +430,7 @@
                 if (!document.getElementById('spaLoader')) {
                     const l = document.createElement('div');
                     l.id = 'spaLoader';
-                    l.style = 'position:fixed;top:0;left:0;height:4px;background:#8B4513;z-index:99999;transition:width 0.2s;width:0%;';
+                    l.style = 'position:fixed;top:0;left:0;height:4px;background:#8b634b;z-index:99999;transition:width 0.2s;width:0%;';
                     document.body.appendChild(l);
                 }
                 const loader = document.getElementById('spaLoader');
@@ -488,7 +488,7 @@
     <!-- Admin Notification Bell JS -->
     <style>
         @keyframes notifPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.15); } }
-        #adminNotifBell:hover i { color: #8B4513 !important; }
+        #adminNotifBell:hover i { color: #8b634b !important; }
         #adminNotifPanel::-webkit-scrollbar { width: 4px; }
         #adminNotifPanel::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
     </style>
@@ -513,7 +513,7 @@
 
         function _notifIcon(type) {
             const icons = {
-                'ORDER': '<i class="fas fa-shopping-bag" style="color:#8B4513;"></i>',
+                'ORDER': '<i class="fas fa-shopping-bag" style="color:#8b634b;"></i>',
                 'RESERVATION': '<i class="fas fa-calendar-check" style="color:#17a2b8;"></i>',
                 'DELIVERY': '<i class="fas fa-truck" style="color:#28a745;"></i>',
                 'SYSTEM': '<i class="fas fa-cog" style="color:#6c757d;"></i>',
@@ -537,7 +537,7 @@
                 list.innerHTML = data.notifications.map(n => `
                     <div style="padding: 12px 20px; border-bottom: 1px solid #f5f5f5; display: flex; gap: 12px; align-items: flex-start; background: ${n.is_read ? '#fff' : '#faf6f2'}; transition: background 0.2s; cursor: default;"
                          onmouseover="this.style.background='#f5f0eb'" onmouseout="this.style.background='${n.is_read ? '#fff' : '#faf6f2'}'">
-                        <div style="width: 36px; height: 36px; border-radius: 50%; background: ${n.is_read ? '#f0f0f0' : 'rgba(139,69,19,0.1)'}; display:flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.85rem;">
+                        <div style="width: 36px; height: 36px; border-radius: 50%; background: ${n.is_read ? '#f0f0f0' : 'rgba(139, 99, 75,0.1)'}; display:flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.85rem;">
                             ${_notifIcon(n.type)}
                         </div>
                         <div style="flex: 1; min-width: 0;">
@@ -545,7 +545,7 @@
                             <div style="font-size: 0.75rem; color: #777; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${n.message}</div>
                             <div style="font-size: 0.65rem; color: #aaa; margin-top: 4px;"><i class="far fa-clock me-1"></i>${n.created_at}</div>
                         </div>
-                        ${!n.is_read ? '<div style="width:8px;height:8px;border-radius:50%;background:#8B4513;flex-shrink:0;margin-top:6px;"></div>' : ''}
+                        ${!n.is_read ? '<div style="width:8px;height:8px;border-radius:50%;background:#8b634b;flex-shrink:0;margin-top:6px;"></div>' : ''}
                     </div>
                 `).join('');
             } catch (e) {
@@ -628,7 +628,7 @@
     Chart.defaults.animation.easing = 'easeOutQuart';
 
     // ── Palette ──────────────────────────────────────
-    var CAFE_BROWN = '#8B4513';
+    var CAFE_BROWN = '#8b634b';
     var CAFE_LATTE = '#c87941';
     var CAFE_GREEN = '#2e7d32';
     var CAFE_BLUE = '#1565c0';
@@ -670,7 +670,7 @@
 
     // ── Grid / Scale defaults ────────────────────────
     var scaleX = { ticks: { color: '#a1887f', font: { size: 11 } }, grid: { display: false } };
-    var scaleY = { ticks: { color: '#a1887f', font: { size: 11 } }, grid: { color: 'rgba(139,69,19,0.06)' }, beginAtZero: true };
+    var scaleY = { ticks: { color: '#a1887f', font: { size: 11 } }, grid: { color: 'rgba(139, 99, 75,0.06)' }, beginAtZero: true };
 
     // ═══ Data from server ═══
     var _cd = document.getElementById('chartServerData').dataset;
@@ -833,8 +833,8 @@
                 maintainAspectRatio: false,
                 indexAxis: 'y',
                 scales: {
-                    x: { ticks: { color: '#a1887f', font: { size: 11 } }, grid: { color: 'rgba(139,69,19,0.06)' }, beginAtZero: true },
-                    y: { ticks: { color: '#5d4037', font: { size: 11, weight: '600' } }, grid: { display: false } }
+                    x: { ticks: { color: '#a1887f', font: { size: 11 } }, grid: { color: 'rgba(139, 99, 75,0.06)' }, beginAtZero: true },
+                    y: { ticks: { color: '#8b634b', font: { size: 11, weight: '600' } }, grid: { display: false } }
                 },
                 plugins: { legend: { display: false } }
             }
@@ -923,3 +923,7 @@
 </body>
 
 </html>
+
+
+
+

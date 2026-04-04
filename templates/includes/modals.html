@@ -6,8 +6,8 @@
             <button type="button" class="btn-close position-absolute top-0 end-0 m-4" data-bs-dismiss="modal" aria-label="Close" style="z-index: 10;"></button>
             <div class="modal-body p-5">
                 <div class="text-center mb-4">
-                    <i class="fas fa-file-contract fa-3x mb-3" style="color: var(--primary-color);"></i>
-                    <h3 style="font-family: 'Georgia', serif; font-weight: bold; color: var(--text-main);">Terms &
+                    <i class="fas fa-file-contract fa-3x mb-3" style="color: #8B634B;"></i>
+                    <h3 style="font-family: 'Playfair Display', serif; font-weight: bold; color: #5D4037;">Terms &
                         Conditions</h3>
                     <p class="text-muted small">Please review and accept our terms before proceeding.</p>
                 </div>
@@ -30,7 +30,7 @@
 
                 <div class="d-flex align-items-center justify-content-start mb-4">
                     <input type="checkbox" id="agreeTermsCheckbox"
-                        style="width: 16px !important; height: 16px !important; margin: 0; margin-right: 12px; cursor: pointer; flex-shrink: 0; accent-color: #8b5a2b;"
+                        style="width: 18px !important; height: 18px !important; margin: 0; margin-right: 12px; cursor: pointer; flex-shrink: 0; accent-color: #8B634B;"
                         onchange="document.getElementById('proceedAuthBtn').disabled = !this.checked">
                     <label class="form-check-label text-dark fw-bold mb-0" for="agreeTermsCheckbox"
                         style="cursor: pointer; font-size: 0.95rem;">
@@ -38,9 +38,11 @@
                     </label>
                 </div>
 
-                <button id="proceedAuthBtn" class="btn w-100 rounded-pill py-3 fw-bold text-white shadow-sm"
-                    style="background-color: var(--primary-color); transition: 0.3s;" disabled
-                    onclick="proceedToAuth()">
+                <button id="proceedAuthBtn" class="btn w-100 rounded-pill py-3 fw-bold text-white shadow"
+                    style="background: linear-gradient(135deg, #5D4037, #795548); border: none; transition: all 0.3s ease; cursor: not-allowed;" disabled
+                    onclick="proceedToAuth()"
+                    onmouseover="if(!this.disabled) { this.style.transform='translateY(-2px)'; this.style.background='linear-gradient(135deg, #3E2723, #5D4037)'; this.style.boxShadow='0 8px 20px rgba(93, 64, 55, 0.3)'; }"
+                    onmouseout="if(!this.disabled) { this.style.transform='translateY(0)'; this.style.background='linear-gradient(135deg, #5D4037, #795548)'; this.style.boxShadow='0 4px 14px rgba(93, 64, 55, 0.25)'; }">
                     Proceed <i class="fas fa-arrow-right ms-2"></i>
                 </button>
             </div>
@@ -61,6 +63,14 @@
     // Reset checkbox on close
     $('#termsModal').on('hidden.bs.modal', function () {
         document.getElementById('agreeTermsCheckbox').checked = false;
-        document.getElementById('proceedAuthBtn').disabled = true;
+        const btn = document.getElementById('proceedAuthBtn');
+        btn.disabled = true;
+        btn.style.cursor = 'not-allowed';
+    });
+
+    // Handle button opacity on checkbox change
+    document.getElementById('agreeTermsCheckbox').addEventListener('change', function() {
+        document.getElementById('proceedAuthBtn').style.opacity = this.checked ? '1' : '0.6';
     });
 </script>
+

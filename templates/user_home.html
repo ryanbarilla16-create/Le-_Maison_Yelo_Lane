@@ -68,7 +68,7 @@
         font-family: 'Playfair Display', serif;
         font-style: italic;
         font-size: 1.15rem;
-        color: #D4A862;
+        color: #8B634B;
         margin-bottom: 0.4rem;
         letter-spacing: 1px;
     }
@@ -116,7 +116,7 @@
         text-align: center;
         text-decoration: none !important;
         color: inherit !important;
-        border: 1px solid rgba(93, 64, 55, 0.06);
+        border: 1px solid rgba(139, 99, 75, 0.06);
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
         transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
@@ -137,7 +137,7 @@
 
     .dashAction:hover {
         transform: translateY(-8px);
-        box-shadow: 0 16px 48px rgba(93, 64, 55, 0.15);
+        box-shadow: 0 16px 48px rgba(139, 99, 75, 0.15);
     }
 
     .dashAction:hover::before {
@@ -188,7 +188,7 @@
         background: #fff;
         border-radius: 20px;
         padding: 2rem;
-        border: 1px solid rgba(93, 64, 55, 0.06);
+        border: 1px solid rgba(139, 99, 75, 0.06);
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
         display: flex;
         align-items: center;
@@ -206,7 +206,7 @@
         width: 100px;
         height: 100px;
         border-radius: 50%;
-        background: var(--stat-accent, rgba(93, 64, 55, 0.04));
+        background: var(--stat-accent, rgba(139, 99, 75, 0.04));
     }
 
     .dashStat:hover {
@@ -252,7 +252,7 @@
         background: #fff;
         border-radius: 20px;
         padding: 1.75rem;
-        border: 1px solid rgba(93, 64, 55, 0.06);
+        border: 1px solid rgba(139, 99, 75, 0.06);
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
     }
 
@@ -262,7 +262,7 @@
         align-items: center;
         margin-bottom: 1.25rem;
         padding-bottom: 1rem;
-        border-bottom: 1px solid rgba(93, 64, 55, 0.06);
+        border-bottom: 1px solid rgba(139, 99, 75, 0.06);
     }
 
     .dashPanel-head h5 {
@@ -277,8 +277,8 @@
 
     .dashPanel-head .panelBtn {
         background: linear-gradient(135deg, #5D4037, #795548);
-        color: #fff;
-        padding: 0.4rem 1rem;
+        color: #fff !important;
+        padding: 0.4rem 1.1rem;
         border-radius: 50px;
         font-size: 0.72rem;
         font-weight: 700;
@@ -287,27 +287,28 @@
         align-items: center;
         gap: 5px;
         transition: all 0.3s;
-        box-shadow: 0 3px 12px rgba(93, 64, 55, 0.2);
+        box-shadow: 0 4px 14px rgba(93, 64, 55, 0.25);
+        border: none !important;
     }
 
     .dashPanel-head .panelBtn:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(93, 64, 55, 0.3);
-        color: #fff;
+        box-shadow: 0 8px 24px rgba(93, 64, 55, 0.35);
+        color: #fff !important;
     }
 
     /* List Items */
     .dashItem {
-        background: linear-gradient(135deg, rgba(93, 64, 55, 0.02), rgba(212, 168, 98, 0.03));
+        background: linear-gradient(135deg, rgba(139, 99, 75, 0.02), rgba(212, 168, 98, 0.03));
         border-radius: 14px;
         padding: 1rem 1.1rem;
         margin-bottom: 0.6rem;
-        border: 1px solid rgba(93, 64, 55, 0.04);
+        border: 1px solid rgba(139, 99, 75, 0.04);
         transition: all 0.25s;
     }
 
     .dashItem:hover {
-        background: rgba(93, 64, 55, 0.05);
+        background: rgba(139, 99, 75, 0.05);
         transform: translateX(3px);
     }
 
@@ -366,7 +367,7 @@
         width: 64px;
         height: 64px;
         border-radius: 50%;
-        background: rgba(93, 64, 55, 0.05);
+        background: rgba(139, 99, 75, 0.05);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -375,7 +376,7 @@
 
     .dashEmpty-icon i {
         font-size: 1.5rem;
-        color: rgba(93, 64, 55, 0.2);
+        color: rgba(139, 99, 75, 0.2);
     }
 
     .dashEmpty p {
@@ -398,7 +399,7 @@
         font-weight: 700;
         letter-spacing: 3px;
         font-size: 0.72rem;
-        color: #D4A862;
+        color: #8B634B;
         margin-bottom: 0.3rem;
     }
 
@@ -422,13 +423,14 @@
         align-items: center;
         gap: 6px;
         transition: all 0.3s;
-        box-shadow: 0 4px 16px rgba(93, 64, 55, 0.2);
+        box-shadow: 0 4px 16px rgba(93, 64, 55, 0.25);
         white-space: nowrap;
+        border: none !important;
     }
 
     .dashSecHead .secBtn:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(93, 64, 55, 0.3);
+        box-shadow: 0 8px 24px rgba(93, 64, 55, 0.35);
     }
 
     /* ═══ MENU CARDS ═══ */
@@ -442,14 +444,14 @@
         background: #fff;
         border-radius: 18px;
         overflow: hidden;
-        border: 1px solid rgba(93, 64, 55, 0.06);
+        border: 1px solid rgba(139, 99, 75, 0.06);
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
         transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .dashMenuCard:hover {
         transform: translateY(-6px);
-        box-shadow: 0 16px 40px rgba(93, 64, 55, 0.12);
+        box-shadow: 0 16px 40px rgba(139, 99, 75, 0.12);
     }
 
     .dashMenuCard .mcImg {
@@ -473,13 +475,13 @@
         position: absolute;
         top: 12px;
         left: 12px;
-        background: linear-gradient(135deg, #D4A862, #c49652);
+        background: linear-gradient(135deg, #5D4037, #795548);
         color: #fff;
         padding: 0.25rem 0.75rem;
         border-radius: 50px;
         font-size: 0.65rem;
         font-weight: 700;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        box-shadow: 0 4px 12px rgba(93, 64, 55, 0.3);
     }
 
     .dashMenuCard .mcNoImg {
@@ -487,7 +489,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: linear-gradient(135deg, #5D4037 0%, #8D6E63 50%, #D4A862 100%);
+        background: linear-gradient(135deg, #5D4037 0%, #795548 100%);
     }
 
     .dashMenuCard .mcInfo {
@@ -503,14 +505,14 @@
 
     .dashMenuCard .mcInfo .mcPrice {
         font-weight: 800;
-        color: var(--primary-color);
+        color: #8B634B;
         font-size: 1rem;
         font-family: 'Playfair Display', serif;
     }
 
     .dashMenuCard .mcInfo .mcCat {
         display: inline-block;
-        background: rgba(93, 64, 55, 0.06);
+        background: rgba(139, 99, 75, 0.06);
         color: var(--text-muted);
         padding: 0.18rem 0.65rem;
         border-radius: 50px;
@@ -533,7 +535,7 @@
         background: #fff;
         border-radius: 16px;
         overflow: hidden;
-        border: 1px solid rgba(93, 64, 55, 0.06);
+        border: 1px solid rgba(139, 99, 75, 0.06);
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
         transition: all 0.35s ease;
         text-decoration: none !important;
@@ -542,7 +544,7 @@
 
     .dashCatCard:hover {
         transform: translateY(-5px);
-        box-shadow: 0 12px 32px rgba(93, 64, 55, 0.1);
+        box-shadow: 0 12px 32px rgba(139, 99, 75, 0.1);
     }
 
     .dashCatCard .ccImg {
@@ -586,7 +588,7 @@
         border-radius: 24px;
         overflow: hidden;
         box-shadow: 0 8px 36px rgba(0, 0, 0, 0.06);
-        border: 1px solid rgba(93, 64, 55, 0.06);
+        border: 1px solid rgba(139, 99, 75, 0.06);
         margin: 3.5rem 0;
     }
 
@@ -619,7 +621,7 @@
         width: 40px;
         height: 40px;
         border-radius: 12px;
-        background: rgba(93, 64, 55, 0.06);
+        background: rgba(139, 99, 75, 0.06);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -701,9 +703,9 @@
     <!-- ═══ STATS ═══ -->
     <section class="dashWrap">
         <div class="dashStats">
-            <div class="dashStat" style="--stat-accent: rgba(93,64,55,0.06);">
+            <div class="dashStat" style="--stat-accent: rgba(139, 99, 75,0.06);">
                 <div class="dashStat-icon"
-                    style="background: linear-gradient(135deg, rgba(93,64,55,0.08), rgba(93,64,55,0.15)); color: var(--primary-color);">
+                    style="background: linear-gradient(135deg, rgba(139, 99, 75,0.08), rgba(139, 99, 75,0.15)); color: var(--primary-color);">
                     <i class="fas fa-calendar-check"></i>
                 </div>
                 <div>
@@ -789,7 +791,7 @@
                         </div>
                         <div class="d-flex align-items-center gap-2">
                             <span
-                                style="font-weight: 700; color: var(--primary-color); font-size: 0.9rem; font-family:'Playfair Display',serif;">₱{{
+                                style="font-weight: 700; color: #8B634B; font-size: 0.9rem; font-family:'Playfair Display',serif;">₱{{
                                 "%.2f"|format(order.total_amount) }}</span>
                             {% if order.status == 'COMPLETED' %}
                             <span class="dbadge dbadge-green">Done</span>
@@ -837,6 +839,11 @@
                 <div class="mcImg">
                     <img loading="lazy" decoding="async" src="{{ item.image_url }}" alt="{{ item.name }}">
                     <span class="mcBadge"><i class="fas fa-fire me-1"></i>Popular</span>
+                    {% if not item.is_available or item.is_out_of_stock %}
+                    <div style="position: absolute; inset: 0; background: rgba(255,255,255,0.4); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 3;">
+                        <span style="background: var(--primary-color); color: #fff; padding: 0.4rem 1rem; border-radius: 50px; font-weight: 700; font-size: 0.65rem; box-shadow: 0 4px 12px rgba(0,0,0,0.2); letter-spacing: 1px;">SOLD OUT</span>
+                    </div>
+                    {% endif %}
                 </div>
                 {% else %}
                 <div class="mcNoImg">
@@ -904,6 +911,11 @@
                 {% if item.image_url %}
                 <div class="mcImg">
                     <img loading="lazy" decoding="async" src="{{ item.image_url }}" alt="{{ item.name }}">
+                    {% if not item.is_available or item.is_out_of_stock %}
+                    <div style="position: absolute; inset: 0; background: rgba(255,255,255,0.4); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 3;">
+                        <span style="background: var(--primary-color); color: #fff; padding: 0.4rem 1rem; border-radius: 50px; font-weight: 700; font-size: 0.65rem; box-shadow: 0 4px 12px rgba(0,0,0,0.2); letter-spacing: 1px;">SOLD OUT</span>
+                    </div>
+                    {% endif %}
                 </div>
                 {% else %}
                 <div class="mcNoImg">
@@ -937,7 +949,7 @@
                 <div class="ccImg"><img loading="lazy" decoding="async" src="{{ cat.sample_image }}" alt="{{ cat.category }}"></div>
                 {% else %}
                 <div class="ccImg"
-                    style="background: linear-gradient(135deg, #5D4037, #8D6E63, #D4A862); display: flex; align-items: center; justify-content: center;">
+                    style="background: linear-gradient(135deg, #8b634b, #8D6E63, #D4A862); display: flex; align-items: center; justify-content: center;">
                     <i class="fas fa-utensils" style="font-size: 2rem; color: rgba(255,255,255,0.2);"></i>
                 </div>
                 {% endif %}
@@ -987,3 +999,6 @@
     </section>
 </main>
 {% endblock %}
+
+
+

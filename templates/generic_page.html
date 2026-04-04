@@ -3,7 +3,7 @@
 {% block title %}{{ title }} — Le Maison yelo Lane{% endblock %}
 
 {% block content %}
-<div style="background: linear-gradient(135deg, rgba(139, 69, 19, 0.03), rgba(160, 82, 45, 0.06)); padding: 4rem 1.5rem; text-align: center; border-bottom: 1px solid rgba(93, 64, 55, 0.08);">
+<div style="background: linear-gradient(135deg, rgba(139, 99, 75, 0.03), rgba(139, 99, 75, 0.06)); padding: 4rem 1.5rem; text-align: center; border-bottom: 1px solid rgba(139, 99, 75, 0.08);">
     <div style="max-width: 800px; margin: 0 auto;">
         <h1 style="font-family: 'Playfair Display', serif; font-weight: 800; color: var(--text-main); font-size: 2.8rem; margin-bottom: 1rem;">
             {{ title }}
@@ -20,9 +20,14 @@
         <p style="color: var(--text-muted); max-width: 800px; margin: 0 auto 3rem; font-size: 1.1rem; line-height: 1.8;">
             {{ content|safe }}
         </p>
-        <a href="{{ url_for('main.index') }}" class="btn" style="background-color: var(--primary-color); color: white; padding: 0.75rem 2.5rem; border-radius: 50px; text-decoration: none; font-weight: 600; font-size: 1.05rem; box-shadow: 0 4px 15px rgba(139, 69, 19, 0.2); transition: transform 0.2s;">
+        <a href="{{ url_for('main.index') }}" class="btn" style="background-color: var(--primary-color); color: white; padding: 0.75rem 2.5rem; border-radius: 50px; text-decoration: none; font-weight: 600; font-size: 1.05rem; box-shadow: 0 4px 15px rgba(139, 99, 75, 0.2); transition: transform 0.2s;">
             <i class="fas fa-arrow-left me-2"></i>Return Home
         </a>
     </div>
 </div>
 {% endblock %}
+
+
+
+
+

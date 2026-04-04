@@ -19,7 +19,7 @@
     </form>
 
     <!-- Resend OTP Section -->
-    <div style="margin-top: 1.5rem; text-align: center; padding-top: 1rem; border-top: 1px solid rgba(139,69,19,0.1);">
+    <div style="margin-top: 1.5rem; text-align: center; padding-top: 1rem; border-top: 1px solid rgba(139, 99, 75,0.1);">
         <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.75rem;">Didn't receive the code?</p>
 
         <form method="POST" action="{{ url_for('main.resend_otp', user_id=user.id) }}" id="resendForm">
@@ -73,3 +73,5 @@
 </script>
 {% endraw %}
 {% endblock %}
+
+

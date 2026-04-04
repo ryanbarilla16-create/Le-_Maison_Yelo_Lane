@@ -6,38 +6,38 @@
 <style>
     .profPage { max-width: 640px; margin: 6rem auto 3rem; padding: 0 1.5rem; }
     .profCard { background: #fff; border-radius: 24px; border: 1px solid var(--border-color); box-shadow: 0 8px 32px rgba(0,0,0,0.05); overflow: hidden; }
-    .profHeader { background: linear-gradient(135deg, rgba(93,64,55,0.04), rgba(212,168,98,0.06)); padding: 2.5rem 2rem 1.5rem; text-align: center; }
+    .profHeader { background: linear-gradient(135deg, rgba(139, 99, 75,0.04), rgba(212,168,98,0.06)); padding: 2.5rem 2rem 1.5rem; text-align: center; }
     .profHeader h2 { font-family: 'Playfair Display', 'Georgia', serif; font-weight: 700; font-size: 1.8rem; margin-bottom: 0.4rem; color: var(--primary-color); }
     .profHeader p { color: var(--text-muted); font-size: 0.9rem; margin: 0; }
 
     .profBody { padding: 1.5rem 2.5rem 2.5rem; }
     .profAvatar { text-align: center; margin-bottom: 2rem; }
     .profAvatar .avatarWrap { position: relative; display: inline-block; }
-    .profAvatar img, .profAvatar .avatarFallback { width: 110px; height: 110px; border-radius: 50%; object-fit: cover; border: 4px solid #fff; box-shadow: 0 4px 16px rgba(93,64,55,0.12); }
-    .profAvatar .avatarFallback { background: linear-gradient(135deg, #5D4037, #8D6E63); color: white; display: flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-size: 2.5rem; font-weight: 700; }
-    .profAvatar .camBtn { position: absolute; bottom: 2px; right: 2px; background: #fff; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.12); cursor: pointer; border: 2px solid rgba(93,64,55,0.08); transition: all 0.3s; z-index: 5; }
-    .profAvatar .camBtn:hover { background: var(--primary-color); }
+    .profAvatar img, .profAvatar .avatarFallback { width: 110px; height: 110px; border-radius: 50%; object-fit: cover; border: 4px solid #fff; box-shadow: 0 4px 16px rgba(139, 99, 75,0.12); }
+    .profAvatar .avatarFallback { background: linear-gradient(135deg, #8b634b, #8D6E63); color: white; display: flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-size: 2.5rem; font-weight: 700; }
+    .profAvatar .camBtn { position: absolute; bottom: 2px; right: 2px; background: #fff; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.12); cursor: pointer; border: 2px solid rgba(139, 99, 75,0.08); transition: all 0.3s; z-index: 5; }
+    .profAvatar .camBtn:hover { background: #5D4037; }
     .profAvatar .camBtn:hover i { color: #fff; }
-    .profAvatar .camBtn i { color: var(--primary-color); font-size: 0.8rem; }
+    .profAvatar .camBtn i { color: #8B634B; font-size: 0.8rem; }
 
     .profSection { margin-bottom: 1.5rem; }
-    .profSection h6 { font-weight: 700; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 2px; color: var(--text-muted); padding-bottom: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid rgba(93,64,55,0.06); display: flex; align-items: center; gap: 6px; }
-    .profSection h6 i { font-size: 0.7rem; color: #D4A862; }
+    .profSection h6 { font-weight: 700; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 2px; color: var(--text-muted); padding-bottom: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid rgba(139, 99, 75,0.06); display: flex; align-items: center; gap: 6px; }
+    .profSection h6 i { font-size: 0.7rem; color: #8B634B; }
     .profRow { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 0.5rem; }
     .profField { display: flex; flex-direction: column; }
     .profField label { font-weight: 600; font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.4rem; }
-    .profField input { border: 1.5px solid rgba(93,64,55,0.1); border-radius: 12px; padding: 0.7rem 1rem; font-size: 0.9rem; transition: all 0.3s; background: rgba(93,64,55,0.02); font-family: 'Inter', sans-serif; }
-    .profField input:focus { border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(93,64,55,0.08); outline: none; background: #fff; }
+    .profField input { border: 1.5px solid rgba(139, 99, 75,0.1); border-radius: 12px; padding: 0.7rem 1rem; font-size: 0.9rem; transition: all 0.3s; background: rgba(139, 99, 75,0.02); font-family: 'Inter', sans-serif; }
+    .profField input:focus { border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(139, 99, 75,0.08); outline: none; background: #fff; }
     .profField .fieldError { color: #C62828; font-size: 0.78rem; margin-top: 0.3rem; display: none; }
 
     .profActions { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 2rem; }
-    .profCancel { background: rgba(93,64,55,0.04); color: var(--text-main); font-weight: 600; border: 1.5px solid rgba(93,64,55,0.1); border-radius: 50px; padding: 0.8rem; text-align: center; text-decoration: none; transition: all 0.3s; font-size: 0.92rem; }
-    .profCancel:hover { background: rgba(93,64,55,0.08); color: var(--text-main); }
-    .profSave { background: linear-gradient(135deg, #5D4037, #795548); color: #fff; font-weight: 700; border: none; border-radius: 50px; padding: 0.8rem; font-size: 0.95rem; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 14px rgba(93,64,55,0.2); }
-    .profSave:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(93,64,55,0.3); }
+    .profCancel { background: rgba(139, 99, 75,0.04); color: var(--text-main); font-weight: 600; border: 1.5px solid rgba(139, 99, 75,0.1); border-radius: 50px; padding: 0.8rem; text-align: center; text-decoration: none; transition: all 0.3s; font-size: 0.92rem; }
+    .profCancel:hover { background: rgba(139, 99, 75,0.08); color: var(--text-main); }
+    .profSave { background: linear-gradient(135deg, #5D4037, #795548); color: #fff; font-weight: 700; border: none; border-radius: 50px; padding: 0.8rem; font-size: 0.95rem; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 14px rgba(93, 64, 55, 0.25); }
+    .profSave:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(93, 64, 55, 0.35); }
 
     .profSecure { text-align: center; margin-top: 1.25rem; font-size: 0.78rem; color: var(--text-muted); }
-    .profSecure i { color: #D4A862; margin-right: 4px; }
+    .profSecure i { color: #8B634B; margin-right: 4px; }
 
     @media(max-width: 500px) {
         .profBody { padding: 1.5rem; }
@@ -104,13 +104,48 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="profSection">
                     <h6><i class="fas fa-shield-alt"></i> Account Details</h6>
                     <div class="profRow">
                         <div class="profField">
                             <label for="username">Username</label>
                             <input type="text" id="username" name="username" minlength="5" maxlength="20" required value="{{ current_user.username }}">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profSection">
+                    <h6><i class="fas fa-lock"></i> Security & Password</h6>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Leave these fields blank if you do not want to change your password.</p>
+                    
+                    <div class="profField mb-3">
+                        <label for="current_password">Current Password</label>
+                        <div style="position: relative; display: flex; align-items: center;">
+                            <input type="password" id="current_password" name="current_password" placeholder="Enter current password to make changes" style="width: 100%; padding-right: 40px;">
+                            <i class="fas fa-eye" id="toggleCurrentPassword" style="position: absolute; right: 15px; cursor: pointer; color: var(--text-muted);" onclick="togglePasswordVisibility('current_password', 'toggleCurrentPassword')"></i>
+                        </div>
+                    </div>
+
+                    <div class="profRow">
+                        <div class="profField">
+                            <label for="new_password">New Password</label>
+                            <div style="position: relative; display: flex; flex-direction: column;">
+                                <div style="position: relative; display: flex; align-items: center;">
+                                    <input type="password" id="new_password" name="new_password" placeholder="New password" style="width: 100%; padding-right: 40px;" oninput="checkStrength()">
+                                    <i class="fas fa-eye" id="toggleNewPassword" style="position: absolute; right: 15px; cursor: pointer; color: var(--text-muted);" onclick="togglePasswordVisibility('new_password', 'toggleNewPassword')"></i>
+                                </div>
+                                <div class="password-strength mt-2" style="height: 4px; background: rgba(139, 99, 75, 0.1); border-radius: 2px; overflow: hidden;">
+                                    <div id="strength-bar" class="strength-bar h-100" style="width: 0%; transition: 0.3s ease;"></div>
+                                </div>
+                                <div id="strength-text" class="small mt-1" style="font-size: 0.7rem; color: #8d6e63; display: none; text-align: right;">Strength</div>
+                            </div>
+                        </div>
+                        <div class="profField">
+                            <label for="confirm_new_password">Confirm New Password</label>
+                            <div style="position: relative; display: flex; align-items: center;">
+                                <input type="password" id="confirm_new_password" name="confirm_new_password" placeholder="Confirm new password" style="width: 100%; padding-right: 40px;">
+                                <i class="fas fa-eye" id="toggleConfirmPassword" style="position: absolute; right: 15px; cursor: pointer; color: var(--text-muted);" onclick="togglePasswordVisibility('confirm_new_password', 'toggleConfirmPassword')"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -126,6 +161,19 @@
 </div>
 
 <script>
+    function togglePasswordVisibility(fieldId, iconId) {
+        const input = document.getElementById(fieldId);
+        const icon = document.getElementById(iconId);
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
     function previewProfileImage(event) {
         const input = event.target;
         if (input.files && input.files[0]) {
@@ -170,6 +218,31 @@
         document.querySelectorAll('input').forEach(el => el.style.borderColor = '');
     }
 
+    function checkStrength() {
+        const pwd = document.getElementById('new_password').value;
+        const bar = document.getElementById('strength-bar');
+        const txt = document.getElementById('strength-text');
+        
+        if (pwd.length === 0) {
+            txt.style.display = 'none';
+            bar.style.width = '0%';
+            return;
+        }
+
+        txt.style.display = 'block';
+        let strength = 0;
+        if (pwd.length >= 6) strength += 25;
+        if (/[A-Z]/.test(pwd)) strength += 25;
+        if (/[0-9]/.test(pwd)) strength += 25;
+        if (/[^A-Za-z0-9]/.test(pwd)) strength += 25;
+
+        bar.style.width = strength + '%';
+        if (strength <= 25) { bar.style.background = '#ef4444'; txt.textContent = 'Weak'; }
+        else if (strength <= 50) { bar.style.background = '#f59e0b'; txt.textContent = 'Fair'; }
+        else if (strength <= 75) { bar.style.background = '#3b82f6'; txt.textContent = 'Good'; }
+        else { bar.style.background = '#22c55e'; txt.textContent = 'Strong'; }
+    }
+
     function validateProfile() {
         clearErrors();
         let isValid = true;
@@ -179,7 +252,8 @@
             showFieldError('phone_number', "Must be exactly 11 digits starting with 09.");
             isValid = false;
         } else {
-            if (/^([0-9])\1{8}$/.test(phone.substring(2))) {
+            const digitsOnly = phone.substring(2);
+            if (/^([0-9])\1{8}$/.test(digitsOnly)) {
                 showFieldError('phone_number', "Invalid sequence. Please input a valid mobile number.");
                 isValid = false;
             }
@@ -194,6 +268,12 @@
             }
         });
 
+        const middlename = document.getElementById('middle_name').value;
+        if (middlename && !nameRegex.test(middlename)) {
+            showFieldError('middle_name', "Names can only contain letters, spaces, and dashes.");
+            isValid = false;
+        }
+
         const email = document.getElementById('email').value;
         const emailRegex = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
         if (!emailRegex.test(email)) {
@@ -205,9 +285,38 @@
         if (username.length < 5 || username.length > 20) {
             showFieldError('username', "Username must be 5-20 characters.");
             isValid = false;
+        } else if (!/^[A-Za-z0-9_]+$/.test(username)) {
+            showFieldError('username', "Username can only contain letters, numbers, and underscores.");
+            isValid = false;
+        }
+
+        const newPwd = document.getElementById('new_password').value;
+        const confirmResult = document.getElementById('confirm_new_password').value;
+        const currentPwd = document.getElementById('current_password').value;
+
+        if (newPwd) {
+            if (!currentPwd) {
+                showFieldError('current_password', "Current password is required to change password.");
+                isValid = false;
+            }
+            if (newPwd.startsWith(' ') || newPwd.endsWith(' ')) {
+                showFieldError('new_password', "Password cannot start or end with spaces.");
+                isValid = false;
+            } else if (newPwd.length < 6) {
+                showFieldError('new_password', "New password must be at least 6 characters.");
+                isValid = false;
+            }
+            if (confirmResult && newPwd !== confirmResult) {
+                showFieldError('confirm_new_password', "Passwords do not match.");
+                isValid = false;
+            }
         }
 
         return isValid;
     }
 </script>
 {% endblock %}
+%}
+
+
+

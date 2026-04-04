@@ -6,7 +6,7 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 style="font-family: 'Georgia', serif; color: var(--text-main); font-size: 2rem; font-weight: bold; margin: 0;">
         <i class="fas fa-ticket-alt me-2"></i>Voucher & Promo Codes</h1>
-    <button class="btn text-white fw-bold rounded-pill px-4 shadow-sm" style="background: var(--admin-accent);" data-bs-toggle="modal" data-bs-target="#addVoucherModal">
+    <button class="btn-admin-primary px-4 py-2" data-bs-toggle="modal" data-bs-target="#addVoucherModal" style="border-radius: 10px; border: none; font-weight: 700; font-size: 0.85rem;">
         <i class="fas fa-plus me-1"></i> New Voucher
     </button>
 </div>
@@ -87,7 +87,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <form action="{{ url_for('admin.voucher_add') }}" method="POST">
             <div class="modal-content" style="border-radius: 16px; border: none;">
-                <div class="modal-header border-0" style="background: linear-gradient(135deg, #8B4513, #A0522D); border-radius: 16px 16px 0 0;">
+                <div class="modal-header border-0" style="background: linear-gradient(135deg, #8b634b, #8b634b); border-radius: 16px 16px 0 0;">
                     <h5 class="modal-title text-white fw-bold"><i class="fas fa-ticket-alt me-2"></i> Create New Voucher</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
@@ -132,10 +132,14 @@
                 </div>
                 <div class="modal-footer border-0">
                     <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn text-white rounded-pill px-4 fw-bold" style="background: #8B4513;">Create Voucher</button>
+                    <button type="submit" class="btn text-white rounded-pill px-4 fw-bold" style="background: #8b634b;">Create Voucher</button>
                 </div>
             </div>
         </form>
     </div>
 </div>
 {% endblock %}
+
+
+
+

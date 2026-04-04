@@ -22,7 +22,7 @@
         <div class="stat-value">&#8369;{{ "%.0f"|format(total_cogs) }}</div>
     </div>
     <div class="stat-card">
-        <div class="stat-icon" style="background: rgba(139,69,19,0.12); color: #8d6e63;"><i
+        <div class="stat-icon" style="background: rgba(139, 99, 75,0.12); color: #8d6e63;"><i
                 class="fas fa-wallet"></i></div>
         <div class="stat-label">Total Revenue</div>
         <div class="stat-value">&#8369;{{ "%.0f"|format(total_revenue) }}</div>
@@ -126,7 +126,10 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     function initAnalyticsCharts() {
+        console.log("Initializing Analytics Charts...");
+        
         if (typeof Chart === 'undefined') {
+            console.error("Chart.js not loaded!");
             setTimeout(initAnalyticsCharts, 50);
             return;
         }
@@ -149,7 +152,7 @@
         Chart.defaults.animation.easing = 'easeOutQuart';
 
         // ── Palette ──────────────────────────────────────
-        var CAFE_BROWN = '#8B4513';
+        var CAFE_BROWN = '#8b634b';
         var CAFE_LATTE = '#c87941';
         var CAFE_GREEN = '#2e7d32';
         var CAFE_BLUE = '#1565c0';
@@ -191,7 +194,7 @@
 
         // ── Grid / Scale defaults ────────────────────────
         var scaleX = { ticks: { color: '#a1887f', font: { size: 11 } }, grid: { display: false } };
-        var scaleY = { ticks: { color: '#a1887f', font: { size: 11 } }, grid: { color: 'rgba(139,69,19,0.06)' }, beginAtZero: true };
+        var scaleY = { ticks: { color: '#a1887f', font: { size: 11 } }, grid: { color: 'rgba(139, 99, 75,0.06)' }, beginAtZero: true };
 
         // ═══ Data from server ═══
         var _cd = document.getElementById('chartServerData').dataset;
@@ -356,8 +359,8 @@
                     maintainAspectRatio: false,
                     indexAxis: 'y',
                     scales: {
-                        x: { ticks: { color: '#a1887f', font: { size: 11 } }, grid: { color: 'rgba(139,69,19,0.06)' }, beginAtZero: true },
-                        y: { ticks: { color: '#5d4037', font: { size: 11, weight: '600' } }, grid: { display: false } }
+                        x: { ticks: { color: '#a1887f', font: { size: 11 } }, grid: { color: 'rgba(139, 99, 75,0.06)' }, beginAtZero: true },
+                        y: { ticks: { color: '#8b634b', font: { size: 11, weight: '600' } }, grid: { display: false } }
                     },
                     plugins: { legend: { display: false } }
                 }
@@ -483,3 +486,7 @@
     initAnalyticsCharts();
 </script>
 {% endblock %}
+
+
+
+

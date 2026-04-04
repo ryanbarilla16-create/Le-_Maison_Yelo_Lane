@@ -59,6 +59,17 @@ class MenuItem(db.Model):
     image_url = db.Column(db.String(255), nullable=True)
     is_available = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=get_ph_time)
+    
+    @property
+    def is_out_of_stock(self):
+        """Checks if ingredients for this menu item are sufficient"""
+        if not self.ingredients:
+            # If no recipe is defined, we assume it's in stock unless manually disabled
+            return False
+        for mi_ingredient in self.ingredients:
+            if mi_ingredient.ingredient.stock_qty < mi_ingredient.quantity_needed:
+                return True
+        return False
 
 class Order(db.Model):
     id = db.Column(db.Integer, primary_key=True)

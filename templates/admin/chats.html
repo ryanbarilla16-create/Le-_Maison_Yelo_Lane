@@ -30,18 +30,21 @@
                             <tr>
                                 <td class="ps-4">
                                     <div class="d-flex align-items-center gap-3">
-                                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; color: var(--admin-accent); font-weight: bold;">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                                            style="width: 40px; height: 40px; background: rgba(139, 99, 75, 0.1); color: #8B634B; font-weight: 800; font-size: 0.9rem;">
                                             {{ user.first_name[0] }}
                                         </div>
-                                        <div class="fw-bold" style="color: var(--text-main);">{{ user.first_name }} {{ user.last_name }}</div>
+                                        <div class="fw-bold" style="color: var(--text-main); font-size: 0.95rem;">{{ user.first_name }} {{ user.last_name }}</div>
                                     </div>
                                 </td>
-                                <td>{{ user.email }}</td>
-                                <td class="text-muted small">
+                                <td style="font-size: 0.85rem; color: #8d6e63; font-weight: 500;">{{ user.email }}</td>
+                                <td class="text-muted" style="font-size: 0.8rem; font-weight: 500;">
                                     {{ last_at.strftime('%Y-%m-%d %I:%M %p') }}
                                 </td>
                                 <td class="pe-4 text-end">
-                                    <a href="{{ url_for('admin.chat_with_user', user_id=user.id) }}" class="btn btn-sm rounded-pill fw-bold text-white px-4" style="background-color: var(--admin-accent);">
+                                    <a href="{{ url_for('admin.chat_with_user', user_id=user.id) }}" 
+                                        class="btn-admin-primary btn-sm px-4 py-2 text-decoration-none" 
+                                        style="border-radius: 50px; font-size: 0.75rem; border: none;">
                                         Open Chat
                                     </a>
                                 </td>
@@ -62,3 +65,5 @@
     </div>
 </div>
 {% endblock %}
+
+

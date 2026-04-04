@@ -552,30 +552,73 @@ def logout():
 def profile():
     if request.method == 'POST':
         first_name = request.form.get('first_name', '').strip()
+        middle_name = request.form.get('middle_name', '').strip()
         last_name = request.form.get('last_name', '').strip()
         username = request.form.get('username', '').strip()
         email = request.form.get('email', '').strip()
         phone_number = request.form.get('phone_number', '').strip()
+        
+        current_password = request.form.get('current_password', '')
+        new_password = request.form.get('new_password', '')
+        confirm_new_password = request.form.get('confirm_new_password', '')
 
-        # Simple validations
+        # --- VALIDATIONS ---
         if not all([first_name, last_name, username, email, phone_number]):
-            flash("All fields are required.", "danger")
+            flash("Profile information fields are required.", "danger")
             return redirect(url_for('main.profile'))
 
-        # Check for username / email conflicts if they changed it
+        # Validate Names
+        for name, label in [(first_name, 'First Name'), (last_name, 'Last Name')]:
+            err = validate_name(name, label)
+            if err: flash(err, "danger"); return redirect(url_for('main.profile'))
+        if middle_name:
+            err = validate_name(middle_name, 'Middle Name')
+            if err: flash(err, "danger"); return redirect(url_for('main.profile'))
+
+        # Validate Email
+        err = validate_email(email)
+        if err: flash(err, "danger"); return redirect(url_for('main.profile'))
+
+        # Validate Username
+        err = validate_username(username, first_name, last_name)
+        if err: flash(err, "danger"); return redirect(url_for('main.profile'))
+
+        # Check for conflicts
         if email != current_user.email:
-            existing = User.query.filter_by(email=email).first()
-            if existing:
+            if User.query.filter_by(email=email).first():
                 flash("Email already registered by another account.", "danger")
                 return redirect(url_for('main.profile'))
-                
         if username != current_user.username:
-            existing = User.query.filter_by(username=username).first()
-            if existing:
+            if User.query.filter_by(username=username).first():
                 flash("Username already taken.", "danger")
                 return redirect(url_for('main.profile'))
 
+        # --- PASSWORD CHANGE HANDLING ---
+        if new_password:
+            if not current_password:
+                flash("Current password is required to change to a new password.", "danger")
+                return redirect(url_for('main.profile'))
+            if not current_user.check_password(current_password):
+                flash("Incorrect current password.", "danger")
+                return redirect(url_for('main.profile'))
+            
+            err = validate_password(new_password, confirm_new_password)
+            if err:
+                flash(err, "danger")
+                return redirect(url_for('main.profile'))
+            
+            current_user.set_password(new_password)
+            flash("Password updated successfully.", "success")
+        elif current_password:
+            # User provided current password but no new password - maybe just validating to change profile details?
+            # Or just check it if they want to ensure they are the owner
+            if not current_user.check_password(current_password):
+                flash("Incorrect current password.", "danger")
+                return redirect(url_for('main.profile'))
+
+        # Update Info
         current_user.first_name = first_name
+        current_user.middle_name = middle_name
         current_user.last_name = last_name
         current_user.username = username
         current_user.email = email
@@ -587,15 +630,11 @@ def profile():
 
         profile_picture = request.files.get('profile_picture')
         if profile_picture and profile_picture.filename:
-            # Ensure folder exists
             upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'profiles')
             os.makedirs(upload_folder, exist_ok=True)
-            
             filename = secure_filename(f"{current_user.id}_{profile_picture.filename}")
             filepath = os.path.join(upload_folder, filename)
             profile_picture.save(filepath)
-            
-            # Update user model with relative URL for frontend
             current_user.profile_picture_url = url_for('static', filename=f"uploads/profiles/{filename}")
 
         db.session.commit()

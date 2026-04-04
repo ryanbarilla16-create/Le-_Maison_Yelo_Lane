@@ -129,7 +129,7 @@
                 icon: 'warning',
                 title: 'No Customers Selected',
                 text: 'Please select at least one user from the list first.',
-                confirmButtonColor: '#8B4513'
+                confirmButtonColor: '#8b634b'
             });
         } else {
             const modalElement = document.getElementById('broadcastModal');
@@ -154,11 +154,11 @@
                             html: `
                             <div style="text-align: left; font-size: 0.95rem; line-height: 1.8;">
                                 <div style="display:flex; align-items:center; gap: 15px; margin-bottom: 20px;">
-                                    <div style="width: 60px; height: 60px; border-radius: 50%; background: #e0d5c7; color: #8B4513; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.8rem;">
+                                    <div style="width: 60px; height: 60px; border-radius: 50%; background: #e0d5c7; color: #8b634b; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.8rem;">
                                         ${data.first_name[0]}${data.last_name[0]}
                                     </div>
                                     <div>
-                                        <h4 style="margin:0; color: #8B4513;">${data.first_name} ${data.last_name}</h4>
+                                        <h4 style="margin:0; color: #8b634b;">${data.first_name} ${data.last_name}</h4>
                                         <div style="color: #666; font-size: 0.85rem;">@${data.username}</div>
                                     </div>
                                 </div>
@@ -169,7 +169,7 @@
                                 <div><strong>Status:</strong> <span class="badge ${data.status === 'ACTIVE' ? 'bg-success' : 'bg-secondary'}">${data.status}</span></div>
                             </div>
                             `,
-                            confirmButtonColor: '#8B4513',
+                            confirmButtonColor: '#8b634b',
                             confirmButtonText: 'Close'
                         });
                     })
@@ -181,3 +181,6 @@
     }
 </script>
 {% endblock %}
+
+
+

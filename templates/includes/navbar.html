@@ -1,378 +1,317 @@
 <style>
     .main-nav {
-        background: rgba(255, 255, 255, 0.97) !important;
-        backdrop-filter: blur(20px) !important;
-        -webkit-backdrop-filter: blur(20px) !important;
-        box-shadow: 0 1px 0 rgba(93,64,55,0.08) !important;
-        padding: 0.5rem 0 !important;
-        transition: box-shadow 0.3s;
+        background: transparent !important;
+        backdrop-filter: blur(0px) !important;
+        -webkit-backdrop-filter: blur(0px) !important;
+        padding: 1.2rem 0 !important;
+        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        border-bottom: 1px solid rgba(255, 255, 255, 0) !important;
+        box-shadow: none !important;
     }
-    .main-nav:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.06) !important; }
+    
+    .nav-scrolled, .nav-always-solid {
+        background: rgba(93, 64, 55, 0.96) !important; /* Lighter Coffee Brown */
+        backdrop-filter: blur(15px) !important;
+        -webkit-backdrop-filter: blur(15px) !important;
+        padding: 0.7rem 0 !important;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2) !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    }
 
-    /* Nav text links */
+    .navBrand {
+        font-family: 'Playfair Display', serif !important;
+        font-weight: 800 !important;
+        font-size: 1.2rem !important;
+        letter-spacing: 2px !important;
+        text-transform: uppercase !important;
+        color: #fff !important;
+        display: flex;
+        align-items: center; gap: 12px;
+        text-decoration: none !important;
+    }
+
     .navTxt {
-        color: var(--text-main) !important; font-weight: 600 !important;
-        font-size: 0.82rem !important; letter-spacing: 1.5px;
-        text-decoration: none; position: relative; padding: 0.5rem 0 !important;
-        transition: color 0.3s;
+        color: rgba(255, 255, 255, 0.85) !important;
+        font-weight: 700 !important;
+        font-size: 0.8rem !important;
+        letter-spacing: 1.5px !important;
+        padding: 0.5rem 1.2rem !important;
+        text-decoration: none !important;
+        transition: all 0.3s ease;
+        position: relative;
     }
     .navTxt::after {
-        content: ''; position: absolute; bottom: 0; left: 0; right: 0;
-        height: 2px; background: var(--primary-color);
-        transform: scaleX(0); transition: transform 0.3s ease;
+        content: ''; position: absolute; bottom: 0; left: 50%; width: 0; height: 2px;
+        background: #fff; transition: all 0.3s ease; transform: translateX(-50%);
     }
-    .navTxt:hover { color: var(--primary-color) !important; }
-    .navTxt:hover::after { transform: scaleX(1); }
+    .navTxt:hover { color: #fff !important; }
+    .navTxt:hover::after { width: 30px; }
 
-    /* Icon circle buttons (cart, bell) */
     .navIcon {
-        width: 40px; height: 40px; border-radius: 12px;
-        display: flex; align-items: center; justify-content: center;
-        background: rgba(93,64,55,0.06) !important;
-        color: var(--primary-color) !important;
-        border: none !important; font-size: 1rem;
-        transition: all 0.3s ease; position: relative;
-        box-shadow: none !important;
-    }
-    .navIcon:hover {
-        background: rgba(93,64,55,0.12) !important;
-        transform: translateY(-2px);
-        color: var(--primary-color) !important;
-    }
-
-    /* Text nav buttons (Dashboard, My Orders) */
-    .navLink {
-        color: var(--text-main) !important; font-weight: 600;
-        font-size: 0.85rem; padding: 0.5rem 1rem !important;
-        border-radius: 10px; text-decoration: none !important;
-        transition: all 0.3s ease;
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-    }
-    .navLink:hover {
-        background: rgba(93,64,55,0.06) !important;
-        color: var(--primary-color) !important;
-        transform: translateY(-1px);
-    }
-    .navLink i { font-size: 0.8rem; opacity: 0.6; }
-
-    /* Primary CTA button */
-    .navCta {
-        background: linear-gradient(135deg, #5D4037, #795548) !important;
-        color: #fff !important; font-weight: 700;
-        font-size: 0.82rem; padding: 0.55rem 1.25rem !important;
-        border-radius: 50px; text-decoration: none !important;
-        border: none !important;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 14px rgba(93,64,55,0.25) !important;
-        letter-spacing: 0.3px;
-    }
-    .navCta:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(93,64,55,0.35) !important;
-        color: #fff !important;
-    }
-
-    /* Profile ring */
-    .navProfile {
         width: 42px; height: 42px; border-radius: 50%;
-        border: 2px solid transparent !important;
-        background-clip: padding-box;
-        box-shadow: 0 0 0 2px rgba(93,64,55,0.12) !important;
-        transition: all 0.3s;
-    }
-    .navProfile:hover { box-shadow: 0 0 0 3px rgba(93,64,55,0.2) !important; }
-
-    /* Sign in / Join buttons */
-    .navSignIn {
-        border: 1.5px solid rgba(93,64,55,0.2) !important;
-        color: var(--primary-color) !important;
-        background: transparent !important;
-        font-weight: 600; font-size: 0.85rem;
-        padding: 0.5rem 1.25rem !important;
-        border-radius: 50px; transition: all 0.3s;
-        box-shadow: none !important;
-    }
-    .navSignIn:hover {
-        background: rgba(93,64,55,0.05) !important;
-        border-color: var(--primary-color) !important;
-        transform: translateY(-1px);
-        color: var(--primary-color) !important;
-    }
-    .navJoin {
-        background: linear-gradient(135deg, #5D4037, #795548) !important;
-        color: #fff !important; font-weight: 700; font-size: 0.85rem;
-        padding: 0.55rem 1.5rem !important;
-        border-radius: 50px; border: none !important;
-        transition: all 0.3s;
-        box-shadow: 0 4px 14px rgba(93,64,55,0.25) !important;
-    }
-    .navJoin:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(93,64,55,0.35) !important;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(255, 255, 255, 0.1) !important;
         color: #fff !important;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
     }
+    .navIcon:hover { background: rgba(255, 255, 255, 0.2) !important; transform: translateY(-2px); }
 
-    /* Dropdown refinement */
+    .navJoin {
+        background: linear-gradient(135deg, #5D4037 0%, #8B634B 100%) !important;
+        color: #fff !important;
+        font-weight: 800; font-size: 0.78rem;
+        letter-spacing: 1px; text-transform: uppercase;
+        padding: 0.75rem 1.8rem !important;
+        border-radius: 50px; border: none !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+        transition: all 0.3s ease;
+    }
+    .navJoin:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(139, 99, 75, 0.4) !important; }
+
+    .navSignIn {
+        color: #fff !important;
+        font-weight: 700; font-size: 0.8rem;
+        padding: 0.7rem 1.5rem !important;
+        text-decoration: none !important;
+        transition: all 0.3s; opacity: 0.9;
+    }
+    .navSignIn:hover { opacity: 1; transform: translateY(-1px); }
+
+    .navLink {
+        color: rgba(255, 255, 255, 0.85) !important;
+        font-weight: 700; font-size: 0.82rem;
+        padding: 0.5rem 1rem !important;
+        transition: all 0.3s ease;
+        text-decoration: none !important;
+    }
+    .navLink:hover { color: #fff !important; background: rgba(255, 255, 255, 0.1); border-radius: 50px; }
+
+    /* REDUCED DARKNESS FOR DROP-DOWN */
     .navDropdown {
-        border-radius: 16px !important; border: 1px solid rgba(93,64,55,0.08) !important;
-        box-shadow: 0 12px 40px rgba(0,0,0,0.1) !important;
-        padding: 0.5rem 0 !important; overflow: hidden;
-        animation: dropIn 0.2s ease-out;
+        border-radius: 20px !important; 
+        background: rgba(93, 64, 55, 0.96) !important; /* Lighter, matches scrolled nav */
+        backdrop-filter: blur(25px) !important;
+        -webkit-backdrop-filter: blur(25px) !important;
+        padding: 0.75rem !important; 
+        box-shadow: 0 15px 40px rgba(0,0,0,0.3) !important; /* Softer shadow */
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        margin-top: 15px !important;
+        min-width: 240px !important;
     }
-    @keyframes dropIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
     .navDropdown .dropdown-item {
-        font-weight: 500; padding: 0.6rem 1.25rem !important;
-        font-size: 0.88rem; transition: all 0.2s;
+        color: #ffffff !important;
+        font-weight: 600 !important;
+        padding: 0.8rem 1.5rem !important;
+        font-size: 0.88rem !important; 
+        border-radius: 12px !important; 
+        transition: all 0.2s ease !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 12px !important;
     }
-    .navDropdown .dropdown-item:hover { background: rgba(93,64,55,0.04); }
-    .navDropdown .dropdown-item i { width: 20px; text-align: center; }
+    .navDropdown .dropdown-item:hover { 
+        background: rgba(255, 255, 255, 0.12) !important; 
+        color: #ffffff !important;
+        transform: translateX(5px) !important;
+    }
+    .navDropdown .dropdown-item i {
+        font-size: 1rem;
+        opacity: 0.9;
+        width: 24px;
+        text-align: center;
+        color: #fff; /* White icon for lighter background */
+    }
+    .navDropdown .dropdown-divider {
+        border-top-color: rgba(255, 255, 255, 0.15) !important;
+        margin: 8px 0 !important;
+    }
 </style>
 
 <nav class="navbar main-nav fixed-top navbar-expand-md">
     <div class="container-fluid px-md-5">
-        <a class="navbar-brand text-dark" href="{{ url_for('main.index') }}"
-            style="font-family: 'Playfair Display', 'Georgia', serif; font-weight: 700; font-size: 1.15rem; letter-spacing: -0.3px;">
-            <i class="fas fa-coffee" style="color: var(--primary-color); font-size: 0.9rem;"></i> Le maison yelo Lane
+        <a class="navBrand" href="{{ url_for('main.index') }}">
+            <i class="fas fa-coffee" style="color: #8B634B;"></i> 
+            <span>Le Maison de Yelo</span>
         </a>
 
         <ul class="nav nav-left me-auto d-md-flex d-none align-items-center ms-4">
-            <li class="nav-item me-3">
-                <a class="nav-link navTxt" href="{{ url_for('main.menu_page') }}">MENU</a>
-            </li>
-            <li class="nav-item me-3">
-                <a class="nav-link navTxt" href="{{ url_for('main.about_page') }}">ABOUT</a>
-            </li>
-            <li class="nav-item me-3">
-                <a class="nav-link navTxt" href="{{ url_for('main.reviews_page') }}">REVIEWS</a>
-            </li>
+            <li class="nav-item"><a class="navTxt" href="{{ url_for('main.menu_page') }}">MENU</a></li>
+            <li class="nav-item"><a class="navTxt" href="{{ url_for('main.about_page') }}">ABOUT</a></li>
+            <li class="nav-item"><a class="navTxt" href="{{ url_for('main.reviews_page') }}">REVIEWS</a></li>
         </ul>
 
-        <ul class="nav nav-right ms-auto d-md-flex d-none align-items-center" style="gap: 6px;">
+        <ul class="nav nav-right ms-auto d-md-flex d-none align-items-center" style="gap: 12px;">
             {% if current_user.is_authenticated %}
             <li class="nav-item">
-                <a href="{{ url_for('main.view_cart') }}" class="btn navIcon position-relative">
+                <a href="{{ url_for('main.view_cart') }}" class="navIcon position-relative">
                     <i class="fas fa-shopping-cart"></i>
                     {% set cart_data = session.get('cart', {}) %}
                     {% set cart_total_qty = cart_data.values()|list|sum if cart_data else 0 %}
-                    <span class="cart-badge position-absolute badge rounded-pill bg-danger shadow-sm"
+                    <span class="cart-badge badge position-absolute rounded-pill bg-danger shadow-sm"
                         style="font-size: 0.6rem; top: -2px; right: -4px; min-width: 18px;{{ ' display: none;' if cart_total_qty == 0 else '' }}">
-                        {{ cart_total_qty if cart_total_qty > 0 else '' }}
+                        {{ cart_total_qty }}
                     </span>
                 </a>
             </li>
-            <!-- NOTIFICATION BELL -->
             <li class="nav-item">
                 <div class="user-notif-wrapper" style="position: relative;">
                     <button id="userNotifBell" onclick="toggleUserNotifPanel()" class="btn navIcon position-relative">
                         <i class="fas fa-bell"></i>
-                        <span id="userNotifBadge"
-                            class="position-absolute badge rounded-pill bg-danger shadow-sm"
-                            style="font-size: 0.6rem; top: -2px; right: -4px; min-width: 18px; display: none;">0</span>
+                        <span id="userNotifBadge" class="position-absolute badge rounded-pill bg-danger shadow-sm" style="font-size: 0.6rem; top: -2px; right: -4px; min-width: 18px; display: none;">0</span>
                     </button>
-                    <!-- Notification Dropdown -->
-                    <div id="userNotifPanel" style="display:none; position: absolute; right: 0; top: 48px; width: 370px; max-height: 480px; background: #fff; border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,0.15); z-index: 9999; overflow: hidden; border: 1px solid rgba(0,0,0,0.06);">
-                        <div style="padding: 16px 20px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #5D4037, #795548);">
-                            <span style="font-weight: 700; font-size: 0.9rem; color: #fff;"><i class="fas fa-bell me-2"></i>Notifications</span>
-                            <button onclick="markAllUserNotifRead()" style="background: rgba(255,255,255,0.15); border: none; color: #fff; font-size: 0.72rem; cursor: pointer; padding: 4px 12px; border-radius: 20px; font-weight: 600; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">Mark all read</button>
+                    <div id="userNotifPanel" style="display:none; position: absolute; right: 0; top: 55px; width: 370px; background: rgba(93, 64, 55, 0.98); border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.4); z-index: 9999; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);">
+                        <div style="padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: space-between;">
+                            <span style="font-weight: 700; font-size: 0.9rem; color: #fff;"><i class="fas fa-bell me-2" style="color: #fff;"></i>Notifications</span>
+                            <button onclick="markAllUserNotifRead()" style="background: rgba(255,255,255,0.08); border: none; color: #fff; font-size: 0.7rem; cursor: pointer; padding: 5px 14px; border-radius: 20px;">Mark all read</button>
                         </div>
-                        <div id="userNotifList" style="max-height: 380px; overflow-y: auto; padding: 8px 0;"></div>
-                        <div id="userNotifEmpty" style="display:none; text-align: center; padding: 40px 20px; color: #999;">
-                            <i class="fas fa-bell-slash" style="font-size: 2rem; margin-bottom: 10px; opacity: 0.2;"></i>
-                            <p style="margin: 0; font-size: 0.85rem;">No notifications yet</p>
-                        </div>
+                        <div id="userNotifList" style="max-height: 380px; overflow-y: auto;"></div>
                     </div>
                 </div>
             </li>
 
-            <li style="width: 1px; height: 24px; background: rgba(93,64,55,0.1); margin: 0 6px;"></li>
+            <li style="width: 1px; height: 24px; background: rgba(255,255,255,0.1); margin: 0 8px;"></li>
+            <li class="nav-item"><a href="{{ url_for('main.index') }}" class="navLink">Dashboard</a></li>
+            <li class="nav-item"><a href="{{ url_for('main.my_orders') }}" class="navLink">Orders</a></li>
+            <li class="nav-item"><a href="{{ url_for('main.reserve') }}" class="navJoin">Reserve</a></li>
 
-            <li class="nav-item">
-                <a href="{{ url_for('main.index') }}" class="btn navLink">
-                    <i class="fas fa-home me-1"></i> Dashboard
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{{ url_for('main.my_orders') }}" class="btn navLink">
-                    <i class="fas fa-shopping-bag me-1"></i> My Orders
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{{ url_for('main.reserve') }}" class="btn navCta">
-                    <i class="fas fa-calendar-plus me-1"></i> Reserve
-                </a>
-            </li>
-
-            <li style="width: 1px; height: 24px; background: rgba(93,64,55,0.1); margin: 0 4px;"></li>
-
-            <li class="nav-item dropdown d-flex align-items-center">
-                <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle px-1"
-                    id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false"
-                    style="color: var(--text-main);">
+            <li class="nav-item dropdown ms-2">
+                <a href="#" class="d-flex align-items-center dropdown-toggle px-1" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                     {% if current_user.profile_picture_url %}
-                    <img loading="lazy" decoding="async" src="{{ current_user.profile_picture_url }}" alt="Profile" class="navProfile"
-                        style="width: 42px; height: 42px; object-fit: cover;">
+                    <img src="{{ current_user.profile_picture_url }}" style="width: 44px; height: 44px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2); object-fit: cover;">
                     {% else %}
-                    <div class="navProfile"
-                        style="width: 42px; height: 42px; background: linear-gradient(135deg, #5D4037, #8D6E63); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-family: 'Georgia', serif; font-size: 1rem;">
-                        {{ current_user.first_name[:1] }}{{ current_user.last_name[:1] }}
-                    </div>
+                    <div style="width: 44px; height: 44px; border-radius: 50%; background: #8B634B; color: white; display:flex; align-items:center; justify-content:center; font-weight: bold; border: 2px solid rgba(255,255,255,0.2);">{{ current_user.first_name[:1] }}</div>
                     {% endif %}
                 </a>
-                <ul class="dropdown-menu dropdown-menu-end navDropdown mt-3" aria-labelledby="profileDropdown"
-                    style="min-width: 220px;">
-                    <li class="px-3 py-2 border-bottom mb-1">
-                        <div class="fw-bold" style="font-size: 0.95rem;">{{ current_user.first_name }} {{ current_user.last_name }}</div>
-                        <small style="color: var(--text-muted); font-size: 0.78rem;">{{ current_user.email }}</small>
+                <ul class="dropdown-menu dropdown-menu-end navDropdown">
+                    <li class="px-3 py-2 border-bottom border-secondary mb-2">
+                        <div class="fw-bold text-white" style="font-size: 0.95rem;">{{ current_user.first_name }} {{ current_user.last_name }}</div>
+                        <small style="color: rgba(255,255,255,0.5);">{{ current_user.email }}</small>
                     </li>
-                    <li><a class="dropdown-item" href="{{ url_for('main.index') }}"><i class="fas fa-home me-2" style="color: var(--text-muted);"></i>Dashboard</a></li>
-                    <li><a class="dropdown-item" href="{{ url_for('main.my_orders') }}"><i class="fas fa-shopping-bag me-2" style="color: var(--text-muted);"></i>My Orders</a></li>
-                    <li><a class="dropdown-item" href="{{ url_for('main.profile') }}"><i class="fas fa-user-edit me-2" style="color: var(--text-muted);"></i>Edit Profile</a></li>
-                    <li><hr class="dropdown-divider my-1"></li>
-                    <li><a class="dropdown-item" href="{{ url_for('main.logout') }}" style="color: var(--danger); font-weight: 600;"><i class="fas fa-sign-out-alt me-2"></i>Sign out</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('main.profile') }}"><i class="fas fa-user-edit"></i>Profile Settings</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="{{ url_for('main.logout') }}" style="color: #ff5252 !important;"><i class="fas fa-sign-out-alt"></i>Sign out</a></li>
                 </ul>
             </li>
             {% else %}
-            <li class="nav-item">
-                <button onclick="$('#termsModal').modal('show'); window.authIntent = 'login';"
-                    class="btn navSignIn">Sign in</button>
-            </li>
-            <li class="nav-item">
-                <button onclick="$('#termsModal').modal('show'); window.authIntent = 'signup';"
-                    class="btn navJoin">Join Now</button>
-            </li>
+            <li class="nav-item"><a href="javascript:void(0)" onclick="$('#termsModal').modal('show'); window.authIntent = 'login';" class="navSignIn">Sign In</a></li>
+            <li class="nav-item"><a href="javascript:void(0)" onclick="$('#termsModal').modal('show'); window.authIntent = 'signup';" class="navJoin">Join Now</a></li>
             {% endif %}
         </ul>
 
-        <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#mobileMenu">
-            <span class="navbar-toggler-icon"></span>
+        <button class="navbar-toggler border-0 text-white ms-2 d-md-none" type="button" onclick="toggleMobileDrawer()" aria-label="Menu">
+            <i class="fas fa-bars"></i>
         </button>
     </div>
 </nav>
 
-<div class="collapse d-md-none p-3 fixed-top" id="mobileMenu"
-    style="top: 56px; background: rgba(255, 255, 255, 0.98); z-index: 1000; box-shadow: 0 8px 24px rgba(0,0,0,0.08); border-radius: 0 0 20px 20px; backdrop-filter: blur(20px);">
-    <ul class="navbar-nav" style="gap: 4px;">
-        <li class="nav-item py-2"><a class="nav-link fw-bold" href="{{ url_for('main.menu_page') }}"
-                style="color: var(--text-main); font-size: 0.9rem; letter-spacing: 1px;">MENU</a></li>
-        <li class="nav-item py-2"><a class="nav-link fw-bold" href="{{ url_for('main.about_page') }}"
-                style="color: var(--text-main); font-size: 0.9rem; letter-spacing: 1px;">ABOUT</a></li>
-        <li class="nav-item py-2" style="border-bottom: 1px solid var(--border-color);"><a class="nav-link fw-bold" href="{{ url_for('main.reviews_page') }}"
-                style="color: var(--text-main); font-size: 0.9rem; letter-spacing: 1px;">REVIEWS</a></li>
+<!-- Mobile Drawer Overlay -->
+<div class="mobile-drawer-overlay" id="mobileOverlay" onclick="closeMobileDrawer()"></div>
+
+<!-- Mobile Drawer Menu -->
+<div class="mobile-drawer" id="mobileDrawer">
+    <div class="mobile-drawer-header">
+        <span class="mobile-drawer-brand"><i class="fas fa-coffee me-2" style="color: #8B634B;"></i>Le Maison</span>
+        <button class="mobile-drawer-close" onclick="closeMobileDrawer()"><i class="fas fa-times"></i></button>
+    </div>
+
+    {% if current_user.is_authenticated %}
+    <div class="mobile-drawer-user">
+        <div class="mobile-drawer-user-avatar">
+            {% if current_user.profile_picture_url %}
+            <img src="{{ current_user.profile_picture_url }}" alt="Profile">
+            {% else %}
+            {{ current_user.first_name[:1] }}
+            {% endif %}
+        </div>
+        <div class="mobile-drawer-user-info">
+            <div class="mobile-drawer-user-name">{{ current_user.first_name }} {{ current_user.last_name }}</div>
+            <div class="mobile-drawer-user-email">{{ current_user.email }}</div>
+        </div>
+    </div>
+    {% endif %}
+
+    <ul class="mobile-drawer-nav">
+        <li><a href="{{ url_for('main.index') }}"><i class="fas fa-home"></i>Home</a></li>
+        <li><a href="{{ url_for('main.menu_page') }}"><i class="fas fa-utensils"></i>Menu</a></li>
+        <li><a href="{{ url_for('main.about_page') }}"><i class="fas fa-info-circle"></i>About</a></li>
+        <li><a href="{{ url_for('main.reviews_page') }}"><i class="fas fa-star"></i>Reviews</a></li>
+
         {% if current_user.is_authenticated %}
-        <li class="nav-item mt-2"><a href="{{ url_for('main.index') }}" class="btn navLink w-100 text-start"
-                style="padding: 0.65rem 1rem !important;"><i class="fas fa-home me-2" style="opacity: 0.5;"></i> Dashboard</a></li>
-        <li class="nav-item"><a href="{{ url_for('main.my_orders') }}" class="btn navLink w-100 text-start"
-                style="padding: 0.65rem 1rem !important;"><i class="fas fa-shopping-bag me-2" style="opacity: 0.5;"></i> My Orders</a></li>
-        <li class="nav-item"><a href="{{ url_for('main.profile') }}" class="btn navLink w-100 text-start"
-                style="padding: 0.65rem 1rem !important;"><i class="fas fa-user-edit me-2" style="opacity: 0.5;"></i> Edit Profile</a></li>
-        <li class="nav-item mt-2"><a href="{{ url_for('main.reserve') }}" class="btn navCta w-100">
-                <i class="fas fa-calendar-plus me-1"></i> Reserve Table</a></li>
-        <li class="nav-item mt-2"><a href="{{ url_for('main.logout') }}"
-                class="btn w-100" style="background: transparent; color: var(--danger); font-weight: 600; border: 1.5px solid rgba(150,75,75,0.2); border-radius: 50px; font-size: 0.88rem;">
-                <i class="fas fa-sign-out-alt me-1"></i> Sign Out</a></li>
+        <div class="mobile-drawer-divider"></div>
+        <li><a href="{{ url_for('main.view_cart') }}"><i class="fas fa-shopping-cart"></i>Cart
+            {% set cart_data = session.get('cart', {}) %}
+            {% set cart_total_qty = cart_data.values()|list|sum if cart_data else 0 %}
+            {% if cart_total_qty > 0 %}
+            <span class="badge rounded-pill bg-danger ms-auto" style="font-size: 0.65rem;">{{ cart_total_qty }}</span>
+            {% endif %}
+        </a></li>
+        <li><a href="{{ url_for('main.my_orders') }}"><i class="fas fa-receipt"></i>My Orders</a></li>
+        <li><a href="{{ url_for('main.profile') }}"><i class="fas fa-user-edit"></i>Profile Settings</a></li>
+        <div class="mobile-drawer-divider"></div>
+        <li>
+            <a href="{{ url_for('main.reserve') }}" class="mobile-cta-btn" style="margin: 0; border-left: none;">
+                <i class="fas fa-calendar-alt me-1"></i>Reserve a Table
+            </a>
+        </li>
+        <div class="mobile-drawer-divider"></div>
+        <li><a href="{{ url_for('main.logout') }}" style="color: #ff6b6b;"><i class="fas fa-sign-out-alt" style="color: #ff6b6b;"></i>Sign Out</a></li>
         {% else %}
-        <li class="nav-item mt-3"><button
-                onclick="$('#mobileMenu').collapse('hide'); $('#termsModal').modal('show'); window.authIntent = 'login';"
-                class="btn navSignIn w-100">Sign in</button></li>
-        <li class="nav-item mt-2"><button
-                onclick="$('#mobileMenu').collapse('hide'); $('#termsModal').modal('show'); window.authIntent = 'signup';"
-                class="btn navJoin w-100">Join Now</button></li>
+        <div class="mobile-drawer-divider"></div>
+        <li>
+            <a href="javascript:void(0)" onclick="closeMobileDrawer(); setTimeout(function(){ $('#termsModal').modal('show'); window.authIntent = 'login'; }, 300);">
+                <i class="fas fa-sign-in-alt"></i>Sign In
+            </a>
+        </li>
+        <li>
+            <a href="javascript:void(0)" class="mobile-cta-btn" style="margin: 0.5rem 1.5rem; border-left: none;"
+               onclick="closeMobileDrawer(); setTimeout(function(){ $('#termsModal').modal('show'); window.authIntent = 'signup'; }, 300);">
+                <i class="fas fa-user-plus me-1"></i>Join Now
+            </a>
+        </li>
         {% endif %}
     </ul>
 </div>
 
-{% if current_user.is_authenticated %}
-<!-- User Notification Bell JS -->
-<style>
-    @keyframes userNotifPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.15); } }
-    #userNotifPanel::-webkit-scrollbar { width: 4px; }
-    #userNotifPanel::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
-</style>
 <script>
-    let _userNotifOpen = false;
+    function updateNav() {
+        const nav = document.querySelector('.main-nav');
+        const isAuthPage = window.location.pathname.includes('/login') || 
+                           window.location.pathname.includes('/signup') || 
+                           window.location.pathname.includes('/forgot_password') ||
+                           window.location.pathname.includes('/reset_password');
 
-    function toggleUserNotifPanel() {
-        const panel = document.getElementById('userNotifPanel');
-        _userNotifOpen = !_userNotifOpen;
-        panel.style.display = _userNotifOpen ? 'block' : 'none';
-        if (_userNotifOpen) fetchUserNotifs();
+        if (isAuthPage) {
+            nav.classList.add('nav-always-solid');
+        } else if (window.scrollY > 50) {
+            nav.classList.add('nav-scrolled');
+        } else {
+            nav.classList.remove('nav-scrolled');
+            nav.classList.remove('nav-always-solid');
+        }
+    }
+    window.addEventListener('scroll', updateNav);
+    window.addEventListener('load', updateNav);
+
+    // Mobile Drawer Control
+    function toggleMobileDrawer() {
+        document.getElementById('mobileDrawer').classList.toggle('open');
+        document.getElementById('mobileOverlay').classList.toggle('active');
+        document.body.style.overflow = document.getElementById('mobileDrawer').classList.contains('open') ? 'hidden' : '';
     }
 
-    document.addEventListener('click', function(e) {
-        const wrapper = document.querySelector('.user-notif-wrapper');
-        if (wrapper && !wrapper.contains(e.target)) {
-            _userNotifOpen = false;
-            const panel = document.getElementById('userNotifPanel');
-            if (panel) panel.style.display = 'none';
+    function closeMobileDrawer() {
+        document.getElementById('mobileDrawer').classList.remove('open');
+        document.getElementById('mobileOverlay').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    // Close drawer on window resize to desktop
+    window.addEventListener('resize', function() {
+        if (window.innerWidth >= 768) {
+            closeMobileDrawer();
         }
     });
-
-    function _userNotifIcon(type) {
-        const icons = {
-            'ORDER': '<i class="fas fa-shopping-bag" style="color:#8B4513;"></i>',
-            'RESERVATION': '<i class="fas fa-calendar-check" style="color:#17a2b8;"></i>',
-            'DELIVERY': '<i class="fas fa-truck" style="color:#28a745;"></i>',
-            'SYSTEM': '<i class="fas fa-cog" style="color:#6c757d;"></i>',
-        };
-        return icons[type] || icons['SYSTEM'];
-    }
-
-    async function fetchUserNotifs() {
-        try {
-            const resp = await fetch('/admin/web/notifications');
-            const data = await resp.json();
-            const list = document.getElementById('userNotifList');
-            const empty = document.getElementById('userNotifEmpty');
-
-            if (!data.notifications || data.notifications.length === 0) {
-                list.innerHTML = '';
-                empty.style.display = 'block';
-                return;
-            }
-            empty.style.display = 'none';
-            list.innerHTML = data.notifications.map(n => `
-                <div style="padding: 12px 20px; border-bottom: 1px solid #f5f5f5; display: flex; gap: 12px; align-items: flex-start; background: ${n.is_read ? '#fff' : '#faf6f2'}; transition: background 0.2s; cursor: default;"
-                     onmouseover="this.style.background='#f5f0eb'" onmouseout="this.style.background='${n.is_read ? '#fff' : '#faf6f2'}'">
-                    <div style="width: 36px; height: 36px; border-radius: 50%; background: ${n.is_read ? '#f0f0f0' : 'rgba(139,69,19,0.1)'}; display:flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.85rem;">
-                        ${_userNotifIcon(n.type)}
-                    </div>
-                    <div style="flex: 1; min-width: 0;">
-                        <div style="font-weight: ${n.is_read ? '400' : '600'}; font-size: 0.82rem; color: #333; margin-bottom: 2px;">${n.title}</div>
-                        <div style="font-size: 0.75rem; color: #777; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${n.message}</div>
-                        <div style="font-size: 0.65rem; color: #aaa; margin-top: 4px;"><i class="far fa-clock me-1"></i>${n.created_at}</div>
-                    </div>
-                    ${!n.is_read ? '<div style="width:8px;height:8px;border-radius:50%;background:#8B4513;flex-shrink:0;margin-top:6px;"></div>' : ''}
-                </div>
-            `).join('');
-        } catch (e) { console.error('User notif error:', e); }
-    }
-
-    async function fetchUserUnreadCount() {
-        try {
-            const resp = await fetch('/admin/web/notifications/unread-count');
-            const data = await resp.json();
-            const badge = document.getElementById('userNotifBadge');
-            if (data.count > 0) {
-                badge.textContent = data.count > 99 ? '99+' : data.count;
-                badge.style.display = 'inline-block';
-            } else {
-                badge.style.display = 'none';
-            }
-        } catch (e) {}
-    }
-
-    async function markAllUserNotifRead() {
-        try {
-            await fetch('/admin/web/notifications/mark-all-read', { method: 'POST' });
-            fetchUserUnreadCount();
-            fetchUserNotifs();
-        } catch (e) {}
-    }
-
-    // Initial + auto-poll every 15 seconds
-    fetchUserUnreadCount();
-    setInterval(fetchUserUnreadCount, 15000);
 </script>
-{% endif %}
+

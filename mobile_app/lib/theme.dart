@@ -27,20 +27,20 @@ class ThemeManager extends ChangeNotifier {
 // ═══ APP COLORS ═══
 class AppColors {
   // Common
-  static const Color primary = Color(0xFF8B634B);
-  static const Color primaryLight = Color(0xFFA0522D); 
+  static const Color primary = Color(0xFFA0522D);
+  static const Color primaryLight = Color(0xFFBC6B4B); 
   static const Color accent = Color(0xFFD4A862);
   static const Color success = Color(0xFF5C3A21);
   static const Color warning = Color(0xFFA0522D); 
   static const Color danger = Color(0xFFC62828);
-  static const Color info = Color(0xFF8B634B); 
+  static const Color info = Color(0xFFA0522D); 
   static const Color gold = Color(0xFFA0522D);
 
   // Light Mode (Premium Latte)
   static const Color background = Color(0xFFFDFBF9); 
   static const Color cardBg = Color(0xFFF8F1EB); 
   static const Color textMain = Color(0xFF4A3B32); 
-  static const Color textMuted = Color(0xFF8B634B); 
+  static const Color textMuted = Color(0xFFA0522D); 
 
   // Dark Mode (Deep Mocha)
   static const Color darkBg = Color(0xFF1E1410);
@@ -151,3 +151,5 @@ class ThemeText {
     color: Theme.of(context).brightness == Brightness.dark ? AppColors.darkMuted : AppColors.textMuted,
   );
 }
+
+

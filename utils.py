@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from datetime import datetime, timedelta
 
 def get_ph_time():
@@ -226,3 +227,43 @@ def send_email(to_email, subject, html_content):
         traceback.print_exc()
         
     return False
+
+# --- SHARED VALIDATION HELPERS ---
+def has_repeated_chars(s, limit=4):
+    if not s: return False
+    return bool(re.search(r'(.)\1{' + str(limit - 1) + r',}', s))
+
+def has_repeated_words(s):
+    words = s.lower().split()
+    return len(words) != len(set(words))
+
+def validate_name(name, field_name):
+    if not name: return None
+    if len(name) > 50: return f"{field_name} must be 50 characters or less."
+    if not re.match(r'^[A-Za-z\s\-]+$', name): return f"{field_name} can only contain letters, spaces, and dashes."
+    if has_repeated_chars(name, 5): return f"{field_name} contains too many repeated characters."
+    if has_repeated_words(name): return f"{field_name} cannot contain repeated words."
+    return None
+
+def validate_email(email):
+    pattern = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+    if not re.match(pattern, email): return "Please enter a valid email address."
+    return None
+
+def validate_username(username, first, last):
+    if not (5 <= len(username) <= 20): return "Username must be 5-20 characters."
+    if not re.match(r'^[A-Za-z0-9_]+$', username): return "Username can only contain letters, numbers, and underscores."
+    if has_repeated_chars(username, 5): return "Username contains too many repeated characters."
+    if username.lower() == first.lower() or username.lower() == last.lower():
+        return "Username cannot be identical to your first or last name."
+    return None
+
+def validate_password(password, confirm):
+    if len(password) < 6: return "Password must be at least 6 characters."
+    if password.startswith(' ') or password.endswith(' '): return "Password cannot start or end with spaces."
+    if '   ' in password: return "Password cannot contain too many consecutive spaces."
+    if not re.search(r'[A-Z]', password): return "Password must contain an uppercase letter."
+    if not re.search(r'[0-9]', password): return "Password must contain a number."
+    if not re.search(r'[^A-Za-z0-9\s]', password): return "Password must contain a special character."
+    if password != confirm: return "Passwords do not match."
+    return None

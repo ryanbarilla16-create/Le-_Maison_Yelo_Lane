@@ -3,6 +3,25 @@
 {% block title %}Home{% endblock %}
 
 {% block content %}
+<style>
+    /* Premium Button Hover Override */
+    .btn-premium {
+        background: linear-gradient(135deg, #5D4037 0%, #795548 100%) !important;
+        transition: all 0.3s ease !important;
+        border: none !important;
+        box-shadow: 0 4px 14px rgba(93, 64, 55, 0.25) !important;
+    }
+    .btn-premium:hover {
+        transform: translateY(-3px) !important;
+        background: linear-gradient(135deg, #3E2723 0%, #5D4037 100%) !important; /* Darker on hover */
+        box-shadow: 0 8px 24px rgba(93, 64, 55, 0.35) !important;
+        color: #fff !important;
+    }
+    .star-neon {
+        color: #FFD700 !important; /* Neon Yellow/Gold stars */
+        text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+    }
+</style>
 <main>
     <!-- ═══ HERO 1: Full-Width Cinematic Banner ═══ -->
     <section
@@ -29,10 +48,8 @@
                     style="font-family: 'Inter', sans-serif; font-size: 1.25rem; color: #e0e0e0; font-weight: 400; margin-bottom: 3rem; text-shadow: 1px 1px 5px rgba(0,0,0,0.8); line-height: 1.6; max-width: 550px;">
                     Discover a thoughtfully crafted menu designed to bring you and your <span
                         style="font-style: italic; color: #d4a862;">famille</span> together.</p>
-                <a href="{{ url_for('main.menu_page') }}"
-                    style="display: inline-block; padding: 1.1rem 3.5rem; background: linear-gradient(135deg, #8b634b 0%, #5c3a21 100%); color: #ffffff; text-decoration: none; border-radius: 50px; font-size: 1.05rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; transition: all 0.3s ease; box-shadow: 0 10px 25px rgba(92,58,33,0.4); border: 1px solid rgba(255,255,255,0.15);"
-                    onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 15px 30px rgba(92,58,33,0.5)';"
-                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 10px 25px rgba(92,58,33,0.4)';">
+                <a href="{{ url_for('main.menu_page') }}" class="btn-premium hero-btn"
+                    style="display: inline-block; padding: 1.1rem 3.5rem; color: #ffffff; text-decoration: none; border-radius: 50px; font-size: 1.05rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;">
                     ORDER NOW
                 </a>
             </div>
@@ -40,7 +57,7 @@
         <!-- Scroll Indicator -->
         <div
             style="position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%); z-index: 2; text-align: center; animation: bounce 2s infinite;">
-            <i class="fas fa-chevron-down" style="color: rgba(212,168,98,0.6); font-size: 1.5rem;"></i>
+            <i class="fas fa-chevron-down" style="color: rgba(139, 99, 75, 0.6); font-size: 1.5rem;"></i>
         </div>
     </section>
 
@@ -48,7 +65,7 @@
     <div class="row align-items-center mb-5 mx-0 mx-md-4 mt-5"
         style="background-color: rgba(255, 255, 255, 0.95); border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
         <div class="col-md-6 p-5 text-md-start text-center">
-            <p class="text-uppercase fw-bold mb-1" style="color: var(--primary-color); letter-spacing: 2px;">{{
+            <p class="text-uppercase fw-bold mb-1" style="color: #8B634B; letter-spacing: 2px;">{{
                 site.hero2.title1 }}</p>
             <h2
                 style="font-family: 'Georgia', serif; font-size: 3.5rem; color: var(--text-main); font-weight: bold; line-height: 1.2;">
@@ -58,10 +75,9 @@
             </p>
             {% if current_user.is_authenticated %}
             <a href="{{ url_for('main.reserve') }}" class="btn btn-dark rounded-pill px-5 py-2 fw-bold"
-                style="background-color: var(--primary-color); border: none;">Book a Table</a>
+                style="background: linear-gradient(135deg, #5D4037, #795548); border: none; box-shadow: 0 4px 14px rgba(93, 64, 55, 0.25);">Book a Table</a>
             {% else %}
-            <a href="{{ url_for('main.signup') }}" class="btn btn-dark rounded-pill px-5 py-2 fw-bold"
-                style="background-color: var(--primary-color); border: none;">Discover the Flavors</a>
+            <a href="{{ url_for('main.signup') }}" class="btn btn-dark rounded-pill px-5 py-2 fw-bold btn-premium">Discover the Flavors</a>
             {% endif %}
         </div>
         <div class="col-md-6 p-0 d-none d-md-block">
@@ -75,7 +91,7 @@
         <div class="text-center mb-4">
             <p class="text-uppercase fw-bold mb-1"
                 style="color: var(--primary-color); letter-spacing: 3px; font-size: 0.85rem;">Explore Our</p>
-            <h2 style="font-family: 'Georgia', serif; font-size: 2.5rem; color: var(--text-main); font-weight: bold;">
+            <h2 style="font-family: 'Playfair Display', serif; font-size: 2.5rem; color: #8B634B; font-weight: bold;">
                 Menu Selections</h2>
             <p class="text-muted mx-auto" style="max-width: 500px; font-size: 0.95rem;">Discover our curated selection
                 of dishes crafted with the finest ingredients.</p>
@@ -84,9 +100,8 @@
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.25rem; padding: 0 0.5rem;">
             {% for cat in categories %}
             <a href="{{ url_for('main.menu_page') }}"
-                style="text-decoration: none; color: inherit; display: flex; flex-direction: column; height: 100%; background: rgba(255,255,255,0.95); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); transition: all 0.3s; cursor: pointer; border: 1px solid rgba(139,69,19,0.08);"
-                onmouseover="this.style.transform='translateY(-6px)'; this.style.boxShadow='0 12px 30px rgba(139,69,19,0.12)';"
-                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 20px rgba(0,0,0,0.06)';">
+                class="category-card"
+                style="text-decoration: none; color: inherit; display: flex; flex-direction: column; height: 100%; background: rgba(255,255,255,0.95); border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.04); transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1); cursor: pointer; border: 1px solid rgba(139, 99, 75, 0.08);">
                 
                 {% if cat.sample_image %}
                 <div style="height: 160px; overflow: hidden; flex-shrink: 0;">
@@ -96,7 +111,7 @@
                         onmouseout="this.style.transform='scale(1)';">
                 </div>
                 {% else %}
-                <div style="height: 160px; flex-shrink: 0; background: linear-gradient(135deg, #8B4513, #A0522D); display: flex; align-items: center; justify-content: center;">
+                <div style="height: 160px; flex-shrink: 0; background: linear-gradient(135deg, #8b634b, #8b634b); display: flex; align-items: center; justify-content: center;">
                     <i class="fas fa-utensils" style="font-size: 3rem; color: rgba(255,255,255,0.3);"></i>
                 </div>
                 {% endif %}
@@ -112,8 +127,8 @@
         </div>
 
         <div class="text-center mt-4">
-            <a href="{{ url_for('main.menu_page') }}" class="btn btn-dark rounded-pill px-5 py-2 fw-bold"
-                style="background-color: var(--primary-color); border: none; font-size: 0.9rem;">
+            <a href="{{ url_for('main.menu_page') }}" class="btn btn-dark rounded-pill px-5 py-3 fw-bold btn-premium"
+                style="font-size: 1rem; width: 100%; max-width: 800px;">
                 <i class="fas fa-book-open me-2"></i>View Full Menu
             </a>
         </div>
@@ -134,7 +149,7 @@
                         {{ site.card1.title }}</h3>
                     <p class="card-text text-muted mb-4">{{ site.card1.description }}</p>
                     <div><a href="{{ url_for('main.menu_page') }}" class="btn btn-dark rounded-pill px-5 py-2 fw-bold"
-                            style="background-color: #8B4513; border: none;">Discover More</a></div>
+                            style="background: linear-gradient(135deg, #5D4037, #795548); border: none; box-shadow: 0 4px 14px rgba(93, 64, 55, 0.25);">Discover More</a></div>
                 </div>
             </div>
         </div>
@@ -151,8 +166,7 @@
                     <h3 class="card-title fw-bold mb-4" style="font-family: 'Georgia', serif; color: var(--text-main);">
                         {{ site.card2.title }}</h3>
                     <p class="card-text text-muted mb-4">{{ site.card2.description }}</p>
-                    <div><a href="{{ url_for('main.menu_page') }}" class="btn btn-dark rounded-pill px-5 py-2 fw-bold"
-                            style="background-color: #8B4513; border: none;">Discover More</a></div>
+                    <div><a href="{{ url_for('main.menu_page') }}" class="btn btn-dark rounded-pill px-5 py-2 fw-bold btn-premium">Discover More</a></div>
                 </div>
             </div>
         </div>
@@ -167,7 +181,7 @@
             <div class="row g-4 text-center px-lg-4">
                 <!-- Feature 1 -->
                 <div class="col-md-3">
-                    <div class="mb-4" style="color: #fca311; font-size: 3.5rem;">
+                    <div class="mb-4" style="color: #8B634B; font-size: 3.5rem;">
                         <i class="fas fa-utensils"></i>
                     </div>
                     <h5
@@ -179,7 +193,7 @@
                 </div>
                 <!-- Feature 2 -->
                 <div class="col-md-3">
-                    <div class="mb-4" style="color: #fca311; font-size: 3.5rem;">
+                    <div class="mb-4" style="color: #8B634B; font-size: 3.5rem;">
                         <i class="fas fa-concierge-bell"></i>
                     </div>
                     <h5
@@ -190,7 +204,7 @@
                 </div>
                 <!-- Feature 3 -->
                 <div class="col-md-3">
-                    <div class="mb-4" style="color: #fca311; font-size: 3.5rem;">
+                    <div class="mb-4" style="color: #8B634B; font-size: 3.5rem;">
                         <i class="fas fa-seedling"></i>
                     </div>
                     <h5
@@ -201,7 +215,7 @@
                 </div>
                 <!-- Feature 4 -->
                 <div class="col-md-3">
-                    <div class="mb-4" style="color: #fca311; font-size: 3.5rem;">
+                    <div class="mb-4" style="color: #8B634B; font-size: 3.5rem;">
                         <i class="fas fa-coffee"></i>
                     </div>
                     <h5
@@ -224,15 +238,15 @@
                 {% for review in approved_reviews[:2] %}
                 <div class="col-md-5">
                     <div class="p-5 text-start"
-                        style="background: #ffffff; border-radius: 12px; height: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.06); border: 1px solid rgba(139,69,19,0.08);">
-                        <div style="color: #fca311; margin-bottom: 1.25rem; font-size: 1.1rem;">
+                        style="background: #ffffff; border-radius: 12px; height: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.06); border: 1px solid rgba(139, 99, 75,0.08);">
+                        <div style="color: #8B634B; margin-bottom: 1.25rem; font-size: 1.1rem;">
                             {% for _ in range(review.rating) %}
-                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star star-neon"></i>
                             {% endfor %}
                         </div>
                         <p style="font-style: italic; font-size: 1.05rem; line-height: 1.7; color: var(--text-muted);">
                             "{{ review.comment }}"</p>
-                        <hr style="border-color: rgba(139,69,19,0.1); margin: 1.5rem 0;">
+                        <hr style="border-color: rgba(139, 99, 75,0.1); margin: 1.5rem 0;">
                         <div class="d-flex align-items-center">
                             <div
                                 style="width: 45px; height: 45px; border-radius: 50%; background-color: var(--primary-color); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 1rem;">
@@ -249,15 +263,15 @@
                 {% else %}
                 <div class="col-md-5">
                     <div class="p-5 text-start"
-                        style="background: #ffffff; border-radius: 12px; height: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.06); border: 1px solid rgba(139,69,19,0.08);">
-                        <div style="color: #fca311; margin-bottom: 1.25rem; font-size: 1.1rem;">
+                        style="background: #ffffff; border-radius: 12px; height: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.06); border: 1px solid rgba(139, 99, 75,0.08);">
+                        <div class="star-neon" style="margin-bottom: 1.25rem; font-size: 1.1rem;">
                             <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i
                                 class="fas fa-star"></i><i class="fas fa-star"></i>
                         </div>
                         <p style="font-style: italic; font-size: 1.05rem; line-height: 1.7; color: var(--text-muted);">
                             "The best and most authentic French cuisine in Pagsanjan. The ambiance is breathtaking and
                             the staff treats you like family. A must-visit!"</p>
-                        <hr style="border-color: rgba(139,69,19,0.1); margin: 1.5rem 0;">
+                        <hr style="border-color: rgba(139, 99, 75,0.1); margin: 1.5rem 0;">
                         <div class="d-flex align-items-center">
                             <div
                                 style="width: 45px; height: 45px; border-radius: 50%; background-color: var(--primary-color); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 1rem;">
@@ -272,15 +286,15 @@
                 </div>
                 <div class="col-md-5">
                     <div class="p-5 text-start"
-                        style="background: #ffffff; border-radius: 12px; height: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.06); border: 1px solid rgba(139,69,19,0.08);">
-                        <div style="color: #fca311; margin-bottom: 1.25rem; font-size: 1.1rem;">
+                        style="background: #ffffff; border-radius: 12px; height: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.06); border: 1px solid rgba(139, 99, 75,0.08);">
+                        <div class="star-neon" style="margin-bottom: 1.25rem; font-size: 1.1rem;">
                             <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i
                                 class="fas fa-star"></i><i class="fas fa-star"></i>
                         </div>
                         <p style="font-style: italic; font-size: 1.05rem; line-height: 1.7; color: var(--text-muted);">
                             "Exquisite from start to finish. The Signature Yelo Latte is out of this world. Highly
                             recommend booking a table early on weekends!"</p>
-                        <hr style="border-color: rgba(139,69,19,0.1); margin: 1.5rem 0;">
+                        <hr style="border-color: rgba(139, 99, 75,0.1); margin: 1.5rem 0;">
                         <div class="d-flex align-items-center">
                             <div
                                 style="width: 45px; height: 45px; border-radius: 50%; background-color: var(--primary-color); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 1rem;">
@@ -296,8 +310,8 @@
                 {% endif %}
             </div>
             <div class="mt-5 pt-3">
-                <a href="{{ url_for('main.reviews_page') }}" class="btn text-white rounded-pill px-4 fw-bold"
-                    style="background-color: var(--primary-color); border: none;">Read all reviews</a>
+                <a href="{{ url_for('main.reviews_page') }}" class="btn text-white rounded-pill px-5 py-3 fw-bold btn-premium"
+                    style="width: 100%; max-width: 600px;">Read all reviews</a>
             </div>
         </div>
     </section>
@@ -306,7 +320,7 @@
     <section class="py-5 mx-0 mx-md-4 mt-5 mb-5">
         <div class="container-fluid px-lg-5">
             <div class="row g-0 rounded-4 overflow-hidden"
-                style="box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 1px solid rgba(139,69,19,0.08);">
+                style="box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 1px solid rgba(139, 99, 75,0.08);">
                 <div class="col-md-6 d-flex flex-column justify-content-center p-5 text-dark"
                     style="background-color: #ffffff;">
                     <h2 class="mb-4" style="font-family: 'Georgia', serif; font-size: 2.5rem; color: var(--text-main);">
@@ -342,8 +356,8 @@
                     </div>
 
                     <div class="mt-3">
-                        <a href="{{ url_for('main.reserve') }}" class="btn rounded-pill px-5 py-2 fw-bold"
-                            style="background-color: var(--primary-color); color: #fff; border: none; font-size: 1rem;">Book
+                        <a href="{{ url_for('main.reserve') }}" class="btn rounded-pill px-5 py-3 fw-bold text-white btn-premium"
+                            style="font-size: 1rem; width: 100%; display: inline-block;">Book
                             a Table</a>
                     </div>
                 </div>
@@ -380,10 +394,25 @@
         }
     }
 
-    /* Hero 1 button hover */
-    section a:hover {
+    /* Refined Category Card Hover */
+    .category-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 40px rgba(139, 99, 75, 0.15) !important;
+        border-color: rgba(139, 99, 75, 0.3) !important;
+    }
+    
+    .category-card:hover img {
+        transform: scale(1.1);
+    }
+
+    /* Target specific hero link hover instead of all section links */
+    .hero-btn:hover {
         background: #d4a862 !important;
         color: #1a1a1a !important;
     }
 </style>
 {% endblock %}
+
+
+
+

@@ -3,8 +3,8 @@
     <div
         style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; text-align: left;">
         {% for item in menu_items %}
-        <div style="background: white; border-radius: 16px; border: 1px solid rgba(139, 69, 19, 0.1); box-shadow: 0 10px 20px rgba(0,0,0,0.03); transition: transform 0.3s ease, box-shadow 0.3s ease; overflow: hidden;"
-            onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 15px 30px rgba(139,69,19,0.1)';"
+        <div style="background: white; border-radius: 16px; border: 1px solid rgba(139, 99, 75, 0.1); box-shadow: 0 10px 20px rgba(0,0,0,0.03); transition: transform 0.3s ease, box-shadow 0.3s ease; overflow: hidden;"
+            onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 15px 30px rgba(139, 99, 75,0.1)';"
             onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 10px 20px rgba(0,0,0,0.03)';">
 
             <!-- Optional image check if we have image_url -->
@@ -23,7 +23,7 @@
                         style="color: var(--text-main); font-family: 'Georgia', serif; font-size: 1.25rem; font-weight: bold; margin: 0;">
                         {{ item.name }}</h3>
                     <span
-                        style="color: var(--primary-color); font-weight: 700; font-size: 1.1rem; background: rgba(139, 69, 19, 0.05); padding: 0.2rem 0.6rem; border-radius: 8px;">${{
+                        style="color: var(--primary-color); font-weight: 700; font-size: 1.1rem; background: rgba(139, 99, 75, 0.05); padding: 0.2rem 0.6rem; border-radius: 8px;">${{
                         "%.2f"|format(item.price) }}</span>
                 </div>
                 <div style="margin-bottom: 0.8rem;">
@@ -43,3 +43,5 @@
         {% endfor %}
     </div>
 </div>
+
+

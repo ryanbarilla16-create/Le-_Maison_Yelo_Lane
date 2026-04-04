@@ -9,12 +9,12 @@ from datetime import date
 @main_bp.route('/')
 def index():
     site = load_site_settings()
-    menu_items = MenuItem.query.filter_by(is_available=True).limit(4).all()
+    menu_items = MenuItem.query.limit(4).all()
     categories = db.session.query(
         MenuItem.category,
         func.count(MenuItem.id).label('count'),
         func.min(MenuItem.image_url).label('sample_image')
-    ).filter(MenuItem.is_available == True).group_by(MenuItem.category).all()
+    ).group_by(MenuItem.category).all()
 
     if current_user.is_authenticated and current_user.role != 'ADMIN':
         # Personalized user dashboard
@@ -35,10 +35,10 @@ def index():
             Reservation.status == 'COMPLETED'
         ).count()
 
-        featured = MenuItem.query.filter_by(is_available=True).order_by(func.random()).limit(6).all()
+        featured = MenuItem.query.order_by(func.random()).limit(6).all()
 
         # Bestsellers - items from the 'Best Sellers' category
-        bestsellers = MenuItem.query.filter_by(is_available=True, category='Best Sellers').all()
+        bestsellers = MenuItem.query.filter_by(category='Best Sellers').all()
 
         from models import Order
         
@@ -103,8 +103,8 @@ def my_orders():
 
 @main_bp.route('/menu')
 def menu_page():
-    # Show all available items on the full menu page
-    menu_items = MenuItem.query.filter_by(is_available=True).all()
+    # Show all items (even unavailable ones, which show as 'Sold Out')
+    menu_items = MenuItem.query.all()
     return render_template('menu_page.html', menu_items=menu_items)
 
 @main_bp.route('/about')
@@ -114,12 +114,12 @@ def about_page():
 @main_bp.route('/reviews')
 def reviews_page():
     site = load_site_settings()
-    menu_items = MenuItem.query.filter_by(is_available=True).limit(4).all()
+    menu_items = MenuItem.query.limit(4).all()
     categories = db.session.query(
         MenuItem.category,
         func.count(MenuItem.id).label('count'),
         func.min(MenuItem.image_url).label('sample_image')
-    ).filter(MenuItem.is_available == True).group_by(MenuItem.category).all()
+    ).group_by(MenuItem.category).all()
     
     from models import Review
     approved_reviews = Review.query.filter_by(status='APPROVED').order_by(Review.rating.desc(), Review.created_at.desc()).all()

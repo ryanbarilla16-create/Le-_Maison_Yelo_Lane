@@ -10,6 +10,335 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/admin.css') }}" rel="stylesheet">
+    
+    <!-- PREMIUM ADMIN SIDEBAR OVERRIDES -->
+    <style>
+        .admin-sidebar {
+            background: #fdfaf8 !important; /* Soft Cream for luxury feel */
+            border-right: 1px solid rgba(139, 99, 75, 0.1) !important;
+            padding-top: 25px !important;
+        }
+        
+        .sidebar-brand {
+            padding: 0 1.5rem 2rem !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 15px !important;
+            color: #5D4037 !important;
+        }
+        
+        .brand-text {
+            font-family: 'Playfair Display', serif !important;
+            font-weight: 800 !important;
+            font-size: 1.1rem !important;
+            letter-spacing: 0.5px !important;
+            text-transform: none !important;
+        }
+
+        .sidebar-group-title {
+            color: #8B634B !important;
+            font-weight: 800 !important;
+            font-size: 0.72rem !important;
+            letter-spacing: 1.5px !important;
+            text-transform: uppercase !important;
+            padding: 1.5rem 1.5rem 0.6rem !important;
+            opacity: 0.8 !important;
+        }
+
+        .sidebar-nav { padding: 0 1rem !important; }
+        
+        .sidebar-nav li { margin-bottom: 6px !important; }
+
+        .sidebar-nav a {
+            display: flex !important;
+            align-items: center !important;
+            gap: 10px !important;
+            padding: 0.6rem 1.1rem !important;
+            border-radius: 10px !important;
+            color: #5D4037 !important;
+            font-weight: 600 !important;
+            font-size: 0.82rem !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            text-decoration: none !important;
+        }
+
+        .sidebar-nav a.active {
+            background: linear-gradient(135deg, #5D4037, #795548) !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 12px rgba(93, 64, 55, 0.2) !important;
+            transform: translateY(-1px) !important;
+        }
+
+        .sidebar-nav a i {
+            font-size: 0.95rem !important;
+            width: 20px !important;
+            text-align: center !important;
+            opacity: 0.8 !important;
+        }
+
+        .sidebar-nav a.active i {
+            opacity: 1 !important;
+            color: #fff !important;
+        }
+
+        .sidebar-label { letter-spacing: 0.3px !important; }
+
+        /* TOPBAR & ACTION REFINEMENTS */
+        .admin-header {
+            margin-bottom: 30px !important;
+            padding: 0.5rem 0 !important;
+            border-bottom: none !important;
+        }
+
+        .header-date {
+            font-family: 'Playfair Display', serif !important;
+            font-weight: 700 !important;
+            font-size: 0.85rem !important;
+            color: #5D4037 !important;
+            background: rgba(139, 99, 75, 0.05) !important;
+            padding: 0.5rem 1.1rem !important;
+            border-radius: 50px !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 10px !important;
+        }
+
+        .notif-btn {
+            width: 40px !important;
+            height: 40px !important;
+            border-radius: 50% !important;
+            border: 1px solid rgba(139, 99, 75, 0.1) !important;
+            background: #fff !important;
+            color: #8B634B !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            transition: all 0.3s ease !important;
+        }
+
+        .notif-btn:hover {
+            background-color: #8B634B !important;
+            color: #fff !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 4px 12px rgba(139, 99, 75, 0.2) !important;
+        }
+
+        .user-badge {
+            background: #fff !important;
+            border: 1px solid rgba(139, 99, 75, 0.15) !important;
+            border-radius: 50px !important;
+            padding: 4px 12px 4px 4px !important;
+            transition: all 0.3s ease !important;
+        }
+
+        .user-avatar {
+            width: 34px !important;
+            height: 34px !important;
+            background: linear-gradient(135deg, #5D4037, #8B634B) !important;
+            color: #fff !important;
+            font-weight: 700 !important;
+            font-size: 0.8rem !important;
+            border-radius: 50% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+
+        /* PREMIUM ADD ITEM / ACTION BUTTONS */
+        .btn-admin-primary {
+            background: linear-gradient(135deg, #5D4037, #795548) !important;
+            border: none !important;
+            color: #fff !important;
+            padding: 0.6rem 1.4rem !important;
+            border-radius: 10px !important;
+            font-weight: 700 !important;
+            font-size: 0.82rem !important;
+            box-shadow: 0 4px 12px rgba(93, 64, 55, 0.2) !important;
+            transition: all 0.3s ease !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+            text-decoration: none !important;
+        }
+
+        .btn-admin-primary:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 6px 18px rgba(93, 64, 55, 0.3) !important;
+            background: linear-gradient(135deg, #3E2723, #5D4037) !important;
+            color: #fff !important;
+        }
+
+        /* ROLE FILTER TABS & BROADCAST BUTTONS */
+        .filter-tab {
+            padding: 0.5rem 1.25rem !important;
+            border-radius: 12px !important;
+            font-weight: 600 !important;
+            font-size: 0.85rem !important;
+            transition: all 0.3s ease !important;
+            border: 1px solid rgba(139, 99, 75, 0.2) !important;
+            background: #fff !important;
+            color: #8B634B !important;
+            text-decoration: none !important;
+            display: inline-block !important;
+        }
+
+        .filter-tab:hover {
+            background: rgba(139, 99, 75, 0.05) !important;
+            color: #5D4037 !important;
+            border-color: #8B634B !important;
+        }
+
+        .filter-tab.active {
+            background: linear-gradient(135deg, #5D4037, #795548) !important;
+            color: #fff !important;
+            border: none !important;
+            box-shadow: 0 4px 12px rgba(93, 64, 55, 0.2) !important;
+        }
+
+        .btn-broadcast {
+            background: linear-gradient(135deg, #8B634B, #5D4037) !important;
+            color: #fff !important;
+            border: none !important;
+            padding: 0.6rem 1.4rem !important;
+            border-radius: 10px !important;
+            font-weight: 700 !important;
+            font-size: 0.85rem !important;
+            box-shadow: 0 4px 12px rgba(139, 99, 75, 0.2) !important;
+            transition: all 0.3s ease !important;
+        }
+
+        .btn-broadcast:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 6px 18px rgba(139, 99, 75, 0.3) !important;
+            filter: brightness(1.1) !important;
+            color: #fff !important;
+        }
+
+        /* REVIEW MANAGEMENT REFINEMENTS (REMOVE NEON) */
+        .status-filter-group {
+            display: flex !important;
+            gap: 8px !important;
+            background: #fff !important;
+            padding: 4px !important;
+            border-radius: 12px !important;
+            border: 1px solid rgba(139, 99, 75, 0.1) !important;
+        }
+
+        .status-tab {
+            padding: 0.4rem 1rem !important;
+            border-radius: 10px !important;
+            font-size: 0.8rem !important;
+            font-weight: 700 !important;
+            text-decoration: none !important;
+            color: #8B634B !important;
+            transition: all 0.3s ease !important;
+            border: 1px solid transparent !important;
+        }
+
+        .status-tab.active {
+            background: linear-gradient(135deg, #5D4037, #795548) !important;
+            color: #fff !important;
+            box-shadow: 0 4px 12px rgba(93, 64, 55, 0.2) !important;
+        }
+
+        .status-tab:hover:not(.active) {
+            background: rgba(139, 99, 75, 0.05) !important;
+            color: #5D4037 !important;
+        }
+
+        /* Subtle Status Badges */
+        .badge-soft-success {
+            background: #f0fdf4 !important;
+            color: #166534 !important;
+            border: 1px solid #dcfce7 !important;
+            padding: 4px 12px !important;
+            border-radius: 50px !important;
+            font-size: 0.72rem !important;
+            font-weight: 700 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 5px !important;
+        }
+
+        .badge-soft-warning {
+            background: #fffbeb !important;
+            color: #92400e !important;
+            border: 1px solid #fef3c7 !important;
+            padding: 4px 12px !important;
+            border-radius: 50px !important;
+            font-size: 0.72rem !important;
+        }
+
+        .badge-soft-danger {
+            background: #fef2f2 !important;
+            color: #991b1b !important;
+            border: 1px solid #fee2e2 !important;
+            padding: 4px 12px !important;
+            border-radius: 50px !important;
+            font-size: 0.72rem !important;
+        }
+
+        .sentiment-badge {
+            font-size: 0.7rem !important;
+            padding: 2px 8px !important;
+            border-radius: 4px !important;
+            font-weight: 600 !important;
+        }
+
+        .btn-update-review {
+            background: linear-gradient(135deg, #5D4037, #795548) !important;
+            color: #fff !important;
+            border: none !important;
+            padding: 0.5rem 1rem !important;
+            border-radius: 8px !important;
+            font-weight: 700 !important;
+            font-size: 0.8rem !important;
+            transition: all 0.3s ease !important;
+        }
+
+        .btn-update-review:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 4px 12px rgba(93, 64, 55, 0.25) !important;
+            filter: brightness(1.1) !important;
+        }
+
+        /* STAFF PROFILE MODAL REFINEMENTS */
+        .modal-header-custom {
+            background: linear-gradient(135deg, #5D4037, #795548) !important;
+            padding: 1.5rem !important;
+            border-radius: 20px 20px 0 0 !important;
+        }
+
+        .btn-modal-save {
+            background: linear-gradient(135deg, #5D4037, #795548) !important;
+            color: #fff !important;
+            padding: 0.75rem 1.6rem !important;
+            border-radius: 12px !important;
+            font-weight: 700 !important;
+            font-size: 0.85rem !important;
+            box-shadow: 0 4px 12px rgba(93, 64, 55, 0.2) !important;
+            border: none !important;
+            transition: all 0.3s ease !important;
+        }
+
+        .btn-modal-save:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 6px 18px rgba(93, 64, 55, 0.3) !important;
+            filter: brightness(1.1) !important;
+        }
+
+        .input-custom {
+            background: #faf6f1 !important;
+            border: 1px solid rgba(139, 99, 75, 0.15) !important;
+            color: #3E2723 !important;
+        }
+
+        .input-custom:focus {
+            background: #fff !important;
+            border-color: #8B634B !important;
+            box-shadow: 0 0 0 4px rgba(139, 99, 75, 0.1) !important;
+        }
+    </style>
 
     <!-- Leaflet CSS & JS for Maps -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -32,6 +361,7 @@
         </div>
 
         <!-- MAIN -->
+        {% if '/kitchen' not in request.path and '/stock-requests' not in request.path %}
         <div class="sidebar-group-title collapsible-trigger active" onclick="toggleSidebarGroup(this, 'mainGroup')">
             <span>Main</span>
             <i class="fas fa-chevron-down ms-auto arrow-icon" style="opacity: 1.0;"></i>
@@ -58,6 +388,7 @@
                 {% endif %}
             </ul>
         </div>
+        {% endif %}
 
         <!-- MANAGEMENT -->
         <div class="sidebar-group-title collapsible-trigger active" onclick="toggleSidebarGroup(this, 'mgmtGroup')"
@@ -144,6 +475,7 @@
         </div>
 
         <!-- SYSTEM -->
+        {% if '/inventory' not in request.path and '/billing' not in request.path and '/orders' not in request.path and '/walkin' not in request.path and '/chats' not in request.path and '/deliveries' not in request.path and '/approvals' not in request.path and '/kitchen' not in request.path and '/stock-requests' not in request.path %}
         <div class="sidebar-spacer"></div>
         <div class="sidebar-group-title collapsible-trigger active" onclick="toggleSidebarGroup(this, 'systemGroup')"
             style="margin-top: 0.5rem;">
@@ -159,14 +491,13 @@
                 <li><a href="{{ url_for('admin.audit_logs') }}"
                         class="{% if request.endpoint == 'admin.audit_logs' %}active{% endif %}"><i
                             class="fas fa-clipboard-list"></i><span class="sidebar-label">Audit Logs</span></a></li>
-                {% endif %}
                 <li><a href="{{ url_for('admin.settings') }}"
                         class="{% if request.endpoint == 'admin.settings' %}active{% endif %}"><i
-                            class="fas fa-gear"></i><span class="sidebar-label">Settings / Profile</span></a></li>
-                <li><a href="{{ url_for('admin.admin_logout') }}"><i class="fas fa-sign-out-alt"></i><span
-                            class="sidebar-label">Logout</span></a></li>
+                            class="fas fa-cog"></i><span class="sidebar-label">Settings</span></a></li>
+                {% endif %}
             </ul>
         </div>
+        {% endif %}
     </aside>
 
 
@@ -191,7 +522,7 @@
                 <div id="adminNotifPanel"
                     style="display:none; position: absolute; right: 0; top: 48px; width: 370px; max-height: 480px; background: #fff; border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,0.15); z-index: 9999; overflow: hidden; border: 1px solid rgba(0,0,0,0.08);">
                     <div
-                        style="padding: 16px 20px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #8B4513, #A0522D);">
+                        style="padding: 16px 20px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #8b634b, #8b634b);">
                         <span style="font-weight: 700; font-size: 0.95rem; color: #fff;"><i
                                 class="fas fa-bell me-2"></i>Notifications</span>
                         <button onclick="markAllNotifRead()"
@@ -201,7 +532,7 @@
                     </div>
                     <!-- Live counts summary -->
                     <div id="adminLiveCountsBar"
-                        style="display:none; padding: 10px 20px; background: #faf6f2; border-bottom: 1px solid #f0e6d9; font-size: 0.75rem; color: #8B4513;">
+                        style="display:none; padding: 10px 20px; background: #faf6f2; border-bottom: 1px solid #f0e6d9; font-size: 0.75rem; color: #8b634b;">
                     </div>
                     <div id="adminNotifList" style="max-height: 380px; overflow-y: auto; padding: 8px 0;"></div>
                     <div id="adminNotifEmpty"
@@ -212,7 +543,31 @@
                 </div>
             </div>
 
-            <div class="topbar-avatar">{{ current_user.first_name[0] if current_user.is_authenticated else 'A' }}</div>
+            <div class="dropdown">
+                <div class="dropdown-toggle d-flex align-items-center gap-2" id="adminProfileMenu" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer; padding: 4px 8px; border-radius: 50px; background: rgba(139, 99, 75, 0.04); transition: transform 0.2s, background 0.2s;">
+                    <div class="topbar-avatar" style="margin: 0;">
+                        {{ current_user.first_name[0] if current_user.is_authenticated else 'A' }}
+                    </div>
+                    <i class="fas fa-chevron-down text-muted" style="font-size: 0.7rem; margin-right: 4px;"></i>
+                </div>
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" aria-labelledby="adminProfileMenu" style="border-radius: 15px; padding: 10px; min-width: 220px; background: #fff;">
+                    <li class="px-3 py-2 border-bottom mb-2">
+                        <div style="font-weight: 700; color: var(--admin-text); font-size: 0.9rem;">{{ current_user.first_name }} {{ current_user.last_name }}</div>
+                        <div style="font-size: 0.75rem; color: var(--admin-text-muted);">{{ current_user.email }}</div>
+                    </li>
+                    <li>
+                        <a class="dropdown-item py-2 rounded-3" href="javascript:void(0)" onclick="openProfileModal()">
+                            <i class="fas fa-user-edit me-2 text-muted"></i> Edit Profile
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider opacity-25"></li>
+                    <li>
+                        <a class="dropdown-item py-2 rounded-3 text-danger" href="{{ url_for('admin.admin_logout') }}">
+                            <i class="fas fa-sign-out-alt me-2"></i> Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </div>
     </header>
 
@@ -296,7 +651,7 @@
                 if (!document.getElementById('spaLoader')) {
                     const l = document.createElement('div');
                     l.id = 'spaLoader';
-                    l.style = 'position:fixed;top:0;left:0;height:4px;background:#8B4513;z-index:99999;transition:width 0.2s;width:0%;';
+                    l.style = 'position:fixed;top:0;left:0;height:4px;background:#8b634b;z-index:99999;transition:width 0.2s;width:0%;';
                     document.body.appendChild(l);
                 }
                 const loader = document.getElementById('spaLoader');
@@ -366,7 +721,7 @@
         }
 
         #adminNotifBell:hover i {
-            color: #8B4513 !important;
+            color: #8b634b !important;
         }
 
         #adminNotifPanel::-webkit-scrollbar {
@@ -385,7 +740,7 @@
             align-items: center;
             transition: background 0.2s;
             user-select: none;
-            color: #5D4037 !important;
+            color: #8b634b !important;
             /* Dark Brown for better visibility */
             font-weight: 800 !important;
             font-size: 0.75rem !important;
@@ -394,7 +749,7 @@
         }
 
         .collapsible-trigger:hover {
-            background: rgba(139, 69, 19, 0.05);
+            background: rgba(139, 99, 75, 0.05);
         }
 
         .arrow-icon {
@@ -425,6 +780,29 @@
             max-height: 0;
             opacity: 0;
         }
+
+        /* Profile Dropdown Customization */
+        .dropdown-toggle#adminProfileMenu::after {
+            display: none !important;
+        }
+
+        .dropdown-item {
+            transition: all 0.2s;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--admin-text);
+        }
+
+        .dropdown-item:hover {
+            background-color: var(--admin-surface-hover);
+            color: var(--admin-accent);
+            transform: translateX(3px);
+        }
+
+        .dropdown-item.text-danger:hover {
+            background-color: #fff5f5;
+            color: #dc3545;
+        }
     </style>
     <script>
         function toggleSidebarGroup(trigger, groupId) {
@@ -451,7 +829,7 @@
 
         function _notifIcon(type) {
             const icons = {
-                'ORDER': '<i class="fas fa-shopping-bag" style="color:#8B4513;"></i>',
+                'ORDER': '<i class="fas fa-shopping-bag" style="color:#8b634b;"></i>',
                 'RESERVATION': '<i class="fas fa-calendar-check" style="color:#17a2b8;"></i>',
                 'DELIVERY': '<i class="fas fa-truck" style="color:#28a745;"></i>',
                 'SYSTEM': '<i class="fas fa-cog" style="color:#6c757d;"></i>',
@@ -475,7 +853,7 @@
                 list.innerHTML = data.notifications.map(n => `
                     <div style="padding: 12px 20px; border-bottom: 1px solid #f5f5f5; display: flex; gap: 12px; align-items: flex-start; background: ${n.is_read ? '#fff' : '#faf6f2'}; transition: background 0.2s; cursor: default;"
                          onmouseover="this.style.background='#f5f0eb'" onmouseout="this.style.background='${n.is_read ? '#fff' : '#faf6f2'}'">
-                        <div style="width: 36px; height: 36px; border-radius: 50%; background: ${n.is_read ? '#f0f0f0' : 'rgba(139,69,19,0.1)'}; display:flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.85rem;">
+                        <div style="width: 36px; height: 36px; border-radius: 50%; background: ${n.is_read ? '#f0f0f0' : 'rgba(139, 99, 75,0.1)'}; display:flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.85rem;">
                             ${_notifIcon(n.type)}
                         </div>
                         <div style="flex: 1; min-width: 0;">
@@ -483,7 +861,7 @@
                             <div style="font-size: 0.75rem; color: #777; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${n.message}</div>
                             <div style="font-size: 0.65rem; color: #aaa; margin-top: 4px;"><i class="far fa-clock me-1"></i>${n.created_at}</div>
                         </div>
-                        ${!n.is_read ? '<div style="width:8px;height:8px;border-radius:50%;background:#8B4513;flex-shrink:0;margin-top:6px;"></div>' : ''}
+                        ${!n.is_read ? '<div style="width:8px;height:8px;border-radius:50%;background:#8b634b;flex-shrink:0;margin-top:6px;"></div>' : ''}
                     </div>
                 `).join('');
             } catch (e) {
@@ -536,6 +914,230 @@
     </script>
 
     {% block scripts %}{% endblock %}
+
+    <!-- GLOBAL EDIT PROFILE MODAL -->
+    <div id="editProfileModal" class="admin-modal" style="display: none;">
+        <div class="admin-modal-content" style="max-width: 520px; padding: 0; border-radius: 20px; border: none; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);">
+            <div class="modal-header-custom" style="background: linear-gradient(135deg, #5D4037, #795548); padding: 25px; border-radius: 20px 20px 0 0; position: relative;">
+                <h3 style="color: #fff; margin: 0; font-family: 'Poppins', sans-serif; font-size: 1.25rem; font-weight: 600; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-user-circle"></i> Update Staff Profile
+                </h3>
+                <span class="admin-close" style="color: rgba(255,255,255,0.8); cursor: pointer; font-size: 1.5rem; position: absolute; top: 20px; right: 25px;"
+                    onclick="document.getElementById('editProfileModal').style.display='none'">&times;</span>
+            </div>
+            
+            <form method="POST" action="{{ url_for('admin.update_profile') }}" onsubmit="return validateAdminProfile()" style="padding: 30px;">
+                <div class="container-fluid p-0">
+                    <div class="row g-4">
+                        <div class="col-md-4">
+                            <div class="form-group-custom">
+                                <label class="label-custom">First Name</label>
+                                <input type="text" name="admin_first_name" id="admin_first_name" class="input-custom" value="{{ current_user.first_name }}" placeholder="Enter first name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group-custom">
+                                <label class="label-custom">Middle Name</label>
+                                <input type="text" name="admin_middle_name" id="admin_middle_name" class="input-custom" value="{{ current_user.middle_name or '' }}" placeholder="Optional">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group-custom">
+                                <label class="label-custom">Last Name</label>
+                                <input type="text" name="admin_last_name" id="admin_last_name" class="input-custom" value="{{ current_user.last_name }}" placeholder="Enter last name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group-custom">
+                                <label class="label-custom">Username</label>
+                                <div class="input-with-icon">
+                                    <i class="fas fa-at"></i>
+                                    <input type="text" name="admin_username" id="admin_username" class="input-custom" value="{{ current_user.username }}" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group-custom">
+                                <label class="label-custom">Phone Number</label>
+                                <div class="input-with-icon">
+                                    <i class="fas fa-phone"></i>
+                                    <input type="text" name="admin_phone_number" id="admin_phone_number" class="input-custom" value="{{ current_user.phone_number or '' }}" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-group-custom">
+                                <label class="label-custom">Email Address</label>
+                                <div class="input-with-icon">
+                                    <i class="fas fa-envelope"></i>
+                                    <input type="email" name="admin_email" id="admin_email" class="input-custom" value="{{ current_user.email }}" required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin: 40px 0 20px; display: flex; align-items: center; gap: 15px;">
+                        <h6 style="color: var(--admin-text); font-weight: 700; margin: 0; white-space: nowrap;">Security Settings</h6>
+                        <hr style="width: 100%; margin: 0; opacity: 0.1;">
+                    </div>
+                    
+                    <div class="form-group-custom mb-4">
+                        <label class="label-custom">Current Password <span style="font-weight: 400; font-size: 0.75rem; color: var(--admin-red);">(Required to save any changes)</span></label>
+                        <div class="input-with-icon pass-toggle">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" name="admin_current_password" id="admin_current_password" class="input-custom" placeholder="Verify identity" required>
+                            <i class="fas fa-eye eye-trigger" onclick="toggleAdminPwd('admin_current_password', this)"></i>
+                        </div>
+                    </div>
+
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            <div class="form-group-custom">
+                                <label class="label-custom">New Password <span style="font-weight: 400; font-size: 0.75rem;">(Optional)</span></label>
+                                <div class="input-with-icon pass-toggle">
+                                    <i class="fas fa-key"></i>
+                                    <input type="password" name="admin_new_password" id="admin_new_password" class="input-custom" oninput="checkAdminStrength()" placeholder="New password">
+                                    <i class="fas fa-eye eye-trigger" onclick="toggleAdminPwd('admin_new_password', this)"></i>
+                                </div>
+                                <div class="strength-meter-container">
+                                    <div id="admin-strength-bar" class="strength-bar"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group-custom">
+                                <label class="label-custom">Confirm Password</label>
+                                <div class="input-with-icon pass-toggle">
+                                    <i class="fas fa-check-double"></i>
+                                    <input type="password" name="admin_confirm_password" id="admin_confirm_password" class="input-custom" placeholder="Match new password">
+                                    <i class="fas fa-eye eye-trigger" onclick="toggleAdminPwd('admin_confirm_password', this)"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer-custom" style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 30px;">
+                        <button type="button" class="btn btn-link text-muted text-decoration-none fw-bold" onclick="document.getElementById('editProfileModal').style.display='none'">Dismiss</button>
+                        <button type="submit" class="btn-modal-save">Save Changes <i class="fas fa-arrow-right ms-2"></i></button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Additional Styles for Premium Modal -->
+    <style>
+        .form-group-custom { margin-bottom: 5px; }
+        .label-custom { display: block; font-size: 0.75rem; font-weight: 700; color: var(--admin-text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+        .input-custom { width: 100%; padding: 12px 16px; border-radius: 10px; border: 1px solid var(--admin-border); background: var(--admin-bg); color: var(--admin-text); font-size: 0.9rem; transition: all 0.3s; font-weight: 500; }
+        .input-custom:focus { border-color: var(--admin-accent); box-shadow: 0 0 0 4px rgba(139, 99, 75, 0.1); outline: none; background: #fff; }
+        
+        .input-with-icon { position: relative; }
+        .input-with-icon i:first-child { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--admin-text-muted); font-size: 0.9rem; }
+        .input-with-icon .input-custom { padding-left: 42px; }
+        
+        .pass-toggle .eye-trigger { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--admin-text-muted); padding: 5px; transition: color 0.2s; }
+        .pass-toggle .eye-trigger:hover { color: var(--admin-accent); }
+        
+        .strength-meter-container { height: 4px; background: rgba(0,0,0,0.05); border-radius: 10px; margin-top: 8px; overflow: hidden; }
+        .strength-bar { height: 100%; width: 0%; transition: width 0.3s ease, background 0.3s ease; }
+        
+        .btn-modal-cancel { padding: 10px 25px; border-radius: 10px; border: 1px solid var(--admin-border); background: transparent; color: var(--admin-text-muted); font-weight: 600; font-size: 0.9rem; transition: all 0.2s; }
+        .btn-modal-cancel:hover { background: var(--admin-bg); color: var(--admin-text); }
+        
+        .btn-modal-save { padding: 10px 25px; border-radius: 10px; border: none; background: var(--admin-accent); color: #fff; font-weight: 600; font-size: 0.9rem; transition: all 0.2s; box-shadow: 0 4px 15px rgba(139, 99, 75, 0.2); }
+        .btn-modal-save:hover { background: #6f360f; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(139, 99, 75, 0.3); }
+        .btn-modal-save:active { transform: translateY(0); }
+    </style>
+
+    <script>
+        function openProfileModal() {
+            document.getElementById('editProfileModal').style.display = 'flex';
+        }
+
+        function toggleAdminPwd(id, icon) {
+            const input = document.getElementById(id);
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        }
+
+        function checkAdminStrength() {
+            const pwd = document.getElementById('admin_new_password').value;
+            const bar = document.getElementById('admin-strength-bar');
+            
+            if (!pwd) {
+                bar.style.width = '0%';
+                return;
+            }
+
+            let strength = 0;
+            if (pwd.length >= 6) strength += 25;
+            if (/[A-Z]/.test(pwd)) strength += 25;
+            if (/[0-9]/.test(pwd)) strength += 25;
+            if (/[^A-Za-z0-9]/.test(pwd)) strength += 25;
+
+            bar.style.width = strength + '%';
+            if (strength <= 25) bar.style.background = '#ef4444';
+            else if (strength <= 50) bar.style.background = '#f59e0b';
+            else if (strength <= 75) bar.style.background = '#3b82f6';
+            else bar.style.background = '#22c55e';
+        }
+
+        function validateAdminProfile() {
+            const phone = document.getElementById('admin_phone_number').value;
+            if (!/^09\d{9}$/.test(phone)) {
+                alert("Phone number must be exactly 11 digits starting with 09.");
+                return false;
+            }
+
+            const nameRegex = /^[A-Za-z\s\-]+$/;
+            const first = document.getElementById('admin_first_name').value;
+            const last = document.getElementById('admin_last_name').value;
+            const middle = document.getElementById('admin_middle_name').value;
+
+            if (!nameRegex.test(first) || !nameRegex.test(last) || (middle && !nameRegex.test(middle))) {
+                alert("Names can only contain letters, spaces, and dashes.");
+                return false;
+            }
+
+            const username = document.getElementById('admin_username').value;
+            if (username.length < 5 || username.length > 20 || !/^[A-Za-z0-9_]+$/.test(username)) {
+                alert("Username must be 5-20 characters (letters, numbers, underscores).");
+                return false;
+            }
+
+            const newPwd = document.getElementById('admin_new_password').value;
+            const confirmResult = document.getElementById('admin_confirm_password').value;
+            const currentPwd = document.getElementById('admin_current_password').value;
+
+            if (!currentPwd) {
+                alert("Current password is required to save any changes.");
+                return false;
+            }
+
+            if (newPwd) {
+                if (newPwd.length < 6) {
+                    alert("New password must be at least 6 characters.");
+                    return false;
+                }
+                if (newPwd !== confirmResult) {
+                    alert("New passwords do not match.");
+                    return false;
+                }
+            }
+
+            return true;
+        }
+    </script>
 </body>
 
 </html>
+
+
+
+
