@@ -258,7 +258,7 @@ def api_signup():
     try:
         msg = Message(
             subject='Le Maison Yelo Lane - Your OTP Verification Code',
-            sender=current_app.config['MAIL_USERNAME'],
+            sender=current_app.config.get('MAIL_DEFAULT_SENDER') or 'ryanbarilla16@gmail.com',
             recipients=[email]
         )
         msg.html = f"""
@@ -329,7 +329,7 @@ def api_resend_otp():
     try:
         msg = Message(
             subject='Le Maison Yelo Lane - Your New OTP Code',
-            sender=current_app.config['MAIL_USERNAME'],
+            sender=current_app.config.get('MAIL_DEFAULT_SENDER') or 'ryanbarilla16@gmail.com',
             recipients=[user.email]
         )
         msg.html = f"""
@@ -1033,7 +1033,7 @@ def api_forgot_password():
         mail = current_app.extensions['mail']
         msg = Message(
             subject='Le Maison Yelo Lane - Password Reset Code',
-            sender=current_app.config['MAIL_USERNAME'],
+            sender=current_app.config.get('MAIL_DEFAULT_SENDER') or 'ryanbarilla16@gmail.com',
             recipients=[email]
         )
         msg.html = f"""

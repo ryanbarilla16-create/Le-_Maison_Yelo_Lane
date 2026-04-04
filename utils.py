@@ -180,7 +180,7 @@ def send_email(to_email, subject, html_content):
         from sendgrid.helpers.mail import Mail as SGMail
         try:
             sg = SendGridAPIClient(sendgrid_api_key)
-            sender = current_app.config.get('MAIL_DEFAULT_SENDER', 'ryanbarilla254@gmail.com')
+            sender = current_app.config.get('MAIL_DEFAULT_SENDER') or 'ryanbarilla16@gmail.com'
             msg = SGMail(
                 from_email=sender,
                 to_emails=to_email,
@@ -199,9 +199,10 @@ def send_email(to_email, subject, html_content):
         from flask_mail import Message
         try:
             mail = current_app.extensions['mail']
+            sender = current_app.config.get('MAIL_DEFAULT_SENDER') or 'ryanbarilla16@gmail.com'
             msg = Message(
                 subject=subject,
-                sender=current_app.config.get('MAIL_DEFAULT_SENDER', 'ryanbarilla254@gmail.com'),
+                sender=sender,
                 recipients=[to_email]
             )
             msg.html = html_content
