@@ -1,0 +1,70 @@
+{% macro render_pagination(pagination, endpoint, page_param='page') %}
+{% if pagination.pages > 1 %}
+<nav aria-label="Page navigation" class="mt-4">
+    <ul class="pagination justify-content-center mb-0">
+        <!-- Previous Page -->
+        <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for(endpoint, **dict(request.args, **{page_param: pagination.prev_num})) if pagination.has_prev else '#' }}" 
+               aria-label="Previous" style="border-radius: 10px 0 0 10px;">
+                <span aria-hidden="true"><i class="fas fa-chevron-left" style="font-size: 0.75rem;"></i></span>
+            </a>
+        </li>
+
+        <!-- Page Numbers -->
+        {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if p %}
+                <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                    <a class="page-link" href="{{ url_for(endpoint, **dict(request.args, **{page_param: p})) }}" 
+                       style="{% if p == pagination.page %}background: var(--admin-accent); border-color: var(--admin-accent);{% endif %}">
+                        {{ p }}
+                    </a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">…</span>
+                </li>
+            {% endif %}
+        {% endfor %}
+
+        <!-- Next Page -->
+        <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for(endpoint, **dict(request.args, **{page_param: pagination.next_num})) if pagination.has_next else '#' }}" 
+               aria-label="Next" style="border-radius: 0 10px 10px 0;">
+                <span aria-hidden="true"><i class="fas fa-chevron-right" style="font-size: 0.75rem;"></i></span>
+            </a>
+        </li>
+    </ul>
+    <div class="text-center text-muted small mt-2">
+        Showing page {{ pagination.page }} of {{ pagination.pages }} 
+        <span class="mx-1">·</span> 
+        Total {{ pagination.total }} records
+    </div>
+</nav>
+
+<style>
+    .pagination .page-link {
+        color: #8d6e63;
+        border: 1px solid var(--admin-border);
+        padding: 0.5rem 0.9rem;
+        font-weight: 600;
+        font-size: 0.85rem;
+        transition: all 0.2s;
+    }
+    .pagination .page-link:hover {
+        background: rgba(139, 99, 75, 0.05);
+        color: var(--admin-accent);
+        border-color: var(--admin-accent);
+    }
+    .pagination .page-item.active .page-link {
+        background: var(--admin-accent);
+        border-color: var(--admin-accent);
+        color: #fff;
+        box-shadow: 0 4px 10px rgba(139, 99, 75, 0.2);
+    }
+    .pagination .page-item.disabled .page-link {
+        color: #d7ccc8;
+        background: #fafafa;
+    }
+</style>
+{% endif %}
+{% endmacro %}

@@ -1,1079 +1,136 @@
 {% extends "admin/base.html" %}
 
-{% block title %}Kitchen View | Le Maison Kitchen{% endblock %}
+{% block title %}Kitchen Display | Le Maison Kitchen{% endblock %}
 
 {% block content %}
-<!-- HEADER -->
+<!-- HEADER SYNCED WITH CHATS ALIGNMENT -->
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h1 class="kitchen-title mb-0">Kitchen Display</h1>
-        <p class="text-muted mb-0" style="font-size: 0.8rem; font-weight: 500;">Real-time order management</p>
-    </div>
-    <div class="d-flex align-items-center gap-3">
-        <div class="kitchen-toggle-group">
-            <span class="toggle-label">Auto-refresh</span>
-            <div class="form-check form-switch mb-0">
-                <input class="form-check-input" type="checkbox" id="autoRefreshToggle" checked>
-            </div>
-        </div>
-        <div class="kitchen-toggle-group">
-            <span class="toggle-label">Sound</span>
-            <div class="form-check form-switch mb-0">
-                <input class="form-check-input" type="checkbox" id="soundToggle" checked>
-            </div>
+    <h1 style="font-family: 'Georgia', serif; color: #5D4037; font-size: 2rem; font-weight: bold; margin: 0;">
+        Kitchen Display System</h1>
+</div>
+
+<!-- STANDARD ROW/COL ALIGNMENT (JUST LIKE CHATS PAGE) -->
+<div class="row">
+    <div class="col-md-12">
+        <div id="kitchen-content-wrapper" style="min-height: 75vh;">
+            {% include 'admin/kitchen_partial.html' %}
         </div>
     </div>
 </div>
 
-<!-- THROUGHPUT STATS -->
-<div class="row g-3 mb-4">
-    <div class="col-md-4">
-        <div class="kds-stat-card">
-            <div class="kds-stat-icon" style="background: rgba(230, 126, 34, 0.1); color: #E67E22;">
-                <i class="fas fa-clock"></i>
-            </div>
-            <div>
-                <div class="kds-stat-value">{{ avg_prep_time }}m</div>
-                <div class="kds-stat-label">Avg. Prep Time</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="kds-stat-card">
-            <div class="kds-stat-icon" style="background: rgba(39, 174, 96, 0.1); color: #27AE60;">
-                <i class="fas fa-check-circle"></i>
-            </div>
-            <div>
-                <div class="kds-stat-value">{{ completed_count }}</div>
-                <div class="kds-stat-label">Served Today</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="kds-stat-card">
-            <div class="kds-stat-icon" style="background: rgba(231, 76, 60, 0.1); color: #E74C3C;">
-                <i class="fas fa-fire"></i>
-            </div>
-            <div>
-                <div class="kds-stat-value">{{ pending_count + preparing_count }}</div>
-                <div class="kds-stat-label">In Queue</div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<audio id="notificationSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
-
-<!-- STATUS FILTER TABS -->
-<div class="kds-filter-bar mb-4">
-    <a href="{{ url_for('admin.kitchen_view', status='ACTIVE') }}"
-        class="kds-filter-tab {% if status_filter == 'ACTIVE' %}active{% endif %}">
-        <span class="kds-dot" style="background: #E67E22;"></span>In Progress
-        <span class="kds-count">{{ pending_count + preparing_count }}</span>
-    </a>
-    <a href="{{ url_for('admin.kitchen_view', status='PENDING') }}"
-        class="kds-filter-tab {% if status_filter == 'PENDING' %}active{% endif %}">
-        <span class="kds-dot" style="background: #F39C12;"></span>Pending
-        <span class="kds-count">{{ pending_count }}</span>
-    </a>
-    <a href="{{ url_for('admin.kitchen_view', status='PREPARING') }}"
-        class="kds-filter-tab {% if status_filter == 'PREPARING' %}active{% endif %}">
-        <span class="kds-dot" style="background: #3498DB;"></span>Preparing
-        <span class="kds-count">{{ preparing_count }}</span>
-    </a>
-    <a href="{{ url_for('admin.kitchen_view', status='COMPLETED') }}"
-        class="kds-filter-tab {% if status_filter == 'COMPLETED' %}active{% endif %}">
-        <span class="kds-dot" style="background: #27AE60;"></span>Completed
-        <span class="kds-count">{{ completed_count }}</span>
-    </a>
-    <a href="{{ url_for('admin.kitchen_view', status='CANCELLED') }}"
-        class="kds-filter-tab {% if status_filter == 'CANCELLED' %}active{% endif %}">
-        <span class="kds-dot" style="background: #95A5A6;"></span>Cancelled
-        <span class="kds-count">{{ cancelled_count }}</span>
-    </a>
-</div>
-
-<!-- CONSOLIDATED PREP LIST (Grouped by Station) -->
-{% if status_filter == 'ACTIVE' and orders %}
-<div class="kds-prep-panel mb-4">
-    <div class="kds-prep-header">
-        <h6 class="mb-0"><i class="fas fa-list-check me-2"></i>Prep Stations Overview</h6>
-        <span class="text-muted" style="font-size: 0.75rem;">{{ item_count }} items to prepare</span>
-    </div>
-    <div class="kds-prep-body">
-        <!-- Hot Kitchen Station -->
-        {% if hot_kitchen %}
-        <div class="kds-station">
-            <div class="kds-station-label">
-                <span><i class="fas fa-fire-burner me-2" style="color: #E67E22;"></i> HOT KITCHEN</span>
-                <span class="badge" style="background: rgba(139, 99, 75, 0.1); color: #8b634b; font-size: 0.65rem;">{{ hot_kitchen|length }} ITEMS</span>
-            </div>
-            <div class="kds-station-items">
-                {% for item in hot_kitchen %}
-                <div class="kds-prep-item" onclick="this.classList.toggle('is-done')">
-                    <div class="kds-prep-check">
-                        <i class="fas fa-check" style="font-size: 0.6rem;"></i>
-                    </div>
-                    <span class="kds-prep-name">{{ item.name }}</span>
-                    <span class="kds-prep-qty">{{ item.qty }}</span>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- Cold Kitchen / Desserts Station -->
-        {% if cold_kitchen %}
-        <div class="kds-station">
-            <div class="kds-station-label">
-                <span><i class="fas fa-snowflake me-2" style="color: #3498DB;"></i> COLD KITCHEN</span>
-                <span class="badge" style="background: rgba(139, 99, 75, 0.1); color: #8b634b; font-size: 0.65rem;">{{ cold_kitchen|length }} ITEMS</span>
-            </div>
-            <div class="kds-station-items">
-                {% for item in cold_kitchen %}
-                <div class="kds-prep-item" onclick="this.classList.toggle('is-done')">
-                    <div class="kds-prep-check">
-                        <i class="fas fa-check" style="font-size: 0.6rem;"></i>
-                    </div>
-                    <span class="kds-prep-name">{{ item.name }}</span>
-                    <span class="kds-prep-qty">{{ item.qty }}</span>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- Bar Station -->
-        {% if bar_station %}
-        <div class="kds-station">
-            <div class="kds-station-label">
-                <span><i class="fas fa-mug-hot me-2" style="color: #8b634b;"></i> BAR</span>
-                <span class="badge" style="background: rgba(139, 99, 75, 0.1); color: #8b634b; font-size: 0.65rem;">{{ bar_station|length }} ITEMS</span>
-            </div>
-            <div class="kds-station-items">
-                {% for item in bar_station %}
-                <div class="kds-prep-item" onclick="this.classList.toggle('is-done')">
-                    <div class="kds-prep-check">
-                        <i class="fas fa-check" style="font-size: 0.6rem;"></i>
-                    </div>
-                    <span class="kds-prep-name">{{ item.name }}</span>
-                    <span class="kds-prep-qty">{{ item.qty }}</span>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
-    </div>
-</div>
-{% endif %}
-
-{%- macro render_order_card(order) -%}
-<div class="kds-order-card {% if order.reservation %}is-reservation{% endif %}" data-status="{{ order.status }}">
-    {% if order.reservation %}
-    <div style="background: #E67E22; color: #fff; padding: 6px 15px; font-weight: 800; font-size: 0.78rem; display: flex; justify-content: space-between; align-items: center;">
-        <span><i class="fas fa-calendar-check me-1"></i> RESERVATION</span>
-        <span>FOR {{ order.reservation.time.strftime('%I:%M %p') }}</span>
-    </div>
-    {% endif %}
-    <!-- Card Header -->
-    <div class="kds-order-header">
-        <div class="d-flex align-items-center gap-2">
-            <h5 class="kds-order-id mb-0">#{{ order.id }}</h5>
-            <span class="kds-status-dot
-                {% if order.status == 'PENDING' %}pending
-                {% elif order.status == 'PREPARING' %}preparing
-                {% elif order.status == 'COMPLETED' %}completed
-                {% else %}cancelled{% endif %}"></span>
-            <span class="kds-status-text">{{ order.status }}</span>
-        </div>
-        <div class="kds-order-meta">
-            <span class="kds-time-badge">
-                <i class="fas fa-clock"></i>
-                <span class="order-time" data-utc="{{ order.created_at.isoformat() }}Z">{{ order.created_at.strftime('%I:%M %p') }}</span>
-            </span>
-        </div>
-    </div>
-
-    <!-- Card Body -->
-    <div class="kds-order-body">
-        <!-- Customer & Dine Option -->
-        <div class="kds-customer-row">
-            <div style="display: flex; flex-direction: column;">
-                <span class="kds-customer-name">
-                    {% if order.user %}
-                        {{ order.user.first_name }} {{ order.user.last_name }}
-                    {% elif order.customer_name %}
-                        {{ order.customer_name }}
-                    {% else %}
-                        Walk-in
-                    {% endif %}
-                </span>
-                {% if order.reservation %}
-                <span style="font-size: 0.72rem; color: #E67E22; font-weight: bold; margin-top: 2px;">
-                     Guest of {{ order.reservation.guest_count }} · {{ order.reservation.table_number or 'Unassigned' }}
-                </span>
-                {% endif %}
-            </div>
-            <span class="kds-dine-badge
-                {% if order.dining_option == 'DINE_IN' %}dine-in
-                {% elif order.dining_option == 'DELIVERY' %}delivery
-                {% else %}pickup{% endif %}">
-                {% if order.dining_option == 'DINE_IN' %}Dine In
-                {% elif order.dining_option == 'DELIVERY' %}Delivery
-                {% else %}Pick-up{% endif %}
-            </span>
-        </div>
-
-        <!-- Items -->
-        <div class="kds-items-list">
-            {% for item in order.items %}
-            <div class="kds-item-row">
-                <span class="kds-item-qty">{{ item.quantity }}×</span>
-                <span class="kds-item-name">{{ item.menu_item.name }}</span>
-            </div>
-            {% endfor %}
-        </div>
-
-        <!-- Notes -->
-        {% if order.notes %}
-        <div class="kds-notes">
-            <i class="fas fa-sticky-note"></i>
-            <span>{{ order.notes }}</span>
-        </div>
-        {% endif %}
-
-        <!-- Timer -->
-        {% if order.status in ['PENDING', 'PREPARING'] %}
-        <div class="kds-timer">
-            <i class="fas fa-stopwatch"></i>
-            <span class="elapsed-timer" data-created="{{ order.created_at.isoformat() }}Z">calculating...</span>
-        </div>
-        {% endif %}
-    </div>
-
-    <!-- Card Footer (Actions) -->
-    <div class="kds-order-footer">
-        {% if current_user.role|upper == 'ADMIN' %}
-        <div class="kds-view-only">
-            <i class="fas fa-eye me-1"></i>View Only
-        </div>
-        {% else %}
-        {% if order.status == 'PENDING' %}
-        <div class="d-flex gap-2 w-100">
-            <form action="{{ url_for('admin.kitchen_update_order', order_id=order.id) }}" method="POST" class="flex-grow-1">
-                <input type="hidden" name="status" value="PREPARING">
-                <button type="submit" class="kds-btn kds-btn-start w-100">
-                    <i class="fas fa-fire me-1"></i>Start Cooking
-                </button>
-            </form>
-            <form action="{{ url_for('admin.kitchen_update_order', order_id=order.id) }}" method="POST">
-                <input type="hidden" name="status" value="CANCELLED">
-                <button type="submit" class="kds-btn kds-btn-cancel"
-                    onclick="return confirm('Cancel this order?')">
-                    <i class="fas fa-times"></i>
-                </button>
-            </form>
-        </div>
-
-        {% elif order.status == 'PREPARING' %}
-        <div class="d-flex gap-2 w-100">
-            <form action="{{ url_for('admin.kitchen_update_order', order_id=order.id) }}" method="POST" class="flex-grow-1">
-                <input type="hidden" name="status" value="COMPLETED">
-                <button type="submit" class="kds-btn kds-btn-complete w-100">
-                    <i class="fas fa-check-circle me-1"></i>Mark Ready
-                </button>
-            </form>
-            <form action="{{ url_for('admin.kitchen_update_order', order_id=order.id) }}" method="POST">
-                <input type="hidden" name="status" value="CANCELLED">
-                <button type="submit" class="kds-btn kds-btn-cancel"
-                    onclick="return confirm('Cancel this order?')">
-                    <i class="fas fa-times"></i>
-                </button>
-            </form>
-        </div>
-
-        {% elif order.status == 'COMPLETED' %}
-        <div class="kds-completed-label">
-            <i class="fas fa-check-double me-1"></i>Order Served
-        </div>
-
-        {% elif order.status == 'CANCELLED' %}
-        <form action="{{ url_for('admin.kitchen_update_order', order_id=order.id) }}" method="POST" class="text-center w-100">
-            <input type="hidden" name="status" value="PENDING">
-            <button type="submit" class="kds-btn kds-btn-reopen">
-                <i class="fas fa-redo me-1"></i>Reopen Order
-            </button>
-        </form>
-        {% endif %}
-        {% endif %}
-    </div>
-</div>
-{%- endmacro -%}
-
-<!-- ORDER CARDS GRID -->
-<div id="ordersGrid">
-    {% if orders %}
-    
-    {# Separate ASAP and Future orders #}
-    {% set asap_orders = [] %}
-    {% set future_orders = [] %}
-    {% for order in orders %}
-        {% if order.reservation and order.reservation.time %}
-            {% set _ = future_orders.append(order) %}
-        {% else %}
-            {% set _ = asap_orders.append(order) %}
-        {% endif %}
-    {% endfor %}
-
-    <!-- 1. ASAP ORDERS SECTION -->
-    <div class="kds-section-header mb-3 mt-4">
-        <h4 style="font-family: 'Georgia', serif; font-weight: 700; color: #E74C3C; display: flex; align-items: center; gap: 10px;">
-            <i class="fas fa-bolt"></i> ASAP / WALK-IN ORDERS
-            <span style="font-size: 0.8rem; background: #E74C3C; color: #fff; padding: 2px 10px; border-radius: 20px;">{{ asap_orders|length }}</span>
-        </h4>
-    </div>
-    <div class="row g-3 mb-5">
-        {% for order in asap_orders %}
-            <div class="col-xl-4 col-lg-6 col-md-6">
-                {{ render_order_card(order) }}
-            </div>
-        {% endfor %}
-        {% if not asap_orders %}
-            <div class="col-12 text-muted ps-4" style="font-style: italic;">No immediate orders.</div>
-        {% endif %}
-    </div>
-
-    <!-- 2. FUTURE RESERVATIONS SECTION -->
-    <div class="kds-section-header mb-3">
-        <h4 style="font-family: 'Georgia', serif; font-weight: 700; color: #E67E22; display: flex; align-items: center; gap: 10px;">
-            <i class="fas fa-calendar-star"></i> UPCOMING RESERVATIONS
-            <span style="font-size: 0.8rem; background: #E67E22; color: #fff; padding: 2px 10px; border-radius: 20px;">{{ future_orders|length }}</span>
-        </h4>
-        <p class="text-muted" style="font-size: 0.75rem; margin-left: 32px;">Pre-orders for reserved tables today.</p>
-    </div>
-    <div class="row g-3 mb-5">
-        {% for order in future_orders %}
-            <div class="col-xl-4 col-lg-6 col-md-6">
-                {{ render_order_card(order) }}
-            </div>
-        {% endfor %}
-        {% if not future_orders %}
-            <div class="col-12 text-muted ps-4" style="font-style: italic;">No future reservations for today yet.</div>
-        {% endif %}
-    </div>
-
-    {% else %}
-    <div class="col-12">
-        <div class="kds-empty-state">
-            <div class="kds-empty-icon">
-                {% if status_filter == 'COMPLETED' %}
-                <i class="fas fa-check-double"></i>
-                {% elif status_filter == 'CANCELLED' %}
-                <i class="fas fa-times-circle"></i>
-                {% else %}
-                <i class="fas fa-mug-hot"></i>
-                {% endif %}
-            </div>
-            <h3>
-                {% if status_filter == 'ACTIVE' %}All Clear! 🎉
-                {% elif status_filter == 'PENDING' %}No Pending Orders
-                {% elif status_filter == 'PREPARING' %}Nothing Cooking
-                {% elif status_filter == 'COMPLETED' %}No Completed Orders Yet
-                {% elif status_filter == 'CANCELLED' %}No Cancelled Orders
-                {% endif %}
-            </h3>
-            <p>
-                {% if status_filter in ['ACTIVE', 'PENDING', 'PREPARING'] %}No orders right now. Take a breather!
-                {% else %}Nothing to show here.
-                {% endif %}
-            </p>
-        </div>
-    </div>
-    {% endif %}
-</div>
-
-<!-- ═══════════════════════════════════════
-     KITCHEN DISPLAY SYSTEM (KDS) STYLES
-     ═══════════════════════════════════════ -->
 <style>
-    /* ── BASE ── */
-    .kitchen-title {
-        font-family: 'Georgia', serif;
-        color: #1A1A1A;
-        font-size: 1.8rem;
-        font-weight: 700;
-        letter-spacing: -0.5px;
-    }
-
-    .kitchen-toggle-group {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        padding: 6px 12px;
-        background: #ffffff;
-        border: 1px solid #e8e8e8;
-        border-radius: 10px;
-    }
-
-    .toggle-label {
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: #666666;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
+    /* ── KITCHEN PREMIUM STYLES ── */
+    .kitchen-title { font-family: 'Georgia', serif; color: #1A1A1A; font-size: 1.8rem; font-weight: 700; }
+    .kitchen-toggle-group { display: flex; align-items: center; gap: 8px; padding: 8px 15px; background: #ffffff; border: 1px solid #eee; border-radius: 12px; }
+    .toggle-label { font-size: 0.72rem; font-weight: 700; color: #8B634B; text-transform: uppercase; letter-spacing: 0.8px; }
 
     /* ── STAT CARDS ── */
-    .kds-stat-card {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        padding: 18px 20px;
-        background: #ffffff;
-        border: 1px solid #f0f0f0;
-        border-radius: 14px;
-        transition: all 0.2s ease;
-    }
-
-    .kds-stat-card:hover {
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-        transform: translateY(-1px);
-    }
-
-    .kds-stat-icon {
-        width: 44px;
-        height: 44px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.1rem;
-        flex-shrink: 0;
-    }
-
-    .kds-stat-value {
-        font-size: 1.5rem;
-        font-weight: 800;
-        color: #1A1A1A;
-        line-height: 1;
-    }
-
-    .kds-stat-label {
-        font-size: 0.7rem;
-        font-weight: 600;
-        color: #999;
-        text-transform: uppercase;
-        letter-spacing: 0.8px;
-        margin-top: 2px;
-    }
+    .kds-stat-card { display: flex; align-items: center; gap: 15px; padding: 20px; background: #ffffff; border: 1px solid rgba(139, 99, 75, 0.08); border-radius: 16px; transition: all 0.2s ease; }
+    .kds-stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.05); }
+    .kds-stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
+    .kds-stat-value { font-size: 1.6rem; font-weight: 800; color: #2D1A12; line-height: 1; }
+    .kds-stat-label { font-size: 0.7rem; font-weight: 600; color: #AC8A78; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
 
     /* ── FILTER TABS ── */
-    .kds-filter-bar {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-    }
-
-    .kds-filter-tab {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 18px;
-        background: #ffffff;
-        border: 1px solid #e8e8e8;
-        border-radius: 10px;
-        color: #666666;
-        font-size: 0.85rem;
-        font-weight: 600;
-        text-decoration: none;
-        transition: all 0.2s ease;
-    }
-
-    .kds-filter-tab:hover {
-        background: #f8f8f8;
-        color: #1A1A1A;
-        text-decoration: none;
-    }
-
-    .kds-filter-tab.active {
-        background: #1A1A1A;
-        color: #ffffff;
-        border-color: #1A1A1A;
-    }
-
-    .kds-filter-tab.active .kds-dot { background: #ffffff !important; }
+    .kds-filter-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 25px; }
+    .kds-filter-tab { display: flex; align-items: center; gap: 10px; padding: 12px 20px; background: #ffffff; border: 1px solid #eee; border-radius: 12px; color: #5D4037; font-size: 0.85rem; font-weight: 700; text-decoration: none; transition: all 0.2s ease; }
+    .kds-filter-tab:hover { background: #FDFBFA; border-color: #8B634B; color: #5D4037; }
+    .kds-filter-tab.active { background: #5D4037; color: #ffffff; border-color: #5D4037; }
+    .kds-filter-tab.active .kds-dot { background: #fff !important; }
     .kds-filter-tab.active .kds-count { background: rgba(255,255,255,0.2); color: #fff; }
 
-    .kds-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        flex-shrink: 0;
-    }
-
-    .kds-count {
-        background: #f0f0f0;
-        color: #666;
-        font-size: 0.7rem;
-        font-weight: 700;
-        padding: 2px 8px;
-        border-radius: 20px;
-        min-width: 24px;
-        text-align: center;
-    }
+    .kds-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .kds-count { background: #F2EEEC; color: #8B634B; font-size: 0.72rem; font-weight: 800; padding: 2px 10px; border-radius: 20px; }
 
     /* ── PREP PANEL ── */
-    .kds-prep-panel {
-        background: transparent;
-        border: none;
-        border-radius: 0;
-        margin-bottom: 2.5rem;
-    }
-
-    .kds-prep-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0 0 1rem 0;
-        border-bottom: 2px solid rgba(139, 99, 75, 0.1);
-        margin-bottom: 1.5rem;
-    }
-
-    .kds-prep-header h6 {
-        font-family: 'Georgia', serif;
-        font-size: 1.2rem;
-        font-weight: 800;
-        color: #3E2723;
-    }
-
-    .kds-prep-body {
-        padding: 0;
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 1.5rem;
-    }
-
-    /* Station Card Style */
-    .kds-station {
-        background: #ffffff;
-        border-radius: 18px;
-        padding: 1.4rem;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.04);
-        border: 1px solid rgba(139, 99, 75, 0.08);
-        display: flex;
-        flex-direction: column;
-        gap: 0;
-    }
-
-    .kds-station-label {
-        font-size: 0.8rem;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 1.2px;
-        color: #8b634b;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding-bottom: 1rem;
-        margin-bottom: 0.8rem;
-        border-bottom: 1.5px solid rgba(139, 99, 75, 0.05);
-    }
-
-    .kds-station-items {
-        display: flex;
-        flex-direction: column;
-        gap: 0;
-        max-height: 380px; /* Limit station height */
-        overflow-y: auto;  /* Enable vertical scroll */
-        padding-right: 8px;
-    }
-
-    /* Modern Scrollbar for Station Items */
-    .kds-station-items::-webkit-scrollbar {
-        width: 4px;
-    }
-    .kds-station-items::-webkit-scrollbar-track {
-        background: transparent;
-    }
-    .kds-station-items::-webkit-scrollbar-thumb {
-        background: rgba(139, 99, 75, 0.1);
-        border-radius: 10px;
-    }
-    .kds-station-items::-webkit-scrollbar-thumb:hover {
-        background: rgba(139, 99, 75, 0.2);
-    }
-
-    .kds-prep-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0.75rem 10px;
-        background: transparent;
-        border: none;
-        border-bottom: 1px solid rgba(0,0,0,0.03);
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-
-    .kds-prep-item:last-child {
-        border-bottom: none;
-    }
-
-    .kds-prep-item:hover {
-        background: rgba(139, 99, 75, 0.03);
-    }
-
-    /* Checklist Effect */
-    .kds-prep-item.is-done {
-        opacity: 0.4;
-        background: rgba(0,0,0,0.02);
-    }
-    .kds-prep-item.is-done .kds-prep-name,
-    .kds-prep-item.is-done .kds-prep-qty {
-        text-decoration: line-through;
-    }
-
-    .kds-prep-check {
-        width: 18px;
-        height: 18px;
-        border: 2px solid #ddd;
-        border-radius: 4px;
-        margin-right: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        transition: all 0.2s ease;
-    }
-
-    .kds-prep-item.is-done .kds-prep-check {
-        background: #27AE60;
-        border-color: #27AE60;
-        color: white;
-    }
-
-    .kds-prep-qty {
-        font-size: 0.9rem;
-        font-weight: 800;
-        color: #E67E22;
-        background: rgba(230, 126, 34, 0.08);
-        padding: 4px 10px;
-        border-radius: 8px;
-        min-width: 38px;
-        text-align: center;
-        transition: all 0.2s ease;
-    }
-
-    .kds-prep-item.is-done .kds-prep-qty {
-        color: #999;
-        background: #eee;
-    }
-
-    .kds-prep-name {
-        font-size: 0.9rem;
-        font-weight: 600;
-        color: #444;
-        flex: 1;
-    }
+    .kds-prep-body { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
+    .kds-station { background: #ffffff; border-radius: 20px; padding: 20px; border: 1px solid rgba(139, 99, 75, 0.1); box-shadow: 0 4px 20px rgba(139, 99, 75, 0.03); }
+    .kds-station-label { font-size: 0.8rem; font-weight: 800; color: #8B634B; display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; margin-bottom: 12px; border-bottom: 1px solid #FAF7F5; }
+    .kds-prep-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; border-radius: 10px; cursor: pointer; transition: all 0.2s; }
+    .kds-prep-item:hover { background: #FDFBFA; }
+    .kds-prep-item.is-done { opacity: 0.4; }
+    .kds-prep-check { width: 20px; height: 20px; border: 2px solid #DCD1CB; border-radius: 6px; margin-right: 12px; display: flex; align-items: center; justify-content: center; }
+    .kds-prep-item.is-done .kds-prep-check { background: #27AE60; border-color: #27AE60; color: #fff; }
+    .kds-prep-name { font-weight: 600; color: #444; flex: 1; font-size: 0.9rem; }
+    .kds-prep-qty { font-weight: 800; color: #8B634B; background: #F9F4F2; padding: 4px 10px; border-radius: 8px; font-size: 0.85rem; }
 
     /* ── ORDER CARDS ── */
-    .kds-order-card {
-        background: #ffffff;
-        border: 1px solid #f0f0f0;
-        border-radius: 16px;
-        overflow: hidden;
-        transition: all 0.25s ease;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-    }
+    .kds-order-card { background: #ffffff; border-radius: 18px; border: 1px solid #f2f2f2; overflow: hidden; transition: all 0.3s; height: 100%; display: flex; flex-direction: column; }
+    .kds-order-card:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,0,0,0.08); }
+    .kds-order-card[data-status="PENDING"] { border-top: 5px solid #F39C12; }
+    .kds-order-card[data-status="PREPARING"] { border-top: 5px solid #3498DB; }
+    .kds-order-card[data-status="COMPLETED"] { border-top: 5px solid #27AE60; }
 
-    .kds-order-card:hover {
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-        transform: translateY(-2px);
-    }
+    .kds-order-header { padding: 18px 20px; border-bottom: 1px solid #fafafa; display: flex; justify-content: space-between; align-items: center; }
+    .kds-order-id { font-family: 'Georgia', serif; font-weight: 800; color: #2D1A12; }
+    .kds-customer-name { font-weight: 800; color: #2D1A12; font-size: 0.95rem; }
+    .kds-dine-badge { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; padding: 4px 10px; border-radius: 20px; }
+    .kds-dine-badge.dine-in { background: #E8F5E9; color: #2E7D32; }
+    .kds-items-list { margin-top: 15px; }
+    .kds-item-row { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+    .kds-item-qty { font-weight: 800; color: #8B634B; }
+    .kds-timer { margin-top: 15px; font-size: 0.8rem; color: #999; font-weight: 700; display: flex; align-items: center; gap: 6px; }
 
-    .kds-order-card[data-status="PENDING"] {
-        border-left: 4px solid #F39C12;
-    }
-
-    .kds-order-card[data-status="PREPARING"] {
-        border-left: 4px solid #3498DB;
-    }
-
-    .kds-order-card[data-status="COMPLETED"] {
-        border-left: 4px solid #27AE60;
-    }
-
-    .kds-order-card[data-status="CANCELLED"] {
-        border-left: 4px solid #BDC3C7;
-        opacity: 0.7;
-    }
-
-    .kds-order-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 16px 20px;
-        border-bottom: 1px solid #f5f5f5;
-    }
-
-    .kds-order-id {
-        font-family: 'Georgia', serif;
-        font-size: 1.15rem;
-        font-weight: 700;
-        color: #1A1A1A;
-    }
-
-    .kds-status-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        flex-shrink: 0;
-    }
-
-    .kds-status-dot.pending { background: #F39C12; }
-    .kds-status-dot.preparing { background: #3498DB; animation: pulse-dot 1.5s ease infinite; }
-    .kds-status-dot.completed { background: #27AE60; }
-    .kds-status-dot.cancelled { background: #BDC3C7; }
-
-    @keyframes pulse-dot {
-        0%, 100% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.5; transform: scale(1.3); }
-    }
-
-    .kds-status-text {
-        font-size: 0.7rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: #999;
-    }
-
-    .kds-time-badge {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        font-size: 0.8rem;
-        color: #999;
-        font-weight: 500;
-    }
-
-    .kds-time-badge i { font-size: 0.7rem; }
-
-    .kds-order-body {
-        padding: 16px 20px;
-        flex: 1;
-    }
-
-    .kds-customer-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 14px;
-        padding-bottom: 12px;
-        border-bottom: 1px dashed #f0f0f0;
-    }
-
-    .kds-customer-name {
-        font-size: 0.9rem;
-        font-weight: 700;
-        color: #1A1A1A;
-    }
-
-    .kds-dine-badge {
-        font-size: 0.7rem;
-        font-weight: 600;
-        padding: 4px 10px;
-        border-radius: 6px;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-    }
-
-    .kds-dine-badge.dine-in { background: #e8f8ef; color: #1e8449; }
-    .kds-dine-badge.delivery { background: #f4ecf7; color: #7d3c98; }
-    .kds-dine-badge.pickup { background: #fef5e7; color: #b7950b; }
-
-    .kds-items-list {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        margin-bottom: 12px;
-        max-height: 280px; /* Limit height */
-        overflow-y: auto;  /* Enable scroll */
-        padding-right: 4px;
-    }
-
-    /* Custom Scrollbar for Kitchen Items */
-    .kds-items-list::-webkit-scrollbar {
-        width: 4px;
-    }
-    .kds-items-list::-webkit-scrollbar-track {
-        background: rgba(0,0,0,0.02);
-    }
-    .kds-items-list::-webkit-scrollbar-thumb {
-        background: rgba(139, 99, 75, 0.15);
-        border-radius: 10px;
-    }
-    .kds-items-list::-webkit-scrollbar-thumb:hover {
-        background: rgba(139, 99, 75, 0.3);
-    }
-
-    .kds-item-row {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 6px 0;
-    }
-
-    .kds-item-qty {
-        font-size: 0.85rem;
-        font-weight: 800;
-        color: #E67E22;
-        min-width: 28px;
-    }
-
-    .kds-item-name {
-        font-size: 0.9rem;
-        font-weight: 600;
-        color: #333;
-    }
-
-    .kds-notes {
-        display: flex;
-        align-items: flex-start;
-        gap: 8px;
-        padding: 10px 12px;
-        background: #fffcf5;
-        border: 1px dashed #f5deb3;
-        border-radius: 8px;
-        margin-bottom: 10px;
-    }
-
-    .kds-notes i { color: #E67E22; font-size: 0.8rem; margin-top: 2px; flex-shrink: 0; }
-    .kds-notes span { font-size: 0.8rem; color: #666; font-weight: 500; }
-
-    .kds-timer {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 0.8rem;
-        color: #999;
-    }
-
-    .kds-timer i { font-size: 0.75rem; }
-
-    .kds-order-footer {
-        padding: 14px 20px;
-        border-top: 1px solid #f5f5f5;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    /* ── BUTTONS ── */
-    .kds-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 4px;
-        padding: 10px 18px;
-        border: none;
-        border-radius: 10px;
-        font-size: 0.85rem;
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-
-    .kds-btn-start {
-        background: #1A1A1A;
-        color: #ffffff;
-    }
-
-    .kds-btn-start:hover {
-        background: #333;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-
-    .kds-btn-complete {
-        background: #27AE60;
-        color: #ffffff;
-    }
-
-    .kds-btn-complete:hover {
-        background: #219a52;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(39,174,96,0.25);
-    }
-
-    .kds-btn-cancel {
-        background: #fdf2f2;
-        color: #E74C3C;
-        border: 1px solid #fce4e4;
-        padding: 10px 14px;
-    }
-
-    .kds-btn-cancel:hover {
-        background: #fce4e4;
-    }
-
-    .kds-btn-reopen {
-        background: #fef5e7;
-        color: #E67E22;
-        border: 1px solid #fde0b5;
-    }
-
-    .kds-btn-reopen:hover {
-        background: #fde0b5;
-    }
-
-    .kds-view-only {
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: #bbb;
-    }
-
-    .kds-completed-label {
-        font-size: 0.85rem;
-        font-weight: 700;
-        color: #27AE60;
-    }
-
-    /* ── EMPTY STATE ── */
-    .kds-empty-state {
-        text-align: center;
-        padding: 60px 20px;
-    }
-
-    .kds-empty-icon {
-        font-size: 4rem;
-        color: rgba(0,0,0,0.06);
-        margin-bottom: 16px;
-    }
-
-    .kds-empty-state h3 {
-        font-family: 'Georgia', serif;
-        color: #1A1A1A;
-        font-weight: 700;
-        font-size: 1.3rem;
-    }
-
-    .kds-empty-state p {
-        color: #999;
-        font-size: 0.9rem;
-    }
-
-    /* ── TIMER COLORS ── */
-    .elapsed-danger {
-        color: #E74C3C !important;
-        font-weight: 800 !important;
-    }
-
-    .elapsed-warning {
-        color: #E67E22 !important;
-        font-weight: 700 !important;
-    }
-
-    /* ── PENDING CARD SUBTLE PULSE ── */
-    .kds-order-card[data-status="PENDING"] {
-        animation: subtle-pulse 3s ease-in-out infinite;
-    }
-
-    @keyframes subtle-pulse {
-        0%, 100% { border-left-color: #F39C12; }
-        50% { border-left-color: #E74C3C; }
-    }
+    .kds-btns-group { display: flex; gap: 8px; width: 100%; }
+    .kds-order-footer { padding: 20px; border-top: 1px solid #f9f9f9; }
+    .btn-kd { padding: 10px 15px; border-radius: 12px; border: none; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: 0.2s; }
+    .btn-kd-start { background: #2D1A12; color: #fff; width: 100%; }
+    .btn-kd-complete { background: #27AE60; color: #fff; width: 100%; }
+    .btn-kd-cancel { background: #F2F2F2; color: #999; }
 </style>
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
 <script>
-    // Update elapsed timers
+    async function loadKitchenPartial(url, showLoading = true) {
+        const wrapper = document.getElementById('kitchen-content-wrapper');
+        const refreshToggle = document.getElementById('autoRefreshToggle');
+        if (!showLoading && refreshToggle && !refreshToggle.checked) return;
+        try {
+            // Added cache buster (timestamp) to prevent showing old content
+            const timestamp = new Date().getTime();
+            const response = await fetch(url + (url.includes('?') ? '&' : '?') + 'partial=1&cb=' + timestamp);
+            const html = await response.text();
+            wrapper.innerHTML = html;
+            initializeDynamicElements();
+        } catch (e) { console.error('Failed to update kitchen:', e); }
+    }
+
+    async function handleKitchenUpdate(event, form, orderId, confirmCancel = false) {
+        event.preventDefault();
+        if (confirmCancel && !confirm('Are you sure?')) return;
+        try {
+            await fetch(form.action || `/admin/orders/update/${orderId}`, { method: 'POST', body: new FormData(form) });
+            loadKitchenPartial(window.location.href, false);
+        } catch (e) { console.error('Update failed:', e); }
+    }
+
+    function initializeDynamicElements() {
+        document.querySelectorAll('.order-time').forEach(el => {
+            if (el.dataset.utc) {
+                const date = new Date(el.dataset.utc);
+                el.textContent = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+            }
+        });
+        updateTimers();
+    }
+
     function updateTimers() {
         document.querySelectorAll('.elapsed-timer').forEach(el => {
-            const created = new Date(el.dataset.created);
-            const now = new Date();
-            const diff = Math.floor((now - created) / 1000);
-            const mins = Math.floor(diff / 60);
-            const secs = diff % 60;
-
-            let text = '';
-            if (mins > 0) {
-                text = mins + 'm ' + secs + 's ago';
-            } else {
-                text = secs + 's ago';
-            }
-            el.textContent = text;
-
-            // Color code based on wait time
-            if (mins >= 15) {
-                el.className = 'elapsed-timer elapsed-danger';
-            } else if (mins >= 8) {
-                el.className = 'elapsed-timer elapsed-warning';
-            } else {
-                el.className = 'elapsed-timer';
-                el.style.color = '#999';
-            }
+            const created = el.dataset.created; if (!created) return;
+            const diff = Math.floor((new Date() - new Date(created)) / 1000);
+            const m = Math.floor(diff/60); const s = diff%60;
+            el.textContent = (m>0 ? m+'m ' : '') + s+'s ago';
+            if (m>=15) el.className = 'elapsed-timer text-danger';
+            else if (m>=8) el.className = 'elapsed-timer text-warning';
         });
     }
 
-    // Run timer every second
-    updateTimers();
-    if (window.registerInterval) window.registerInterval(updateTimers, 1000);
-    else setInterval(updateTimers, 1000);
-
-    // Convert UTC times to local time (Philippine Time)
-    document.querySelectorAll('.order-time').forEach(el => {
-        const utcDate = new Date(el.dataset.utc);
-        el.textContent = utcDate.toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-        });
-    });
-
-    // Replace 15s refresh with SocketIO real-time updates
+    setInterval(updateTimers, 1000);
     const socket = io();
-    const sound = document.getElementById('notificationSound');
-    const soundToggle = document.getElementById('soundToggle');
-    const refreshToggle = document.getElementById('autoRefreshToggle');
-
-    // Socket listeners for new orders
-    socket.on('new_order', function(data) {
-        console.log('New order received:', data);
-        if (refreshToggle.checked) {
-            if (soundToggle.checked) {
-                sound.play().catch(e => console.log('Audio play blocked:', e));
-            }
-            const toast = document.createElement('div');
-            toast.className = 'position-fixed bottom-0 end-0 p-3';
-            toast.style.zIndex = '1100';
-            toast.innerHTML = `<div class="toast show text-white" role="alert" style="background: #1A1A1A; border-radius: 12px;"><div class="toast-body"><i class="fas fa-bell me-2" style="color: #E67E22;"></i>New Order #${data.id} from ${data.customer}</div></div>`;
-            document.body.appendChild(toast);
-            
-            setTimeout(() => location.reload(), 1500); 
-        }
-    });
-
-    // Socket listener for status updates
-    socket.on('order_status_update', function(data) {
-        console.log('Order status updated:', data);
-        if (refreshToggle.checked) {
-            location.reload();
-        }
-    });
-
-    // Toggle manual refresh
-    refreshToggle.addEventListener('change', function () {
-        if (this.checked) {
-            console.log('Real-time updates enabled via SocketIO');
-        } else {
-            console.log('Real-time updates paused');
-        }
-    });
+    socket.on('new_order', () => loadKitchenPartial(window.location.href, false));
+    socket.on('order_status_update', () => loadKitchenPartial(window.location.href, false));
+    initializeDynamicElements();
 </script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
 {% endblock %}

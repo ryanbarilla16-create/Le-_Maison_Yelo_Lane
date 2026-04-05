@@ -5,6 +5,7 @@ import 'services/auth_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/rider_screen.dart';
+import 'services/socket_service.dart';
 import 'screens/cart_screen.dart';
 
 void main() async {
@@ -12,6 +13,7 @@ void main() async {
   await dotenv.load(fileName: ".env");
   await ThemeManager().init(); // Load theme preference
   await CartScreen.loadCart();
+  SocketService.init(); // Initialize WebSocket communication
   runApp(const MyApp());
 }
 

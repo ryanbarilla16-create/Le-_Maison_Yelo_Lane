@@ -1,4 +1,5 @@
 {% extends "admin/base.html" %}
+{% from "macros.html" import render_pagination %}
 
 {% block title %}Order Management{% endblock %}
 
@@ -666,7 +667,7 @@
                 </tr>
             </thead>
             <tbody id="ordersTableBody">
-                {% for order in orders %}
+                {% for order in orders.items %}
                 <tr class="order-row filter-row" onclick="toggleOrderItems('{{ order.id }}', event)">
                     <td style="padding-left: 1.5rem;">
                         <span class="order-id-cell row-order-id">#{{ order.id }}</span>
@@ -808,6 +809,10 @@
                 {% endfor %}
             </tbody>
         </table>
+    </div>
+    
+    <div class="card-footer bg-white border-top py-3">
+        {{ render_pagination(orders, 'admin.orders') }}
     </div>
 </div>
 

@@ -7,6 +7,8 @@ import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
 import 'settings_screen.dart';
+import 'info_hub_screen.dart';
+import 'my_reviews_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -504,6 +506,54 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   height: 56,
                 ),
 
+              if (!_isEditing) ...[
+                const SizedBox(height: 16),
+                const Divider(),
+                const SizedBox(height: 16),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'My Activity',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: AppColors.primary,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _infoTile(
+                  Icons.rate_review_outlined,
+                  'My Reviews',
+                  'Track and view your feedback history',
+                  () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyReviewsScreen())),
+                ),
+                const SizedBox(height: 16),
+                const Divider(),
+                const SizedBox(height: 16),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Information & Support',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: AppColors.primary,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _infoTile(
+                  Icons.info_outline_rounded,
+                  'About & FAQs',
+                  'Our story, delivery info, and more',
+                  () => Navigator.push(context, MaterialPageRoute(builder: (_) => const InfoHubScreen())),
+                ),
+                const SizedBox(height: 24),
+              ],
+
               if (!_isEditing)
                 SizedBox(
                   width: double.infinity,
@@ -522,6 +572,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 40),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _infoTile(IconData icon, String title, String subtitle, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.primary.withOpacity(0.1)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: AppColors.primary, size: 22),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  Text(subtitle, style: AppTextStyles.muted.copyWith(fontSize: 12)),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey, size: 14),
+          ],
         ),
       ),
     );

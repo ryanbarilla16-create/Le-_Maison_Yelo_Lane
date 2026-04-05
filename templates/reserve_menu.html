@@ -205,7 +205,12 @@
                     <div class="menu-grid">
                         {% for item in items %}
                         <div class="menu-item-card {% if not item.is_available %}unavailable{% endif %}">
-                            <img src="{{ item.image_url or url_for('static', filename='images/placeholder-food.jpg') }}" alt="{{ item.name }}" class="menu-item-img">
+                            <!-- Layer 2 & 3: Deferred loading for non-active categories and lazy loading for scroll performance -->
+                            <img src="{{ item.image_url or url_for('static', filename='images/placeholder-food.jpg') if loop.parent.first else 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7' }}" 
+                                 data-real-src="{{ item.image_url or url_for('static', filename='images/placeholder-food.jpg') }}"
+                                 alt="{{ item.name }}" 
+                                 class="menu-item-img"
+                                 loading="lazy">
                             <div class="menu-item-info">
                                 <div>
                                     <h4 class="menu-item-name">{{ item.name }}</h4>
@@ -251,7 +256,18 @@
         });
         
         // Show selected panel
-        document.getElementById(id).classList.add('active');
+        const activePanel = document.getElementById(id);
+        activePanel.classList.add('active');
+        
+        // --- Layer 2 Logic: Real Loading on Category Selection ---
+        // Find all deferred images in this category and swap to real src
+        activePanel.querySelectorAll('.menu-item-img').forEach(img => {
+            const realSrc = img.getAttribute('data-real-src');
+            if (realSrc && img.getAttribute('src') !== realSrc) {
+                img.src = realSrc;
+            }
+        });
+        
         sessionStorage.setItem('res_menu_category', id);
     }
 

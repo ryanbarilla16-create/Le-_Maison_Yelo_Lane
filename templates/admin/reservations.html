@@ -1,4 +1,5 @@
 {% extends "admin/base.html" %}
+{% from "macros.html" import render_pagination %}
 {% block title %}Reservations{% endblock %}
 
 {% block content %}
@@ -151,7 +152,7 @@
 
 <div class="admin-table-wrap">
     <div class="admin-table-header">
-        <h3>{{ reservations|length }} Reservation{{ 's' if reservations|length != 1 else '' }}</h3>
+        <h3>{{ reservations.total }} Reservation{{ 's' if reservations.total != 1 else '' }}</h3>
     </div>
     <div style="overflow-x: auto;">
         <table class="admin-table">
@@ -169,7 +170,7 @@
                 </tr>
             </thead>
             <tbody>
-                {% for res in reservations %}
+                {% for res in reservations.items %}
                 <tr>
                     <td><strong>{{ res.user.first_name }} {{ res.user.last_name }}</strong></td>
                     <td><span
@@ -196,16 +197,15 @@
                         <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
                             {% if res.status == 'PENDING' %}
                             <button class="btn-admin btn-admin-success" style="font-size: 0.78rem;"
-                                onclick="openTableModal({
-                                    id: '{{ res.id }}', 
-                                    name: '{{ res.user.first_name }}',
-                                    date: '{{ res.date.strftime('%b %d, %Y') }}',
-                                    time: '{{ res.time.strftime('%I:%M %p') }}',
-                                    guests: '{{ res.guest_count }}',
-                                    occasion: '{{ res.occasion or '' }}',
-                                    hasOrder: {{ 'true' if res.linked_order else 'false' }},
-                                    orderTotal: '{{ "%.2f"|format(res.linked_order.total_amount) if res.linked_order else '0.00' }}'
-                                })">
+                                data-res-id="{{ res.id }}"
+                                data-guest-name="{{ res.user.first_name }} {{ res.user.last_name }}"
+                                data-res-date="{{ res.date.strftime('%b %d, %Y') }}"
+                                data-res-time="{{ res.time.strftime('%I:%M %p') }}"
+                                data-guest-count="{{ res.guest_count }}"
+                                data-occasion="{{ res.occasion or '' }}"
+                                data-has-order="{{ 'true' if res.linked_order else 'false' }}"
+                                data-order-total="{{ '%.2f'|format(res.linked_order.total_amount) if res.linked_order else '0.00' }}"
+                                onclick="openTableModal(this)">
                                 <i class="fas fa-check"></i> Confirm
                             </button>
                             <form method="POST" action="{{ url_for('admin.update_reservation', res_id=res.id) }}"><input
@@ -227,6 +227,7 @@
             </tbody>
         </table>
     </div>
+    {{ render_pagination(reservations, 'admin.reservations') }}
 </div>
 
 <!-- Table Assignment Modal -->
@@ -277,15 +278,16 @@
 </div>
 
 <script>
-    function openTableModal(data) {
+    function openTableModal(btn) {
         const modal = document.getElementById('tableModal');
         const form = document.getElementById('modalConfirmForm');
+        const data = btn.dataset;
         
         // Fill Summary
-        document.getElementById('sumName').innerText = data.name;
-        document.getElementById('sumDate').innerText = data.date;
-        document.getElementById('sumTime').innerText = data.time;
-        document.getElementById('sumGuests').innerText = data.guests;
+        document.getElementById('sumName').innerText = data.guestName;
+        document.getElementById('sumDate').innerText = data.resDate;
+        document.getElementById('sumTime').innerText = data.resTime;
+        document.getElementById('sumGuests').innerText = data.guestCount;
         
         if (data.occasion) {
             document.getElementById('sumOccasionTag').style.display = 'inline';
@@ -293,18 +295,18 @@
         } else {
             document.getElementById('sumOccasionTag').style.display = 'none';
         }
-
+ 
         const orderBadge = document.getElementById('orderBadge');
-        if (data.hasOrder) {
+        if (data.hasOrder === 'true') {
             orderBadge.style.display = 'block';
             orderBadge.innerHTML = `<i class="fas fa-utensils me-1"></i> PRE-ORDERED (₱${data.orderTotal})`;
         } else {
             orderBadge.style.display = 'none';
         }
-
+ 
         // Dynamic URL for the form action
-        form.action = `/admin/reservations/update/${data.id}`;
-
+        form.action = `/admin/reservations/update/${data.resId}`;
+ 
         modal.style.display = 'flex';
         document.getElementById('table_number_input').focus();
     }

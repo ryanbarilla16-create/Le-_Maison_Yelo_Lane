@@ -23,21 +23,47 @@ class _ReserveMenuScreenState extends State<ReserveMenuScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchMenu();
+    _fetchInitialData();
   }
 
-  Future<void> _fetchMenu() async {
-    final res = await ApiService.get('/api/menu');
+  Future<void> _fetchInitialData() async {
+    // Layer 1: Start with categories only
     final catsRes = await ApiService.get('/api/menu/categories');
-    if (res != null && res is List) {
+    if (catsRes != null && catsRes is List) {
+      if (mounted) {
+        setState(() {
+          _categories = ['All', ...catsRes.map((e) => e['category'].toString())];
+        });
+        // Start loading the first category immediately (usually "All" or first specific)
+        _fetchItemsByCategory(_categories.first);
+      }
+    }
+  }
+
+  Future<void> _fetchItemsByCategory(String category) async {
+    // Avoid double-loading a category if we already have it (Simple caching)
+    final hasAlreadyFetched = _menuItems.any((e) => e['category'] == category);
+    if (category != 'All' && hasAlreadyFetched) {
       setState(() {
-        _menuItems = res;
+        _selectedCategory = category;
         _loading = false;
       });
+      return;
     }
-    if (catsRes != null && catsRes is List) {
+
+    setState(() => _loading = true);
+    final res = await ApiService.get('/api/menu?category=$category');
+    if (res != null && res is List) {
+      if (!mounted) return;
       setState(() {
-        _categories = ['All', ...catsRes.map((e) => e['category'].toString())];
+        // Merge new items without duplicates
+        for (var newItem in res) {
+          if (!_menuItems.any((existing) => existing['id'] == newItem['id'])) {
+            _menuItems.add(newItem);
+          }
+        }
+        _selectedCategory = category;
+        _loading = false;
       });
     }
   }
@@ -45,8 +71,13 @@ class _ReserveMenuScreenState extends State<ReserveMenuScreen> {
   double get _totalPrice {
     double total = 0;
     for (var entry in _cart.entries) {
-      final item = _menuItems.firstWhere((element) => element['id'] == entry.key);
-      total += (item['price'] as num).toDouble() * entry.value;
+      try {
+        final item = _menuItems.firstWhere((element) => element['id'] == entry.key);
+        total += (item['price'] as num).toDouble() * entry.value;
+      } catch (e) {
+        // Handle items in cart not currently in the visible menu list
+        continue;
+      }
     }
     return total;
   }
@@ -149,7 +180,9 @@ class _ReserveMenuScreenState extends State<ReserveMenuScreen> {
                       const SizedBox(width: 8),
                       DropdownButton<String>(
                         value: _selectedCategory ?? 'All',
-                        onChanged: (v) => setState(() => _selectedCategory = v),
+                        onChanged: (v) {
+                          if (v != null) _fetchItemsByCategory(v);
+                        },
                         items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(fontSize: 12)))).toList(),
                       ),
                     ],

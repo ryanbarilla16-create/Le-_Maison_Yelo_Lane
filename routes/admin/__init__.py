@@ -115,21 +115,28 @@ def overview():
     import json as _json
     today = date.today()
 
-    # 1) Revenue Trend
+    # 1) & 2) Revenue and Orders Trend (Combined optimization)
+    week_ago = today - timedelta(days=6)
+    trend_stats = db.session.query(
+        func.date(Order.created_at).label('d'),
+        func.count(Order.id).label('cnt'),
+        func.sum(Order.total_amount).label('rev')
+    ).filter(func.date(Order.created_at) >= week_ago).group_by('d').all()
+    
+    trend_map = {row.d: (int(row.cnt or 0), float(row.rev or 0)) for row in trend_stats}
+    
     revenue_trend_labels, revenue_trend_data = [], []
-    for i in range(6, -1, -1):
-        d = today - timedelta(days=i)
-        revenue_trend_labels.append(d.strftime('%b %d'))
-        day_rev = db.session.query(func.coalesce(func.sum(Order.total_amount), 0)).filter(func.date(Order.created_at) == d).scalar()
-        revenue_trend_data.append(float(day_rev))
-
-    # 2) Daily Orders
     daily_orders_labels, daily_orders_data = [], []
+    
     for i in range(6, -1, -1):
         d = today - timedelta(days=i)
-        daily_orders_labels.append(d.strftime('%b %d'))
-        cnt = db.session.query(func.count(Order.id)).filter(func.date(Order.created_at) == d).scalar()
-        daily_orders_data.append(int(cnt or 0))
+        lbl = d.strftime('%b %d')
+        revenue_trend_labels.append(lbl)
+        daily_orders_labels.append(lbl)
+        
+        stat = trend_map.get(d, (0, 0.0))
+        daily_orders_data.append(stat[0])
+        revenue_trend_data.append(stat[1])
 
     # 3) Busy Times
     busy_hours_raw = db.session.query(func.extract('hour', Order.created_at).label('hr'), func.count(Order.id)).group_by('hr').order_by('hr').all()
@@ -685,11 +692,14 @@ def users():
         return redirect(url_for('admin.overview'))
 
     role_filter = request.args.get('role', 'ALL')
-    if role_filter == 'ALL':
-        all_users = User.query.order_by(User.id).all()
-    else:
-        all_users = User.query.filter(func.upper(User.role) == role_filter.upper()).order_by(User.id).all()
-    return render_template('admin/users.html', users=all_users, role_filter=role_filter)
+    page = request.args.get('page', 1, type=int)
+    
+    query = User.query
+    if role_filter != 'ALL':
+        query = query.filter(func.upper(User.role) == role_filter.upper())
+    
+    pagination = query.order_by(User.id).paginate(page=page, per_page=30, error_out=False)
+    return render_template('admin/users.html', users=pagination, role_filter=role_filter)
 
 @admin_bp.route('/users/update-role/<int:user_id>', methods=['POST'])
 @login_required
@@ -787,11 +797,14 @@ def api_user_details(user_id):
 @admin_required
 def reservations():
     status_filter = request.args.get('status', 'ALL')
-    if status_filter == 'ALL':
-        all_res = Reservation.query.order_by(Reservation.created_at.desc()).all()
-    else:
-        all_res = Reservation.query.filter_by(status=status_filter).order_by(Reservation.created_at.desc()).all()
-    return render_template('admin/reservations.html', reservations=all_res, status_filter=status_filter)
+    page = request.args.get('page', 1, type=int)
+    
+    query = Reservation.query
+    if status_filter != 'ALL':
+        query = query.filter_by(status=status_filter)
+    
+    pagination = query.order_by(Reservation.created_at.desc()).paginate(page=page, per_page=20, error_out=False)
+    return render_template('admin/reservations.html', reservations=pagination, status_filter=status_filter)
 
 @admin_bp.route('/reservations/update/<int:res_id>', methods=['POST'])
 @login_required
@@ -824,27 +837,38 @@ def update_reservation(res_id):
 @login_required
 @admin_required
 def inventory():
-    items = MenuItem.query.order_by(MenuItem.category).all()
-    total_items = len(items)
-    out_of_stock = sum(1 for i in items if not i.is_available)
-    all_ingredients = Ingredient.query.order_by(Ingredient.name).all()
-    all_suppliers = Supplier.query.order_by(Supplier.name).all()
-    low_stock_count = sum(1 for ing in all_ingredients if float(ing.stock_qty) <= float(ing.reorder_level))
+    page_items = request.args.get('page_items', 1, type=int)
+    page_ingredients = request.args.get('page_ingredients', 1, type=int)
     
-    # Expiration Tracking (within 7 days)
+    # Counts using SQL instead of Python loops
+    total_items = MenuItem.query.count()
+    out_of_stock = MenuItem.query.filter_by(is_available=False).count()
+    total_ingredients = Ingredient.query.count()
+    low_stock_count = db.session.query(func.count(Ingredient.id)).filter(Ingredient.stock_qty <= Ingredient.reorder_level).scalar()
+    
     today = date.today()
-    from datetime import timedelta
     seven_days_later = today + timedelta(days=7)
-    expiring_soon_count = sum(1 for ing in all_ingredients if ing.expiration_date and today <= ing.expiration_date <= seven_days_later)
+    expiring_soon_count = db.session.query(func.count(Ingredient.id)).filter(
+        Ingredient.expiration_date.between(today, seven_days_later)
+    ).scalar()
+    
+    # Paginated data
+    items_paginated = MenuItem.query.order_by(MenuItem.category, MenuItem.name).paginate(page=page_items, per_page=15)
+    ingredients_paginated = Ingredient.query.order_by(Ingredient.name).paginate(page=page_ingredients, per_page=20)
+    
+    all_suppliers = Supplier.query.order_by(Supplier.name).all()
+    all_ingredients_raw = Ingredient.query.order_by(Ingredient.name).all()
     
     return render_template('admin/inventory.html', 
-        items=items, 
+        items=items_paginated, 
         total_items=total_items, 
         out_of_stock=out_of_stock, 
-        ingredients=all_ingredients, 
+        ingredients=ingredients_paginated, 
         suppliers=all_suppliers, 
         low_stock_count=low_stock_count,
         expiring_soon_count=expiring_soon_count,
+        total_ingredients=total_ingredients,
+        all_ingredients_raw=all_ingredients_raw,
         today=today)
 
 @admin_bp.route('/inventory/generate-po')
@@ -1022,6 +1046,16 @@ def kitchen_view():
         else:
             hot_kitchen.append(station_item)
 
+    # Handle partial request (for soft refresh)
+    if request.args.get('partial'):
+        return render_template('admin/kitchen_partial.html', 
+            orders=active_orders, hot_kitchen=hot_kitchen, cold_kitchen=cold_kitchen,
+            bar_station=bar_station, item_count=len(item_data), status_filter=status_filter,
+            pending_count=pending_count, preparing_count=preparing_count,
+            completed_count=completed_count, cancelled_count=cancelled_count,
+            avg_prep_time=avg_prep_time, ph_now=ph_now
+        )
+
     return render_template('admin/kitchen.html', 
         orders=active_orders,
         hot_kitchen=hot_kitchen,
@@ -1042,27 +1076,55 @@ def kitchen_view():
 @admin_required
 def kitchen_api_orders():
     """API endpoint for auto-refresh of kitchen orders"""
-    active_orders = Order.query.filter(
-        Order.status.in_(['PENDING', 'PREPARING'])
-    ).order_by(Order.created_at.asc()).all()
+    status_filter = request.args.get('status', 'ACTIVE')
+    ph_now = get_ph_time()
+    
+    # Base query
+    if status_filter == 'ACTIVE':
+        active_orders = Order.query.filter(Order.status.in_(['PENDING', 'PREPARING']))
+    else:
+        active_orders = Order.query.filter_by(status=status_filter)
+        
+    active_orders = active_orders.order_by(Order.created_at.asc()).all()
+    
+    # Counts for badges
+    stats = {
+        'pending': Order.query.filter_by(status='PENDING').count(),
+        'preparing': Order.query.filter_by(status='PREPARING').count(),
+        'completed': Order.query.filter_by(status='COMPLETED').count(),
+        'cancelled': Order.query.filter_by(status='CANCELLED').count()
+    }
+    
+    # Station aggregation (Only for ACTIVE filter)
+    hot_kitchen, cold_kitchen, bar_station = [], [], []
+    item_data = {}
     
     orders_data = []
     for order in active_orders:
+        # Check ASAP logic for station summary
+        is_asap = True
+        if order.reservation and order.reservation.date and order.reservation.time:
+            try:
+                res_dt = datetime.combine(order.reservation.date, order.reservation.time)
+                diff = (res_dt - ph_now.replace(tzinfo=None)).total_seconds() / 60
+                if diff > 60: is_asap = False
+            except: pass
+            
         items_list = []
         for item in order.items:
-            items_list.append({
-                'name': item.menu_item.name,
-                'qty': item.quantity
-            })
+            items_list.append({'name': item.menu_item.name, 'qty': item.quantity})
+            
+            if is_asap and status_filter == 'ACTIVE':
+                name = item.menu_item.name
+                cat = (item.menu_item.category or 'Other').lower()
+                if name in item_data:
+                    item_data[name]['qty'] += item.quantity
+                else:
+                    item_data[name] = {'qty': item.quantity, 'cat': cat}
         
         customer = 'Walk-in'
-        if order.user:
-            customer = f"{order.user.first_name} {order.user.last_name}"
-        elif order.customer_name:
-            customer = order.customer_name
-        
-        elapsed = (get_ph_time() - order.created_at).total_seconds()
-        minutes = int(elapsed // 60)
+        if order.user: customer = f"{order.user.first_name} {order.user.last_name}"
+        elif order.customer_name: customer = order.customer_name
         
         orders_data.append({
             'id': order.id,
@@ -1071,11 +1133,35 @@ def kitchen_api_orders():
             'dining_option': order.dining_option,
             'notes': order.notes or '',
             'items': items_list,
-            'minutes_ago': minutes,
-            'created_at': order.created_at.strftime('%I:%M %p')
+            'is_reservation': bool(order.reservation),
+            'res_time': order.reservation.time.strftime('%I:%M %p') if (order.reservation and order.reservation.time) else None,
+            'guest_count': order.reservation.guest_count if order.reservation else None,
+            'table': order.reservation.table_number if order.reservation else None,
+            'created_at_utc': order.created_at.isoformat() + 'Z',
+            'created_at_str': order.created_at.strftime('%I:%M %p')
         })
-    
-    return jsonify(orders_data)
+
+    # Final station categorization
+    for name, info in item_data.items():
+        s_item = {'name': name, 'qty': info['qty']}
+        c = info['cat']
+        if any(kw in c for kw in ['drink', 'beverage', 'coffee', 'shake', 'juice', 'tea']):
+            bar_station.append(s_item)
+        elif any(kw in c for kw in ['dessert', 'cake', 'pastry', 'sweet', 'cheesecake', 'waffle']):
+            cold_kitchen.append(s_item)
+        else:
+            hot_kitchen.append(s_item)
+
+    return jsonify({
+        'orders': orders_data,
+        'stats': stats,
+        'stations': {
+            'hot': hot_kitchen,
+            'cold': cold_kitchen,
+            'bar': bar_station
+        },
+        'status_filter': status_filter
+    })
 
 @admin_bp.route('/kitchen/update/<int:order_id>', methods=['POST'])
 @login_required
@@ -1263,14 +1349,17 @@ def walkin_order_submit():
 @admin_required
 def deliveries():
     status_filter = request.args.get('status', 'ALL')
+    page = request.args.get('page', 1, type=int)
+    
     query = Order.query.filter_by(dining_option='DELIVERY')
     if status_filter != 'ALL':
         if status_filter == 'WAITING':
             query = query.filter((Order.delivery_status == None) | (Order.delivery_status == 'WAITING'))
         else:
             query = query.filter_by(delivery_status=status_filter)
-    all_orders = query.order_by(Order.created_at.desc()).all()
-    return render_template('admin/deliveries.html', orders=all_orders, status_filter=status_filter)
+            
+    pagination = query.order_by(Order.created_at.desc()).paginate(page=page, per_page=20, error_out=False)
+    return render_template('admin/deliveries.html', orders=pagination, status_filter=status_filter)
 
 # ─── ORDERS ──────────────────────────────────────────
 @admin_bp.route('/orders')
@@ -1278,25 +1367,45 @@ def deliveries():
 @admin_required
 def orders():
     status_filter = request.args.get('status', 'ALL')
-    if status_filter == 'ALL':
-        all_orders = Order.query.order_by(Order.created_at.desc()).all()
-    else:
-        all_orders = Order.query.filter_by(status=status_filter).order_by(Order.created_at.desc()).all()
+    page = request.args.get('page', 1, type=int)
+    
+    query = Order.query
+    if status_filter != 'ALL':
+        query = query.filter_by(status=status_filter)
         
-    # Stats Calculation
-    today = date.today()
-    today_orders = Order.query.filter(func.date(Order.created_at) == today).all()
+    pagination = query.order_by(Order.created_at.desc()).paginate(page=page, per_page=20, error_out=False)
+        
+    # Optimized Stats Calculation via SQL Group By
+    today = get_ph_time().date()
+    # 1 query for all today's stats
+    today_stats_rows = db.session.query(
+        Order.status, 
+        Order.payment_status,
+        Order.payment_method,
+        func.count(Order.id),
+        func.sum(Order.total_amount)
+    ).filter(func.date(Order.created_at) == today).group_by(Order.status, Order.payment_status, Order.payment_method).all()
     
-    total_sales_today = sum(o.total_amount for o in today_orders if o.status == 'COMPLETED' and o.payment_status == 'PAID')
-    pending_count = len([o for o in today_orders if o.status == 'PENDING'])
-    completed_count = len([o for o in today_orders if o.status == 'COMPLETED'])
+    total_sales_today = 0
+    pending_count = 0
+    completed_count = 0
+    cash_sales = 0
+    online_sales = 0
     
-    # Shift Report
-    cash_sales = sum(o.total_amount for o in today_orders if o.status == 'COMPLETED' and o.payment_status == 'PAID' and o.payment_method == 'COUNTER')
-    online_sales = sum(o.total_amount for o in today_orders if o.status == 'COMPLETED' and o.payment_status == 'PAID' and o.payment_method == 'ONLINE')
+    for s, ps, pm, cnt, total in today_stats_rows:
+        total = float(total or 0)
+        cnt = int(cnt or 0)
+        
+        if s == 'COMPLETED' and ps == 'PAID':
+            total_sales_today += total
+            if pm == 'COUNTER': cash_sales += total
+            if pm == 'ONLINE': online_sales += total
+            
+        if s == 'PENDING': pending_count += cnt
+        if s == 'COMPLETED': completed_count += cnt
 
     return render_template('admin/orders.html', 
-                           orders=all_orders, 
+                           orders=pagination, 
                            status_filter=status_filter,
                            total_sales_today=total_sales_today,
                            pending_count=pending_count,
@@ -1309,25 +1418,38 @@ def orders():
 @admin_required
 def billing():
     status_filter = request.args.get('status', 'UNPAID')
+    page = request.args.get('page', 1, type=int)
     
-    if status_filter == 'ALL':
-        billing_orders = Order.query.order_by(Order.created_at.desc()).all()
-    else:
-        billing_orders = Order.query.filter_by(payment_status=status_filter).order_by(Order.created_at.desc()).all()
+    query = Order.query
+    if status_filter != 'ALL':
+        query = query.filter_by(payment_status=status_filter)
         
-    # Stats Calculation
-    today = date.today()
-    today_orders = Order.query.filter(func.date(Order.created_at) == today).all()
+    pagination = query.order_by(Order.created_at.desc()).paginate(page=page, per_page=20, error_out=False)
+        
+    # Stats Calculation optimized
+    today = get_ph_time().date()
+    stats = db.session.query(
+        Order.payment_status,
+        Order.payment_method,
+        func.count(Order.id),
+        func.sum(Order.total_amount)
+    ).filter(func.date(Order.created_at) == today).group_by(Order.payment_status, Order.payment_method).all()
     
-    total_sales_today = sum(o.total_amount for o in today_orders if o.status == 'COMPLETED' and o.payment_status == 'PAID')
-    unpaid_count = len([o for o in today_orders if o.payment_status == 'UNPAID'])
+    total_sales_today = 0
+    unpaid_count = 0
+    cash_sales = 0
+    online_sales = 0
     
-    # Shift Report
-    cash_sales = sum(o.total_amount for o in today_orders if o.status == 'COMPLETED' and o.payment_status == 'PAID' and o.payment_method == 'COUNTER')
-    online_sales = sum(o.total_amount for o in today_orders if o.status == 'COMPLETED' and o.payment_status == 'PAID' and o.payment_method == 'ONLINE')
-
+    for ps, pm, cnt, total in stats:
+        total_val = float(total or 0)
+        if ps == 'PAID': 
+            total_sales_today += total_val
+            if pm == 'COUNTER': cash_sales += total_val
+            if pm == 'ONLINE': online_sales += total_val
+        if ps == 'UNPAID': unpaid_count += int(cnt or 0)
+    
     return render_template('admin/billing.html', 
-                           orders=billing_orders, 
+                           orders=pagination, 
                            status_filter=status_filter,
                            total_sales_today=total_sales_today,
                            unpaid_count=unpaid_count,
@@ -1980,9 +2102,10 @@ def waste_ingredient(ing_id):
 @login_required
 @admin_required
 def inventory_audit_logs():
+    page = request.args.get('page', 1, type=int)
     from models import InventoryLog
-    logs = InventoryLog.query.order_by(InventoryLog.created_at.desc()).limit(100).all()
-    return render_template('admin/inventory_logs.html', logs=logs)
+    pagination = InventoryLog.query.order_by(InventoryLog.created_at.desc()).paginate(page=page, per_page=50)
+    return render_template('admin/inventory_logs.html', pagination=pagination)
 
 # ─── RECIPE (MENU ITEM INGREDIENTS) ──────────────────
 @admin_bp.route('/recipe/<int:item_id>', methods=['GET'])

@@ -12,6 +12,7 @@ import 'cart_screen.dart';
 import 'notifications_screen.dart';
 import 'chat_screen.dart';
 import 'my_reservations_screen.dart';
+import '../services/socket_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -28,22 +29,36 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _loading = true;
   int _currentIndex = 0;
   int _unreadNotifCount = 0;
-  Timer? _notifTimer;
+  StreamSubscription? _socketSubscription;
 
   @override
   void initState() {
     super.initState();
     _loadData();
     _loadUnreadCount();
-    // Poll for new notifications every 15 seconds
-    _notifTimer = Timer.periodic(const Duration(seconds: 15), (_) {
-      _loadUnreadCount();
+    
+    // Switch from Polling to Real-time WebSocket Listeners
+    _socketSubscription = SocketService.notifications.listen((data) {
+      if (mounted) {
+        _loadUnreadCount();
+        _loadData(); // Auto-refresh dashboard data on notification
+        
+        // Show non-intrusive snackbar for critical updates
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(data['title'] ?? 'New Notification'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.primary,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
     });
   }
 
   @override
   void dispose() {
-    _notifTimer?.cancel();
+    _socketSubscription?.cancel();
     super.dispose();
   }
 
@@ -71,6 +86,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
     try {
       final userId = _user!['id'];
+      
+      // Join private user room for targeted notifications
+      SocketService.joinUserRoom(userId);
+      
       final results = await Future.wait([
         ApiService.get('/api/user/$userId/dashboard'),
         ApiService.get('/api/menu/bestsellers'),
@@ -203,14 +222,20 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                             const SizedBox(height: 4),
-                            Text(
-                              '${_user?['first_name'] ?? 'Guest'}',
-                              style: const TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                                letterSpacing: -0.5,
-                              ),
+                            Row(
+                              children: [
+                                Text(
+                                  '${_user?['first_name'] ?? 'Guest'}',
+                                  style: const TextStyle(
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white,
+                                    letterSpacing: -0.5,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                _loyaltyBadge(_dashboard?['loyalty_status'] ?? 'New', isHeader: true),
+                              ],
                             ),
                           ],
                         ),
@@ -320,10 +345,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(width: 10),
                   _statCard(
-                    Icons.emoji_events,
+                    _loyaltyIcon(_dashboard?['loyalty_status'] ?? 'New'),
                     _dashboard?['loyalty_status'] ?? 'New',
                     'Loyalty',
-                    AppColors.accent,
+                    _loyaltyColor(_dashboard?['loyalty_status'] ?? 'New'),
                   ),
                 ],
               ),
@@ -730,6 +755,72 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Text(
         status[0] + status.substring(1).toLowerCase(),
         style: TextStyle(color: fg, fontSize: 11, fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+
+  // ═══ LOYALTY VISUAL HELPERS ═══
+
+  IconData _loyaltyIcon(String status) {
+    switch (status.toUpperCase()) {
+      case 'GOLD': return Icons.workspace_premium;
+      case 'SILVER': return Icons.stars;
+      case 'BRONZE': return Icons.military_tech;
+      default: return Icons.emoji_events;
+    }
+  }
+
+  Color _loyaltyColor(String status) {
+    switch (status.toUpperCase()) {
+      case 'GOLD': return Colors.amber;
+      case 'SILVER': return Colors.blueGrey[300]!;
+      case 'BRONZE': return Colors.deepOrange[300]!;
+      default: return AppColors.accent;
+    }
+  }
+
+  Widget _loyaltyBadge(String status, {bool isHeader = false}) {
+    if (status.toUpperCase() == 'NEW') return const SizedBox.shrink();
+    
+    Color color = _loyaltyColor(status);
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: isHeader ? 8 : 6, vertical: 2),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [color, color.withOpacity(0.7)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.3),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          )
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            _loyaltyIcon(status),
+            color: Colors.white,
+            size: isHeader ? 14 : 10,
+          ),
+          if (isHeader) ...[
+            const SizedBox(width: 4),
+            Text(
+              status.toUpperCase(),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1,
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

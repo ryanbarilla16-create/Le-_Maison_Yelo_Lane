@@ -71,6 +71,12 @@ class _CartScreenState extends State<CartScreen> {
   bool _loading = false;
   Set<int> _selectedIds = {};
   bool _selectAll = true;
+  
+  // Voucher variables
+  final _voucherCtrl = TextEditingController();
+  double _voucherDiscount = 0.0;
+  String? _appliedVoucher;
+  bool _validatingVoucher = false;
 
   @override
   void initState() {
@@ -140,6 +146,7 @@ class _CartScreenState extends State<CartScreen> {
       'notes': _notesCtrl.text.trim(),
       'dining_option': _diningOption,
       'payment_method': _paymentMethod,
+      'voucher_code': _appliedVoucher, // Send applied voucher
       if (_diningOption == 'DELIVERY')
         'delivery_address': '${_addressCtrl.text.trim()}, Brgy. $_selectedBarangay, $_selectedMunicipality, Laguna. (Map Pin: ${_pinnedLocation!.latitude.toStringAsFixed(5)}, ${_pinnedLocation!.longitude.toStringAsFixed(5)})',
     });
@@ -195,11 +202,45 @@ class _CartScreenState extends State<CartScreen> {
     }
   }
 
+  Future<void> _applyVoucher() async {
+    final code = _voucherCtrl.text.trim();
+    if (code.isEmpty) return;
+
+    final userId = await AuthService.getUserId();
+    if (userId == null) return;
+
+    setState(() => _validatingVoucher = true);
+    
+    final res = await ApiService.post('/api/voucher/validate', {
+      'code': code,
+      'user_id': userId,
+      'order_amount': _selectedTotal,
+    });
+
+    setState(() => _validatingVoucher = false);
+
+    if (res['success'] == true) {
+      setState(() {
+        _voucherDiscount = (res['discount_amount'] as num).toDouble();
+        _appliedVoucher = res['voucher_code'];
+      });
+      _showMsg(res['message'], true);
+    } else {
+      setState(() {
+        _voucherDiscount = 0.0;
+        _appliedVoucher = null;
+      });
+      _showMsg(res['message'], false);
+    }
+  }
+
   void _showMsg(String msg, bool success) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
+        behavior: SnackBarBehavior.floating,
         backgroundColor: success ? AppColors.success : AppColors.danger,
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -507,6 +548,74 @@ class _CartScreenState extends State<CartScreen> {
                         ),
                       ),
                       const SizedBox(height: 12),
+                      // Voucher Section
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Vouchers & Promos',
+                              style: AppTextStyles.heading.copyWith(fontSize: 14),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextField(
+                                    controller: _voucherCtrl,
+                                    enabled: _appliedVoucher == null,
+                                    style: const TextStyle(fontSize: 14),
+                                    decoration: InputDecoration(
+                                      hintText: 'Enter Promo Code',
+                                      hintStyle: AppTextStyles.muted.copyWith(fontSize: 13),
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+                                      filled: true,
+                                      fillColor: AppColors.primary.withOpacity(0.04),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                if (_appliedVoucher != null)
+                                  IconButton(
+                                    icon: const Icon(Icons.cancel, color: Colors.red),
+                                    onPressed: () => setState(() {
+                                      _appliedVoucher = null;
+                                      _voucherDiscount = 0.0;
+                                      _voucherCtrl.clear();
+                                    }),
+                                  )
+                                else
+                                  GestureDetector(
+                                    onTap: _validatingVoucher ? null : _applyVoucher,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary,
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: _validatingVoucher
+                                          ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                          : const Text('Apply', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
 
                       // Payment method
                       Container(
@@ -576,16 +685,36 @@ class _CartScreenState extends State<CartScreen> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Total', style: AppTextStyles.muted),
-                          Text(
-                            '₱${_selectedTotal.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              fontFamily: 'Georgia',
-                              fontWeight: FontWeight.bold,
-                              fontSize: 22,
-                              color: AppColors.accent,
+                          if (_voucherDiscount > 0) ...[
+                            Text(
+                              '₱${_selectedTotal.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                decoration: TextDecoration.lineThrough,
+                                color: Colors.grey,
+                                fontSize: 12,
+                              ),
                             ),
-                          ),
+                            Text(
+                              '₱${(_selectedTotal - _voucherDiscount).toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontFamily: 'Georgia',
+                                fontWeight: FontWeight.bold,
+                                fontSize: 22,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ] else ...[
+                            const Text('Total', style: AppTextStyles.muted),
+                            Text(
+                              '₱${_selectedTotal.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontFamily: 'Georgia',
+                                fontWeight: FontWeight.bold,
+                                fontSize: 22,
+                                color: AppColors.accent,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                       const Spacer(),
@@ -600,7 +729,6 @@ class _CartScreenState extends State<CartScreen> {
                           radius: 14,
                         ),
                       ),
-
                     ],
                   ),
                 ),

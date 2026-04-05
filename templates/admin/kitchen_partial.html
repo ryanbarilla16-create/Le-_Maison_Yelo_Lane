@@ -1,0 +1,157 @@
+<!-- KITCHEN PARTIAL CONTENT - CACHE BUSTER 2315 -->
+<!-- HEADER STATS -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="kds-stat-card">
+            <div class="kds-stat-icon" style="background: rgba(230, 126, 34, 0.1); color: #E67E22;"><i class="fas fa-clock"></i></div>
+            <div>
+                <div class="kds-stat-value">{{ avg_prep_time }}m</div>
+                <div class="kds-stat-label">Avg. Prep Time</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="kds-stat-card">
+            <div class="kds-stat-icon" style="background: rgba(39, 174, 96, 0.1); color: #27AE60;"><i class="fas fa-check-circle"></i></div>
+            <div>
+                <div class="kds-stat-value">{{ completed_count }}</div>
+                <div class="kds-stat-label">Served Today</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="kds-stat-card">
+            <div class="kds-stat-icon" style="background: rgba(231, 76, 60, 0.1); color: #E74C3C;"><i class="fas fa-fire"></i></div>
+            <div>
+                <div class="kds-stat-value">{{ pending_count + preparing_count }}</div>
+                <div class="kds-stat-label">In Queue</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- FILTER TABS & TOGGLES -->
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div class="kds-filter-bar">
+        <a href="{{ url_for('admin.kitchen_view', status='ACTIVE') }}" class="kds-filter-tab {% if status_filter == 'ACTIVE' %}active{% endif %}">
+            <span class="kds-dot" style="background: #E67E22;"></span>Active
+            <span class="kds-count">{{ pending_count + preparing_count }}</span>
+        </a>
+        <a href="{{ url_for('admin.kitchen_view', status='PENDING') }}" class="kds-filter-tab {% if status_filter == 'PENDING' %}active{% endif %}">
+            <span class="kds-dot" style="background: #F39C12;"></span>Pending
+            <span class="kds-count">{{ pending_count }}</span>
+        </a>
+        <a href="{{ url_for('admin.kitchen_view', status='PREPARING') }}" class="kds-filter-tab {% if status_filter == 'PREPARING' %}active{% endif %}">
+            <span class="kds-dot" style="background: #3498DB;"></span>Preparing
+            <span class="kds-count">{{ preparing_count }}</span>
+        </a>
+        <a href="{{ url_for('admin.kitchen_view', status='COMPLETED') }}" class="kds-filter-tab {% if status_filter == 'COMPLETED' %}active{% endif %}">
+            <span class="kds-dot" style="background: #27AE60;"></span>Done
+            <span class="kds-count">{{ completed_count }}</span>
+        </a>
+    </div>
+    <div class="d-flex gap-2">
+        <div class="kitchen-toggle-group">
+            <span class="toggle-label">Auto-refresh</span>
+            <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" id="autoRefreshToggle" checked>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PREP STATIONS (ONLY ACTIVE) -->
+{% if status_filter == 'ACTIVE' and (hot_kitchen or cold_kitchen or bar_station) %}
+<div class="kds-prep-body mb-5">
+    {% if hot_kitchen %}
+    <div class="kds-station">
+        <div class="kds-station-label"><span><i class="fas fa-fire-burner me-2"></i> HOT KITCHEN</span><span class="badge" style="background:#5D4037; color:#fff;">{{ hot_kitchen|length }}</span></div>
+        <div class="kds-station-items">
+            {% for item in hot_kitchen %}
+            <div class="kds-prep-item" onclick="this.classList.toggle('is-done')">
+                <div class="kds-prep-check"><i class="fas fa-check"></i></div>
+                <span class="kds-prep-name">{{ item.name }}</span>
+                <span class="kds-prep-qty">{{ item.qty }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    {% if cold_kitchen %}
+    <div class="kds-station">
+        <div class="kds-station-label"><span><i class="fas fa-snowflake me-2"></i> COLD KITCHEN</span><span class="badge" style="background:#5D4037; color:#fff;">{{ cold_kitchen|length }}</span></div>
+        <div class="kds-station-items">
+            {% for item in cold_kitchen %}
+            <div class="kds-prep-item" onclick="this.classList.toggle('is-done')">
+                <div class="kds-prep-check"><i class="fas fa-check"></i></div>
+                <span class="kds-prep-name">{{ item.name }}</span>
+                <span class="kds-prep-qty">{{ item.qty }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    {% if bar_station %}
+    <div class="kds-station">
+        <div class="kds-station-label"><span><i class="fas fa-mug-hot me-2"></i> BAR SERVICE</span><span class="badge" style="background:#5D4037; color:#fff;">{{ bar_station|length }}</span></div>
+        <div class="kds-station-items">
+            {% for item in bar_station %}
+            <div class="kds-prep-item" onclick="this.classList.toggle('is-done')">
+                <div class="kds-prep-check"><i class="fas fa-check"></i></div>
+                <span class="kds-prep-name">{{ item.name }}</span>
+                <span class="kds-prep-qty">{{ item.qty }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- ACTIVE ORDERS GRID -->
+<div id="ordersGrid" class="row g-4">
+    {% for order in orders %}
+    <div class="col-xl-4 col-lg-6">
+        <div class="kds-order-card shadow-sm" data-status="{{ order.status }}">
+            <div class="kds-order-header border-bottom">
+                <h5 class="kds-order-id m-0">#{{ order.id }}</h5>
+                <span class="kds-status-dot {{ order.status|lower }}"></span>
+            </div>
+            <div class="kds-order-body">
+                <div class="kds-customer-row border-bottom pb-2 mb-3">
+                    <span class="kds-customer-name">{% if order.user %}{{ order.user.first_name }}{% else %}Walk-in{% endif %}</span>
+                    <span class="kds-dine-badge {{ order.dining_option|lower }}">{{ order.dining_option.replace('_', ' ') }}</span>
+                </div>
+                <div class="kds-items-list mb-3">
+                    {% for item in order.items %}
+                    <div class="kds-item-row"><span class="kds-item-qty">{{ item.quantity }}x</span><span class="kds-item-name">{{ item.menu_item.name }}</span></div>
+                    {% endfor %}
+                </div>
+                {% if order.notes %}<div class="kds-notes mb-3"><i class="fas fa-sticky-note me-2"></i><span>{{ order.notes }}</span></div>{% endif %}
+                <div class="kds-timer"><i class="fas fa-clock fs-7 me-1"></i><span class="elapsed-timer" data-created="{{ order.created_at.isoformat() }}Z">...</span></div>
+            </div>
+            <div class="kds-order-footer bg-light p-3">
+                <div class="kds-btns-group">
+                    {% if order.status == 'PENDING' %}
+                    <form onsubmit="handleKitchenUpdate(event, this, '{{ order.id }}')" method="POST" class="w-100">
+                        <input type="hidden" name="status" value="PREPARING">
+                        <button type="submit" class="btn-kd btn-kd-start">Start</button>
+                    </form>
+                    {% elif order.status == 'PREPARING' %}
+                    <form onsubmit="handleKitchenUpdate(event, this, '{{ order.id }}')" method="POST" class="w-100">
+                        <input type="hidden" name="status" value="COMPLETED">
+                        <button type="submit" class="btn-kd btn-kd-complete">Ready</button>
+                    </form>
+                    {% endif %}
+                    <form onsubmit="handleKitchenUpdate(event, this, '{{ order.id }}', true)" method="POST"><input type="hidden" name="status" value="CANCELLED"><button type="submit" class="btn-kd btn-kd-cancel px-3"><i class="fas fa-times"></i></button></form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12 py-5 text-center text-muted">
+        <i class="fas fa-mug-hot fs-1 mb-3 opacity-25"></i>
+        <p>No orders found for this status.</p>
+    </div>
+    {% endfor %}
+</div>

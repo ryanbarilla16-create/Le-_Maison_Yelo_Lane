@@ -3,7 +3,7 @@ from flask_mail import Message
 from models import db, MenuItem, User, Reservation, Order, OrderItem, Review, Notification, ChatMessage, Voucher
 from werkzeug.security import generate_password_hash
 from datetime import datetime, date, time as dtime
-from utils import get_ph_time, safe_elapsed, create_notification
+from utils import get_ph_time, safe_elapsed, create_notification, send_email
 import re
 import random
 import traceback
@@ -85,23 +85,30 @@ def check_reservation_time(t):
 @api_bp.route('/menu', methods=['GET'])
 def get_menu():
     """
-    Get all available menu items
+    Get menu items (optionally filtered by category)
     ---
+    parameters:
+      - name: category
+        in: query
+        type: string
+        description: The category to filter by
     responses:
       200:
         description: A list of menu items
-        schema:
-          type: array
-          items:
-            properties:
-              id: {type: integer}
-              name: {type: string}
-              price: {type: number}
-              category: {type: string}
-              image_url: {type: string}
     """
     try:
-        items = MenuItem.query.all()
+        cat_filter = request.args.get('category')
+        limit = request.args.get('limit', type=int)
+        
+        query = MenuItem.query
+        if cat_filter and cat_filter != 'All':
+            query = query.filter_by(category=cat_filter)
+            
+        if limit:
+            items = query.limit(limit).all()
+        else:
+            items = query.all()
+            
         menu_list = []
         for item in items:
             menu_list.append({
@@ -254,14 +261,9 @@ def api_signup():
 
     print(f"--- OTP FOR {email} IS: {otp} ---")
 
-    # Send OTP via Gmail
+    # Send OTP via SendGrid Optimized Utility
     try:
-        msg = Message(
-            subject='Le Maison Yelo Lane - Your OTP Verification Code',
-            sender=current_app.config.get('MAIL_DEFAULT_SENDER') or 'ryanbarilla16@gmail.com',
-            recipients=[email]
-        )
-        msg.html = f"""
+        html_content = f"""
         <div style="font-family: 'Georgia', serif; max-width: 500px; margin: 0 auto; padding: 40px 30px; background: #ffffff; border-radius: 12px; border: 1px solid #e0d5c7;">
             <div style="text-align: center; margin-bottom: 30px;">
                 <h1 style="color: #8B4513; margin: 0; font-size: 1.5rem;">Le Maison Yelo Lane</h1>
@@ -275,11 +277,9 @@ def api_signup():
             <p style="color: #999; font-size: 0.8rem; text-align: center;">This code will expire in 5 minutes.</p>
         </div>
         """
-        app = current_app._get_current_object()
-        threading.Thread(target=send_async_email, args=(app, msg)).start()
+        send_email(email, 'Your OTP Verification Code', html_content)
     except Exception as e:
-        print(f"Email queuing failed: {e}")
-        traceback.print_exc()
+        print(f"SendGrid OTP failed: {e}")
 
     return jsonify({'success': True, 'user_id': new_user.id, 'message': f'OTP sent to {email}.'}), 201
 
@@ -723,6 +723,7 @@ def api_checkout():
     notes = data.get('notes', '')
     dining_option = data.get('dining_option', 'DINE_IN')
     payment_method = data.get('payment_method', 'COUNTER')
+    voucher_code = (data.get('voucher_code') or '').strip().upper()
     
     if not user_id or not cart_items:
         return jsonify({'success': False, 'message': 'Cart is empty.'}), 400
@@ -752,6 +753,21 @@ def api_checkout():
     if not order_items:
         return jsonify({'success': False, 'message': 'Items in cart are no longer available.'}), 400
     
+    # Apply Voucher Discount if any
+    discount_amount = 0
+    if voucher_code:
+        from models import Voucher
+        v = Voucher.query.filter_by(code=voucher_code, is_active=True).first()
+        if v and total >= float(v.min_order_amount):
+            if v.discount_type == 'PERCENT':
+                discount_amount = total * (float(v.discount_value) / 100.0)
+            else:
+                discount_amount = float(v.discount_value)
+            
+            discount_amount = min(discount_amount, total)
+            total -= discount_amount
+            v.times_used += 1
+
     new_order = Order(
         user_id=user_id,
         total_amount=total,
@@ -1231,15 +1247,9 @@ def api_forgot_password():
     
     print(f"--- FORGOT PASSWORD OTP FOR {email} IS: {otp} ---")
     
-    # Send OTP via Gmail
+    # Send OTP via SendGrid Optimized Utility
     try:
-        mail = current_app.extensions['mail']
-        msg = Message(
-            subject='Le Maison Yelo Lane - Password Reset Code',
-            sender=current_app.config.get('MAIL_DEFAULT_SENDER') or 'ryanbarilla16@gmail.com',
-            recipients=[email]
-        )
-        msg.html = f"""
+        html_content = f"""
         <div style="font-family: 'Georgia', serif; max-width: 500px; margin: 0 auto; padding: 40px 30px; background: #ffffff; border-radius: 12px; border: 1px solid #e0d5c7;">
             <div style="text-align: center; margin-bottom: 30px;">
                 <h1 style="color: #8B4513; margin: 0; font-size: 1.5rem;">Le Maison Yelo Lane</h1>
@@ -1253,10 +1263,9 @@ def api_forgot_password():
             <p style="color: #999; font-size: 0.8rem; text-align: center;">This code will expire in 5 minutes. If you didn't request this, please ignore this email.</p>
         </div>
         """
-        mail.send(msg)
+        send_email(email, 'Password Reset Code', html_content)
     except Exception as e:
-        print(f"Email sending failed: {e}")
-        traceback.print_exc()
+        print(f"SendGrid Forgot Password failed: {e}")
     
     return jsonify({'success': True, 'user_id': user.id, 'message': f'OTP sent to {email}.'}), 200
 
@@ -1319,6 +1328,26 @@ def api_forgot_password_reset():
     _create_notification(user.id, 'Password Changed', 'Your password was successfully changed.', 'SYSTEM')
     
     return jsonify({'success': True, 'message': 'Password reset successfully! You can now log in with your new password.'}), 200
+
+# ═══ REVIEWS API ═══
+@api_bp.route('/user/<int:user_id>/reviews', methods=['GET'])
+def api_get_user_reviews(user_id):
+    """
+    Get all reviews submitted by a specific user
+    """
+    from models import Review
+    reviews = Review.query.filter_by(user_id=user_id).order_by(Review.created_at.desc()).all()
+    
+    return jsonify({
+        'success': True,
+        'reviews': [{
+            'id': r.id,
+            'rating': r.rating,
+            'comment': r.comment,
+            'status': r.status,
+            'created_at': r.created_at.strftime('%b %d, %Y') if r.created_at else '',
+        } for r in reviews]
+    }), 200
 
 # ═══ NOTIFICATIONS API ═══
 def _create_notification(user_id, title, message, notif_type='SYSTEM'):
@@ -1383,6 +1412,51 @@ def api_mark_notifications_read():
         db.session.rollback()
         return jsonify({'success': False, 'message': str(e)}), 500
 
+# ── VOUCHERS ──────────────────────────────────────────────────────────
+@api_bp.route('/voucher/validate', methods=['POST'])
+def validate_voucher():
+    data = request.json
+    code = (data.get('code') or '').strip().upper()
+    user_id = data.get('user_id')
+    order_amount = float(data.get('order_amount') or 0)
+
+    if not code:
+        return jsonify({'success': False, 'message': 'Voucher code is required.'}), 400
+
+    from models import Voucher
+    voucher = Voucher.query.filter_by(code=code, is_active=True).first()
+
+    if not voucher:
+        return jsonify({'success': False, 'message': 'Invalid or inactive voucher code.'}), 404
+
+    now = get_ph_time()
+    if voucher.valid_from and now < voucher.valid_from:
+        return jsonify({'success': False, 'message': 'Voucher is not yet valid.'}), 400
+    if voucher.valid_until and now > voucher.valid_until:
+        return jsonify({'success': False, 'message': 'Voucher has expired.'}), 400
+    if voucher.times_used >= voucher.max_uses:
+        return jsonify({'success': False, 'message': 'Voucher usage limit reached.'}), 400
+    if order_amount < float(voucher.min_order_amount):
+        return jsonify({'success': False, 'message': f'Minimum order of ₱{float(voucher.min_order_amount):.2f} required.'}), 400
+
+    # Calculate discount
+    discount = 0.0
+    if voucher.discount_type == 'PERCENT':
+        discount = order_amount * (float(voucher.discount_value) / 100.0)
+    else: # FIXED
+        discount = float(voucher.discount_value)
+
+    # Ensure discount doesn't exceed total
+    discount = min(discount, order_amount)
+
+    return jsonify({
+        'success': True,
+        'message': 'Voucher applied successfully!',
+        'discount_amount': discount,
+        'voucher_code': voucher.code
+    })
+
+# ── CART / CHECKOUT ───────────────────────────────────────────────────
 # ═══ CHAT SUPPORT API ═══
 @api_bp.route('/chat/<int:user_id>', methods=['GET'])
 def api_get_chat_messages(user_id):
@@ -1526,13 +1600,13 @@ def rider_get_deliveries():
             Order.delivery_status.in_(['PICKED_UP', 'ON_THE_WAY'])
         ).order_by(Order.created_at.desc()).all()
     
-    # My completed deliveries (all history)
+    # My completed deliveries (Limited to last 20 for optimization)
     my_completed = []
     if rider_id:
         my_completed = Order.query.filter(
             Order.rider_id == rider_id,
             Order.delivery_status == 'DELIVERED'
-        ).order_by(Order.created_at.desc()).all()
+        ).order_by(Order.created_at.desc()).limit(20).all()
     
     def order_to_dict(o):
         return {

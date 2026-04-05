@@ -1,5 +1,6 @@
 {% extends "admin/base.html" %}
-{% block title %}Inventory{% endblock %}
+{% from "macros.html" import render_pagination %}
+{% block title %}Inventory | Le Maison Kitchen{% endblock %}
 
 {% block content %}
 <div class="page-header">
@@ -9,32 +10,27 @@
 
 <div class="stats-grid">
     <div class="stat-card">
-        <div class="stat-icon" style="background: rgba(59,130,246,0.15); color: var(--admin-blue);"><i
-                class="fas fa-box"></i></div>
+        <div class="stat-icon" style="background: rgba(59,130,246,0.15); color: var(--admin-blue);"><i class="fas fa-box"></i></div>
         <div class="stat-label">Menu Items</div>
         <div class="stat-value">{{ total_items }}</div>
     </div>
     <div class="stat-card">
-        <div class="stat-icon" style="background: rgba(139, 99, 75,0.15); color: #8b634b;"><i class="fas fa-leaf"></i>
-        </div>
+        <div class="stat-icon" style="background: rgba(139, 99, 75,0.15); color: #8b634b;"><i class="fas fa-leaf"></i></div>
         <div class="stat-label">Ingredients</div>
-        <div class="stat-value">{{ ingredients|length }}</div>
+        <div class="stat-value">{{ total_ingredients }}</div>
     </div>
     <div class="stat-card">
-        <div class="stat-icon" style="background: rgba(255,152,0,0.15); color: #F57C00;"><i
-                class="fas fa-exclamation-triangle"></i></div>
+        <div class="stat-icon" style="background: rgba(255,152,0,0.15); color: #F57C00;"><i class="fas fa-exclamation-triangle"></i></div>
         <div class="stat-label">Low Stock</div>
         <div class="stat-value">{{ low_stock_count }}</div>
     </div>
     <div class="stat-card">
-        <div class="stat-icon" style="background: rgba(220,38,38,0.15); color: #dc2626;"><i
-                class="fas fa-calendar-times"></i></div>
+        <div class="stat-icon" style="background: rgba(220,38,38,0.15); color: #dc2626;"><i class="fas fa-calendar-times"></i></div>
         <div class="stat-label">Expiring Soon</div>
         <div class="stat-value text-danger">{{ expiring_soon_count }}</div>
     </div>
     <div class="stat-card">
-        <div class="stat-icon" style="background: rgba(34,197,94,0.15); color: var(--admin-green);"><i
-                class="fas fa-truck-loading"></i></div>
+        <div class="stat-icon" style="background: rgba(34,197,94,0.15); color: var(--admin-green);"><i class="fas fa-truck-loading"></i></div>
         <div class="stat-label">Suppliers</div>
         <div class="stat-value">{{ suppliers|length }}</div>
     </div>
@@ -43,20 +39,23 @@
 <!-- TABS -->
 <div style="margin-bottom: 1.5rem;">
     <div class="d-flex gap-2 flex-wrap" id="inventoryTabs">
-        <button class="btn-admin btn-admin-primary active" onclick="switchTab('menu-items', this)"
+        <button class="btn-admin {{ 'btn-admin-primary active' if not request.args.get('tab') or request.args.get('tab') == 'menu-items' else '' }}" 
+            onclick="switchTab('menu-items', this)"
             style="border-radius: 10px; padding: 0.5rem 1.25rem; font-size: 0.85rem;"><i
                 class="fas fa-utensils me-1"></i>Menu Items</button>
-        <button class="btn-admin" onclick="switchTab('ingredients', this)"
+        <button class="btn-admin {{ 'btn-admin-primary active' if request.args.get('tab') == 'ingredients' else '' }}" 
+            onclick="switchTab('ingredients', this)"
             style="border-radius: 10px; padding: 0.5rem 1.25rem; font-size: 0.85rem; background: var(--admin-surface); border: 1px solid var(--admin-border);"><i
                 class="fas fa-leaf me-1"></i>Ingredients</button>
-        <button class="btn-admin" onclick="switchTab('suppliers', this)"
+        <button class="btn-admin {{ 'btn-admin-primary active' if request.args.get('tab') == 'suppliers' else '' }}" 
+            onclick="switchTab('suppliers', this)"
             style="border-radius: 10px; padding: 0.5rem 1.25rem; font-size: 0.85rem; background: var(--admin-surface); border: 1px solid var(--admin-border);"><i
                 class="fas fa-truck me-1"></i>Suppliers</button>
     </div>
 </div>
 
 <!-- ═══════════════ TAB 1: MENU ITEMS ═══════════════ -->
-<div id="tab-menu-items" class="inv-tab">
+<div id="tab-menu-items" class="inv-tab" style="{{ 'display:none;' if request.args.get('tab') and request.args.get('tab') != 'menu-items' else '' }}">
     <div class="admin-table-wrap">
         <div class="admin-table-header d-flex justify-content-between align-items-center flex-wrap gap-3">
             <h3 class="m-0">All Menu Items</h3>
@@ -90,7 +89,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for item in items %}
+                    {% for item in items.items %}
                     <tr>
                         <td style="font-weight: 600;">{{ item.name }}</td>
                         <td><span class="badge-status badge-completed">{{ item.category }}</span></td>
@@ -98,9 +97,10 @@
                         </td>
                         <td>
                             {% if item.ingredients|length > 0 %}
-                            <span class="badge-status badge-active" style="cursor:pointer; font-size: 0.72rem;"
-                                onclick="viewRecipe({{ item.id }}, '{{ item.name|e }}')">{{ item.ingredients|length }}
-                                ingredient{{ 's' if item.ingredients|length > 1 }}</span>
+                            <span class="badge-status badge-active view-recipe-btn" style="cursor:pointer; font-size: 0.72rem;"
+                                data-id="{{ item.id }}" data-name="{{ item.name|e }}">
+                                {{ item.ingredients|length }} ingredient{{ 's' if item.ingredients|length > 1 }}
+                            </span>
                             {% else %}
                             <span style="color: var(--admin-text-muted); font-size: 0.78rem;">No recipe</span>
                             {% endif %}
@@ -127,9 +127,9 @@
                                         Restock</button>
                                     {% endif %}
                                 </form>
-                                <button class="btn-admin"
+                                <button class="btn-admin manage-recipe-btn"
                                     style="font-size: 0.72rem; padding: 4px 8px; background: rgba(139, 99, 75,0.08); border: 1px solid rgba(139, 99, 75,0.2); color: #8b634b;"
-                                    onclick="openRecipeModal({{ item.id }}, '{{ item.name|e }}')"><i
+                                    data-id="{{ item.id }}" data-name="{{ item.name|e }}"><i
                                         class="fas fa-list"></i> Recipe</button>
                             </div>
                         </td>
@@ -139,11 +139,12 @@
                 </tbody>
             </table>
         </div>
+        {{ render_pagination(items, 'admin.inventory', page_param='page_items') }}
     </div>
 </div>
 
 <!-- ═══════════════ TAB 2: INGREDIENTS ═══════════════ -->
-<div id="tab-ingredients" class="inv-tab" style="display:none;">
+<div id="tab-ingredients" class="inv-tab" style="{{ 'display:none;' if request.args.get('tab') != 'ingredients' else '' }}">
     <div class="admin-table-wrap">
         <div class="admin-table-header d-flex justify-content-between align-items-center flex-wrap gap-3">
             <h3 class="m-0">Ingredient Stock</h3>
@@ -176,7 +177,6 @@
             </div>
         </div>
 
-        <!-- Add Ingredient Form (hidden by default) -->
         <div id="addIngredientForm"
             style="display:none; padding: 1.25rem; background: rgba(139, 99, 75,0.03); border-radius: 12px; margin-bottom: 1rem; border: 1px solid rgba(139, 99, 75,0.08);">
             <form method="POST" action="{{ url_for('admin.add_ingredient') }}">
@@ -263,7 +263,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for ing in ingredients %}
+                        {% for ing in ingredients.items %}
                         <tr>
                             {% if current_user.role|upper not in ['CASHIER', 'STAFF'] %}
                             <td><input type="checkbox" name="item_ids[]" value="{{ ing.id }}"
@@ -304,17 +304,24 @@
                             {% if current_user.role|upper not in ['CASHIER', 'STAFF'] %}
                             <td>
                                 <div class="d-flex gap-1 flex-wrap">
-                                    <button type="button" class="btn-admin btn-admin-success" title="Restock"
+                                    <button type="button" class="btn-admin btn-admin-success restock-btn" title="Restock"
                                         style="font-size: 0.72rem; padding: 4px 8px;"
-                                        onclick="openRestockModal({{ ing.id }}, '{{ ing.name|e }}', '{{ ing.unit }}')"><i
+                                        data-id="{{ ing.id }}" data-name="{{ ing.name|e }}" data-unit="{{ ing.unit }}"><i
                                             class="fas fa-plus"></i></button>
-                                    <button type="button" class="btn-admin btn-admin-warning" title="Record Waste"
+                                    <button type="button" class="btn-admin btn-admin-warning waste-btn" title="Record Waste"
                                         style="font-size: 0.72rem; padding: 4px 8px;"
-                                        onclick="openWasteModal({{ ing.id }}, '{{ ing.name|e }}', '{{ ing.unit }}', {{ ing.stock_qty }})"><i
+                                        data-id="{{ ing.id }}" data-name="{{ ing.name|e }}" data-unit="{{ ing.unit }}" data-stock="{{ ing.stock_qty }}"><i
                                             class="fas fa-trash-restore"></i></button>
-                                    <button type="button" class="btn-admin btn-admin-primary" title="Edit"
+                                    <button type="button" class="btn-admin btn-admin-primary edit-ing-btn" title="Edit"
                                         style="font-size: 0.72rem; padding: 4px 8px;"
-                                        onclick="openEditIngredientModal({{ ing.id }}, `{{ ing.name|replace('`', '\\`') }}`, '{{ ing.unit }}', {{ ing.stock_qty }}, {{ ing.reorder_level }}, {{ ing.cost_per_unit }}, {{ ing.supplier_id or 'null' }}, '{{ ing.expiration_date.strftime('%Y-%m-%d') if ing.expiration_date else '' }}')"><i
+                                        data-id="{{ ing.id }}" 
+                                        data-name="{{ ing.name|e }}" 
+                                        data-unit="{{ ing.unit }}" 
+                                        data-stock="{{ ing.stock_qty }}" 
+                                        data-reorder="{{ ing.reorder_level }}" 
+                                        data-cost="{{ ing.cost_per_unit }}" 
+                                        data-supplier="{{ ing.supplier_id or '' }}" 
+                                        data-exp="{{ ing.expiration_date.strftime('%Y-%m-%d') if ing.expiration_date else '' }}"><i
                                             class="fas fa-edit"></i></button>
                                     <button type="button" class="btn-admin btn-admin-danger" title="Delete"
                                         style="font-size: 0.72rem; padding: 4px 8px;"
@@ -325,21 +332,16 @@
                             {% endif %}
                         </tr>
                         {% endfor %}
-                        {% if ingredients|length == 0 %}
-                        <tr>
-                            <td colspan="8" class="text-center" style="padding: 2rem; color: var(--admin-text-muted);">
-                                No ingredients added yet. Click "Add Ingredient" to get started.</td>
-                        </tr>
-                        {% endif %}
                     </tbody>
                 </table>
             </div>
+            {{ render_pagination(ingredients, 'admin.inventory', page_param='page_ingredients') }}
         </form>
     </div>
 </div>
 
 <!-- ═══════════════ TAB 3: SUPPLIERS ═══════════════ -->
-<div id="tab-suppliers" class="inv-tab" style="display:none;">
+<div id="tab-suppliers" class="inv-tab" style="{{ 'display:none;' if request.args.get('tab') != 'suppliers' else '' }}">
     <div class="admin-table-wrap">
         <div class="admin-table-header d-flex justify-content-between align-items-center flex-wrap gap-3">
             <h3 class="m-0">Suppliers</h3>
@@ -449,9 +451,15 @@
                             {% if current_user.role|upper not in ['CASHIER', 'STAFF'] %}
                             <td>
                                 <div class="d-flex gap-1 flex-wrap">
-                                    <button type="button" class="btn-admin btn-admin-primary"
+                                    <button type="button" class="btn-admin btn-admin-primary edit-sup-btn"
                                         style="font-size: 0.72rem; padding: 4px 8px;"
-                                        onclick="openEditSupplierModal({{ sup.id }}, `{{ sup.name|replace('`', '\\`') }}`, `{{ sup.contact_person or '' }}`, `{{ sup.phone or '' }}`, `{{ sup.email or '' }}`, `{{ sup.address or '' }}`, `{{ sup.catalog_items or '' }}`)"><i
+                                        data-id="{{ sup.id }}" 
+                                        data-name="{{ sup.name|e }}" 
+                                        data-contact="{{ sup.contact_person or '' }}" 
+                                        data-phone="{{ sup.phone or '' }}" 
+                                        data-email="{{ sup.email or '' }}" 
+                                        data-address="{{ sup.address or '' }}" 
+                                        data-catalog="{{ sup.catalog_items or '' }}"><i
                                             class="fas fa-edit"></i></button>
                                     <button type="button" class="btn-admin btn-admin-danger"
                                         style="font-size: 0.72rem; padding: 4px 8px;"
@@ -462,12 +470,6 @@
                             {% endif %}
                         </tr>
                         {% endfor %}
-                        {% if suppliers|length == 0 %}
-                        <tr>
-                            <td colspan="7" class="text-center" style="padding: 2rem; color: var(--admin-text-muted);">
-                                No suppliers added yet. Click "Add Supplier" to get started.</td>
-                        </tr>
-                        {% endif %}
                     </tbody>
                 </table>
             </div>
@@ -504,14 +506,48 @@
     </div>
 </div>
 
+<!-- Waste Modal -->
+<div class="modal fade" id="wasteModal" tabindex="-1">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 20px 60px rgba(0,0,0,0.2);">
+            <div class="modal-header"
+                style="background: linear-gradient(135deg, #FF9800, #F57C00); border-radius: 16px 16px 0 0; border: none; padding: 1.25rem;">
+                <h5 class="modal-title text-white" style="font-size: 0.95rem;"><i class="fas fa-trash-restore me-2"></i>Record Waste</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="wasteForm" method="POST">
+                <div class="modal-body" style="padding: 1.5rem;">
+                    <p style="font-size: 0.85rem; color: var(--admin-text-muted);">Recording waste for: <strong id="wasteName"></strong></p>
+                    <p style="font-size: 0.75rem;">Current Stock: <span id="wasteCurrent"></span> <span class="waste-unit-label"></span></p>
+                    <label class="form-label" style="font-weight: 600; font-size: 0.82rem;">Quantity Wasted <span class="waste-unit-label"></span></label>
+                    <input type="number" name="waste_qty" class="form-control" min="0.01" step="0.01" required
+                        style="border-radius: 10px; font-size: 1.1rem; text-align: center; font-weight: 700;">
+                    <div class="mt-3">
+                        <label class="form-label" style="font-size: 0.78rem; font-weight: 600;">Reason</label>
+                        <select name="reason" class="form-select form-select-sm" required style="border-radius: 8px;">
+                            <option value="Expired">Expired</option>
+                            <option value="Damaged">Damaged</option>
+                            <option value="Spilled">Spilled/Dropped</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border: none; padding: 0 1.5rem 1.5rem;">
+                    <button type="submit" class="btn-admin btn-admin-danger w-100"><i
+                            class="fas fa-trash me-2"></i>Record Waste</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Edit Ingredient Modal -->
 <div class="modal fade" id="editIngredientModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 20px 60px rgba(0,0,0,0.2);">
             <div class="modal-header"
-                style="background: linear-gradient(135deg, #FF9800, #F57C00); border-radius: 16px 16px 0 0; padding: 1.25rem; border: none;">
-                <h5 class="modal-title text-white" style="font-size: 0.95rem;"><i class="fas fa-edit me-2"></i>Edit
-                    Ingredient</h5>
+                style="background: linear-gradient(135deg, #8d6e63, #6d4c41); border-radius: 16px 16px 0 0; padding: 1.25rem; border: none;">
+                <h5 class="modal-title text-white" style="font-size: 0.95rem;"><i class="fas fa-edit me-2"></i>Edit Ingredient</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -541,20 +577,17 @@
                             </select>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label" style="font-size: 0.78rem; font-weight: 600;">Current
-                                Stock</label>
+                            <label class="form-label" style="font-size: 0.78rem; font-weight: 600;">Current Stock</label>
                             <input type="number" name="stock_qty" id="editIngStock" class="form-control" step="0.01"
                                 style="border-radius: 8px;" required>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label" style="font-size: 0.78rem; font-weight: 600;">Reorder
-                                Level</label>
+                            <label class="form-label" style="font-size: 0.78rem; font-weight: 600;">Reorder Level</label>
                             <input type="number" name="reorder_level" id="editIngReorder" class="form-control"
                                 step="0.01" style="border-radius: 8px;" required>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label" style="font-size: 0.78rem; font-weight: 600;">Cost/Unit
-                                (₱)</label>
+                            <label class="form-label" style="font-size: 0.78rem; font-weight: 600;">Cost/Unit (₱)</label>
                             <input type="number" name="cost_per_unit" id="editIngCost" class="form-control" step="0.01"
                                 style="border-radius: 8px;" required>
                         </div>
@@ -569,8 +602,7 @@
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label" style="font-size: 0.78rem; font-weight: 600;">Expiration
-                                Date</label>
+                            <label class="form-label" style="font-size: 0.78rem; font-weight: 600;">Expiration Date</label>
                             <input type="date" name="expiration_date" id="editIngExp" class="form-control"
                                 style="border-radius: 8px;">
                         </div>
@@ -590,23 +622,20 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 20px 60px rgba(0,0,0,0.2);">
             <div class="modal-header"
-                style="background: linear-gradient(135deg, #FF9800, #F57C00); border-radius: 16px 16px 0 0; padding: 1.25rem; border: none;">
-                <h5 class="modal-title text-white" style="font-size: 0.95rem;"><i class="fas fa-edit me-2"></i>Edit
-                    Supplier</h5>
+                style="background: linear-gradient(135deg, #8d6e63, #6d4c41); border-radius: 16px 16px 0 0; padding: 1.25rem; border: none;">
+                <h5 class="modal-title text-white" style="font-size: 0.95rem;"><i class="fas fa-edit me-2"></i>Edit Supplier</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form id="editSupplierForm" method="POST">
                 <div class="modal-body" style="padding: 1.5rem;">
                     <div class="row g-3">
                         <div class="col-md-12">
-                            <label class="form-label" style="font-size: 0.78rem; font-weight: 600;">Company Name
-                                *</label>
+                            <label class="form-label" style="font-size: 0.78rem; font-weight: 600;">Company Name *</label>
                             <input type="text" name="name" id="editSupName" class="form-control"
                                 style="border-radius: 8px;" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label" style="font-size: 0.78rem; font-weight: 600;">Contact
-                                Person</label>
+                            <label class="form-label" style="font-size: 0.78rem; font-weight: 600;">Contact Person</label>
                             <input type="text" name="contact_person" id="editSupContact" class="form-control"
                                 style="border-radius: 8px;">
                         </div>
@@ -648,7 +677,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 20px 60px rgba(0,0,0,0.2);">
             <div class="modal-header"
-                style="background: linear-gradient(135deg, #8b634b, #8b634b); border-radius: 16px 16px 0 0; border: none; padding: 1.25rem;">
+                style="background: linear-gradient(135deg, #8b634b, #6d4c41); border-radius: 16px 16px 0 0; border: none; padding: 1.25rem;">
                 <h5 class="modal-title text-white" style="font-size: 0.95rem;"><i
                         class="fas fa-receipt me-2"></i>Recipe: <span id="recipeItemName"></span></h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -664,7 +693,7 @@
                             <select name="ingredient_id" class="form-select form-select-sm" required
                                 style="border-radius: 8px;">
                                 <option value="">Select Ingredient...</option>
-                                {% for ing in ingredients %}
+                                {% for ing in all_ingredients_raw %}
                                 <option value="{{ ing.id }}">{{ ing.name }} ({{ ing.unit }})</option>
                                 {% endfor %}
                             </select>
@@ -699,186 +728,164 @@
             btn.classList.add('active', 'btn-admin-primary');
             btn.style.background = '';
             btn.style.border = '';
+            
+            // Update URL for persistence
+            const url = new URL(window.location);
+            url.searchParams.set('tab', tabName);
+            window.history.replaceState({}, '', url);
         };
 
-        // Auto-switch based on URL search query
-        document.addEventListener("DOMContentLoaded", function () {
-            const urlParams = new URLSearchParams(window.location.search);
-            const activeTab = urlParams.get('tab');
-            if (activeTab) {
-                const tabBtn = document.querySelector(`#inventoryTabs button[onclick*="${activeTab}"]`);
-                if (tabBtn) tabBtn.click();
+        // ── CATEGORY FILTER ──
+        const categoryFilter = document.getElementById('categoryFilter');
+        if (categoryFilter) {
+            categoryFilter.addEventListener('change', function() {
+                const url = new URL(window.location);
+                url.searchParams.set('category', this.value);
+                url.searchParams.set('tab', 'menu-items');
+                window.location.href = url.toString();
+            });
+        }
+
+        // ── MODAL LISTENERS (ROBUST) ──
+        document.body.addEventListener('click', function(e) {
+            // View Recipe / Manage Recipe
+            const recipeBtn = e.target.closest('.view-recipe-btn, .manage-recipe-btn');
+            if (recipeBtn) {
+                const id = recipeBtn.dataset.id;
+                const name = recipeBtn.dataset.name;
+                openRecipeModal(id, name);
             }
 
-            // Initialize all tooltips
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl)
-            })
+            // Restock Modal
+            const restockBtn = e.target.closest('.restock-btn');
+            if (restockBtn) {
+                const id = restockBtn.dataset.id;
+                const name = restockBtn.dataset.name;
+                const unit = restockBtn.dataset.unit;
+                document.getElementById('restockName').textContent = name;
+                document.getElementById('restockUnit').textContent = `(${unit})`;
+                document.getElementById('restockForm').action = `/admin/ingredients/restock/${id}`;
+                new bootstrap.Modal(document.getElementById('restockModal')).show();
+            }
+
+            // Waste Modal
+            const wasteBtn = e.target.closest('.waste-btn');
+            if (wasteBtn) {
+                const id = wasteBtn.dataset.id;
+                const name = wasteBtn.dataset.name;
+                const unit = wasteBtn.dataset.unit;
+                const stock = wasteBtn.dataset.stock;
+                document.getElementById('wasteName').textContent = name;
+                document.querySelectorAll('.waste-unit-label').forEach(el => el.textContent = `(${unit})`);
+                document.getElementById('wasteCurrent').textContent = stock;
+                document.getElementById('wasteForm').action = `/admin/ingredients/waste/${id}`;
+                new bootstrap.Modal(document.getElementById('wasteModal')).show();
+            }
+
+            // Edit Ingredient Modal
+            const editIngBtn = e.target.closest('.edit-ing-btn');
+            if (editIngBtn) {
+                const d = editIngBtn.dataset;
+                document.getElementById('editIngredientForm').action = `/admin/ingredients/update/${d.id}`;
+                document.getElementById('editIngName').value = d.name;
+                document.getElementById('editIngUnit').value = d.unit;
+                document.getElementById('editIngStock').value = d.stock;
+                document.getElementById('editIngReorder').value = d.reorder;
+                document.getElementById('editIngCost').value = d.cost;
+                document.getElementById('editIngSupplier').value = d.supplier;
+                document.getElementById('editIngExp').value = d.exp;
+                new bootstrap.Modal(document.getElementById('editIngredientModal')).show();
+            }
+
+            // Edit Supplier Modal
+            const editSupBtn = e.target.closest('.edit-sup-btn');
+            if (editSupBtn) {
+                const d = editSupBtn.dataset;
+                document.getElementById('editSupplierForm').action = `/admin/suppliers/update/${d.id}`;
+                document.getElementById('editSupName').value = d.name;
+                document.getElementById('editSupContact').value = d.contact;
+                document.getElementById('editSupPhone').value = d.phone;
+                document.getElementById('editSupEmail').value = d.email;
+                document.getElementById('editSupAddress').value = d.address;
+                document.getElementById('editSupCatalog').value = d.catalog;
+                new bootstrap.Modal(document.getElementById('editSupplierModal')).show();
+            }
         });
 
-        // ── Category Filter & Search (Menu Items Tab) ──
-        const searchInput = document.getElementById('inventorySearch');
-        const categoryFilter = document.getElementById('categoryFilter');
-        const rows = document.querySelectorAll('#tab-menu-items .admin-table tbody tr');
-
-        function populateCategories() {
-            const categories = new Set();
-            rows.forEach(row => { if (row.cells[1]) { const cat = row.cells[1].textContent.trim(); if (cat) categories.add(cat); } });
-            Array.from(categories).sort().forEach(cat => {
-                const option = document.createElement('option');
-                option.value = cat.toLowerCase();
-                option.textContent = cat;
-                categoryFilter.appendChild(option);
-            });
-        }
-
-        function applyFilters() {
-            const q = searchInput.value.toLowerCase().trim();
-            const cat = categoryFilter.value.toLowerCase();
-            rows.forEach(row => {
-                const name = row.cells[0].textContent.toLowerCase();
-                const category = row.cells[1].textContent.toLowerCase().trim();
-                row.style.display = (name.includes(q) && (cat === "" || category === cat)) ? '' : 'none';
-            });
-        }
-
-        if (searchInput) searchInput.addEventListener('input', applyFilters);
-        if (categoryFilter) { categoryFilter.addEventListener('change', applyFilters); populateCategories(); }
-
-        // ── Restock Modal ──
-        window.openRestockModal = function (ingId, name, unit) {
-            document.getElementById('restockName').textContent = name;
-            document.getElementById('restockUnit').textContent = '(' + unit + ')';
-            document.getElementById('restockForm').action = '/admin/ingredients/restock/' + ingId;
-            new bootstrap.Modal(document.getElementById('restockModal')).show();
-        };
-
-        // ── Waste Modal ──
-        window.openWasteModal = function (ingId, name, unit, currentStock) {
-            document.getElementById('wasteName').textContent = name;
-            document.getElementById('wasteUnit').textContent = '(' + unit + ')';
-            document.getElementById('wasteCurrent').textContent = currentStock;
-            document.getElementById('wasteForm').action = '/admin/ingredients/waste/' + ingId;
-            new bootstrap.Modal(document.getElementById('wasteModal')).show();
-        };
-
-        window.toggleAllCheckboxes = function (masterCb, cbClass) {
-            document.querySelectorAll('.' + cbClass).forEach(cb => {
-                cb.checked = masterCb.checked;
-            });
-            const btnId = cbClass === 'ingredient-cb' ? 'btnDeleteIngredients' : 'btnDeleteSuppliers';
-            updateBulkBtnState(cbClass, btnId);
-        };
-
-        window.updateBulkBtnState = function (cbClass, btnId) {
-            const btn = document.getElementById(btnId);
-            if (!btn) return;
-            const anyChecked = document.querySelector('.' + cbClass + ':checked') !== null;
-            btn.style.display = anyChecked ? 'inline-block' : 'none';
-
-            // Update master checkbox if needed
-            const allCbs = document.querySelectorAll('.' + cbClass);
-            const checkedCbs = document.querySelectorAll('.' + cbClass + ':checked');
-            const masterCb = btnId === 'btnDeleteIngredients' ? document.querySelector('#ingredientsTable thead input[type="checkbox"]') : document.querySelector('#suppliersTable thead input[type="checkbox"]');
-            if (masterCb) {
-                masterCb.checked = checkedCbs.length === allCbs.length && allCbs.length > 0;
-                masterCb.indeterminate = checkedCbs.length > 0 && checkedCbs.length < allCbs.length;
-            }
-        };
-
-        window.openEditIngredientModal = function (id, name, unit, stock, reorder, cost, supplierId, expDate) {
-            document.getElementById('editIngredientForm').action = '/admin/ingredients/update/' + id;
-            document.getElementById('editIngName').value = name;
-            document.getElementById('editIngUnit').value = unit;
-            document.getElementById('editIngStock').value = stock;
-            document.getElementById('editIngReorder').value = reorder;
-            document.getElementById('editIngCost').value = cost;
-            document.getElementById('editIngSupplier').value = supplierId || "";
-            document.getElementById('editIngExp').value = expDate || "";
-            new bootstrap.Modal(document.getElementById('editIngredientModal')).show();
-        };
-
-        window.openEditSupplierModal = function (id, name, contact, phone, email, address, catalog) {
-            document.getElementById('editSupplierForm').action = '/admin/suppliers/update/' + id;
-            document.getElementById('editSupName').value = name;
-            document.getElementById('editSupContact').value = contact;
-            document.getElementById('editSupPhone').value = phone;
-            document.getElementById('editSupEmail').value = email;
-            document.getElementById('editSupAddress').value = address;
-            document.getElementById('editSupCatalog').value = catalog;
-            new bootstrap.Modal(document.getElementById('editSupplierModal')).show();
-        };
-
-        // Filters for Ingredients
-        const ingSearch = document.getElementById('ingredientSearch');
-        if (ingSearch) {
-            ingSearch.addEventListener('input', function () {
-                const q = this.value.toLowerCase().trim();
-                document.querySelectorAll('#ingredientsTable tbody tr').forEach(row => {
-                    if (row.cells.length > 2) {
-                        const name = row.cells[1].textContent.toLowerCase();
-                        row.style.display = name.includes(q) ? '' : 'none';
-                    }
-                });
-            });
-        }
-
-        // Filters for Suppliers
-        const supSearch = document.getElementById('supplierSearch');
-        if (supSearch) {
-            supSearch.addEventListener('input', function () {
-                const q = this.value.toLowerCase().trim();
-                document.querySelectorAll('#suppliersTable tbody tr').forEach(row => {
-                    if (row.cells.length > 2) {
-                        const name = row.cells[1].textContent.toLowerCase();
-                        row.style.display = name.includes(q) ? '' : 'none';
-                    }
-                });
-            });
-        }
-
-        // ── Recipe Modal ──
-        window.openRecipeModal = function (itemId, itemName) {
+        function openRecipeModal(itemId, itemName) {
             document.getElementById('recipeItemName').textContent = itemName;
-            document.getElementById('addRecipeForm').action = '/admin/recipe/' + itemId + '/add';
+            document.getElementById('addRecipeForm').action = `/admin/recipe/${itemId}/add`;
             loadRecipe(itemId);
             new bootstrap.Modal(document.getElementById('recipeModal')).show();
-        };
-
-        window.viewRecipe = function (itemId, itemName) {
-            openRecipeModal(itemId, itemName);
-        };
+        }
 
         function loadRecipe(itemId) {
             const list = document.getElementById('recipeList');
-            list.innerHTML = '<p class="text-center text-muted"><i class="fas fa-spinner fa-spin"></i> Loading...</p>';
-            fetch('/admin/recipe/' + itemId)
+            list.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+            fetch(`/admin/recipe/${itemId}`)
                 .then(r => r.json())
                 .then(data => {
                     if (data.length === 0) {
-                        list.innerHTML = '<p class="text-center text-muted" style="font-size: 0.85rem;">No ingredients linked to this item yet.</p>';
+                        list.innerHTML = '<p class="text-center text-muted py-3">No ingredients linked yet.</p>';
                         return;
                     }
-                    let html = '<table class="table table-sm table-borderless mb-0"><thead><tr><th style="font-size:0.75rem;">Ingredient</th><th style="font-size:0.75rem;">Qty Needed</th><th style="font-size:0.75rem;">Unit</th><th></th></tr></thead><tbody>';
+                    let html = '<table class="table table-sm table-borderless"><thead><tr><th style="font-size:0.75rem;">Ingredient</th><th style="font-size:0.75rem;">Qty</th><th style="font-size:0.75rem;">Unit</th><th></th></tr></thead><tbody>';
                     data.forEach(r => {
                         html += `<tr>
-                        <td style="font-weight:600; font-size:0.85rem;">${r.name}</td>
-                        <td style="font-size:0.85rem;">${r.quantity_needed}</td>
-                        <td style="font-size:0.85rem; color:#888;">${r.unit}</td>
-                        <td><form method="POST" action="/admin/recipe/remove/${r.id}" class="d-inline"><button class="btn-admin btn-admin-danger" style="font-size:0.65rem; padding:2px 6px;"><i class="fas fa-times"></i></button></form></td>
-                    </tr>`;
+                            <td style="font-weight:600; font-size:0.85rem;">${r.name}</td>
+                            <td style="font-size:0.85rem;">${r.quantity_needed}</td>
+                            <td style="font-size:0.85rem; color:#888;">${r.unit}</td>
+                            <td class="text-end"><form method="POST" action="/admin/recipe/remove/${r.id}" class="d-inline"><button class="btn-admin btn-admin-danger" style="font-size:0.65rem; padding:2px 6px;"><i class="fas fa-times"></i></button></form></td>
+                        </tr>`;
                     });
                     html += '</tbody></table>';
                     list.innerHTML = html;
-                })
-                .catch(() => { list.innerHTML = '<p class="text-muted">Failed to load recipe.</p>'; });
+                });
         }
+
+        // Search Filters (Local for current page)
+        window.applyTableSearch = function(inputId, tableId, cellIndex) {
+            const q = document.getElementById(inputId).value.toLowerCase();
+            document.querySelectorAll(`#${tableId} tbody tr`).forEach(row => {
+                const text = row.cells[cellIndex].textContent.toLowerCase();
+                row.style.display = text.includes(q) ? '' : 'none';
+            });
+        };
+
+        const menuSearch = document.getElementById('inventorySearch');
+        if (menuSearch) menuSearch.addEventListener('input', () => applyTableSearch('inventorySearch', 'tab-menu-items', 0));
+        
+        const ingSearch = document.getElementById('ingredientSearch');
+        if (ingSearch) ingSearch.addEventListener('input', () => applyTableSearch('ingredientSearch', 'ingredientsTable', 1));
+
+        const supSearch = document.getElementById('supplierSearch');
+        if (supSearch) supSearch.addEventListener('input', () => applyTableSearch('supplierSearch', 'suppliersTable', 1));
+        
+        // Populate Categories for Filter (Once)
+        const categories = new Set();
+        document.querySelectorAll('#tab-menu-items .admin-table tbody tr').forEach(row => {
+            if (row.cells[1]) categories.add(row.cells[1].textContent.trim());
+        });
+        const currentCat = new URLSearchParams(window.location.search).get('category');
+        categories.forEach(cat => {
+            const opt = document.createElement('option');
+            opt.value = cat;
+            opt.textContent = cat;
+            if (cat === currentCat) opt.selected = true;
+            categoryFilter.appendChild(opt);
+        });
     })();
+
+    function toggleAllCheckboxes(master, cls) {
+        document.querySelectorAll('.'+cls).forEach(cb => cb.checked = master.checked);
+        updateBulkBtnState(cls, cls === 'ingredient-cb' ? 'btnDeleteIngredients' : 'btnDeleteSuppliers');
+    }
+
+    function updateBulkBtnState(cls, btnId) {
+        const btn = document.getElementById(btnId);
+        const any = document.querySelector('.'+cls+':checked') !== null;
+        if (btn) btn.style.display = any ? 'inline-block' : 'none';
+    }
 </script>
 {% endblock %}
 {% endblock %}
-
-
-
-

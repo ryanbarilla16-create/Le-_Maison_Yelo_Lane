@@ -9,6 +9,7 @@
     </a>
 </div>
 
+{% from "macros.html" import render_pagination %}
 <div class="card border-0 shadow-sm" style="border-radius: 12px;">
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -25,7 +26,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for log in logs %}
+                    {% for log in pagination.items %}
                     <tr>
                         <td class="ps-4 text-muted" style="font-size: 0.85rem;">
                             {{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
@@ -63,19 +64,13 @@
                             {% endif %}
                         </td>
                     </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="7" class="text-center py-5 text-muted">
-                            <i class="fas fa-clipboard-list fs-1 mb-3 opacity-25"></i><br>
-                            No audit logs found.
-                        </td>
-                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
 </div>
+{{ render_pagination(pagination, 'admin.inventory_audit_logs') }}
 {% endblock %}
 
 

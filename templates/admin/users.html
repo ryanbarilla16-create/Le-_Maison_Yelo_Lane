@@ -1,4 +1,5 @@
 {% extends "admin/base.html" %}
+{% from "macros.html" import render_pagination %}
 {% block title %}User Management{% endblock %}
 
 {% block content %}
@@ -24,7 +25,7 @@
 
 <div class="admin-table-wrap">
     <div class="admin-table-header">
-        <h3>{{ users|length }} User{{ 's' if users|length != 1 else '' }}</h3>
+        <h3>{{ users.total }} User{{ 's' if users.total != 1 else '' }}</h3>
         <div style="display: flex; align-items: center; gap: 0.5rem;">
             <input type="checkbox" id="selectAll" style="transform: scale(1.2); cursor: pointer;"
                 onchange="document.querySelectorAll('.user-check').forEach(c => c.checked = this.checked)">
@@ -48,7 +49,7 @@
                 </tr>
             </thead>
             <tbody>
-                {% for user in users %}
+                {% for user in users.items %}
                 <tr>
                     <td><input type="checkbox" name="user_ids" class="user-check" value="{{ user.id }}"
                             form="broadcastForm" style="transform: scale(1.1); cursor: pointer;"></td>
@@ -87,6 +88,7 @@
             </tbody>
         </table>
     </div>
+    {{ render_pagination(users, 'admin.users') }}
 </div>
 
 <!-- Broadcast Modal & Form -->

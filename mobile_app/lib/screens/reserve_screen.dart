@@ -173,6 +173,12 @@ class _ReserveScreenState extends State<ReserveScreen> {
     if (uid == null) return;
     final ds =
         '${_date!.year}-${_date!.month.toString().padLeft(2, '0')}-${_date!.day.toString().padLeft(2, '0')}';
+
+    // TRIGGER T&C MODAL FOR EXCLUSIVE BOOKINGS
+    if (_bookingType == 'EXCLUSIVE') {
+      final agreed = await _showExclusiveTerms();
+      if (agreed != true) return; 
+    }
     
     // Redirect to Menu Selection Step 2
     if (!mounted) return;
@@ -860,6 +866,111 @@ class _ReserveScreenState extends State<ReserveScreen> {
         _msg(res['message'] ?? 'Failed to cancel reservation.', false);
       }
     }
+  }
+
+  Future<bool?> _showExclusiveTerms() {
+    bool localAgreed = false;
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            backgroundColor: Colors.white,
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.gavel_rounded, color: AppColors.primary, size: 20),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Exclusive Policy',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                   const Text(
+                    'Please review the terms for renting the entire venue:',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textMain),
+                  ),
+                  const SizedBox(height: 16),
+                  _policyItem(Icons.timer, '3-Day Lead Time', 'Exclusive bookings must be made at least 3 days in advance.'),
+                  _policyItem(Icons.payments_outlined, 'Payment First', 'Full payment of the pre-ordered menu is required to confirm your slot.'),
+                  _policyItem(Icons.groups_outlined, 'Capacity', 'Accommodates up to 50 guests. Admin approval is required.'),
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: localAgreed,
+                        activeColor: AppColors.primary,
+                        onChanged: (v) => setDialogState(() => localAgreed = v ?? false),
+                      ),
+                      const Expanded(
+                        child: Text(
+                          'I have read and agree to the Exclusive Reservation Terms.',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+              ),
+              ElevatedButton(
+                onPressed: localAgreed ? () => Navigator.pop(context, true) : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: Colors.grey.shade300,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Continue'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _policyItem(IconData icon, String title, String desc) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 16, color: AppColors.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                Text(desc, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

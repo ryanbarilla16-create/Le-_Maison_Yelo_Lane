@@ -190,7 +190,6 @@ class _OrdersScreenState extends State<OrdersScreen>
     );
   }
 
-  // ═══ SHOPEE-STYLE ORDER CARD ═══
   Widget _orderCard(dynamic o) {
     final items = o['items'] as List? ?? [];
     final status = o['status'] ?? 'PENDING';
@@ -199,434 +198,243 @@ class _OrdersScreenState extends State<OrdersScreen>
     final paymentMethod = o['payment_method'] ?? '';
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 6,
-            offset: const Offset(0, 1),
+            color: AppColors.primary.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Column(
+      child: Stack(
         children: [
-          // ── HEADER: Store Name + Status ──
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(
-                  color: Colors.grey.shade100,
-                  width: 1,
+          Positioned(
+            left: -8,
+            top: 50,
+            child: CircleAvatar(radius: 8, backgroundColor: const Color(0xFFF5F5F5)),
+          ),
+          Positioned(
+            right: -8,
+            top: 50,
+            child: CircleAvatar(radius: 8, backgroundColor: const Color(0xFFF5F5F5)),
+          ),
+          Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  border: Border(bottom: BorderSide(color: Colors.grey.shade100, width: 1)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Icon(Icons.store_rounded, size: 14, color: AppColors.primary),
+                    ),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'Le Maison Yelo Lane',
+                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, letterSpacing: 0.2),
+                      ),
+                    ),
+                    Text(
+                      _statusLabel(status),
+                      style: TextStyle(color: statusColor, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.5),
+                    ),
+                  ],
                 ),
               ),
-            ),
-            child: Row(
-              children: [
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 14),
+                child: _DashedDivider(),
+              ),
+              ...items.map((item) => _orderItemRow(item)),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 14),
+                child: _DashedDivider(),
+              ),
+              if (diningOption == 'DELIVERY' && o['delivery_address'] != null && o['delivery_address'] != '')
                 Container(
-                  padding: const EdgeInsets.all(4),
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(4),
+                    color: const Color(0xFFFFF8E1),
+                    border: Border(top: BorderSide(color: Colors.amber.shade100)),
                   ),
-                  child: Icon(
-                    Icons.store_rounded,
-                    size: 14,
-                    color: AppColors.primary,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                const Expanded(
-                  child: Text(
-                    'Le Maison Yelo Lane',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                ),
-                Text(
-                  _statusLabel(status),
-                  style: TextStyle(
-                    color: statusColor,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // ── ORDER ITEMS ──
-          ...items.map((item) => _orderItemRow(item)),
-
-          // ── DELIVERY INFO ──
-          if (diningOption == 'DELIVERY' &&
-              o['delivery_address'] != null &&
-              o['delivery_address'] != '')
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF8E1),
-                border: Border(
-                  top: BorderSide(color: Colors.amber.shade100),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.delivery_dining_rounded,
-                    size: 16,
-                    color: Colors.amber.shade800,
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      o['delivery_address'],
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.amber.shade900,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-          // ── ORDER TOTAL ──
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(
-                  color: Colors.grey.shade100,
-                  width: 1,
-                ),
-              ),
-            ),
-            child: Row(
-              children: [
-                // Info tags
-                _miniTag(
-                  diningOption == 'DINE_IN'
-                      ? 'Dine In'
-                      : diningOption == 'DELIVERY'
-                          ? 'Delivery'
-                          : 'Pick-up',
-                  diningOption == 'DELIVERY'
-                      ? Icons.delivery_dining
-                      : diningOption == 'DINE_IN'
-                          ? Icons.restaurant
-                          : Icons.takeout_dining,
-                ),
-                const SizedBox(width: 6),
-                _miniTag(
-                  paymentMethod == 'ONLINE'
-                      ? 'GCash'
-                      : paymentMethod == 'GCASH'
-                          ? 'GCash'
-                          : 'Counter',
-                  Icons.payment_rounded,
-                ),
-                const Spacer(),
-                Text(
-                  '${items.length} item${items.length > 1 ? 's' : ''}',
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                const Text(
-                  'Total:',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.black54,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '₱${(o['total_amount'] as num).toStringAsFixed(2)}',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.accent,
-                    fontFamily: 'Georgia',
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // ── NOTES ──
-          if (o['notes'] != null && o['notes'] != '')
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                border: Border(
-                  top: BorderSide(color: Colors.grey.shade100),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.sticky_note_2_outlined,
-                    size: 14,
-                    color: Colors.grey.shade500,
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      o['notes'],
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                        fontStyle: FontStyle.italic,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-          // ── REVIEW STARS (if reviewed) ──
-          if (o['review_rating'] != null)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                border: Border(
-                  top: BorderSide(color: Colors.grey.shade100),
-                ),
-              ),
-              child: Row(
-                children: [
-                  ...List.generate(
-                    5,
-                    (i) => Icon(
-                      i < (o['review_rating'] as int)
-                          ? Icons.star_rounded
-                          : Icons.star_border_rounded,
-                      color: const Color(0xFFF9A825),
-                      size: 18,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2E7D32).withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Text(
-                      'Reviewed',
-                      style: TextStyle(
-                        color: Color(0xFF2E7D32),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-          // ── ACTION BUTTONS ──
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(color: Colors.grey.shade100),
-              ),
-            ),
-            child: Row(
-              children: [
-                // Order date
-                Expanded(
-                  child: Text(
-                    'Order #${o['id']} · ${o['created_at'] ?? ''}',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey.shade500,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(width: 8),
-
-                // Track Delivery
-                if (diningOption == 'DELIVERY' &&
-                    status != 'CANCELLED' &&
-                    status != 'COMPLETED')
-                  _actionButton(
-                    'Track',
-                    Icons.location_on_rounded,
-                    const Color(0xFF1565C0),
-                    () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => DeliveryTrackingScreen(
-                            orderId: o['id'],
-                            deliveryAddress: o['delivery_address'],
-                          ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.delivery_dining_rounded, size: 16, color: Colors.amber.shade800),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          o['delivery_address'],
+                          style: TextStyle(fontSize: 11, color: Colors.amber.shade900),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      );
-                    },
+                      ),
+                    ],
                   ),
-                
-                // Chat Rider (if assigned / tracking)
-                if (diningOption == 'DELIVERY' &&
-                    status != 'CANCELLED' &&
-                    status != 'COMPLETED') ...[
-                  const SizedBox(width: 8),
-                  _actionButton(
-                    'Chat',
-                    Icons.chat_bubble_rounded,
-                    AppColors.primary,
-                    () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => OrderChatScreen(
-                            orderId: o['id'],
-                            otherPartyName: 'Delivery Rider',
-                            otherPartyRole: 'Rider',
-                          ),
+                ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: Colors.grey.shade100, width: 1)),
+                ),
+                child: Row(
+                  children: [
+                    _miniTag(diningOption == 'DINE_IN' ? 'Dine In' : diningOption == 'DELIVERY' ? 'Delivery' : 'Pick-up', diningOption == 'DELIVERY' ? Icons.delivery_dining : diningOption == 'DINE_IN' ? Icons.restaurant : Icons.takeout_dining),
+                    const SizedBox(width: 6),
+                    _miniTag(paymentMethod == 'ONLINE' || paymentMethod == 'GCASH' ? 'GCash' : 'Counter', Icons.payment_rounded),
+                    const Spacer(),
+                    Text('${items.length} item${items.length > 1 ? 's' : ''}', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                    const SizedBox(width: 6),
+                    const Text('Total:', style: TextStyle(fontSize: 13, color: Colors.black54)),
+                    const SizedBox(width: 4),
+                    Text(
+                      '₱${(o['total_amount'] as num).toStringAsFixed(2)}',
+                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.accent, fontFamily: 'Georgia'),
+                    ),
+                  ],
+                ),
+              ),
+              if (o['notes'] != null && o['notes'] != '')
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(color: Colors.grey.shade50, border: Border(top: BorderSide(color: Colors.grey.shade100))),
+                  child: Row(
+                    children: [
+                      Icon(Icons.sticky_note_2_outlined, size: 14, color: Colors.grey.shade500),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          o['notes'],
+                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      );
-                    },
+                      ),
+                    ],
                   ),
-                ],
-
-                // Review button
-                if (status == 'COMPLETED' && o['review_rating'] == null) ...[
-                  const SizedBox(width: 8),
-                  _actionButton(
-                    'Rate',
-                    Icons.star_rounded,
-                    const Color(0xFFF9A825),
-                    () => _showReviewDialog(o['id']),
+                ),
+              if (o['review_rating'] != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(color: Colors.grey.shade50, border: Border(top: BorderSide(color: Colors.grey.shade100))),
+                  child: Row(
+                    children: [
+                      ...List.generate(5, (i) => Icon(i < (o['review_rating'] as int) ? Icons.star_rounded : Icons.star_border_rounded, color: const Color(0xFFF9A825), size: 18)),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(color: const Color(0xFF2E7D32).withOpacity(0.08), borderRadius: BorderRadius.circular(10)),
+                        child: const Text('Reviewed', style: TextStyle(color: Color(0xFF2E7D32), fontSize: 10, fontWeight: FontWeight.w700)),
+                      ),
+                    ],
                   ),
-                ],
-
-                // Buy Again
-                if (status == 'COMPLETED') ...[
-                  const SizedBox(width: 8),
-                  _primaryActionButton(
-                    'Buy Again',
-                    () {
-                      for (final item in items) {
-                        final qty = item['quantity'] is int ? item['quantity'] : 1;
-                        for (int i = 0; i < qty; i++) {
-                          CartScreen.addItem({
-                            'id': item['menu_item_id'] ?? item['id'] ?? 0,
-                            'name': item['name'],
-                            'price': item['price'],
-                            'image_url': item['image_url'],
-                            'category': item['category'] ?? '',
-                          });
+                ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(border: Border(top: BorderSide(color: Colors.grey.shade100))),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Order #${o['id']} · ${o['created_at'] ?? ''}',
+                        style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    if (diningOption == 'DELIVERY' && status != 'CANCELLED' && status != 'COMPLETED')
+                      _actionButton('Track', Icons.location_on_rounded, const Color(0xFF1565C0), () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => DeliveryTrackingScreen(orderId: o['id'], deliveryAddress: o['delivery_address'])));
+                      }),
+                    if (diningOption == 'DELIVERY' && status != 'CANCELLED' && status != 'COMPLETED') ...[
+                      const SizedBox(width: 8),
+                      _actionButton('Chat', Icons.chat_bubble_rounded, AppColors.primary, () => Navigator.push(context, MaterialPageRoute(builder: (_) => OrderChatScreen(orderId: o['id'], otherPartyName: 'Delivery Rider', otherPartyRole: 'Rider')))),
+                    ],
+                    if (status == 'COMPLETED' && o['review_rating'] == null) ...[
+                      const SizedBox(width: 8),
+                      _actionButton('Rate', Icons.star_rounded, const Color(0xFFF9A825), () => _showReviewDialog(o['id'])),
+                    ],
+                    if (status == 'COMPLETED') ...[
+                      const SizedBox(width: 8),
+                      _primaryActionButton('Buy Again', () {
+                        for (final item in items) {
+                          final qty = item['quantity'] is int ? item['quantity'] : 1;
+                          for (int i = 0; i < qty; i++) {
+                            CartScreen.addItem({'id': item['menu_item_id'] ?? item['id'] ?? 0, 'name': item['name'], 'price': item['price'], 'image_url': item['image_url'], 'category': item['category'] ?? ''});
+                          }
                         }
-                      }
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const CartScreen()),
-                      ).then((_) => setState(() {}));
-                    },
-                  ),
-                ],
-              ],
-            ),
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const CartScreen())).then((_) => setState(() {}));
+                      }),
+                    ],
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  // ═══ SINGLE ORDER ITEM ROW (Shopee-style) ═══
   Widget _orderItemRow(dynamic item) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Product image
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: item['image_url'] != null
-                ? Image.network(
-                    item['image_url'],
-                    width: 72,
-                    height: 72,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _imagePlaceholder(),
-                  )
-                : _imagePlaceholder(),
+          // Simple quantity indicator
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              '${item['quantity']}x',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+              ),
+            ),
           ),
           const SizedBox(width: 12),
           // Product details
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item['name'] ?? '',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF333333),
-                    height: 1.3,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                if (item['category'] != null)
-                  Text(
-                    item['category'],
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey.shade500,
-                    ),
-                  ),
-                const SizedBox(height: 6),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '₱${(item['price'] as num).toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.accent,
-                      ),
-                    ),
-                    Text(
-                      'x${item['quantity']}',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+            child: Text(
+              item['name'] ?? '',
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF444444),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '₱${(item['price'] * item['quantity']).toStringAsFixed(2)}',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF666666),
+              fontFamily: 'monospace',
             ),
           ),
         ],
@@ -945,3 +753,21 @@ class _OrdersScreenState extends State<OrdersScreen>
 }
 
 
+class _DashedDivider extends StatelessWidget {
+  const _DashedDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: List.generate(
+        150,
+        (i) => Expanded(
+          child: Container(
+            color: i % 2 == 0 ? Colors.transparent : Colors.grey.shade300,
+            height: 1,
+          ),
+        ),
+      ),
+    );
+  }
+}
