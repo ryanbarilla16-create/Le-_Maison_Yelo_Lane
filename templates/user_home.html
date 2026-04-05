@@ -734,7 +734,7 @@
                 <div class="dashPanel-head">
                     <h5><i class="fas fa-clock" style="color: var(--primary-color); font-size: 0.95rem;"></i> Upcoming
                         Reservations</h5>
-                    <a href="{{ url_for('main.reserve') }}" class="panelBtn"><i class="fas fa-plus"></i> New</a>
+                    <a href="{{ url_for('main.reserve') }}" class="panelBtn" onclick="clearReservationSession()"><i class="fas fa-plus"></i> New</a>
                 </div>
                 {% if upcoming %}
                 {% for res in upcoming %}
@@ -765,7 +765,7 @@
                 <div class="dashEmpty">
                     <div class="dashEmpty-icon"><i class="far fa-calendar"></i></div>
                     <p>No upcoming reservations</p>
-                    <a href="{{ url_for('main.reserve') }}" class="panelBtn" style="display: inline-flex;">Book a
+                    <a href="{{ url_for('main.reserve') }}" class="panelBtn" style="display: inline-flex;" onclick="clearReservationSession()">Book a
                         Table</a>
                 </div>
                 {% endif %}

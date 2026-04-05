@@ -101,6 +101,25 @@ def my_orders():
         user_reviews_by_order=user_reviews_by_order
     )
 
+@main_bp.route('/my-reservations')
+@login_required
+def my_reservations():
+    from models import Reservation
+    all_res = Reservation.query.filter_by(user_id=current_user.id).order_by(Reservation.date.desc(), Reservation.time.desc()).all()
+    
+    pending_count = sum(1 for r in all_res if r.status == 'PENDING')
+    confirmed_count = sum(1 for r in all_res if r.status == 'CONFIRMED')
+    completed_count = sum(1 for r in all_res if r.status == 'COMPLETED')
+    cancelled_count = sum(1 for r in all_res if r.status == 'REJECTED')
+
+    return render_template('my_reservations.html',
+        all_res=all_res,
+        pending_count=pending_count,
+        confirmed_count=confirmed_count,
+        completed_count=completed_count,
+        cancelled_count=cancelled_count
+    )
+
 @main_bp.route('/menu')
 def menu_page():
     # Show all items (even unavailable ones, which show as 'Sold Out')

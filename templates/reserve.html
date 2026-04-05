@@ -203,9 +203,22 @@
 <div class="resPage">
     <div class="resCard">
         <div class="resHeader">
-            <h2><i class="fas fa-calendar-plus"
-                    style="font-size: 1.6rem; -webkit-text-fill-color: var(--primary-color);"></i> Book a Table</h2>
+            <h2>Book a Table</h2>
             <p>Experience fine dining. Reserve your spot today.</p>
+
+            <div class="step-indicator mt-4" style="display: flex; justify-content: center; gap: 1rem; align-items: center;">
+                <div class="step active" style="display: flex; align-items: center; gap: 0.5rem; font-weight: 600; color: #5D4037;">
+                    <div class="step-num" style="width: 28px; height: 28px; border-radius: 50%; background: #5D4037; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.85rem;">1</div> Details
+                </div>
+                <div class="step-line" style="width: 40px; height: 2px; background: #eee;"></div>
+                <div class="step" style="display: flex; align-items: center; gap: 0.5rem; font-weight: 600; color: #bcaaa4;">
+                    <div class="step-num" style="width: 28px; height: 28px; border-radius: 50%; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 0.85rem;">2</div> Menu
+                </div>
+                <div class="step-line" style="width: 40px; height: 2px; background: #eee;"></div>
+                <div class="step" style="display: flex; align-items: center; gap: 0.5rem; font-weight: 600; color: #bcaaa4;">
+                    <div class="step-num" style="width: 28px; height: 28px; border-radius: 50%; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 0.85rem;">3</div> Payment
+                </div>
+            </div>
         </div>
 
         <!-- Enhanced Reservation Policies Section -->
@@ -255,18 +268,15 @@
                     </div>
                 </div>
 
-                <!-- Approval Status -->
+                <!-- Payment First Rule -->
                 <div class="col-12 mt-3 pt-3" style="border-top: 1px dashed rgba(139, 99, 75, 0.15);">
                     <div class="d-flex gap-3 align-items-center">
-                        <div style="color: #8B634B; font-size: 1.2rem; min-width: 24px;"><i
-                                class="fas fa-shield-alt"></i></div>
+                        <div style="color: #d35400; font-size: 1.2rem; min-width: 24px;"><i
+                                class="fas fa-credit-card"></i></div>
                         <div
-                            style="background: rgba(212,168,98,0.06); padding: 10px 15px; border-radius: 12px; border: 1px solid rgba(212,168,98,0.1); width: 100%;">
-                            <p class="mb-0" style="font-size: 0.8rem; line-height: 1.4; color: #8b634b;">
-                                <i class="fas fa-clock-rotate-left me-2" style="font-size: 0.75rem;"></i>
-                                All bookings are initially tagged as <strong
-                                    style="color: #8b634b; text-transform: uppercase; font-size: 0.75rem; background: #fff; padding: 2px 6px; border-radius: 4px; border: 1px solid #8b634b;">Pending</strong>.
-                                Our team will review and approve your request shortly.
+                            style="background: #fff8f0; padding: 10px 15px; border-radius: 12px; border: 1px solid #fde0b5; width: 100%;">
+                            <p class="mb-0" style="font-size: 0.8rem; line-height: 1.4; color: #d35400;">
+                                <strong style="font-size: 0.85rem;">Payment First Policy:</strong> All reservations require menu pre-selection and online payment to confirm your booking.
                             </p>
                         </div>
                     </div>
@@ -349,8 +359,7 @@
                 </div>
             </div>
 
-            <button type="submit" class="resSubmit"><i class="fas fa-calendar-check me-2"></i>Submit
-                Reservation</button>
+            <button type="submit" class="resSubmit">Continue to Menu <i class="fas fa-arrow-right ms-2"></i></button>
         </form>
     </div>
 </div>
@@ -428,6 +437,7 @@
         var dateField = document.getElementById('date');
         var timeSelect = document.getElementById('time');
         var options = timeSelect.options;
+        var submitBtn = document.querySelector('.resSubmit');
 
         var selectedDate = dateField.value;
         var today = new Date();
@@ -438,6 +448,7 @@
         var currMin = today.getMinutes();
         var currTimeStr = (currHour < 10 ? '0' + currHour : currHour) + ':' + (currMin < 10 ? '0' + currMin : currMin);
 
+        let hasAvailableSlots = false;
         for (var i = 1; i < options.length; i++) {
             var opt = options[i];
             if (selectedDate === todayStr) {
@@ -447,6 +458,7 @@
                     opt.text = opt.value + " (Unavailable)";
                 } else {
                     opt.disabled = false;
+                    hasAvailableSlots = true;
                     // Reset text
                     var ampm = parseInt(opt.value.split(':')[0]) >= 12 ? ' PM' : ' AM';
                     var h = parseInt(opt.value.split(':')[0]) % 12 || 12;
@@ -456,11 +468,30 @@
             } else {
                 // Enable everything for future dates
                 opt.disabled = false;
+                hasAvailableSlots = true;
                 var ampm = parseInt(opt.value.split(':')[0]) >= 12 ? ' PM' : ' AM';
                 var h = parseInt(opt.value.split(':')[0]) % 12 || 12;
                 var m = opt.value.split(':')[1];
                 opt.text = h + ":" + m + ampm;
             }
+        }
+
+        // Final check for cutoff
+        if (selectedDate === todayStr && currTimeStr >= "20:30") {
+            hasAvailableSlots = false;
+            for(var i=1; i<options.length; i++) options[i].disabled = true;
+        }
+
+        if (!hasAvailableSlots && selectedDate === todayStr) {
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Restaurant Closed For Today";
+            submitBtn.style.opacity = "0.6";
+            submitBtn.style.cursor = "not-allowed";
+        } else {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Continue to Menu <i class="fas fa-arrow-right ms-2"></i>';
+            submitBtn.style.opacity = "1";
+            submitBtn.style.cursor = "pointer";
         }
 
         // If current selected time is now disabled, reset
@@ -469,8 +500,51 @@
         }
     }
 
+
     document.addEventListener("DOMContentLoaded", function () {
+        // Safety: If not coming back from Step 2 (Menu Selection), clear old session data
+        if (!document.referrer.includes('/reserve/menu')) {
+            const keys = Object.keys(sessionStorage);
+            keys.forEach(key => {
+                if (key.startsWith('res_')) {
+                    sessionStorage.removeItem(key);
+                }
+            });
+        }
+
+        // Fallback or override values from session if coming back from Step 2
+        let p_date = "{{ pending.get('date', '') if pending else '' }}";
+        let p_time = "{{ pending.get('time', '') if pending else '' }}";
+        let p_guests = "{{ pending.get('guest_count', '') if pending else '' }}";
+        let p_type = "{{ pending.get('booking_type', 'REGULAR') if pending else 'REGULAR' }}";
+        let p_duration = "{{ pending.get('duration', '2') if pending else '2' }}";
+        let p_occasion = "{{ pending.get('occasion', '') if pending else '' }}";
+
+        // Restore from sessionStorage OR server pending details
+        if (sessionStorage.getItem('res_type') || p_type) document.getElementById('booking_type').value = sessionStorage.getItem('res_type') || p_type;
+        if (sessionStorage.getItem('res_guests') || p_guests) document.getElementById('guest_count').value = sessionStorage.getItem('res_guests') || p_guests;
+        if (sessionStorage.getItem('res_duration') || p_duration) document.getElementById('duration').value = sessionStorage.getItem('res_duration') || p_duration;
+        if (sessionStorage.getItem('res_occasion') || p_occasion) document.getElementById('occasion').value = sessionStorage.getItem('res_occasion') || p_occasion;
+        if (sessionStorage.getItem('res_date') || p_date) document.getElementById('date').value = sessionStorage.getItem('res_date') || p_date;
+
         updateBookingRules();
+
+        // Time needs to be set after options are generated
+        setTimeout(() => {
+            let selectedTime = sessionStorage.getItem('res_time') || p_time;
+            if (selectedTime) document.getElementById('time').value = selectedTime;
+        }, 50);
+
+        // Save on change
+        const fields = ['booking_type', 'guest_count', 'duration', 'occasion', 'date', 'time'];
+        fields.forEach(f => {
+            document.getElementById(f).addEventListener('input', (e) => {
+                sessionStorage.setItem('res_' + f, e.target.value);
+            });
+            document.getElementById(f).addEventListener('change', (e) => {
+                sessionStorage.setItem('res_' + f, e.target.value);
+            });
+        });
     });
 </script>
 {% endblock %}

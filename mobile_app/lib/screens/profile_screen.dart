@@ -496,31 +496,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ],
               const SizedBox(height: 24),
               if (_isEditing)
-                SizedBox(
-                  width: double.infinity,
+                GradientButton(
+                  label: 'Update Profile',
+                  icon: Icons.save_rounded,
+                  onPressed: _saving ? null : _save,
+                  isLoading: _saving,
                   height: 56,
-                  child: ElevatedButton(
-                    onPressed: _saving ? null : _save,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      elevation: 4,
-                    ),
-                    child: _saving
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : const Text(
-                            'Update Profile',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                          ),
-                  ),
                 ),
+
               if (!_isEditing)
                 SizedBox(
                   width: double.infinity,

@@ -565,23 +565,13 @@ class _SignupScreenState extends State<SignupScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: _loading ? null : _signup,
-                      child: _loading
-                          ? const SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2.5,
-                              ),
-                            )
-                          : const Text('Create Account'),
-                    ),
+                  GradientButton(
+                    label: 'Create Account',
+                    icon: Icons.person_add_rounded,
+                    onPressed: _loading ? null : _signup,
+                    isLoading: _loading,
                   ),
+
                   const SizedBox(height: 20),
                 ],
               ),

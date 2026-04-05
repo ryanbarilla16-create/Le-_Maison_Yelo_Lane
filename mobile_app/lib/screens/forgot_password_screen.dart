@@ -348,23 +348,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           ),
         ),
         const SizedBox(height: 24),
-        SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: ElevatedButton(
-            onPressed: _loading ? null : _sendOtp,
-            child: _loading
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2.5,
-                    ),
-                  )
-                : const Text('Send OTP Code'),
-          ),
+        GradientButton(
+          label: 'Send OTP Code',
+          icon: Icons.send_rounded,
+          onPressed: _loading ? null : _sendOtp,
+          isLoading: _loading,
         ),
+
       ],
     );
   }
@@ -427,23 +417,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: ElevatedButton(
-            onPressed: _loading ? null : _verifyOtp,
-            child: _loading
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2.5,
-                    ),
-                  )
-                : const Text('Verify OTP'),
-          ),
+        GradientButton(
+          label: 'Verify OTP',
+          icon: Icons.verified_rounded,
+          onPressed: _loading ? null : _verifyOtp,
+          isLoading: _loading,
         ),
+
       ],
     );
   }
@@ -541,26 +521,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           ),
         ),
         const SizedBox(height: 24),
-        SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: ElevatedButton(
-            onPressed: _loading ? null : _resetPassword,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.success,
-            ),
-            child: _loading
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2.5,
-                    ),
-                  )
-                : const Text('Reset Password'),
-          ),
+        GradientButton(
+          label: 'Reset Password',
+          icon: Icons.lock_reset_rounded,
+          onPressed: _loading ? null : _resetPassword,
+          isLoading: _loading,
         ),
+
       ],
     );
   }

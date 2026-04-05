@@ -160,6 +160,7 @@
                     <th>Guest</th>
                     <th>Type</th>
                     <th>Date & Time</th>
+                    <th>Payment/Order</th>
                     <th>Table</th>
                     <th>Guests</th>
                     <th>Occasion</th>
@@ -175,6 +176,18 @@
                             class="badge-status {{ 'badge-active' if res.booking_type == 'EXCLUSIVE' else 'badge-pending' }}">{{
                             res.booking_type }}</span></td>
                     <td>{{ res.date.strftime('%b %d, %Y') }} · {{ res.time.strftime('%I:%M %p') }}</td>
+                    <td>
+                        {% if res.linked_order %}
+                            {% if res.linked_order.payment_status == 'PAID' %}
+                                <span style="color: #27ae60; font-weight: bold; font-size: 0.8rem;"><i class="fas fa-check-circle"></i> PAID</span>
+                            {% else %}
+                                <span style="color: #e74c3c; font-weight: bold; font-size: 0.8rem;"><i class="fas fa-times-circle"></i> UNPAID</span>
+                            {% endif %}
+                            <div style="font-size: 0.75rem; color: #7f8c8d; margin-top: 2px;">₱{{ "%.2f"|format(res.linked_order.total_amount) }}</div>
+                        {% else %}
+                            <span style="color: #7f8c8d; font-size: 0.8rem;">No Order Linked</span>
+                        {% endif %}
+                    </td>
                     <td><span style="font-weight: 700; color: #8b634b;">{{ res.table_number or '—' }}</span></td>
                     <td>{{ res.guest_count }}</td>
                     <td>{{ res.occasion or '—' }}</td>
@@ -183,7 +196,16 @@
                         <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
                             {% if res.status == 'PENDING' %}
                             <button class="btn-admin btn-admin-success" style="font-size: 0.78rem;"
-                                onclick="openTableModal('{{ res.id }}', '{{ res.user.first_name }}')">
+                                onclick="openTableModal({
+                                    id: '{{ res.id }}', 
+                                    name: '{{ res.user.first_name }}',
+                                    date: '{{ res.date.strftime('%b %d, %Y') }}',
+                                    time: '{{ res.time.strftime('%I:%M %p') }}',
+                                    guests: '{{ res.guest_count }}',
+                                    occasion: '{{ res.occasion or '' }}',
+                                    hasOrder: {{ 'true' if res.linked_order else 'false' }},
+                                    orderTotal: '{{ "%.2f"|format(res.linked_order.total_amount) if res.linked_order else '0.00' }}'
+                                })">
                                 <i class="fas fa-check"></i> Confirm
                             </button>
                             <form method="POST" action="{{ url_for('admin.update_reservation', res_id=res.id) }}"><input
@@ -211,16 +233,41 @@
 <div id="tableModal" class="table-modal">
     <div class="table-modal-card">
         <div class="modal-head">
-            <h4>Assign Table</h4>
-            <p id="modalSubtext">Assigning a table for Ryan's reservation.</p>
+            <h4>Confirm Booking</h4>
+            <div id="resSummary" style="background: rgba(139, 99, 75, 0.05); padding: 1rem; border-radius: 12px; margin: 1rem 0; border: 1px dashed rgba(139, 99, 75, 0.2);">
+                <div style="font-size: 0.85rem; color: #5D4037; font-weight: 600; margin-bottom: 0.4rem;">
+                    <i class="fas fa-user-circle me-1"></i> <span id="sumName">Ryan</span>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.78rem; color: #8D6E63;">
+                    <span><i class="fas fa-calendar-alt me-1"></i> <span id="sumDate">Date</span></span>
+                    <span><i class="fas fa-clock me-1"></i> <span id="sumTime">Time</span></span>
+                    <span><i class="fas fa-users me-1"></i> <span id="sumGuests">0</span> guests</span>
+                    <span id="sumOccasionTag"><i class="fas fa-gift me-1"></i> <span id="sumOccasion">Occasion</span></span>
+                </div>
+                <div id="orderBadge" style="display:none; margin-top: 0.8rem; padding: 4px 8px; background: #E8F5E9; color: #2E7D32; border-radius: 6px; font-size: 0.72rem; font-weight: 700; width: fit-content;">
+                    <i class="fas fa-utensils me-1"></i> PRE-ORDERED FOOD READY
+                </div>
+            </div>
         </div>
         <form id="modalConfirmForm" method="POST">
             <input type="hidden" name="status" value="CONFIRMED">
             <div class="modal-input-group">
                 <label for="table_number_input">Table Number / Label</label>
-                <input type="text" id="table_number_input" name="table_number" placeholder="e.g. 1, 5, or Inside 1"
+                <input type="text" id="table_number_input" name="table_number" list="tables-list" placeholder="e.g. 1, 5, Vip 1"
                     required autofocus>
+                <datalist id="tables-list">
+                    <option value="Table 1">
+                    <option value="Table 2">
+                    <option value="Table 3">
+                    <option value="Table 4">
+                    <option value="Table 5">
+                    <option value="Table 6">
+                    <option value="VIP Area">
+                    <option value="Garden Table 1">
+                    <option value="Balcony 1">
+                </datalist>
             </div>
+
             <div class="modal-actions">
                 <button type="button" class="btn-modal btn-cancel" onclick="closeTableModal()">Cancel</button>
                 <button type="submit" class="btn-modal btn-assign">Confirm & Assign</button>
@@ -230,14 +277,33 @@
 </div>
 
 <script>
-    function openTableModal(resId, guestName) {
+    function openTableModal(data) {
         const modal = document.getElementById('tableModal');
         const form = document.getElementById('modalConfirmForm');
-        const subtext = document.getElementById('modalSubtext');
+        
+        // Fill Summary
+        document.getElementById('sumName').innerText = data.name;
+        document.getElementById('sumDate').innerText = data.date;
+        document.getElementById('sumTime').innerText = data.time;
+        document.getElementById('sumGuests').innerText = data.guests;
+        
+        if (data.occasion) {
+            document.getElementById('sumOccasionTag').style.display = 'inline';
+            document.getElementById('sumOccasion').innerText = data.occasion;
+        } else {
+            document.getElementById('sumOccasionTag').style.display = 'none';
+        }
+
+        const orderBadge = document.getElementById('orderBadge');
+        if (data.hasOrder) {
+            orderBadge.style.display = 'block';
+            orderBadge.innerHTML = `<i class="fas fa-utensils me-1"></i> PRE-ORDERED (₱${data.orderTotal})`;
+        } else {
+            orderBadge.style.display = 'none';
+        }
 
         // Dynamic URL for the form action
-        form.action = `/admin/reservations/update/${resId}`;
-        subtext.innerText = `Assigning a table for ${guestName}'s reservation.`;
+        form.action = `/admin/reservations/update/${data.id}`;
 
         modal.style.display = 'flex';
         document.getElementById('table_number_input').focus();

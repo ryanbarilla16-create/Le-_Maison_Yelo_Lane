@@ -265,52 +265,93 @@ def social_auth():
             user.profile_picture_url = picture_url
             db.session.commit()
             
+        if not user.is_verified:
+            # Send new OTP
+            otp = f"{random.randint(100000, 999999)}"
+            user.otp_code = otp
+            from utils import get_ph_time, send_email
+            user.otp_created_at = get_ph_time()
+            db.session.commit()
+            
+            html_msg = f"""
+            <div style="background-color: #f8f5f2; padding: 40px 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6;">
+                <div style="max-width: 550px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(93, 64, 55, 0.08); border: 1px solid #e8e0d8;">
+                    <div style="background-color: #5d4037; padding: 30px; text-align: center;">
+                        <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 300; letter-spacing: 1px;">LE MAISON YELO LANE</h1>
+                    </div>
+                    <div style="padding: 40px 35px; color: #4e342e;">
+                        <h2 style="margin-top: 0; font-weight: 600; font-size: 20px; color: #5d4037;">Verification Code</h2>
+                        <p style="font-size: 16px; margin-bottom: 25px;">Hello <strong>{user.first_name}</strong>,</p>
+                        <p style="font-size: 15px; color: #6d4c41;">Please use the following code to verify your {provider} account:</p>
+                        <div style="text-align: center; margin: 40px 0;">
+                            <div style="display: inline-block; background-color: #efebe9; border: 2px dashed #8d6e63; color: #5d4037; font-size: 36px; font-weight: bold; letter-spacing: 10px; padding: 20px 40px; border-radius: 12px;">{otp}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            """
+            send_email(user.email, 'Verify your account', html_msg)
+            flash(f"Please verify your account. An OTP was sent to {user.email}.", "info")
+            return jsonify({"success": True, "redirect": url_for('main.verify_otp', user_id=user.id)})
+
         if user.status != 'ACTIVE' and user.role not in ['ADMIN', 'CASHIER', 'INVENTORY_STAFF']:
             flash(f"Your {provider} login was successful, but your account is pending admin approval.", "warning")
             return jsonify({"success": True, "redirect": url_for('main.login')})
             
         login_user(user)
-        
-        if user.role == 'CASHIER':
-            redir_url = url_for('admin.orders')
-        elif user.role == 'INVENTORY_STAFF':
-            redir_url = url_for('admin.inventory')
-        elif user.role == 'ADMIN':
-            redir_url = url_for('admin.overview')
-        else:
-            redir_url = url_for('main.index')
+        # (Same redirection logic as before)
+        redir_url = url_for('main.index')
+        role_upper = user.role.upper() if user.role else ''
+        if role_upper == 'ADMIN': redir_url = url_for('admin.overview')
+        elif role_upper in ['CASHIER', 'STAFF']: redir_url = url_for('admin.orders')
+        elif role_upper in ['INVENTORY_STAFF', 'INVENTORY']: redir_url = url_for('admin.inventory')
+        elif role_upper == 'KITCHEN': redir_url = url_for('admin.kitchen_view')
+        elif role_upper == 'RIDER': redir_url = url_for('admin.deliveries')
             
         return jsonify({"success": True, "redirect": redir_url})
     
-    # Auto-create user since they used social login
+    # Auto-create user
     base_username = (first_name + last_name).lower().replace(' ', '')
     username = f"{base_username}{secrets.randbelow(9999)}"
-    
-    # Ensure unique username
     while User.query.filter_by(username=username).first():
         username = f"{base_username}{secrets.randbelow(99999)}"
         
     random_password = secrets.token_urlsafe(16)
+    otp = f"{random.randint(100000, 999999)}"
     
     new_user = User(
-        first_name=first_name, 
-        last_name=last_name,
-        username=username, 
-        email=email, 
-        status='PENDING',
-        is_verified=True,
-        profile_picture_url=picture_url
+        first_name=first_name, last_name=last_name, username=username, 
+        email=email, status='PENDING', is_verified=False,
+        profile_picture_url=picture_url, otp_code=otp
     )
+    from utils import get_ph_time, send_email
+    new_user.otp_created_at = get_ph_time()
     new_user.set_password(random_password)
-    
     db.session.add(new_user)
     db.session.commit()
     
-    flash(f"Welcome {first_name}! Your account was created via {provider} but requires admin approval before you can log in.", "success")
-    return jsonify({
-        "success": True, 
-        "redirect": url_for('main.login')
-    })
+    html_msg = f"""
+    <div style="background-color: #f8f5f2; padding: 40px 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6;">
+        <div style="max-width: 550px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(93, 64, 55, 0.08); border: 1px solid #e8e0d8;">
+            <div style="background-color: #5d4037; padding: 30px; text-align: center;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 300; letter-spacing: 1px;">LE MAISON YELO LANE</h1>
+            </div>
+            <div style="padding: 40px 35px; color: #4e342e;">
+                <h2 style="margin-top: 0; font-weight: 600; font-size: 20px; color: #5d4037;">Verification Code</h2>
+                <p style="font-size: 16px; margin-bottom: 25px;">Hello <strong>{first_name}</strong>,</p>
+                <p style="font-size: 15px; color: #6d4c41;">Welcome! Please use the following code to verify your new {provider} account:</p>
+                <div style="text-align: center; margin: 40px 0;">
+                    <div style="display: inline-block; background-color: #efebe9; border: 2px dashed #8d6e63; color: #5d4037; font-size: 36px; font-weight: bold; letter-spacing: 10px; padding: 20px 40px; border-radius: 12px;">{otp}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    """
+    send_email(email, 'Verify your account', html_msg)
+    
+    flash(f"Account created via {provider}! An OTP has been sent to {email}. Please verify to continue.", "info")
+    return jsonify({"success": True, "redirect": url_for('main.verify_otp', user_id=new_user.id)})
+
 
 @main_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -748,37 +789,41 @@ def facebook_callback():
     from models import User
     user = User.query.filter_by(email=email).first()
     if user:
-        mobile_sessions[session_id]['user'] = {
-            'id': user.id,
-            'email': user.email,
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'username': user.username,
-            'role': user.role
-        }
+        if not user.is_verified:
+            import random
+            otp = f"{random.randint(100000, 999999)}"
+            user.otp_code = otp
+            from utils import get_ph_time, send_email
+            user.otp_created_at = get_ph_time()
+            db.session.commit()
+            send_email(user.email, 'Verify your account', f'Your verification code is {otp}')
+            mobile_sessions[session_id] = {
+                'success': False, 'needs_otp': True, 'user_id': user.id, 'message': 'Account verification required.'
+            }
+        else:
+            mobile_sessions[session_id]['user'] = {
+                'id': user.id, 'email': user.email, 'first_name': user.first_name,
+                'last_name': user.last_name, 'username': user.username, 'role': user.role
+            }
     else:
         # Create new user
-        import secrets
+        import secrets, random
+        otp = f"{random.randint(100000, 999999)}"
         new_user = User(
-            email=email,
-            first_name=first_name,
-            last_name=last_name,
-            username=email.split('@')[0],
-            is_verified=True,
-            social_provider='Facebook'
+            email=email, first_name=first_name, last_name=last_name,
+            username=email.split('@')[0], is_verified=False,
+            social_provider='Facebook', otp_code=otp
         )
+        from utils import get_ph_time, send_email
+        new_user.otp_created_at = get_ph_time()
         new_user.set_password(secrets.token_hex(16))
-        from models import db
         db.session.add(new_user)
         db.session.commit()
-        mobile_sessions[session_id]['user'] = {
-            'id': new_user.id,
-            'email': new_user.email,
-            'first_name': new_user.first_name,
-            'last_name': new_user.last_name,
-            'username': new_user.username,
-            'role': new_user.role
+        send_email(email, 'Verify your account', f'Your verification code is {otp}')
+        mobile_sessions[session_id] = {
+            'success': False, 'needs_otp': True, 'user_id': new_user.id, 'message': 'Account created. Please verify.'
         }
+
     
     return '''
     <html><body style="font-family:sans-serif;text-align:center;padding:40px;">

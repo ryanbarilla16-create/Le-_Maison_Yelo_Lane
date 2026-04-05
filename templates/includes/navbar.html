@@ -174,7 +174,7 @@
             <li style="width: 1px; height: 24px; background: rgba(255,255,255,0.1); margin: 0 8px;"></li>
             <li class="nav-item"><a href="{{ url_for('main.index') }}" class="navLink">Dashboard</a></li>
             <li class="nav-item"><a href="{{ url_for('main.my_orders') }}" class="navLink">Orders</a></li>
-            <li class="nav-item"><a href="{{ url_for('main.reserve') }}" class="navJoin">Reserve</a></li>
+            <li class="nav-item"><a href="{{ url_for('main.reserve') }}" class="navJoin" onclick="clearReservationSession()">Reserve</a></li>
 
             <li class="nav-item dropdown ms-2">
                 <a href="#" class="d-flex align-items-center dropdown-toggle px-1" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
@@ -190,6 +190,7 @@
                         <small style="color: rgba(255,255,255,0.5);">{{ current_user.email }}</small>
                     </li>
                     <li><a class="dropdown-item" href="{{ url_for('main.profile') }}"><i class="fas fa-user-edit"></i>Profile Settings</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('main.my_reservations') }}"><i class="fas fa-calendar-alt"></i>My Reservations</a></li>
                     <li><hr class="dropdown-divider"></li>
                     <li><a class="dropdown-item" href="{{ url_for('main.logout') }}" style="color: #ff5252 !important;"><i class="fas fa-sign-out-alt"></i>Sign out</a></li>
                 </ul>
@@ -248,10 +249,11 @@
             {% endif %}
         </a></li>
         <li><a href="{{ url_for('main.my_orders') }}"><i class="fas fa-receipt"></i>My Orders</a></li>
+        <li><a href="{{ url_for('main.my_reservations') }}"><i class="fas fa-calendar-check"></i>My Reservations</a></li>
         <li><a href="{{ url_for('main.profile') }}"><i class="fas fa-user-edit"></i>Profile Settings</a></li>
         <div class="mobile-drawer-divider"></div>
         <li>
-            <a href="{{ url_for('main.reserve') }}" class="mobile-cta-btn" style="margin: 0; border-left: none;">
+            <a href="{{ url_for('main.reserve') }}" class="mobile-cta-btn" style="margin: 0; border-left: none;" onclick="clearReservationSession()">
                 <i class="fas fa-calendar-alt me-1"></i>Reserve a Table
             </a>
         </li>
@@ -305,6 +307,16 @@
         document.getElementById('mobileDrawer').classList.remove('open');
         document.getElementById('mobileOverlay').classList.remove('active');
         document.body.style.overflow = '';
+    }
+
+    // Clear session storage for NEW reservations
+    function clearReservationSession() {
+        const keys = Object.keys(sessionStorage);
+        keys.forEach(key => {
+            if (key.startsWith('res_')) {
+                sessionStorage.removeItem(key);
+            }
+        });
     }
 
     // Close drawer on window resize to desktop

@@ -159,23 +159,13 @@ class _OtpScreenState extends State<OtpScreen> {
             ),
             const SizedBox(height: 28),
 
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                onPressed: _loading ? null : _verify,
-                child: _loading
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2.5,
-                        ),
-                      )
-                    : const Text('Verify'),
-              ),
+            GradientButton(
+              label: 'Verify Email',
+              icon: Icons.verified_user_rounded,
+              onPressed: _loading ? null : _verify,
+              isLoading: _loading,
             ),
+
             const SizedBox(height: 20),
 
             TextButton(

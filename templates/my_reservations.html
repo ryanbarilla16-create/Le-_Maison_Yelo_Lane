@@ -1,0 +1,589 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}My Reservations — Le Maison{% endblock %}
+
+{% block content %}
+<style>
+    .resPage { 
+        max-width: 1200px; 
+        margin: 2rem auto; 
+        padding: 0 1.5rem; 
+        margin-top: 6rem;
+    }
+    .resHeader { 
+        display: flex; 
+        align-items: center; 
+        justify-content: space-between; 
+        flex-wrap: wrap; 
+        gap: 1rem; 
+        margin-bottom: 2rem; 
+    }
+    .resBack { 
+        display: inline-flex; 
+        align-items: center; 
+        gap: 6px; 
+        color: var(--text-muted); 
+        text-decoration: none; 
+        font-weight: 600; 
+        font-size: 0.85rem; 
+        padding: 0.45rem 1rem; 
+        border-radius: 10px; 
+        transition: 0.3s; 
+    }
+    .resBack:hover { 
+        background: rgba(139, 99, 75, 0.06); 
+        color: var(--primary-color); 
+    }
+    .resTitle h2 { 
+        font-family: 'Playfair Display', serif; 
+        font-weight: 700; 
+        font-size: 1.8rem; 
+        margin: 0; 
+        color: #3E2723;
+    }
+    .resTitle p {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        margin: 0.25rem 0 0;
+    }
+    
+    .resStats { 
+        display: grid; 
+        grid-template-columns: repeat(4, 1fr); 
+        gap: 1rem; 
+        margin-bottom: 2rem; 
+    }
+    .resStat { 
+        background: #fff; 
+        border-radius: 16px; 
+        padding: 1.5rem; 
+        text-align: center; 
+        border: 1px solid var(--border-color); 
+        box-shadow: 0 4px 16px rgba(0,0,0,0.03); 
+        transition: 0.3s; 
+    }
+    .resStat h4 { 
+        font-family: 'Playfair Display', serif; 
+        font-weight: 800; 
+        font-size: 1.8rem; 
+        margin: 0; 
+    }
+    .resStat p { 
+        color: var(--text-muted); 
+        font-size: 0.78rem; 
+        font-weight: 600; 
+        margin: 0.25rem 0 0; 
+    }
+
+    .resTabs { 
+        display: flex; 
+        gap: 0.5rem; 
+        flex-wrap: wrap; 
+        margin-bottom: 2rem; 
+        background: #fff; 
+        padding: 0.5rem; 
+        border-radius: 14px; 
+        border: 1px solid var(--border-color); 
+    }
+    .resTab { 
+        background: transparent; 
+        color: var(--text-muted); 
+        border: none; 
+        border-radius: 10px; 
+        padding: 0.5rem 1.25rem; 
+        font-size: 0.82rem; 
+        font-weight: 600; 
+        cursor: pointer; 
+        transition: 0.3s; 
+    }
+    .resTab:hover {
+        background: rgba(139, 99, 75, 0.05);
+    }
+    .resTab.active { 
+        background: linear-gradient(135deg, #5D4037, #795548) !important; 
+        color: #fff !important; 
+        box-shadow: 0 4px 12px rgba(93,64,55,0.25); 
+    }
+
+    .resCards { 
+        display: grid; 
+        grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); 
+        gap: 1.5rem; 
+    }
+    .resCardItem { 
+        background: #fff; 
+        border-radius: 24px; 
+        padding: 1.75rem; 
+        border: 1px solid var(--border-color); 
+        box-shadow: 0 4px 20px rgba(0,0,0,0.03); 
+        transition: 0.4s; 
+        position: relative; 
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    .resCardItem:hover { 
+        transform: translateY(-5px); 
+        box-shadow: 0 12px 40px rgba(139, 99, 75, 0.12); 
+        border-color: rgba(139, 99, 75, 0.15);
+    }
+    
+    .resStatus { 
+        position: absolute; 
+        top: 1.5rem; 
+        right: 1.5rem; 
+    }
+    .badge-status { 
+        padding: 0.35rem 0.9rem; 
+        border-radius: 50px; 
+        font-size: 0.68rem; 
+        font-weight: 800; 
+        text-transform: uppercase; 
+        letter-spacing: 0.5px; 
+    }
+    .badge-pending { background: #FFF8E1; color: #E65100; }
+    .badge-confirmed { background: #E8F5E9; color: #2E7D32; }
+    .badge-completed { background: #E3F2FD; color: #1565C0; }
+    .badge-rejected { background: #FFEBEE; color: #C62828; }
+
+    .resInfo { 
+        display: flex; 
+        align-items: flex-start; 
+        gap: 1rem; 
+        margin-bottom: 1.5rem; 
+    }
+    .resIcon { 
+        width: 48px; 
+        height: 48px; 
+        border-radius: 12px; 
+        background: rgba(139, 99, 75, 0.08); 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        color: #8B634B; 
+        font-size: 1.2rem; 
+    }
+    .resDate { 
+        font-family: 'Playfair Display', serif; 
+        font-weight: 700; 
+        font-size: 1.15rem; 
+        color: #3E2723; 
+        margin-bottom: 0.2rem; 
+    }
+    .resTime { 
+        font-size: 0.85rem; 
+        color: var(--text-muted); 
+        font-weight: 600; 
+    }
+
+    .resDetails { 
+        display: grid; 
+        grid-template-columns: 1fr 1fr; 
+        gap: 1rem; 
+        padding: 1.25rem; 
+        background: linear-gradient(135deg, rgba(139, 99, 75, 0.03), rgba(212, 168, 98, 0.05));
+        border-radius: 14px; 
+        margin-bottom: 1rem; 
+        border: 1px solid rgba(139, 99, 75, 0.05);
+    }
+    .detailLabel { 
+        font-size: 0.7rem; 
+        color: #8D6E63; 
+        text-transform: uppercase; 
+        letter-spacing: 1px; 
+        font-weight: 700; 
+        margin-bottom: 0.25rem; 
+    }
+    .detailValue { 
+        font-size: 0.92rem; 
+        font-weight: 700; 
+        color: #5D4037; 
+    }
+
+    /* ORDER ITEMS LIST */
+    .resOrderItems {
+        margin-top: 0.5rem;
+        padding-top: 0.75rem;
+        border-top: 1px dashed rgba(139,99,75,0.15);
+    }
+    .resItem {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        padding: 1rem 0;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+    }
+    .resItem:last-child { border-bottom: none; }
+    
+    .resItemImg {
+        width: 54px;
+        height: 54px;
+        border-radius: 12px;
+        object-fit: cover;
+        border: 1px solid rgba(139, 99, 75, 0.08);
+        background: #f8f8f8;
+    }
+    .resItemQty {
+        background: rgba(139, 99, 75, 0.08);
+        color: #8B634B;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 0.75rem;
+        white-space: nowrap;
+    }
+    .resItemName {
+        font-weight: 700;
+        color: #3E2723;
+        font-size: 0.9rem;
+        flex: 1;
+        font-family: 'Outfit', sans-serif;
+    }
+    .resItemPrice {
+        color: #8B634B;
+        font-weight: 800;
+        font-size: 0.95rem;
+        white-space: nowrap;
+    }
+
+    .resItemsToggle {
+        width: 100%;
+        background: rgba(139, 99, 75, 0.04);
+        border: 1px solid rgba(139, 99, 75, 0.08);
+        border-radius: 12px;
+        padding: 0.6rem;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: #8B634B;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: 0.3s;
+        cursor: pointer;
+    }
+    .resItemsToggle:hover { background: rgba(139, 99, 75, 0.08); transform: translateY(-1px); }
+
+    .modal-items-scroll {
+        max-height: 400px;
+        overflow-y: auto;
+        padding-right: 10px;
+        margin: 1rem 0;
+    }
+    .modal-items-scroll::-webkit-scrollbar { width: 4px; }
+    .modal-items-scroll::-webkit-scrollbar-track { background: rgba(139, 99, 75, 0.02); border-radius: 10px; }
+    .modal-items-scroll::-webkit-scrollbar-thumb { background: rgba(139, 99, 75, 0.15); border-radius: 10px; }
+
+    .btn-cancel {
+        color: #ff5252;
+        background: #fff5f5;
+        border: 1px solid #ffebeb;
+        padding: 0.4rem 1rem;
+        border-radius: 10px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+    .btn-cancel:hover { background: #ff5252; color: #fff; }
+
+    .resEmpty { text-align: center; padding: 5rem 1rem; }
+    .resEmpty-icon { width: 80px; height: 80px; border-radius: 50%; background: rgba(139, 99, 75, 0.05); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; font-size: 2rem; color: rgba(139, 99, 75, 0.15); }
+    
+    .cancelReasonBox {
+        background: #fff5f5;
+        border-left: 3px solid #ff5252;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        margin-top: 1rem;
+    }
+    .cancelReasonText { font-size: 0.78rem; color: #c62828; margin-top: 3px; font-weight: 500; }
+
+    /* Modal Styling Replacement */
+    .premium-modal {
+        border-radius: 30px !important;
+        border: none !important;
+        overflow: hidden;
+        box-shadow: 0 25px 80px rgba(62, 39, 35, 0.25) !important;
+    }
+    .premium-modal-header {
+        background: linear-gradient(135deg, #5D4037, #3E2723);
+        color: #fff;
+        padding: 1.5rem 2rem;
+        border: none;
+    }
+    .premium-modal-title {
+        font-family: 'Playfair Display', serif;
+        font-weight: 700;
+        font-size: 1.4rem;
+    }
+    .premium-modal-body {
+        padding: 2rem;
+        background: #fafafa;
+    }
+
+    @media(max-width: 768px) {
+        .resStats { grid-template-columns: 1fr 1fr; }
+        .resCards { grid-template-columns: 1fr; }
+    }
+</style>
+
+<main class="resPage">
+    <div class="resHeader">
+        <div class="d-flex align-items-center gap-3">
+            <a href="{{ url_for('main.index') }}" class="resBack"><i class="fas fa-arrow-left"></i> Back</a>
+            <div class="resTitle">
+                <h2><i class="fas fa-calendar-check me-2" style="color: #8B634B; font-size: 1.5rem;"></i>My Reservations</h2>
+                <p>Manage and track your coffee table bookings</p>
+            </div>
+        </div>
+        <a href="{{ url_for('main.reserve') }}" class="moOrderBtn" style="text-decoration: none;" onclick="clearReservationSession()"><i class="fas fa-plus"></i> Reserve More</a>
+    </div>
+
+    <!-- Stats -->
+    <div class="resStats">
+        <div class="resStat"><h4 style="color: #8B634B;">{{ all_res|length }}</h4><p>Total Bookings</p></div>
+        <div class="resStat"><h4 style="color: #E65100;">{{ pending_count }}</h4><p>Pending</p></div>
+        <div class="resStat"><h4 style="color: #2E7D32;">{{ confirmed_count }}</h4><p>Confirmed</p></div>
+        <div class="resStat"><h4 style="color: #1565C0;">{{ completed_count }}</h4><p>Past Visits</p></div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="resTabs">
+        <button class="resTab active" onclick="filterRes('all', this)">All Bookings</button>
+        <button class="resTab" onclick="filterRes('PENDING', this)">Pending</button>
+        <button class="resTab" onclick="filterRes('CONFIRMED', this)">Confirmed</button>
+        <button class="resTab" onclick="filterRes('COMPLETED', this)">Completed</button>
+        <button class="resTab" onclick="filterRes('REJECTED', this)">Cancelled</button>
+    </div>
+
+    {% if all_res %}
+    <div class="resCards" id="resContainer">
+        {% for res in all_res %}
+        <div class="res-item" data-status="{{ res.status }}">
+            <div class="resCardItem">
+                <div class="resStatus">
+                    {% if res.status == 'PENDING' %}
+                    <span class="badge-status badge-pending">Pending</span>
+                    {% elif res.status == 'CONFIRMED' %}
+                    <span class="badge-status badge-confirmed">Confirmed</span>
+                    {% elif res.status == 'COMPLETED' %}
+                    <span class="badge-status badge-completed">Completed</span>
+                    {% elif res.status == 'REJECTED' %}
+                    <span class="badge-status badge-rejected">Cancelled</span>
+                    {% endif %}
+                </div>
+
+                <div class="resInfo">
+                    <div class="resIcon"><i class="fas fa-mug-hot"></i></div>
+                    <div>
+                        <div class="resDate">{{ res.date.strftime('%B %d, %Y') }}</div>
+                        <div class="resTime"><i class="far fa-clock me-1"></i>{{ res.time.strftime('%I:%M %p') }}</div>
+                    </div>
+                </div>
+
+                <div class="resDetails">
+                    <div>
+                        <div class="detailLabel">Guests</div>
+                        <div class="detailValue">{{ res.guest_count }} Person(s)</div>
+                    </div>
+                    <div>
+                        <div class="detailLabel">Type</div>
+                        <div class="detailValue">{{ (res.booking_type or 'REGULAR')|capitalize }}</div>
+                    </div>
+                    {% if res.occasion %}
+                    <div class="mt-2" style="grid-column: span 2;">
+                        <div class="detailLabel">Special Occasion</div>
+                        <div class="detailValue">{{ res.occasion }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- PRE-ORDERED ITEMS SECTION -->
+                {% if res.linked_order %}
+                <div class="resOrderItems">
+                    <div class="resItemsToggle" onclick="showOrderItemsModal('{{ res.id }}')">
+                        <i class="fas fa-utensils"></i> View Pre-ordered Items <i class="fas fa-chevron-right ms-auto" style="font-size: 0.65rem;"></i>
+                    </div>
+                    <!-- Hidden Data for Modal -->
+                    <script type="application/json" id="order-data-{{ res.id }}">
+                        {
+                            "id": "{{ res.id }}",
+                            "total": "{{ '%.2f'|format(res.linked_order.total_amount) }}",
+                            "items": [
+                                {% for item in res.linked_order.items %}
+                                {
+                                    "name": "{{ item.menu_item.name if item.menu_item else 'Unavailable' }}",
+                                    "qty": "{{ item.quantity }}",
+                                    "price": "{{ '%.2f'|format(item.price_at_time * item.quantity) }}",
+                                    "img": "{{ item.menu_item.image_url if item.menu_item and item.menu_item.image_url else 'https://via.placeholder.com/100?text=No+Image' }}"
+                                }{% if not loop.last %},{% endif %}
+                                {% endfor %}
+                            ]
+                        }
+                    </script>
+                    <div class="d-flex justify-content-between pt-2 border-top" style="border-color: rgba(0,0,0,0.03) !important; font-weight: 800; font-size: 1rem;">
+                        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Total Bill</span>
+                        <span style="color: #8B634B;">₱{{ "%.2f"|format(res.linked_order.total_amount) }}</span>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if res.status == 'REJECTED' and res.cancellation_reason %}
+                <div class="cancelReasonBox">
+                    <div class="detailLabel" style="color: #c62828; margin-bottom: 0;">Reason for Cancellation</div>
+                    <div class="cancelReasonText">{{ res.cancellation_reason }}</div>
+                </div>
+                {% endif %}
+
+                <div class="mt-auto d-flex justify-content-between align-items-center pt-3 border-top" style="border-color: rgba(0,0,0,0.02) !important;">
+                    <span style="font-size: 0.72rem; color: #999;">Reference: #{{ res.id }}</span>
+                    
+                    {% if res.status == 'PENDING' %}
+                    <button class="btn-cancel" onclick="openCancelModal('{{ res.id }}')">Cancel Booking</button>
+                    {% elif res.status == 'CONFIRMED' %}
+                    <span style="font-size: 0.72rem; color: #2E7D32; font-weight: 700;"><i class="fas fa-check-circle me-1"></i>Confirmed Slot</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <div id="noResFiltered" style="display: none;" class="resEmpty">
+        <div class="resEmpty-icon"><i class="fas fa-filter"></i></div>
+        <h4>No results match</h4>
+        <p>Try switching to another filter.</p>
+    </div>
+    {% else %}
+    <div class="resEmpty">
+        <div class="resEmpty-icon"><i class="far fa-calendar-times"></i></div>
+        <h4>No reservations found</h4>
+        <p>Experience the finest coffee and ambiance. Book your table today!</p>
+        <a href="{{ url_for('main.reserve') }}" class="navJoin" style="display:inline-block; padding: 0.7rem 3rem; text-decoration: none;">Reserve Now</a>
+    </div>
+    {% endif %}
+</main>
+
+<!-- Modal for Pre-ordered Items -->
+<div class="modal fade" id="orderItemsModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content premium-modal">
+            <div class="modal-header premium-modal-header">
+                <div>
+                    <h5 class="premium-modal-title mb-0">Pre-ordered Items</h5>
+                    <p class="small mb-0 opacity-75">Res ID: #<span id="modalResId">--</span></p>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="premium-modal-body">
+                <div class="modal-items-scroll" id="modalItemsContainer">
+                    <!-- Items injected here by JS -->
+                </div>
+                <div class="pt-3 border-top d-flex justify-content-between align-items-end" style="border-color: rgba(139, 99, 75, 0.1) !important;">
+                    <div>
+                        <p class="detailLabel mb-1">Payment Summary</p>
+                        <h6 class="mb-0 fw-bold" style="color: #5D4037;">Total Amount</h6>
+                    </div>
+                    <div class="text-end">
+                        <h4 class="mb-0 fw-bold" style="color: #8B634B; font-family: 'Playfair Display', serif;">₱<span id="modalTotalAmount">0.00</span></h4>
+                    </div>
+                </div>
+                <div class="mt-4 d-grid">
+                    <button class="btn py-2 text-white fw-bold" style="background: #3E2723; border-radius: 12px; font-size: 0.9rem;" data-bs-dismiss="modal">Close View</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cancellation Reason Modal -->
+<div class="modal fade" id="cancelResModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content premium-modal">
+            <div class="modal-header border-0 pb-0 px-4 pt-4 bg-white">
+                <h5 class="modal-title fw-bold" style="font-family:'Playfair Display',serif; color: #3E2723;">Cancel Reservation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted small mb-4">Please let us know why you are cancelling your booking. This helps us improve our service.</p>
+                <form id="cancelResForm" method="POST" action="">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Reason for Cancellation</label>
+                        <select class="form-select" name="reason" id="reasonSelect" required style="border-radius: 12px; border: 1.5px solid #eee;" onchange="toggleOtherReason()">
+                            <option value="" disabled selected>Select a reason...</option>
+                            <option value="Change of plans">Change of plans</option>
+                            <option value="Emergency at home/work">Emergency at home/work</option>
+                            <option value="Traffic or transportation issues">Traffic or transportation issues</option>
+                            <option value="Found another venue">Found another venue</option>
+                            <option value="Others">Others (Please specify)</option>
+                        </select>
+                    </div>
+                    <div class="mb-4" id="otherReasonWrap" style="display: none;">
+                        <textarea class="form-control" name="other_reason" rows="3" placeholder="Please specify your reason here..." style="border-radius: 12px; border: 1.5px solid #eee; resize: none; font-size: 0.9rem;"></textarea>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn text-white fw-bold py-2" style="background: #ff5252; border-radius: 50px; box-shadow: 0 4px 12px rgba(255, 82, 82, 0.25);">Confirm Cancellation</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function filterRes(status, btn) {
+        const items = document.querySelectorAll('.res-item');
+        let visCount = 0;
+        items.forEach(item => {
+            if (status === 'all' || item.dataset.status === status) {
+                item.style.display = 'block';
+                visCount++;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+        document.getElementById('noResFiltered').style.display = visCount === 0 ? 'block' : 'none';
+        document.querySelectorAll('.resTab').forEach(t => t.classList.remove('active'));
+        btn.classList.add('active');
+    }
+
+    function openCancelModal(resId) {
+        document.getElementById('cancelResForm').action = "/reserve/cancel/" + resId;
+        new bootstrap.Modal(document.getElementById('cancelResModal')).show();
+    }
+
+    function showOrderItemsModal(resId) {
+        const data = JSON.parse(document.getElementById('order-data-' + resId).textContent);
+        document.getElementById('modalResId').textContent = data.id;
+        document.getElementById('modalTotalAmount').textContent = data.total;
+        
+        let html = '';
+        data.items.forEach(item => {
+            html += `
+                <div class="resItem">
+                    <img src="${item.img}" class="resItemImg" alt="${item.name}">
+                    <div class="resItemName">${item.name}</div>
+                    <span class="resItemQty">${item.qty}x</span>
+                    <div class="resItemPrice">₱${item.price}</div>
+                </div>
+            `;
+        });
+        document.getElementById('modalItemsContainer').innerHTML = html;
+        new bootstrap.Modal(document.getElementById('orderItemsModal')).show();
+    }
+
+    function toggleOtherReason() {
+        const select = document.getElementById('reasonSelect');
+        const wrap = document.getElementById('otherReasonWrap');
+        const textarea = wrap.querySelector('textarea');
+        if (select.value === 'Others') {
+            wrap.style.display = 'block';
+            textarea.required = true;
+        } else {
+            wrap.style.display = 'none';
+            textarea.required = false;
+        }
+    }
+</script>
+{% endblock %}

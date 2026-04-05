@@ -238,10 +238,17 @@ class _CartScreenState extends State<CartScreen> {
                     style: AppTextStyles.muted,
                   ),
                   const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () => Navigator.pop(context, 1),
-                    child: const Text('Browse Menu'),
+                  SizedBox(
+                    width: 160,
+                    child: GradientButton(
+                      label: 'Browse Menu',
+                      icon: Icons.restaurant_menu_rounded,
+                      onPressed: () => Navigator.pop(context, 1),
+                      height: 48,
+                      radius: 12,
+                    ),
                   ),
+
                 ],
               ),
             )
@@ -576,31 +583,24 @@ class _CartScreenState extends State<CartScreen> {
                               fontFamily: 'Georgia',
                               fontWeight: FontWeight.bold,
                               fontSize: 22,
-                              color: AppColors.primary,
+                              color: AppColors.accent,
                             ),
                           ),
                         ],
                       ),
                       const Spacer(),
                       SizedBox(
-                        height: 48,
-                        child: ElevatedButton(
+                        width: 160,
+                        child: GradientButton(
+                          label: 'Place Order',
+                          icon: Icons.check_circle_outline_rounded,
                           onPressed: _loading ? null : _checkout,
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 32),
-                          ),
-                          child: _loading
-                              ? const SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2.5,
-                                  ),
-                                )
-                              : const Text('Place Order'),
+                          isLoading: _loading,
+                          height: 50,
+                          radius: 14,
                         ),
                       ),
+
                     ],
                   ),
                 ),
@@ -686,7 +686,7 @@ class _CartScreenState extends State<CartScreen> {
                 Text(
                   '₱${(item['price'] as num).toStringAsFixed(2)}',
                   style: TextStyle(
-                    color: AppColors.primary,
+                    color: AppColors.accent,
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
                   ),
@@ -756,21 +756,23 @@ class _CartScreenState extends State<CartScreen> {
     return GestureDetector(
       onTap: () => onTap(value),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary : Colors.transparent,
+          gradient: selected ? AppColors.buttonGradient : null,
+          color: selected ? null : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selected
-                ? AppColors.primary
-                : AppColors.textMuted.withOpacity(0.3),
+            color: selected ? AppColors.primary : AppColors.textMuted.withOpacity(0.2),
           ),
+          boxShadow: selected ? [
+            BoxShadow(color: AppColors.primary.withOpacity(0.2), blurRadius: 8, offset: const Offset(0, 2))
+          ] : null,
         ),
         child: Text(
           label,
           style: TextStyle(
             color: selected ? Colors.white : AppColors.textMain,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
             fontSize: 13,
           ),
         ),

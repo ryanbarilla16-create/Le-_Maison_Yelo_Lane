@@ -121,17 +121,17 @@ class _MenuScreenState extends State<MenuScreen> {
               style: AppTextStyles.muted.copyWith(fontSize: 13),
             ),
             const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _loadMenu,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Try Again'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 28,
-                  vertical: 14,
-                ),
+            SizedBox(
+              width: 160,
+              child: GradientButton(
+                label: 'Try Again',
+                icon: Icons.refresh_rounded,
+                onPressed: _loadMenu,
+                height: 48,
+                radius: 12,
               ),
             ),
+
           ],
         ),
       ),
@@ -152,11 +152,17 @@ class _MenuScreenState extends State<MenuScreen> {
             const SizedBox(height: 16),
             Text('No menu categories found', style: AppTextStyles.muted),
             const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: _loadMenu,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Refresh'),
+            SizedBox(
+              width: 140,
+              child: GradientButton(
+                label: 'Refresh',
+                icon: Icons.refresh_rounded,
+                onPressed: _loadMenu,
+                height: 44,
+                radius: 12,
+              ),
             ),
+
           ],
         ),
       );
@@ -544,18 +550,60 @@ class _MenuScreenState extends State<MenuScreen> {
                           fontSize: 16,
                         ),
                       ),
-                      SizedBox(
-                        height: 32,
-                        child: ElevatedButton(
-                          onPressed: item['is_out_of_stock'] == true ? null : () => _addToCart(item),
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 14),
-                            textStyle: const TextStyle(fontSize: 11),
-                            backgroundColor: item['is_out_of_stock'] == true ? Colors.grey[300] : null,
+                      // Add to Cart button
+                      GestureDetector(
+                        onTap: item['is_out_of_stock'] == true ? null : () => _addToCart(item),
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: item['is_out_of_stock'] == true
+                                ? null
+                                : AppColors.buttonGradient,
+                            color: item['is_out_of_stock'] == true ? Colors.grey[200] : null,
+                            borderRadius: BorderRadius.circular(10),
+                            boxShadow: item['is_out_of_stock'] == true ? [] : [
+                              BoxShadow(
+                                color: AppColors.primary.withOpacity(0.25),
+                                blurRadius: 6,
+                                offset: const Offset(0, 3),
+                              )
+                            ],
                           ),
-                          child: Text(item['is_out_of_stock'] == true ? 'Unavailable' : 'Add to Cart'),
+                          child: SizedBox(
+                            height: 34,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              child: Center(
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      item['is_out_of_stock'] == true
+                                          ? Icons.block
+                                          : Icons.add_shopping_cart_rounded,
+                                      color: item['is_out_of_stock'] == true
+                                          ? Colors.grey[500]
+                                          : Colors.white,
+                                      size: 14,
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      item['is_out_of_stock'] == true ? 'Unavailable' : 'Add to Cart',
+                                      style: TextStyle(
+                                        color: item['is_out_of_stock'] == true
+                                            ? Colors.grey[500]
+                                            : Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
+
                     ],
                   ),
                 ],

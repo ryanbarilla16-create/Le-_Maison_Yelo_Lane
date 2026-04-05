@@ -95,51 +95,27 @@
 
 <!-- CONSOLIDATED PREP LIST (Grouped by Station) -->
 {% if status_filter == 'ACTIVE' and orders %}
-{% set item_data = {} %}
-{% for order in orders if order.status in ['PENDING', 'PREPARING'] %}
-    {% for item in order.items %}
-        {% set key = item.menu_item.name %}
-        {% set cat = item.menu_item.category|default('Other') %}
-        {% if key in item_data %}
-            {% set _ = item_data.update({key: {'qty': (item_data[key].qty|int) + (item.quantity|int), 'cat': cat}}) %}
-        {% else %}
-            {% set _ = item_data.update({key: {'qty': item.quantity|int, 'cat': cat}}) %}
-        {% endif %}
-    {% endfor %}
-{% endfor %}
-
-{# Group items by station based on category #}
-{% set hot_kitchen = [] %}
-{% set cold_kitchen = [] %}
-{% set bar_station = [] %}
-{% for name, info in item_data.items() %}
-    {% set cat_lower = info.cat|lower %}
-    {% if 'drink' in cat_lower or 'beverage' in cat_lower or 'coffee' in cat_lower or 'shake' in cat_lower or 'juice' in cat_lower or 'tea' in cat_lower %}
-        {% set _ = bar_station.append({'name': name, 'qty': info.qty}) %}
-    {% elif 'dessert' in cat_lower or 'cake' in cat_lower or 'pastry' in cat_lower or 'sweet' in cat_lower or 'cheesecake' in cat_lower or 'waffle' in cat_lower %}
-        {% set _ = cold_kitchen.append({'name': name, 'qty': info.qty}) %}
-    {% else %}
-        {% set _ = hot_kitchen.append({'name': name, 'qty': info.qty}) %}
-    {% endif %}
-{% endfor %}
-
 <div class="kds-prep-panel mb-4">
     <div class="kds-prep-header">
         <h6 class="mb-0"><i class="fas fa-list-check me-2"></i>Prep Stations Overview</h6>
-        <span class="text-muted" style="font-size: 0.75rem;">{{ item_data|length }} items to prepare</span>
+        <span class="text-muted" style="font-size: 0.75rem;">{{ item_count }} items to prepare</span>
     </div>
     <div class="kds-prep-body">
         <!-- Hot Kitchen Station -->
         {% if hot_kitchen %}
         <div class="kds-station">
             <div class="kds-station-label">
-                <i class="fas fa-fire-burner"></i> Hot Kitchen
+                <span><i class="fas fa-fire-burner me-2" style="color: #E67E22;"></i> HOT KITCHEN</span>
+                <span class="badge" style="background: rgba(139, 99, 75, 0.1); color: #8b634b; font-size: 0.65rem;">{{ hot_kitchen|length }} ITEMS</span>
             </div>
             <div class="kds-station-items">
                 {% for item in hot_kitchen %}
-                <div class="kds-prep-item {% if item.qty >= 5 %}urgent{% endif %}">
-                    <span class="kds-prep-qty {% if item.qty >= 5 %}urgent{% endif %}">{{ item.qty }}</span>
+                <div class="kds-prep-item" onclick="this.classList.toggle('is-done')">
+                    <div class="kds-prep-check">
+                        <i class="fas fa-check" style="font-size: 0.6rem;"></i>
+                    </div>
                     <span class="kds-prep-name">{{ item.name }}</span>
+                    <span class="kds-prep-qty">{{ item.qty }}</span>
                 </div>
                 {% endfor %}
             </div>
@@ -150,13 +126,17 @@
         {% if cold_kitchen %}
         <div class="kds-station">
             <div class="kds-station-label">
-                <i class="fas fa-snowflake"></i> Cold Kitchen
+                <span><i class="fas fa-snowflake me-2" style="color: #3498DB;"></i> COLD KITCHEN</span>
+                <span class="badge" style="background: rgba(139, 99, 75, 0.1); color: #8b634b; font-size: 0.65rem;">{{ cold_kitchen|length }} ITEMS</span>
             </div>
             <div class="kds-station-items">
                 {% for item in cold_kitchen %}
-                <div class="kds-prep-item {% if item.qty >= 5 %}urgent{% endif %}">
-                    <span class="kds-prep-qty {% if item.qty >= 5 %}urgent{% endif %}">{{ item.qty }}</span>
+                <div class="kds-prep-item" onclick="this.classList.toggle('is-done')">
+                    <div class="kds-prep-check">
+                        <i class="fas fa-check" style="font-size: 0.6rem;"></i>
+                    </div>
                     <span class="kds-prep-name">{{ item.name }}</span>
+                    <span class="kds-prep-qty">{{ item.qty }}</span>
                 </div>
                 {% endfor %}
             </div>
@@ -167,13 +147,17 @@
         {% if bar_station %}
         <div class="kds-station">
             <div class="kds-station-label">
-                <i class="fas fa-mug-hot"></i> Bar
+                <span><i class="fas fa-mug-hot me-2" style="color: #8b634b;"></i> BAR</span>
+                <span class="badge" style="background: rgba(139, 99, 75, 0.1); color: #8b634b; font-size: 0.65rem;">{{ bar_station|length }} ITEMS</span>
             </div>
             <div class="kds-station-items">
                 {% for item in bar_station %}
-                <div class="kds-prep-item {% if item.qty >= 5 %}urgent{% endif %}">
-                    <span class="kds-prep-qty {% if item.qty >= 5 %}urgent{% endif %}">{{ item.qty }}</span>
+                <div class="kds-prep-item" onclick="this.classList.toggle('is-done')">
+                    <div class="kds-prep-check">
+                        <i class="fas fa-check" style="font-size: 0.6rem;"></i>
+                    </div>
                     <span class="kds-prep-name">{{ item.name }}</span>
+                    <span class="kds-prep-qty">{{ item.qty }}</span>
                 </div>
                 {% endfor %}
             </div>
@@ -183,140 +167,201 @@
 </div>
 {% endif %}
 
-<!-- ORDER CARDS GRID -->
-<div class="row g-3" id="ordersGrid">
-    {% if orders %}
-    {% for order in orders %}
-    <div class="col-xl-4 col-lg-6 col-md-6">
-        <div class="kds-order-card" data-status="{{ order.status }}">
-            <!-- Card Header -->
-            <div class="kds-order-header">
-                <div class="d-flex align-items-center gap-2">
-                    <h5 class="kds-order-id mb-0">#{{ order.id }}</h5>
-                    <span class="kds-status-dot
-                        {% if order.status == 'PENDING' %}pending
-                        {% elif order.status == 'PREPARING' %}preparing
-                        {% elif order.status == 'COMPLETED' %}completed
-                        {% else %}cancelled{% endif %}"></span>
-                    <span class="kds-status-text">{{ order.status }}</span>
-                </div>
-                <div class="kds-order-meta">
-                    <span class="kds-time-badge">
-                        <i class="fas fa-clock"></i>
-                        <span class="order-time" data-utc="{{ order.created_at.isoformat() }}Z">{{ order.created_at.strftime('%I:%M %p') }}</span>
-                    </span>
-                </div>
-            </div>
-
-            <!-- Card Body -->
-            <div class="kds-order-body">
-                <!-- Customer & Dine Option -->
-                <div class="kds-customer-row">
-                    <span class="kds-customer-name">
-                        {% if order.user %}
-                            {{ order.user.first_name }} {{ order.user.last_name }}
-                        {% elif order.customer_name %}
-                            {{ order.customer_name }}
-                        {% else %}
-                            Walk-in
-                        {% endif %}
-                    </span>
-                    <span class="kds-dine-badge
-                        {% if order.dining_option == 'DINE_IN' %}dine-in
-                        {% elif order.dining_option == 'DELIVERY' %}delivery
-                        {% else %}pickup{% endif %}">
-                        {% if order.dining_option == 'DINE_IN' %}Dine In
-                        {% elif order.dining_option == 'DELIVERY' %}Delivery
-                        {% else %}Pick-up{% endif %}
-                    </span>
-                </div>
-
-                <!-- Items -->
-                <div class="kds-items-list">
-                    {% for item in order.items %}
-                    <div class="kds-item-row">
-                        <span class="kds-item-qty">{{ item.quantity }}×</span>
-                        <span class="kds-item-name">{{ item.menu_item.name }}</span>
-                    </div>
-                    {% endfor %}
-                </div>
-
-                <!-- Notes -->
-                {% if order.notes %}
-                <div class="kds-notes">
-                    <i class="fas fa-sticky-note"></i>
-                    <span>{{ order.notes }}</span>
-                </div>
-                {% endif %}
-
-                <!-- Timer -->
-                {% if order.status in ['PENDING', 'PREPARING'] %}
-                <div class="kds-timer">
-                    <i class="fas fa-stopwatch"></i>
-                    <span class="elapsed-timer" data-created="{{ order.created_at.isoformat() }}Z">calculating...</span>
-                </div>
-                {% endif %}
-            </div>
-
-            <!-- Card Footer (Actions) -->
-            <div class="kds-order-footer">
-                {% if current_user.role|upper == 'ADMIN' %}
-                <div class="kds-view-only">
-                    <i class="fas fa-eye me-1"></i>View Only
-                </div>
-                {% else %}
-                {% if order.status == 'PENDING' %}
-                <div class="d-flex gap-2 w-100">
-                    <form action="{{ url_for('admin.kitchen_update_order', order_id=order.id) }}" method="POST" class="flex-grow-1">
-                        <input type="hidden" name="status" value="PREPARING">
-                        <button type="submit" class="kds-btn kds-btn-start w-100">
-                            <i class="fas fa-fire me-1"></i>Start Cooking
-                        </button>
-                    </form>
-                    <form action="{{ url_for('admin.kitchen_update_order', order_id=order.id) }}" method="POST">
-                        <input type="hidden" name="status" value="CANCELLED">
-                        <button type="submit" class="kds-btn kds-btn-cancel"
-                            onclick="return confirm('Cancel this order?')">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </form>
-                </div>
-
-                {% elif order.status == 'PREPARING' %}
-                <div class="d-flex gap-2 w-100">
-                    <form action="{{ url_for('admin.kitchen_update_order', order_id=order.id) }}" method="POST" class="flex-grow-1">
-                        <input type="hidden" name="status" value="COMPLETED">
-                        <button type="submit" class="kds-btn kds-btn-complete w-100">
-                            <i class="fas fa-check-circle me-1"></i>Mark Ready
-                        </button>
-                    </form>
-                    <form action="{{ url_for('admin.kitchen_update_order', order_id=order.id) }}" method="POST">
-                        <input type="hidden" name="status" value="CANCELLED">
-                        <button type="submit" class="kds-btn kds-btn-cancel"
-                            onclick="return confirm('Cancel this order?')">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </form>
-                </div>
-
-                {% elif order.status == 'COMPLETED' %}
-                <div class="kds-completed-label">
-                    <i class="fas fa-check-double me-1"></i>Order Served
-                </div>
-
-                {% elif order.status == 'CANCELLED' %}
-                <form action="{{ url_for('admin.kitchen_update_order', order_id=order.id) }}" method="POST" class="text-center w-100">
-                    <input type="hidden" name="status" value="PENDING">
-                    <button type="submit" class="kds-btn kds-btn-reopen">
-                        <i class="fas fa-redo me-1"></i>Reopen Order
-                    </button>
-                </form>
-                {% endif %}
-                {% endif %}
-            </div>
+{%- macro render_order_card(order) -%}
+<div class="kds-order-card {% if order.reservation %}is-reservation{% endif %}" data-status="{{ order.status }}">
+    {% if order.reservation %}
+    <div style="background: #E67E22; color: #fff; padding: 6px 15px; font-weight: 800; font-size: 0.78rem; display: flex; justify-content: space-between; align-items: center;">
+        <span><i class="fas fa-calendar-check me-1"></i> RESERVATION</span>
+        <span>FOR {{ order.reservation.time.strftime('%I:%M %p') }}</span>
+    </div>
+    {% endif %}
+    <!-- Card Header -->
+    <div class="kds-order-header">
+        <div class="d-flex align-items-center gap-2">
+            <h5 class="kds-order-id mb-0">#{{ order.id }}</h5>
+            <span class="kds-status-dot
+                {% if order.status == 'PENDING' %}pending
+                {% elif order.status == 'PREPARING' %}preparing
+                {% elif order.status == 'COMPLETED' %}completed
+                {% else %}cancelled{% endif %}"></span>
+            <span class="kds-status-text">{{ order.status }}</span>
+        </div>
+        <div class="kds-order-meta">
+            <span class="kds-time-badge">
+                <i class="fas fa-clock"></i>
+                <span class="order-time" data-utc="{{ order.created_at.isoformat() }}Z">{{ order.created_at.strftime('%I:%M %p') }}</span>
+            </span>
         </div>
     </div>
+
+    <!-- Card Body -->
+    <div class="kds-order-body">
+        <!-- Customer & Dine Option -->
+        <div class="kds-customer-row">
+            <div style="display: flex; flex-direction: column;">
+                <span class="kds-customer-name">
+                    {% if order.user %}
+                        {{ order.user.first_name }} {{ order.user.last_name }}
+                    {% elif order.customer_name %}
+                        {{ order.customer_name }}
+                    {% else %}
+                        Walk-in
+                    {% endif %}
+                </span>
+                {% if order.reservation %}
+                <span style="font-size: 0.72rem; color: #E67E22; font-weight: bold; margin-top: 2px;">
+                     Guest of {{ order.reservation.guest_count }} · {{ order.reservation.table_number or 'Unassigned' }}
+                </span>
+                {% endif %}
+            </div>
+            <span class="kds-dine-badge
+                {% if order.dining_option == 'DINE_IN' %}dine-in
+                {% elif order.dining_option == 'DELIVERY' %}delivery
+                {% else %}pickup{% endif %}">
+                {% if order.dining_option == 'DINE_IN' %}Dine In
+                {% elif order.dining_option == 'DELIVERY' %}Delivery
+                {% else %}Pick-up{% endif %}
+            </span>
+        </div>
+
+        <!-- Items -->
+        <div class="kds-items-list">
+            {% for item in order.items %}
+            <div class="kds-item-row">
+                <span class="kds-item-qty">{{ item.quantity }}×</span>
+                <span class="kds-item-name">{{ item.menu_item.name }}</span>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Notes -->
+        {% if order.notes %}
+        <div class="kds-notes">
+            <i class="fas fa-sticky-note"></i>
+            <span>{{ order.notes }}</span>
+        </div>
+        {% endif %}
+
+        <!-- Timer -->
+        {% if order.status in ['PENDING', 'PREPARING'] %}
+        <div class="kds-timer">
+            <i class="fas fa-stopwatch"></i>
+            <span class="elapsed-timer" data-created="{{ order.created_at.isoformat() }}Z">calculating...</span>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Card Footer (Actions) -->
+    <div class="kds-order-footer">
+        {% if current_user.role|upper == 'ADMIN' %}
+        <div class="kds-view-only">
+            <i class="fas fa-eye me-1"></i>View Only
+        </div>
+        {% else %}
+        {% if order.status == 'PENDING' %}
+        <div class="d-flex gap-2 w-100">
+            <form action="{{ url_for('admin.kitchen_update_order', order_id=order.id) }}" method="POST" class="flex-grow-1">
+                <input type="hidden" name="status" value="PREPARING">
+                <button type="submit" class="kds-btn kds-btn-start w-100">
+                    <i class="fas fa-fire me-1"></i>Start Cooking
+                </button>
+            </form>
+            <form action="{{ url_for('admin.kitchen_update_order', order_id=order.id) }}" method="POST">
+                <input type="hidden" name="status" value="CANCELLED">
+                <button type="submit" class="kds-btn kds-btn-cancel"
+                    onclick="return confirm('Cancel this order?')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </form>
+        </div>
+
+        {% elif order.status == 'PREPARING' %}
+        <div class="d-flex gap-2 w-100">
+            <form action="{{ url_for('admin.kitchen_update_order', order_id=order.id) }}" method="POST" class="flex-grow-1">
+                <input type="hidden" name="status" value="COMPLETED">
+                <button type="submit" class="kds-btn kds-btn-complete w-100">
+                    <i class="fas fa-check-circle me-1"></i>Mark Ready
+                </button>
+            </form>
+            <form action="{{ url_for('admin.kitchen_update_order', order_id=order.id) }}" method="POST">
+                <input type="hidden" name="status" value="CANCELLED">
+                <button type="submit" class="kds-btn kds-btn-cancel"
+                    onclick="return confirm('Cancel this order?')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </form>
+        </div>
+
+        {% elif order.status == 'COMPLETED' %}
+        <div class="kds-completed-label">
+            <i class="fas fa-check-double me-1"></i>Order Served
+        </div>
+
+        {% elif order.status == 'CANCELLED' %}
+        <form action="{{ url_for('admin.kitchen_update_order', order_id=order.id) }}" method="POST" class="text-center w-100">
+            <input type="hidden" name="status" value="PENDING">
+            <button type="submit" class="kds-btn kds-btn-reopen">
+                <i class="fas fa-redo me-1"></i>Reopen Order
+            </button>
+        </form>
+        {% endif %}
+        {% endif %}
+    </div>
+</div>
+{%- endmacro -%}
+
+<!-- ORDER CARDS GRID -->
+<div id="ordersGrid">
+    {% if orders %}
+    
+    {# Separate ASAP and Future orders #}
+    {% set asap_orders = [] %}
+    {% set future_orders = [] %}
+    {% for order in orders %}
+        {% if order.reservation and order.reservation.time %}
+            {% set _ = future_orders.append(order) %}
+        {% else %}
+            {% set _ = asap_orders.append(order) %}
+        {% endif %}
     {% endfor %}
+
+    <!-- 1. ASAP ORDERS SECTION -->
+    <div class="kds-section-header mb-3 mt-4">
+        <h4 style="font-family: 'Georgia', serif; font-weight: 700; color: #E74C3C; display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-bolt"></i> ASAP / WALK-IN ORDERS
+            <span style="font-size: 0.8rem; background: #E74C3C; color: #fff; padding: 2px 10px; border-radius: 20px;">{{ asap_orders|length }}</span>
+        </h4>
+    </div>
+    <div class="row g-3 mb-5">
+        {% for order in asap_orders %}
+            <div class="col-xl-4 col-lg-6 col-md-6">
+                {{ render_order_card(order) }}
+            </div>
+        {% endfor %}
+        {% if not asap_orders %}
+            <div class="col-12 text-muted ps-4" style="font-style: italic;">No immediate orders.</div>
+        {% endif %}
+    </div>
+
+    <!-- 2. FUTURE RESERVATIONS SECTION -->
+    <div class="kds-section-header mb-3">
+        <h4 style="font-family: 'Georgia', serif; font-weight: 700; color: #E67E22; display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-calendar-star"></i> UPCOMING RESERVATIONS
+            <span style="font-size: 0.8rem; background: #E67E22; color: #fff; padding: 2px 10px; border-radius: 20px;">{{ future_orders|length }}</span>
+        </h4>
+        <p class="text-muted" style="font-size: 0.75rem; margin-left: 32px;">Pre-orders for reserved tables today.</p>
+    </div>
+    <div class="row g-3 mb-5">
+        {% for order in future_orders %}
+            <div class="col-xl-4 col-lg-6 col-md-6">
+                {{ render_order_card(order) }}
+            </div>
+        {% endfor %}
+        {% if not future_orders %}
+            <div class="col-12 text-muted ps-4" style="font-style: italic;">No future reservations for today yet.</div>
+        {% endif %}
+    </div>
+
     {% else %}
     <div class="col-12">
         <div class="kds-empty-state">
@@ -479,104 +524,157 @@
 
     /* ── PREP PANEL ── */
     .kds-prep-panel {
-        background: #ffffff;
-        border: 1px solid #f0f0f0;
-        border-radius: 16px;
-        overflow: hidden;
+        background: transparent;
+        border: none;
+        border-radius: 0;
+        margin-bottom: 2.5rem;
     }
 
     .kds-prep-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 16px 20px;
-        border-bottom: 1px solid #f5f5f5;
+        padding: 0 0 1rem 0;
+        border-bottom: 2px solid rgba(139, 99, 75, 0.1);
+        margin-bottom: 1.5rem;
     }
 
     .kds-prep-header h6 {
-        font-size: 0.9rem;
-        font-weight: 700;
-        color: #1A1A1A;
+        font-family: 'Georgia', serif;
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: #3E2723;
     }
 
     .kds-prep-body {
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
+        padding: 0;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
     }
 
+    /* Station Card Style */
     .kds-station {
+        background: #ffffff;
+        border-radius: 18px;
+        padding: 1.4rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+        border: 1px solid rgba(139, 99, 75, 0.08);
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 0;
     }
 
     .kds-station-label {
-        font-size: 0.75rem;
-        font-weight: 700;
+        font-size: 0.8rem;
+        font-weight: 800;
         text-transform: uppercase;
-        letter-spacing: 1px;
-        color: #999;
+        letter-spacing: 1.2px;
+        color: #8b634b;
         display: flex;
+        justify-content: space-between;
         align-items: center;
-        gap: 6px;
-        padding-bottom: 8px;
-        border-bottom: 1px dashed #eee;
+        padding-bottom: 1rem;
+        margin-bottom: 0.8rem;
+        border-bottom: 1.5px solid rgba(139, 99, 75, 0.05);
     }
-
-    .kds-station-label i { font-size: 0.85rem; color: #bbb; }
 
     .kds-station-items {
         display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
+        flex-direction: column;
+        gap: 0;
+        max-height: 380px; /* Limit station height */
+        overflow-y: auto;  /* Enable vertical scroll */
+        padding-right: 8px;
+    }
+
+    /* Modern Scrollbar for Station Items */
+    .kds-station-items::-webkit-scrollbar {
+        width: 4px;
+    }
+    .kds-station-items::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .kds-station-items::-webkit-scrollbar-thumb {
+        background: rgba(139, 99, 75, 0.1);
+        border-radius: 10px;
+    }
+    .kds-station-items::-webkit-scrollbar-thumb:hover {
+        background: rgba(139, 99, 75, 0.2);
     }
 
     .kds-prep-item {
         display: flex;
         align-items: center;
-        gap: 8px;
-        padding: 8px 14px;
-        background: #f8f8f8;
-        border: 1px solid #eee;
+        justify-content: space-between;
+        padding: 0.75rem 10px;
+        background: transparent;
+        border: none;
+        border-bottom: 1px solid rgba(0,0,0,0.03);
         border-radius: 8px;
+        cursor: pointer;
         transition: all 0.2s ease;
     }
 
-    .kds-prep-item.urgent {
-        background: #fff8f0;
-        border-color: #fde0b5;
+    .kds-prep-item:last-child {
+        border-bottom: none;
     }
 
     .kds-prep-item:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        background: rgba(139, 99, 75, 0.03);
     }
 
-    .kds-prep-qty {
-        width: 26px;
-        height: 26px;
-        border-radius: 6px;
+    /* Checklist Effect */
+    .kds-prep-item.is-done {
+        opacity: 0.4;
+        background: rgba(0,0,0,0.02);
+    }
+    .kds-prep-item.is-done .kds-prep-name,
+    .kds-prep-item.is-done .kds-prep-qty {
+        text-decoration: line-through;
+    }
+
+    .kds-prep-check {
+        width: 18px;
+        height: 18px;
+        border: 2px solid #ddd;
+        border-radius: 4px;
+        margin-right: 12px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 0.75rem;
-        font-weight: 800;
-        background: #e8e8e8;
-        color: #555;
         flex-shrink: 0;
+        transition: all 0.2s ease;
     }
 
-    .kds-prep-qty.urgent {
-        background: #E67E22;
-        color: #fff;
+    .kds-prep-item.is-done .kds-prep-check {
+        background: #27AE60;
+        border-color: #27AE60;
+        color: white;
+    }
+
+    .kds-prep-qty {
+        font-size: 0.9rem;
+        font-weight: 800;
+        color: #E67E22;
+        background: rgba(230, 126, 34, 0.08);
+        padding: 4px 10px;
+        border-radius: 8px;
+        min-width: 38px;
+        text-align: center;
+        transition: all 0.2s ease;
+    }
+
+    .kds-prep-item.is-done .kds-prep-qty {
+        color: #999;
+        background: #eee;
     }
 
     .kds-prep-name {
-        font-size: 0.85rem;
+        font-size: 0.9rem;
         font-weight: 600;
-        color: #333;
+        color: #444;
+        flex: 1;
     }
 
     /* ── ORDER CARDS ── */
@@ -702,6 +800,24 @@
         flex-direction: column;
         gap: 6px;
         margin-bottom: 12px;
+        max-height: 280px; /* Limit height */
+        overflow-y: auto;  /* Enable scroll */
+        padding-right: 4px;
+    }
+
+    /* Custom Scrollbar for Kitchen Items */
+    .kds-items-list::-webkit-scrollbar {
+        width: 4px;
+    }
+    .kds-items-list::-webkit-scrollbar-track {
+        background: rgba(0,0,0,0.02);
+    }
+    .kds-items-list::-webkit-scrollbar-thumb {
+        background: rgba(139, 99, 75, 0.15);
+        border-radius: 10px;
+    }
+    .kds-items-list::-webkit-scrollbar-thumb:hover {
+        background: rgba(139, 99, 75, 0.3);
     }
 
     .kds-item-row {

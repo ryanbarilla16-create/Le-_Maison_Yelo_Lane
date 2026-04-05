@@ -338,6 +338,98 @@
             border-color: #8B634B !important;
             box-shadow: 0 0 0 4px rgba(139, 99, 75, 0.1) !important;
         }
+
+        /* PREMIUM TOAST NOTIFICATIONS */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            pointer-events: none;
+        }
+
+        .premium-toast {
+            pointer-events: auto;
+            width: 320px;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.12);
+            display: flex;
+            align-items: stretch;
+            overflow: hidden;
+            border: 1px solid rgba(0,0,0,0.05);
+            animation: toastSlideIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+            transition: all 0.3s ease;
+        }
+
+        @keyframes toastSlideIn {
+            from { transform: translateX(120%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .premium-toast.hiding {
+            transform: translateX(120%);
+            opacity: 0;
+        }
+
+        .toast-accent {
+            width: 6px;
+            flex-shrink: 0;
+        }
+
+        .toast-content {
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-grow: 1;
+        }
+
+        .toast-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .toast-message {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #3E2723;
+            line-height: 1.4;
+        }
+
+        .toast-close {
+            padding: 10px;
+            background: transparent;
+            border: none;
+            color: #ccc;
+            cursor: pointer;
+            transition: color 0.2s;
+            font-size: 0.8rem;
+        }
+
+        .toast-close:hover { color: #888; }
+
+        /* Severity Styles */
+        .toast-success .toast-accent { background: #27AE60; }
+        .toast-success .toast-icon { background: rgba(39, 174, 96, 0.1); color: #27AE60; }
+        
+        .toast-danger .toast-accent { background: #E74C3C; }
+        .toast-danger .toast-icon { background: rgba(231, 76, 60, 0.1); color: #E74C3C; }
+
+        .toast-warning .toast-accent { background: #F39C12; }
+        .toast-warning .toast-icon { background: rgba(243, 156, 18, 0.1); color: #F39C12; }
+
+        .toast-info .toast-accent { background: #3498DB; }
+        .toast-info .toast-icon { background: rgba(52, 152, 219, 0.1); color: #3498DB; }
     </style>
 
     <!-- Leaflet CSS & JS for Maps -->
@@ -574,17 +666,35 @@
     <!-- MAIN CONTENT -->
     <main class="admin-main">
         <div class="admin-content">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-            {% for category, message in messages %}
-            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert"
-                style="background: var(--admin-surface); border: 1px solid var(--admin-border); color: var(--admin-text); border-radius: 12px;">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <!-- PREMIUM TOAST CONTAINER -->
+            <div class="toast-container" id="toastContainer">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                {% for category, message in messages %}
+                <div class="premium-toast toast-{{ category }}" role="alert">
+                    <div class="toast-accent"></div>
+                    <div class="toast-content">
+                        <div class="toast-icon">
+                            {% if category == 'success' %}<i class="fas fa-check"></i>
+                            {% elif category == 'danger' %}<i class="fas fa-exclamation-circle"></i>
+                            {% elif category == 'warning' %}<i class="fas fa-exclamation-triangle"></i>
+                            {% else %}<i class="fas fa-info-circle"></i>{% endif %}
+                        </div>
+                        <div class="toast-message">{{ message }}</div>
+                    </div>
+                    <button class="toast-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+                    <script>
+                        setTimeout(() => {
+                            const t = document.currentScript.parentElement;
+                            t.classList.add('hiding');
+                            setTimeout(() => t.remove(), 300);
+                        }, 5000);
+                    </script>
+                </div>
+                {% endfor %}
+                {% endif %}
+                {% endwith %}
             </div>
-            {% endfor %}
-            {% endif %}
-            {% endwith %}
 
             {% block content %}{% endblock %}
         </div>

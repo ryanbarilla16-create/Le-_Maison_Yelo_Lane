@@ -11,6 +11,7 @@ import 'profile_screen.dart';
 import 'cart_screen.dart';
 import 'notifications_screen.dart';
 import 'chat_screen.dart';
+import 'my_reservations_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -337,6 +338,12 @@ class _HomeScreenState extends State<HomeScreen> {
               emptyText: 'No upcoming reservations',
               emptyCta: 'Book a Table',
               onCta: () => setState(() => _currentIndex = 3),
+              trailing: TextButton(
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const MyReservationsScreen()));
+                },
+                child: const Text('My Bookings', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary)),
+              ),
               itemBuilder: (r) => _reservationTile(r),
             ),
             const SizedBox(height: 12),
@@ -463,9 +470,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [color, color.withOpacity(0.7)],
-                  ),
+                  gradient: AppColors.buttonGradient,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, color: Colors.white, size: 20),
@@ -583,17 +588,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 8),
                     Text(emptyText, style: AppTextStyles.muted),
                     const SizedBox(height: 8),
-                    ElevatedButton(
-                      onPressed: onCta,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 10,
-                        ),
-                        textStyle: const TextStyle(fontSize: 13),
+                    SizedBox(
+                      width: 160,
+                      child: GradientButton(
+                        label: emptyCta,
+                        onPressed: onCta,
+                        height: 40,
+                        radius: 10,
+                        fontSize: 13,
                       ),
-                      child: Text(emptyCta),
                     ),
+
                   ],
                 ),
               ),
@@ -917,7 +922,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           '₱${item['price']?.toStringAsFixed(0) ?? ''}',
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
-                            color: AppColors.primary,
+                            color: AppColors.accent,
                             fontSize: 14,
                           ),
                         ),

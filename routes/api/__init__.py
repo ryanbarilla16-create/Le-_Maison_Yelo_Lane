@@ -27,8 +27,7 @@ def send_async_email(app, msg):
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
-# Setup Xendit (direct HTTP - SDK has urllib3 compatibility issues)
-XENDIT_SECRET_KEY = os.environ.get('XENDIT_SECRET_KEY')
+# Setup Xendit API Endpoint
 XENDIT_API_URL = 'https://api.xendit.co/v2/invoices'
 
 # ═══ VALIDATION HELPERS (same as web) ═══
@@ -406,12 +405,38 @@ def api_social_auth():
     user = User.query.filter_by(email=email).first()
 
     if user:
-        # Update profile picture if missing
         if picture_url and not user.profile_picture_url:
             user.profile_picture_url = picture_url
             db.session.commit()
 
-        # Block staff/admin from mobile login
+        if not user.is_verified:
+            # Send new OTP for unverified user
+            otp = f"{random.randint(100000, 999999)}"
+            user.otp_code = otp
+            from utils import get_ph_time, send_email
+            user.otp_created_at = get_ph_time()
+            db.session.commit()
+            
+            html_msg = f"""
+            <div style="background-color: #f8f5f2; padding: 40px 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6;">
+                <div style="max-width: 550px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(93, 64, 55, 0.08); border: 1px solid #e8e0d8;">
+                    <div style="background-color: #5d4037; padding: 30px; text-align: center;">
+                        <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 300; letter-spacing: 1px;">LE MAISON YELO LANE</h1>
+                    </div>
+                    <div style="padding: 40px 35px; color: #4e342e;">
+                        <h2 style="margin-top: 0; font-weight: 600; font-size: 20px; color: #5d4037;">Verification Code</h2>
+                        <p style="font-size: 16px; margin-bottom: 25px;">Hello <strong>{user.first_name}</strong>,</p>
+                        <p style="font-size: 15px; color: #6d4c41;">Please use the following code to verify your {provider} account on the mobile app:</p>
+                        <div style="text-align: center; margin: 40px 0;">
+                            <div style="display: inline-block; background-color: #efebe9; border: 2px dashed #8d6e63; color: #5d4037; font-size: 36px; font-weight: bold; letter-spacing: 10px; padding: 20px 40px; border-radius: 12px;">{otp}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            """
+            send_email(user.email, 'Verify your mobile account', html_msg)
+            return jsonify({'success': False, 'needs_otp': True, 'user_id': user.id, 'message': 'Please verify your account. An OTP has been sent.'}), 403
+
         if user.role in ['ADMIN', 'CASHIER', 'INVENTORY_STAFF']:
             return jsonify({'success': False, 'message': 'Staff/Admin accounts cannot login via the mobile app.'}), 403
 
@@ -432,35 +457,54 @@ def api_social_auth():
             }
         }), 200
 
-    # Auto-create user since they used social login
+    # Auto-create user
     base_username = (first_name + last_name).lower().replace(' ', '')
     if len(base_username) < 5:
         base_username = base_username + 'user'
     username = f"{base_username}{secrets.randbelow(9999)}"
-
     while User.query.filter_by(username=username).first():
         username = f"{base_username}{secrets.randbelow(99999)}"
 
     random_password = secrets.token_urlsafe(16)
+    otp = f"{random.randint(100000, 999999)}"
 
     new_user = User(
-        first_name=first_name,
-        last_name=last_name,
-        username=username,
-        email=email,
-        status=status_override or 'PENDING',
-        is_verified=True,
-        profile_picture_url=picture_url
+        first_name=first_name, last_name=last_name, username=username,
+        email=email, status='PENDING', is_verified=False,
+        profile_picture_url=picture_url, otp_code=otp
     )
+    from utils import get_ph_time, send_email
+    new_user.otp_created_at = get_ph_time()
     new_user.set_password(random_password)
-
     db.session.add(new_user)
     db.session.commit()
 
+    html_msg = f"""
+    <div style="background-color: #f8f5f2; padding: 40px 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6;">
+        <div style="max-width: 550px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(93, 64, 55, 0.08); border: 1px solid #e8e0d8;">
+            <div style="background-color: #5d4037; padding: 30px; text-align: center;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 300; letter-spacing: 1px;">LE MAISON YELO LANE</h1>
+            </div>
+            <div style="padding: 40px 35px; color: #4e342e;">
+                <h2 style="margin-top: 0; font-weight: 600; font-size: 20px; color: #5d4037;">Verification Code</h2>
+                <p style="font-size: 16px; margin-bottom: 25px;">Hello <strong>{first_name}</strong>,</p>
+                <p style="font-size: 15px; color: #6d4c41;">Welcome! Please use the following code to verify your new {provider} account on the mobile app:</p>
+                <div style="text-align: center; margin: 40px 0;">
+                    <div style="display: inline-block; background-color: #efebe9; border: 2px dashed #8d6e63; color: #5d4037; font-size: 36px; font-weight: bold; letter-spacing: 10px; padding: 20px 40px; border-radius: 12px;">{otp}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    """
+    send_email(email, 'Verify your mobile account', html_msg)
+
     return jsonify({
         'success': False,
-        'message': f'Welcome {first_name}! Your account was created via {provider} but requires admin approval before you can log in.'
+        'needs_otp': True,
+        'user_id': new_user.id,
+        'message': f'Welcome {first_name}! Your account was created via {provider} but requires email verification.'
     }), 201
+
 
 # --- MOBILE SOCIAL LOGIN POLLING ---
 mobile_sessions = {}
@@ -489,6 +533,35 @@ def api_social_complete():
         if picture_url and not user.profile_picture_url:
             user.profile_picture_url = picture_url
             db.session.commit()
+
+        if not user.is_verified:
+            # Send new OTP
+            otp = f"{random.randint(100000, 999999)}"
+            user.otp_code = otp
+            from utils import get_ph_time, send_email
+            user.otp_created_at = get_ph_time()
+            db.session.commit()
+            
+            html_msg = f"""
+            <div style="background-color: #f8f5f2; padding: 40px 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6;">
+                <div style="max-width: 550px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(93, 64, 55, 0.08); border: 1px solid #e8e0d8;">
+                    <div style="background-color: #5d4037; padding: 30px; text-align: center;">
+                        <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 300; letter-spacing: 1px;">LE MAISON YELO LANE</h1>
+                    </div>
+                    <div style="padding: 40px 35px; color: #4e342e;">
+                        <h2 style="margin-top: 0; font-weight: 600; font-size: 20px; color: #5d4037;">Verification Code</h2>
+                        <p style="font-size: 16px; margin-bottom: 25px;">Hello <strong>{user.first_name}</strong>,</p>
+                        <p style="font-size: 15px; color: #6d4c41;">Please verify your {provider} account on the app using this code:</p>
+                        <div style="text-align: center; margin: 40px 0;">
+                            <div style="display: inline-block; background-color: #efebe9; border: 2px dashed #8d6e63; color: #5d4037; font-size: 36px; font-weight: bold; letter-spacing: 10px; padding: 20px 40px; border-radius: 12px;">{otp}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            """
+            send_email(user.email, 'Verify your account', html_msg)
+            mobile_sessions[session_id] = {'success': False, 'needs_otp': True, 'user_id': user.id, 'message': 'Account verification required.'}
+            return jsonify({'success': True})
 
         if user.role in ['ADMIN', 'CASHIER', 'INVENTORY_STAFF']:
             mobile_sessions[session_id] = {'success': False, 'status': 'failed', 'message': 'Staff/Admin cannot login via mobile.'}
@@ -521,25 +594,47 @@ def api_social_complete():
     while User.query.filter_by(username=username).first():
         username = f"{base_username}{secrets.randbelow(99999)}"
 
+    random_password = secrets.token_urlsafe(16)
+    otp = f"{random.randint(100000, 999999)}"
+
     new_user = User(
-        first_name=first_name,
-        last_name=last_name,
-        username=username,
-        email=email,
-        status=status_override or 'PENDING',
-        is_verified=True,
-        profile_picture_url=picture_url
+        first_name=first_name, last_name=last_name, username=username,
+        email=email, status='PENDING', is_verified=False,
+        profile_picture_url=picture_url, otp_code=otp
     )
-    new_user.set_password(secrets.token_urlsafe(16))
+    from utils import get_ph_time, send_email
+    new_user.otp_created_at = get_ph_time()
+    new_user.set_password(random_password)
     db.session.add(new_user)
     db.session.commit()
 
+    html_msg = f"""
+    <div style="background-color: #f8f5f2; padding: 40px 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6;">
+        <div style="max-width: 550px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(93, 64, 55, 0.08); border: 1px solid #e8e0d8;">
+            <div style="background-color: #5d4037; padding: 30px; text-align: center;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 300; letter-spacing: 1px;">LE MAISON YELO LANE</h1>
+            </div>
+            <div style="padding: 40px 35px; color: #4e342e;">
+                <h2 style="margin-top: 0; font-weight: 600; font-size: 20px; color: #5d4037;">Verification Code</h2>
+                <p style="font-size: 16px; margin-bottom: 25px;">Hello <strong>{first_name}</strong>,</p>
+                <p style="font-size: 15px; color: #6d4c41;">Welcome! Please verify your new {provider} account on the app using this code:</p>
+                <div style="text-align: center; margin: 40px 0;">
+                    <div style="display: inline-block; background-color: #efebe9; border: 2px dashed #8d6e63; color: #5d4037; font-size: 36px; font-weight: bold; letter-spacing: 10px; padding: 20px 40px; border-radius: 12px;">{otp}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    """
+    send_email(email, 'Verify your account', html_msg)
+
     mobile_sessions[session_id] = {
         'success': False,
-        'status': 'failed', 
-        'message': f'Welcome {first_name}! Account created via {provider} but requires admin approval.'
+        'needs_otp': True,
+        'user_id': new_user.id,
+        'message': f'Welcome {first_name}! Account created via {provider} but requires email verification.'
     }
     return jsonify({'success': True})
+
 
 @api_bp.route('/auth/social/poll', methods=['GET'])
 def api_social_poll():
@@ -680,10 +775,11 @@ def api_checkout():
     
     # ═══ HANDLE ONLINE PAYMENT (XENDIT) ═══
     invoice_url = None
-    if payment_method == 'GCASH' and XENDIT_SECRET_KEY:
+    xendit_secret = os.environ.get('XENDIT_SECRET_KEY')
+    if payment_method == 'GCASH' and xendit_secret:
         try:
             # Build auth header
-            auth_str = base64.b64encode(f'{XENDIT_SECRET_KEY}:'.encode()).decode()
+            auth_str = base64.b64encode(f'{xendit_secret}:'.encode()).decode()
             
             # Build invoice items
             inv_items = [
@@ -831,6 +927,10 @@ def api_reserve():
     occasion = data.get('occasion', '')
     booking_type = data.get('booking_type', 'REGULAR')
     duration_str = data.get('duration', '2')
+    menu_items = data.get('menu_items', []) # New: List of {id, qty} for pre-order
+    
+    print(f"[API_RESERVE] Payload Received: {data}")
+    print(f"[API_RESERVE] Extracted menu_items: {menu_items}")
     
     try:
         res_date = datetime.strptime(res_date_str, '%Y-%m-%d').date()
@@ -841,6 +941,7 @@ def api_reserve():
     except (ValueError, TypeError):
         return jsonify({'success': False, 'message': 'Invalid data format.'}), 400
     
+    # ... Same validation logic as web ...
     today = date.today()
     diff = (res_date - today).days
     
@@ -851,64 +952,35 @@ def api_reserve():
         if diff < 0:
             return jsonify({'success': False, 'message': 'Cannot book in the past.'}), 400
         if diff == 0:
-            from datetime import datetime as dt
-            curr_t = dt.now().time()
+            curr_t = datetime.now().time()
             if res_time <= curr_t:
-                return jsonify({'success': False, 'message': 'You cannot book a time slot that has already passed today.'}), 400
-    
-    if diff > 60:
-        return jsonify({'success': False, 'message': 'Reservation can be max 2 months (60 days) in advance.'}), 400
+                return jsonify({'success': False, 'message': 'This time slot has already passed today.'}), 400
+            # Strict cutoff for same-day booking
+            if curr_t >= dtime(20, 30):
+                return jsonify({'success': False, 'message': 'Restaurant is now closed for same-day bookings. Please book for tomorrow.'}), 400
+
     
     if not check_reservation_time(res_time):
-        return jsonify({'success': False, 'message': 'Time must be between 11:30 AM - 8:30 PM with 30-minute intervals.'}), 400
+        return jsonify({'success': False, 'message': 'Time must be between 11:30 AM - 8:30 PM.'}), 400
     
-    if guest_count <= 0:
-        return jsonify({'success': False, 'message': 'Guest count must be at least 1.'}), 400
-    
-    if booking_type == 'EXCLUSIVE':
-        if guest_count > 50:
-            return jsonify({'success': False, 'message': 'Exclusive Venue can hold up to 50 guests maximum.'}), 400
-    else:
-        if guest_count > 20:
-            return jsonify({'success': False, 'message': 'Regular tables max at 20 guests.'}), 400
-    
+    # Check for conflicts
     active_res = Reservation.query.filter(
         Reservation.date == res_date,
         Reservation.status.in_(['PENDING', 'CONFIRMED'])
     ).all()
     
+    # Simplified conflict check for API
     from datetime import timedelta
-    current_res_start = datetime.combine(res_date, res_time)
-    current_res_end = current_res_start + timedelta(hours=duration)
-    
-    conflict = False
-    conflict_msg = ""
+    c_start = datetime.combine(res_date, res_time)
+    c_end = c_start + timedelta(hours=duration)
     for r in active_res:
-        r_start = datetime.combine(r.date, r.time)
-        r_dur = r.duration if r.duration is not None else 2
-        r_end = r_start + timedelta(hours=r_dur)
-        if current_res_start < r_end and r_start < current_res_end:
+        r_s = datetime.combine(r.date, r.time)
+        r_e = r_s + timedelta(hours=r.duration or 2)
+        if c_start < r_e and r_s < c_end:
             if booking_type == 'EXCLUSIVE' or r.booking_type == 'EXCLUSIVE':
-                conflict = True
-                conflict_msg = "Conflicting exclusive booking or overlapping reservation."
-                break
-                
-    if conflict:
-        return jsonify({'success': False, 'message': conflict_msg}), 400
-        
-    if booking_type != 'EXCLUSIVE':
-        overlapping_guests = 0
-        for r in active_res:
-            if r.booking_type != 'EXCLUSIVE':
-                r_start = datetime.combine(r.date, r.time)
-                r_dur = r.duration if r.duration is not None else 2
-                r_end = r_start + timedelta(hours=r_dur)
-                if current_res_start < r_end and r_start < current_res_end:
-                    overlapping_guests += r.guest_count
-        
-        if overlapping_guests + guest_count > 50:
-            return jsonify({'success': False, 'message': 'Time slot is fully booked. Not enough seats.'}), 400
-    
+                return jsonify({'success': False, 'message': 'This time slot overlaps with an exclusive booking.'}), 400
+
+    # 1. Create Reservation
     new_res = Reservation(
         user_id=user_id,
         date=res_date,
@@ -916,15 +988,76 @@ def api_reserve():
         duration=duration,
         guest_count=guest_count,
         occasion=occasion,
-        booking_type=booking_type
+        booking_type=booking_type,
+        status='PENDING'
     )
     db.session.add(new_res)
+    db.session.flush()
+
+    # 2. Handle Pre-Order if menu_items present
+    order_id = None
+    invoice_url = None
+    food_total = 0
+    
+    if menu_items:
+        new_order = Order(
+            user_id=user_id,
+            reservation_id=new_res.id,
+            status='HOLD',
+            payment_status='UNPAID',
+            dining_option='RESERVATION',
+            total_amount=0 # Update later
+        )
+        db.session.add(new_order)
+        db.session.flush()
+        
+        from decimal import Decimal
+        for item in menu_items:
+            m_item = MenuItem.query.get(item.get('id'))
+            qty = int(item.get('qty', 0))
+            if m_item and qty > 0:
+                price = Decimal(str(m_item.price))
+                food_total += price * qty
+                db.session.add(OrderItem(
+                    order_id=new_order.id,
+                    menu_item_id=m_item.id,
+                    quantity=qty,
+                    price_at_time=float(price)
+                ))
+        
+        new_order.total_amount = float(food_total)
+        order_id = new_order.id
+
+        # Generate Xendit Link
+        xendit_secret = os.environ.get('XENDIT_SECRET_KEY')
+        if food_total > 0 and xendit_secret:
+            try:
+                auth_str = base64.b64encode(f'{xendit_secret}:'.encode()).decode()
+                x_resp = http_requests.post(XENDIT_API_URL, headers={'Authorization': f'Basic {auth_str}', 'Content-Type': 'application/json'},
+                    json={
+                        'external_id': f'res_{new_res.id}_ord_{new_order.id}',
+                        'amount': float(food_total),
+                        'payer_email': User.query.get(user_id).email,
+                        'description': f'Reservation Order - Le Maison Yelo Lane',
+                        'currency': 'PHP'
+                    }, timeout=15)
+                if x_resp.status_code == 200:
+                    inv_data = x_resp.json()
+                    new_order.xendit_invoice_url = inv_data.get('invoice_url')
+                    invoice_url = inv_data.get('invoice_url')
+            except: pass
+
     db.session.commit()
     
-    # Send notification to user
-    _create_notification(user_id, 'Reservation Submitted', f'Your reservation for {res_date.strftime("%b %d, %Y")} at {res_time.strftime("%I:%M %p")} has been submitted. Pending approval.', 'RESERVATION')
+    _create_notification(user_id, 'Reservation Received', f'Your reservation for {res_date_str} has been received.', 'RESERVATION')
     
-    return jsonify({'success': True, 'message': 'Reservation submitted! Pending admin approval.'}), 201
+    return jsonify({
+        'success': True, 
+        'message': 'Reservation submitted!',
+        'reservation_id': new_res.id,
+        'order_id': order_id,
+        'invoice_url': invoice_url
+    }), 201
 
 @api_bp.route('/user/<int:user_id>/reservations', methods=['GET'])
 def api_user_reservations(user_id):
@@ -944,12 +1077,34 @@ def api_user_reservations(user_id):
         'upcoming': [{
             'id': r.id, 'date': r.date.strftime('%Y-%m-%d'), 'date_formatted': r.date.strftime('%b %d, %Y'),
             'time': r.time.strftime('%H:%M'), 'time_formatted': r.time.strftime('%I:%M %p'),
-            'guest_count': r.guest_count, 'occasion': r.occasion, 'booking_type': r.booking_type, 'status': r.status
+            'guest_count': r.guest_count, 'occasion': r.occasion, 'booking_type': r.booking_type, 'status': r.status,
+            'linked_order': {
+                'id': r.linked_order.id,
+                'total_amount': float(r.linked_order.total_amount),
+                'status': r.linked_order.status,
+                'payment_status': r.linked_order.payment_status,
+                'items': [{
+                    'name': item.menu_item.name,
+                    'quantity': item.quantity,
+                    'price': float(item.price_at_time),
+                    'image_url': item.menu_item.image_url
+                } for item in r.linked_order.items]
+            } if r.linked_order else None
         } for r in upcoming],
         'past': [{
             'id': r.id, 'date_formatted': r.date.strftime('%b %d, %Y'),
             'time_formatted': r.time.strftime('%I:%M %p'),
-            'guest_count': r.guest_count, 'occasion': r.occasion, 'status': r.status
+            'guest_count': r.guest_count, 'occasion': r.occasion, 'status': r.status,
+            'linked_order': {
+                'id': r.linked_order.id,
+                'total_amount': float(r.linked_order.total_amount),
+                'status': r.linked_order.status,
+                'items': [{
+                    'name': item.menu_item.name,
+                    'quantity': item.quantity,
+                    'price': float(item.price_at_time)
+                } for item in r.linked_order.items]
+            } if r.linked_order else None
         } for r in past]
     }), 200
 

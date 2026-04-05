@@ -101,6 +101,12 @@ class _LoginScreenState extends State<LoginScreen> {
           MaterialPageRoute(builder: (_) => const HomeScreen()),
           (_) => false,
         );
+      } else if (res['needs_otp'] == true) {
+        if (!mounted) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => OtpScreen(userId: res['user_id'])),
+        );
       } else {
         _showMsg(res['message'] ?? 'Google login failed.');
       }
@@ -135,28 +141,39 @@ class _LoginScreenState extends State<LoginScreen> {
           final res = await ApiService.get(
             '/api/auth/social/poll?session_id=$sessionId',
           );
-          if (res != null && res['success'] == true) {
-            timer.cancel();
-            if (!mounted) return;
-            setState(() => _socialLoading = false);
-            await AuthService.saveUser(res['user']);
-            if (mounted) {
-              Navigator.pushAndRemoveUntil(
+          if (res != null) {
+            if (res['success'] == true) {
+              timer.cancel();
+              if (!mounted) return;
+              setState(() => _socialLoading = false);
+              await AuthService.saveUser(res['user']);
+              if (mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => const HomeScreen()),
+                  (_) => false,
+                );
+              }
+            } else if (res['needs_otp'] == true) {
+              timer.cancel();
+              if (!mounted) return;
+              setState(() => _socialLoading = false);
+              Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const HomeScreen()),
-                (_) => false,
+                MaterialPageRoute(builder: (_) => OtpScreen(userId: res['user_id'])),
               );
+            } else if (res['status'] == 'failed') {
+              timer.cancel();
+              if (!mounted) return;
+              setState(() => _socialLoading = false);
+              _showMsg(res['message'] ?? 'Social login failed.');
             }
-          } else if (res != null && res['status'] == 'failed') {
-            timer.cancel();
-            if (!mounted) return;
-            setState(() => _socialLoading = false);
-            _showMsg(res['message'] ?? 'Facebook login failed.');
           }
         } catch (e) {
           // ignore polling errors
         }
       });
+
 
       Future.delayed(const Duration(minutes: 3), () {
         if (_pollTimer != null && _pollTimer!.isActive) {
@@ -405,23 +422,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 20),
 
-                      SizedBox(
-                        width: double.infinity,
-                        height: 52,
-                        child: ElevatedButton(
-                          onPressed: _loading ? null : _login,
-                          child: _loading
-                              ? const SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2.5,
-                                  ),
-                                )
-                              : const Text('Sign In'),
-                        ),
+                      GradientButton(
+                        label: 'Sign In',
+                        icon: Icons.login_rounded,
+                        onPressed: _loading ? null : _login,
+                        isLoading: _loading,
                       ),
+
 
                       const SizedBox(height: 24),
 

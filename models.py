@@ -46,6 +46,7 @@ class Reservation(db.Model):
     
     status = db.Column(db.String(20), default='PENDING') # PENDING, CONFIRMED, REJECTED, COMPLETED
     table_number = db.Column(db.String(20), nullable=True) # Assigned by admin
+    cancellation_reason = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=get_ph_time)
 
     user = db.relationship('User', backref=db.backref('reservations', lazy=True))
@@ -96,10 +97,12 @@ class Order(db.Model):
     estimated_cost = db.Column(db.Numeric(10, 2), default=0) # Total cost of ingredients
     created_at = db.Column(db.DateTime, default=get_ph_time)
     processed_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True) # Cashier who processed
+    reservation_id = db.Column(db.Integer, db.ForeignKey('reservation.id'), nullable=True) # Linked reservation (if any)
     
     user = db.relationship('User', foreign_keys=[user_id], backref=db.backref('orders', lazy=True))
     rider = db.relationship('User', foreign_keys=[rider_id], backref=db.backref('deliveries', lazy=True))
     processed_by = db.relationship('User', foreign_keys=[processed_by_id], backref=db.backref('handled_orders', lazy=True))
+    reservation = db.relationship('Reservation', foreign_keys=[reservation_id], backref=db.backref('linked_order', uselist=False, lazy=True))
     items = db.relationship('OrderItem', backref='order', lazy=True, cascade='all, delete-orphan')
 
 class OrderItem(db.Model):

@@ -1,0 +1,351 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Step 2: Select Menu — Le Maison{% endblock %}
+
+{% block content %}
+<style>
+    .resPage { max-width: 900px; margin: 6rem auto 3rem; padding: 0 1.5rem; }
+    .resCard { background: #fff; border-radius: 24px; border: 1px solid var(--border-color); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05); overflow: hidden; }
+    .resHeader { background: linear-gradient(135deg, rgba(139, 99, 75, 0.04), rgba(212, 168, 98, 0.06)); padding: 2.5rem 2.5rem 1.5rem; text-align: center; }
+    .resHeader h2 { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 2rem; color: #5D4037; }
+    .resHeader p { color: var(--text-muted); font-size: 0.95rem; }
+
+    .step-indicator { display: flex; justify-content: center; margin-bottom: 2rem; gap: 1rem; align-items: center; }
+    .step { display: flex; align-items: center; gap: 0.5rem; font-weight: 700; color: #8B634B; }
+    .step.active { color: #3E2723; }
+    .step-num { width: 32px; height: 32px; border-radius: 50%; background: #e6dfd8; color: #5D4037; display: flex; align-items: center; justify-content: center; font-size: 0.95rem; }
+    .step.active .step-num { background: #3E2723; color: #fff; text-shadow: none; }
+    .step-line { width: 40px; height: 3px; background: #e6dfd8; border-radius: 2px;}
+    .menu-section { padding: 1.5rem 2rem; }
+    
+    /* Dropdown Selection styles */
+    .category-select-wrapper {
+        margin-bottom: 2rem;
+        max-width: 400px;
+        margin-inline: auto;
+    }
+    .category-select-label {
+        display: block;
+        font-size: 0.85rem;
+        color: #8B634B;
+        margin-bottom: 0.5rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        text-align: center;
+    }
+    .category-select {
+        width: 100%;
+        padding: 0.8rem 1.2rem;
+        border-radius: 12px;
+        border: 2px solid rgba(139, 99, 75, 0.2);
+        color: #5D4037;
+        font-family: inherit;
+        font-size: 1.05rem;
+        font-weight: 600;
+        background-color: #fff;
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238B634B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 1.2rem center;
+        background-size: 1.2em;
+        cursor: pointer;
+        transition: border-color 0.3s;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+    }
+    .category-select:focus {
+        outline: none;
+        border-color: #5D4037;
+    }
+    
+    /* Unavailable item styling */
+    .menu-item-card.unavailable {
+        opacity: 0.6;
+        filter: grayscale(80%);
+    }
+    .qty-controls.unavailable {
+        pointer-events: none;
+        display: flex;
+        justify-content: flex-end;
+    }
+    .unavailable-badge {
+        background: #e0e0e0;
+        color: #757575;
+        font-size: 0.75rem;
+        padding: 6px 12px;
+        border-radius: 12px;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .category-panel {
+        display: none;
+        animation: fadeIn 0.4s ease;
+    }
+    .category-panel.active {
+        display: block;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .category-panel-title {
+        font-family: 'Playfair Display', serif;
+        color: #3E2723;
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid rgba(139, 99, 75, 0.1);
+    }
+
+    .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
+    .menu-item-card { border: 1px solid rgba(139,99,75,0.1); border-radius: 16px; overflow: hidden; display: flex; gap: 1rem; padding: 1rem; transition: transform 0.2s; }
+    .menu-item-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+    .menu-item-img { width: 80px; height: 80px; object-fit: cover; border-radius: 12px; }
+    .menu-item-info { flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+    .menu-item-name { font-weight: 700; font-size: 0.95rem; color: #3E2723; margin: 0; }
+    .menu-item-price { color: #5D4037; font-weight: 700; font-size: 0.9rem; margin-top: 0.3rem; }
+    
+    .qty-controls { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; }
+    .qty-btn { width: 28px; height: 28px; border-radius: 8px; border: 1px solid #5D4037; background: #fff; color: #5D4037; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .qty-btn:hover { background: #5D4037; color: #fff; }
+    .qty-input { width: 40px; text-align: center; border: 1px solid #ddd; border-radius: 8px; padding: 3px; font-weight: 600; }
+
+    .bottom-bar { position: sticky; bottom: 0; background: #fff; padding: 1.5rem 2rem; border-top: 1px solid rgba(0,0,0,0.1); box-shadow: 0 -4px 20px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; border-radius: 0 0 24px 24px; flex-wrap: wrap; gap: 1rem;}
+    .total-display { font-size: 1.2rem; font-weight: bold; color: #3E2723; }
+    
+    .action-buttons { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+    .btn-back { background: #fdfaf7; color: #5D4037; border: 1px solid rgba(139, 99, 75, 0.2); padding: 0.8rem 2rem; border-radius: 50px; font-weight: 600; cursor: pointer; transition: 0.3s; text-decoration: none; display: inline-flex; justify-content: center; align-items: center; height: 100%; }
+    .btn-back:hover { background: rgba(139, 99, 75, 0.1); color: #3E2723; }
+    .btn-next { background: #5D4037; color: #fff; border: none; padding: 0.8rem 2rem; border-radius: 50px; font-weight: 600; cursor: pointer; transition: 0.3s; display: inline-flex; justify-content: center; align-items: center; height: 100%; }
+    .btn-next:hover { background: #3E2723; transform: translateY(-2px); }
+    .btn-next:disabled { background: #a69894; transform: translateY(0); cursor: not-allowed; }
+
+    /* Selected Items Summary at top */
+    .selected-summary {
+        background: #fff;
+        border: 2px solid rgba(139,99,75,0.1);
+        border-radius: 20px;
+        margin-bottom: 2.5rem;
+        transition: all 0.3s;
+        display: none; /* Hidden by default if empty */
+    }
+    .selected-items-list {
+        max-height: 200px;
+        overflow-y: auto;
+        padding: 1.25rem;
+    }
+    .selected-item-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    .selected-item-row:last-child { border-bottom: none; }
+    .selected-item-img { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; }
+    .selected-item-info { flex: 1; }
+    .selected-item-name { font-weight: 700; font-size: 0.85rem; color: #5D4037; }
+    .selected-item-price { font-size: 0.75rem; color: #8B634B; display: block; }
+</style>
+
+<div class="resPage">
+    <div class="resCard">
+        <div class="resHeader">
+            <h2>Select Your Menu</h2>
+            <p>Reservation for {{ pending.date }} at {{ pending.time }} ({{ pending.guest_count }} guests)</p>
+            
+            <div class="step-indicator mt-4">
+                <div class="step"><div class="step-num"><i class="fas fa-check"></i></div> Details</div>
+                <div class="step-line" style="background:#5D4037;"></div>
+                <div class="step active"><div class="step-num">2</div> Menu</div>
+                <div class="step-line"></div>
+                <div class="step"><div class="step-num">3</div> Payment</div>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ url_for('main.reserve_menu') }}">
+            <div class="menu-section">
+                <!-- Summary / Requirement Banner -->
+                <div style="background: rgba(139, 99, 75, 0.05); border: 1px solid rgba(139, 99, 75, 0.2); border-radius: 12px; padding: 1rem; margin-bottom: 2rem; color: #5D4037; font-size: 0.9rem;">
+                    <i class="fas fa-info-circle me-2" style="color: #8B634B;"></i> <strong>Payment First Policy:</strong> To confirm your table, you must select your food ahead of time and pay online.
+                </div>
+
+                <!-- NEW: Dynamic Selected Items Summary -->
+                <div class="selected-summary" id="selectedSummary">
+                    <div style="padding: 1rem 1.25rem 0.5rem; border-bottom: 1px solid rgba(139,99,75,0.1); display: flex; align-items: center; justify-content: space-between;">
+                        <h6 style="margin: 0; font-weight: 800; color: #5D4037; font-family:'Playfair Display',serif;"><i class="fas fa-shopping-cart me-2"></i> Your Selection</h6>
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" onclick="clearAllSelection()" style="background: transparent; border: 1px solid rgba(220,53,69,0.5); color: #dc3545; font-size: 0.7rem; border-radius: 20px; padding: 2px 10px; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: 0.2s;"><i class="fas fa-times"></i> Clear All</button>
+                            <span id="selectedCountBadge" class="badge" style="background:#8B634B; font-size:0.7rem;">0 items</span>
+                        </div>
+                    </div>
+                    <div class="selected-items-list" id="selectedItemsList"></div>
+                </div>
+
+                <!-- Category Dropdown Select -->
+                <div class="category-select-wrapper">
+                    <label class="category-select-label" for="categorySelect">Select Category</label>
+                    <select id="categorySelect" class="category-select" onchange="showCategory(this.value)">
+                        {% for cat_name in categories.keys() %}
+                        <option value="cat-{{ loop.index }}" {% if loop.first %}selected{% endif %}>{{ cat_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Category Content Panels -->
+                {% for cat_name, items in categories.items() %}
+                <div class="category-panel {% if loop.first %}active{% endif %}" id="cat-{{ loop.index }}">
+                    <h3 class="category-panel-title">{{ cat_name }}</h3>
+                    <div class="menu-grid">
+                        {% for item in items %}
+                        <div class="menu-item-card {% if not item.is_available %}unavailable{% endif %}">
+                            <img src="{{ item.image_url or url_for('static', filename='images/placeholder-food.jpg') }}" alt="{{ item.name }}" class="menu-item-img">
+                            <div class="menu-item-info">
+                                <div>
+                                    <h4 class="menu-item-name">{{ item.name }}</h4>
+                                    <div class="menu-item-price">₱{{ "%.2f"|format(item.price) }}</div>
+                                </div>
+                                <div class="qty-controls {% if not item.is_available %}unavailable{% endif %}">
+                                    {% if item.is_available %}
+                                    <button type="button" class="qty-btn" onclick="updateQty('qty_{{ item.id }}', -1, '{{ item.price }}')">-</button>
+                                    <input type="number" id="qty_{{ item.id }}" name="qty_{{ item.id }}" class="qty-input item-qty-input" 
+                                           value="{{ pending.menu_items.get(item.id|string, 0) if pending and pending.menu_items else 0 }}" min="0" readonly 
+                                           data-price="{{ item.price }}" data-name="{{ item.name }}" data-image="{{ item.image_url or '/static/images/placeholder-food.jpg' }}">
+                                    <button type="button" class="qty-btn" onclick="updateQty('qty_{{ item.id }}', 1, '{{ item.price }}')">+</button>
+                                    {% else %}
+                                    <span class="unavailable-badge">Unavailable</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="bottom-bar">
+                <div class="total-display">
+                    Food Total: <span id="cartTotal">₱0.00</span>
+                </div>
+                <div class="action-buttons">
+                    <a href="{{ url_for('main.reserve') }}" class="btn-back">Back</a>
+                    <button type="submit" class="btn-next" id="btnContinue" disabled>Continue to Payment <i class="fas fa-arrow-right ms-2"></i></button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function showCategory(id) {
+        // Hide all panels
+        document.querySelectorAll('.category-panel').forEach(panel => {
+            panel.classList.remove('active');
+        });
+        
+        // Show selected panel
+        document.getElementById(id).classList.add('active');
+        sessionStorage.setItem('res_menu_category', id);
+    }
+
+    let total = 0;
+    
+    function updateQty(id, change, pricePerItem) {
+        const input = document.getElementById(id);
+        let currentQty = parseInt(input.value);
+        let newQty = currentQty + change;
+        
+        if (newQty >= 0) {
+            input.value = newQty;
+            sessionStorage.setItem('res_menu_' + id, newQty);
+            calculateTotal();
+        }
+    }
+
+    function calculateTotal() {
+        total = 0;
+        let totalItems = 0;
+        const inputs = document.querySelectorAll('.item-qty-input');
+        const summaryList = document.getElementById('selectedItemsList');
+        const summaryBox = document.getElementById('selectedSummary');
+        
+        let summaryHtml = '';
+
+        inputs.forEach(input => {
+            const qty = parseInt(input.value);
+            const price = parseFloat(input.getAttribute('data-price'));
+            if(qty > 0) {
+                total += (qty * price);
+                totalItems += qty;
+
+                // Build Summary Row
+                const name = input.getAttribute('data-name');
+                const img = input.getAttribute('data-image');
+                const itemId = input.id;
+                summaryHtml += `
+                    <div class="selected-item-row">
+                        <img src="${img}" class="selected-item-img">
+                        <div class="selected-item-info">
+                            <span class="selected-item-name">${name}</span>
+                            <span class="selected-item-price">₱${price.toFixed(2)}</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="qty-controls" style="margin-top:0; background: rgba(139, 99, 75, 0.05); padding: 2px 6px; border-radius: 8px;">
+                                <button type="button" class="qty-btn" style="width:22px; height:22px; font-size:10px;" onclick="updateQty('${itemId}', -1, '${price}')">-</button>
+                                <span style="font-weight:700; width:18px; text-align:center; font-size:12px;">${qty}</span>
+                                <button type="button" class="qty-btn" style="width:22px; height:22px; font-size:10px;" onclick="updateQty('${itemId}', 1, '${price}')">+</button>
+                            </div>
+                            <button type="button" class="btn-remove" onclick="updateQty('${itemId}', -${qty}, '${price}')" style="background:none; border:none; color:#dc3545; padding:4px; font-size:0.9rem; cursor:pointer;" title="Remove Item">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+
+        summaryList.innerHTML = summaryHtml;
+        summaryBox.style.display = totalItems > 0 ? 'block' : 'none';
+        document.getElementById('selectedCountBadge').innerText = totalItems + ' items';
+        document.getElementById('cartTotal').innerText = '₱' + total.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+        document.getElementById('btnContinue').disabled = totalItems === 0;
+    }
+
+    function clearAllSelection() {
+        if(confirm("Are you sure you want to clear all your food selections?")) {
+            const inputs = document.querySelectorAll('.item-qty-input');
+            inputs.forEach(input => {
+                input.value = 0;
+                sessionStorage.removeItem('res_menu_' + input.id);
+            });
+            calculateTotal();
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        // Restore category tab
+        const savedCat = sessionStorage.getItem('res_menu_category');
+        if (savedCat && document.getElementById(savedCat)) {
+            document.getElementById('categorySelect').value = savedCat;
+            showCategory(savedCat);
+        }
+
+        // Restore item quantities
+        const inputs = document.querySelectorAll('.item-qty-input');
+        inputs.forEach(input => {
+            const savedQty = sessionStorage.getItem('res_menu_' + input.id);
+            if(savedQty !== null && parseInt(savedQty) > 0) {
+                input.value = savedQty;
+            }
+        });
+        calculateTotal();
+    });
+</script>
+{% endblock %}

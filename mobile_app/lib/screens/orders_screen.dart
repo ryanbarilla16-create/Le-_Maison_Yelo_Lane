@@ -358,7 +358,7 @@ class _OrdersScreenState extends State<OrdersScreen>
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.primary,
+                    color: AppColors.accent,
                     fontFamily: 'Georgia',
                   ),
                 ),
@@ -614,7 +614,7 @@ class _OrdersScreenState extends State<OrdersScreen>
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
+                        color: AppColors.accent,
                       ),
                     ),
                     Text(
@@ -886,40 +886,55 @@ class _OrdersScreenState extends State<OrdersScreen>
                     style: TextStyle(color: Colors.grey.shade600),
                   ),
                 ),
-                ElevatedButton(
-                  onPressed: () async {
-                    final userId = await AuthService.getUserId();
-                    final res = await ApiService.post(
-                        '/api/order/$orderId/review', {
-                      'user_id': userId,
-                      'rating': rating,
-                      'comment': commentCtrl.text.trim(),
-                    });
-                    if (!ctx.mounted) return;
-                    Navigator.pop(ctx);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content:
-                            Text(res['message'] ?? 'Review submitted!'),
-                        backgroundColor: res['success'] == true
-                            ? const Color(0xFF2E7D32)
-                            : const Color(0xFFC62828),
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: AppColors.buttonGradient,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withOpacity(0.25),
+                        blurRadius: 6,
+                        offset: const Offset(0, 3),
                       ),
-                    );
-                    _loadOrders();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                    ],
                   ),
-                  child: const Text('Submit Review'),
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      final userId = await AuthService.getUserId();
+                      final res = await ApiService.post(
+                          '/api/order/$orderId/review', {
+                        'user_id': userId,
+                        'rating': rating,
+                        'comment': commentCtrl.text.trim(),
+                      });
+                      if (!ctx.mounted) return;
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content:
+                              Text(res['message'] ?? 'Review submitted!'),
+                          backgroundColor: res['success'] == true
+                              ? const Color(0xFF2E7D32)
+                              : const Color(0xFFC62828),
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      );
+                      _loadOrders();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: const Text('Submit Review', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
                 ),
+
               ],
             );
           },

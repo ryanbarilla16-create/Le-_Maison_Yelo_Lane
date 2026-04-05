@@ -975,14 +975,66 @@ def kitchen_view():
         if valid_count > 0:
             avg_prep_time = round((total_prep_seconds / valid_count) / 60, 1)
 
+    ph_now = get_ph_time()
+
+    # 1. Separate Active Orders
+    asap_orders = []
+    for order in active_orders:
+        if not order.reservation:
+            asap_orders.append(order)
+        else:
+            # Check if reservation is within 1 hour
+            res = order.reservation
+            if res.date and res.time:
+                try:
+                    res_dt = datetime.combine(res.date, res.time)
+                    # Handle potential timezone mismatch
+                    if res_dt.tzinfo is not None: res_dt = res_dt.replace(tzinfo=None)
+                    
+                    diff = (res_dt - ph_now.replace(tzinfo=None)).total_seconds() / 60
+                    if diff <= 60:
+                        asap_orders.append(order)
+                except Exception:
+                    asap_orders.append(order) # Show anyway if comparison fails
+
+    # 2. Aggregation for Prep Summary
+    item_data = {}
+    for order in asap_orders:
+        for item in order.items:
+            if not item.menu_item: continue
+            key = item.menu_item.name
+            cat = item.menu_item.category or 'Other'
+            if key in item_data:
+                item_data[key].update({'qty': item_data[key]['qty'] + item.quantity})
+            else:
+                item_data[key] = {'qty': item.quantity, 'cat': cat}
+
+    # 3. Categorize into Stations
+    hot_kitchen, cold_kitchen, bar_station = [], [], []
+    for name, info in item_data.items():
+        cat_lower = info['cat'].lower()
+        station_item = {'name': name, 'qty': info['qty']}
+        
+        if any(kw in cat_lower for kw in ['drink', 'beverage', 'coffee', 'shake', 'juice', 'tea']):
+            bar_station.append(station_item)
+        elif any(kw in cat_lower for kw in ['dessert', 'cake', 'pastry', 'sweet', 'cheesecake', 'waffle']):
+            cold_kitchen.append(station_item)
+        else:
+            hot_kitchen.append(station_item)
+
     return render_template('admin/kitchen.html', 
-        orders=active_orders, 
+        orders=active_orders,
+        hot_kitchen=hot_kitchen,
+        cold_kitchen=cold_kitchen,
+        bar_station=bar_station,
+        item_count=len(item_data),
         status_filter=status_filter,
         pending_count=pending_count,
         preparing_count=preparing_count,
         completed_count=completed_count,
         cancelled_count=cancelled_count,
-        avg_prep_time=avg_prep_time
+        avg_prep_time=avg_prep_time,
+        ph_now=ph_now
     )
 
 @admin_bp.route('/kitchen/api/orders')
