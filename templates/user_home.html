@@ -1,315 +1,462 @@
 {% extends "layouts/base.html" %}
 
-{% block title %}Welcome, {{ current_user.first_name }}{% endblock %}
+{% block title %}Dashboard | Le Maison{% endblock %}
 
 {% block content %}
 <style>
     :root {
-        --primary-gradient: linear-gradient(135deg, #3E2723, #5D4037);
-        --accent-gold: #D4A862;
-        --glass-white: rgba(255, 255, 255, 0.95);
+        --deep-brown: #3E2723;
+        --accent-brown: #5D4037;
+        --rich-caramel: #8D6E63;
+        --warm-sand: #D7CCC8;
+        --soft-cream: #FDFBF9;
+        --gold-glow: #D4A862;
+        --card-shadow: 0 15px 35px rgba(62, 39, 35, 0.08);
     }
 
-    .dashHero {
+    body {
+        background-color: var(--soft-cream) !important;
+        color: var(--deep-brown);
+    }
+
+    /* Cinematic Banner */
+    .hero-banner {
         position: relative;
-        height: 70vh;
-        min-height: 500px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #3E2723;
+        height: 50vh;
+        min-height: 400px;
+        background: var(--deep-brown);
         overflow: hidden;
         margin-top: -80px;
+        display: flex;
+        align-items: center;
+        border-bottom-left-radius: 60px;
+        border-bottom-right-radius: 60px;
     }
 
-    .dashHero img {
+    .hero-banner img {
         position: absolute;
         inset: 0;
         width: 100%;
         height: 100%;
         object-fit: cover;
-        opacity: 0.6;
-        filter: saturate(1.2) brightness(0.8);
-        transform: scale(1.05);
-        animation: slowZoom 20s infinite alternate;
+        opacity: 0.5;
+        filter: sepia(0.2) brightness(0.7);
+        transform: scale(1.1);
+        animation: subtlePan 30s linear infinite alternate;
     }
 
-    @keyframes slowZoom {
-        from { transform: scale(1.05); }
-        to { transform: scale(1.15); }
+    @keyframes subtlePan {
+        from { transform: scale(1.1) translateX(-2%); }
+        to { transform: scale(1.15) translateX(2%); }
     }
 
-    .dashHero-content {
+    .hero-overlay {
         position: relative;
         z-index: 10;
-        text-align: center;
-        padding: 0 1.5rem;
-        max-width: 900px;
-        animation: slideUpFade 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+        width: 100%;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0 3rem;
+        color: #fff;
     }
 
-    @keyframes slideUpFade {
-        from { opacity: 0; transform: translateY(40px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    .greeting {
-        font-family: 'Playfair Display', serif;
-        font-style: italic;
-        color: var(--accent-gold);
-        font-size: 1.5rem;
-        margin-bottom: 1rem;
-        display: block;
-    }
-
-    .dashHero h1 {
+    .hero-overlay h1 {
         font-family: 'Playfair Display', serif;
         font-weight: 900;
-        font-size: clamp(3rem, 8vw, 5.5rem);
-        color: #fff;
-        line-height: 1;
-        margin-bottom: 2rem;
-        text-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        font-size: clamp(2.5rem, 6vw, 4.5rem);
+        line-height: 1.1;
+        margin-bottom: 1.5rem;
+        text-shadow: 0 5px 15px rgba(0,0,0,0.2);
     }
 
-    .dashWrap {
-        max-width: 1300px;
-        margin: -80px auto 4rem;
+    .hero-overlay p {
+        font-size: 1.1rem;
+        color: var(--warm-sand);
+        max-width: 500px;
+        margin-bottom: 2rem;
+        letter-spacing: 0.5px;
+    }
+
+    /* Main Grid */
+    .dash-container {
+        max-width: 1400px;
+        margin: -60px auto 5rem;
         padding: 0 2rem;
         position: relative;
         z-index: 20;
     }
 
-    .dashStats {
+    /* Quick Action Grid */
+    .action-grid {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 2rem;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 3rem;
     }
 
-    .dashStat {
+    .action-card {
         background: #fff;
-        border-radius: 32px;
-        padding: clamp(2rem, 5vw, 4rem);
-        border: 1px solid rgba(0,0,0,0.03);
-        box-shadow: 0 10px 40px rgba(0,0,0,0.04);
+        border-radius: 24px;
+        padding: 2rem;
         text-align: center;
+        text-decoration: none !important;
+        color: var(--deep-brown);
+        border: 1px solid rgba(141, 110, 99, 0.1);
+        box-shadow: var(--card-shadow);
         transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .action-card:hover {
+        transform: translateY(-10px);
+        background: var(--deep-brown);
+        color: #fff;
+    }
+
+    .action-card i {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        display: block;
+        color: var(--rich-caramel);
+        transition: color 0.3s;
+    }
+
+    .action-card:hover i { color: var(--gold-glow); }
+
+    .action-card span {
+        font-weight: 800;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+    }
+
+    /* Status & Stats Section */
+    .status-layout {
+        display: grid;
+        grid-template-columns: 1fr 380px;
+        gap: 2.5rem;
+        margin-bottom: 4rem;
+    }
+
+    .status-main {
+        background: #fff;
+        border-radius: 40px;
+        padding: 3rem;
+        box-shadow: var(--card-shadow);
+        border: 1px solid rgba(141, 110, 99, 0.05);
+    }
+
+    .status-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--warm-sand);
+    }
+
+    .status-header h2 {
+        font-family: 'Playfair Display', serif;
+        font-weight: 800;
+        margin: 0;
+    }
+
+    .status-item {
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+        padding: 1.5rem;
+        background: var(--soft-cream);
+        border-radius: 20px;
+        margin-bottom: 1.5rem;
+    }
+
+    .status-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 15px;
+        background: var(--deep-brown);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--gold-glow);
+    }
+
+    /* Sidebar Stats */
+    .sidebar-stats {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .stat-mini {
+        background: linear-gradient(135deg, var(--deep-brown), var(--accent-brown));
+        border-radius: 30px;
+        padding: 2.5rem;
+        color: #fff;
+        text-align: center;
         position: relative;
         overflow: hidden;
     }
 
-    .dashStat:hover { transform: translateY(-8px); box-shadow: 0 20px 60px rgba(0,0,0,0.08); }
-
-    .dashStat.stat-bookings { background: #FDEFEF; } /* Soft Rose */
-    .dashStat.stat-chapters { background: #EFEFFD; } /* Soft Lavender */
-
-    .dashStat h3 {
-        font-family: 'Playfair Display', serif;
-        font-size: clamp(3rem, 10vw, 5rem);
-        font-weight: 900;
-        color: #3E2723;
-        margin-bottom: 0.5rem;
-        line-height: 1;
-    }
-
-    .dashStat p {
-        color: #5D4037;
-        font-weight: 800;
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        letter-spacing: 3px;
-        margin: 0;
-        opacity: 0.7;
-    }
-
-    .stat-decoration {
+    .stat-mini::after {
+        content: '';
         position: absolute;
+        width: 100px;
+        height: 100px;
+        background: rgba(255,255,255,0.05);
+        border-radius: 50%;
         top: -20px;
         right: -20px;
-        font-size: 6rem;
-        opacity: 0.05;
-        transform: rotate(-15deg);
-        pointer-events: none;
     }
 
-    .category-section {
-        padding: 6rem 0;
-        background: #fdfaf8;
-    }
-
-    .section-title {
-        text-align: center;
-        margin-bottom: 4rem;
-    }
-
-    .section-title h2 {
+    .stat-mini h3 {
         font-family: 'Playfair Display', serif;
-        font-weight: 800;
-        font-size: 3rem;
-        color: #3E2723;
+        font-size: 3.5rem;
+        font-weight: 900;
+        color: var(--gold-glow);
+        margin: 0;
     }
 
-    .category-grid {
+    .stat-mini p {
+        margin: 0;
+        font-weight: 700;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        opacity: 0.8;
+    }
+
+    /* Category Carousel/Grid */
+    .discover-section {
+        margin-bottom: 5rem;
+    }
+
+    .discover-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-        gap: 2.5rem;
-        padding: 0 2rem;
-        max-width: 1400px;
-        margin: 0 auto;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
     }
 
-    .category-card {
-        height: 450px;
-        border-radius: 40px;
+    .discover-card {
+        height: 380px;
+        border-radius: 30px;
         overflow: hidden;
         position: relative;
         text-decoration: none;
         display: block;
-        transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
     }
 
-    .category-card:hover { transform: scale(1.02); }
-
-    .cat-img {
+    .discover-card img {
         width: 100%;
         height: 100%;
         object-fit: cover;
-        transition: transform 0.8s;
+        transition: transform 0.6s ease;
     }
 
-    .category-card:hover .cat-img { transform: scale(1.1); }
+    .discover-card:hover img { transform: scale(1.1); }
 
-    .cat-overlay {
+    .discover-overlay {
         position: absolute;
         inset: 0;
-        background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 60%);
-        padding: 3rem;
+        background: linear-gradient(to top, rgba(62,39,35,0.9), transparent);
         display: flex;
         flex-direction: column;
         justify-content: flex-end;
+        padding: 2.5rem;
         color: #fff;
     }
 
-    .cat-overlay h3 {
+    .discover-overlay h3 {
         font-family: 'Playfair Display', serif;
-        font-size: 2.5rem;
-        font-weight: 700;
+        font-size: 1.8rem;
         margin-bottom: 0.5rem;
     }
 
-    .cat-overlay p {
-        opacity: 0.8;
-        font-size: 0.9rem;
-        letter-spacing: 1px;
+    /* Mobile Adaptations */
+    @media (max-width: 992px) {
+        .hero-banner { height: 40vh; margin-top: -60px; }
+        .hero-overlay { padding: 0 1.5rem; }
+        .action-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+        .status-layout { grid-template-columns: 1fr; }
+        .dash-container { padding: 0 1.5rem; }
+        .status-main { padding: 2rem; }
     }
 
-    .dashLocation {
-        background: #fff;
-        border-radius: 40px;
-        box-shadow: 0 15px 45px rgba(0,0,0,0.05);
-        overflow: hidden;
-        display: grid;
-        grid-template-columns: 400px 1fr;
-    }
-
-    .dashLocInfo { padding: 4rem; }
-    .dashLocRow { display: flex; gap: 1.5rem; margin-top: 2rem; }
-    .locIcon { width: 44px; height: 44px; border-radius: 12px; background: #fdfaf8; display: flex; align-items: center; justify-content: center; color: var(--accent-gold); flex-shrink: 0; }
-
-    @media (max-width: 900px) {
-        .dashHero { height: 60vh; margin-top: -60px; }
-        .dashWrap { margin-top: -40px; padding: 0 1.5rem; }
-        .dashStats { grid-template-columns: 1fr; gap: 1.5rem; }
-        .dashStat { padding: 2rem; }
-        .category-grid { grid-template-columns: 1fr; padding: 0 1.5rem; }
-        .category-card { height: 320px; border-radius: 30px; }
-        .cat-overlay { padding: 2rem; }
-        .cat-overlay h3 { font-size: 1.8rem; }
-        .dashLocation { grid-template-columns: 1fr; }
-        .dashLocInfo { padding: 2.5rem; }
+    @media (max-width: 600px) {
+        .action-card { padding: 1.5rem; }
+        .action-card i { font-size: 1.5rem; }
+        .discover-grid { grid-template-columns: 1fr; }
     }
 </style>
 
-<main>
-    <section class="dashHero">
-        <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=2070&auto=format&fit=crop" alt="Le Maison Ambiance">
-        <div class="dashHero-content">
-            <span class="greeting">Welcome back, {{ current_user.first_name }}</span>
-            <h1>Curating Moments,<br>Crafting Flavors.</h1>
-            <div class="d-flex flex-wrap justify-content-center gap-3">
-                <a href="{{ url_for('main.menu_page') }}" class="btn btn-light rounded-pill px-5 py-3 fw-bold shadow-lg">Explore Menu</a>
-                <a href="{{ url_for('main.reserve') }}" class="btn btn-outline-light rounded-pill px-5 py-3 fw-bold">Book a Table</a>
+<div class="hero-banner">
+    <img src="https://images.unsplash.com/photo-1544145945-f904253db0ad?q=80&w=2070&auto=format&fit=crop" alt="Coffee Interior">
+    <div class="hero-overlay">
+        <span>The Art of Coffee</span>
+        <h1>Brewing Moments<br>Discover Flavors.</h1>
+        <p>Your sanctuary for premium blends and cozy conversations. Welcome back to Le Maison.</p>
+    </div>
+</div>
+
+<div class="dash-container">
+    <!-- Quick Action Grid -->
+    <div class="action-grid">
+        <a href="{{ url_for('main.menu_page') }}" class="action-card">
+            <i class="fas fa-utensils"></i>
+            <span>Order Menu</span>
+        </a>
+        <a href="{{ url_for('main.reserve') }}" class="action-card">
+            <i class="fas fa-calendar-plus"></i>
+            <span>Reserve Table</span>
+        </a>
+        <a href="{{ url_for('main.my_orders') }}" class="action-card">
+            <i class="fas fa-shopping-bag"></i>
+            <span>Order History</span>
+        </a>
+        <a href="{{ url_for('main.profile') }}" class="action-card">
+            <i class="fas fa-user-gear"></i>
+            <span>Account</span>
+        </a>
+    </div>
+
+    <!-- Status & mini stats -->
+    <div class="status-layout">
+        <div class="status-main">
+            <div class="status-header">
+                <h2>Your Journey</h2>
+                <a href="{{ url_for('main.reserve') }}" class="text-decoration-none text-muted small fw-bold">VIEW ALL <i class="fas fa-arrow-right ms-1"></i></a>
+            </div>
+
+            {% if upcoming %}
+                {% for res in upcoming[:2] %}
+                <div class="status-item">
+                    <div class="status-icon"><i class="fas fa-calendar-alt"></i></div>
+                    <div class="flex-grow-1">
+                        <p class="text-uppercase small fw-bold text-muted mb-1">Upcoming Reservation</p>
+                        <h6 class="fw-bold mb-0">{{ res.date.strftime('%B %d, %Y') }} at {{ res.timeslot }}</h6>
+                        <small class="text-muted">{{ res.reservation_type|title }} · {{ res.guests }} Guests</small>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge rounded-pill px-3 py-2 bg-success bg-opacity-10 text-success fw-bold">{{ res.status|upper }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="text-center py-4 border rounded-4 border-dashed bg-light">
+                    <i class="fas fa-calendar-xmark text-muted mb-3 fa-2x"></i>
+                    <p class="text-muted mb-0">No active reservations found.</p>
+                    <a href="{{ url_for('main.reserve') }}" class="small fw-bold">Plan your next visit</a>
+                </div>
+            {% endif %}
+
+            <div class="mt-4 pt-2">
+                <div class="row g-3">
+                    <div class="col-6 col-md-3">
+                        <div class="p-3 border rounded-4 text-center bg-white">
+                            <i class="fas fa-ticket text-warning mb-2"></i>
+                            <div class="small fw-bold">Rewards</div>
+                            <small class="text-muted">Bronze</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-3 border rounded-4 text-center bg-white">
+                            <i class="fas fa-heart text-danger mb-2"></i>
+                            <div class="small fw-bold">Favorites</div>
+                            <small class="text-muted">12 Items</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-3 border rounded-4 text-center bg-white">
+                            <i class="fas fa-star text-info mb-2"></i>
+                            <div class="small fw-bold">Points</div>
+                            <small class="text-muted">840 pts</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-3 border rounded-4 text-center bg-white">
+                            <i class="fas fa-envelope text-primary mb-2"></i>
+                            <div class="small fw-bold">Inbox</div>
+                            <small class="text-muted">2 New</small>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-    </section>
 
-    <div class="dashWrap">
-        <div class="dashStats">
-            <div class="dashStat stat-bookings">
-                <i class="fas fa-calendar-check stat-decoration"></i>
-                <h3>{{ upcoming|length }}</h3>
-                <p>Upcoming Bookings</p>
-            </div>
-            <div class="dashStat stat-chapters">
-                <i class="fas fa-book-open stat-decoration"></i>
+        <div class="sidebar-stats">
+            <div class="stat-mini">
                 <h3>{{ total_visits }}</h3>
                 <p>Culinary Chapters</p>
+            </div>
+            <div class="stat-mini" style="background: var(--rich-caramel);">
+                <h3>{{ upcoming|length }}</h3>
+                <p>Pending Bookings</p>
+            </div>
+            <div class="stat-mini" style="background: #fff; border: 1px solid rgba(141, 110, 110, 0.1);">
+                <i class="fas fa-clock mb-3 fa-2x" style="color: var(--rich-caramel);"></i>
+                <div class="text-dark small fw-bold mb-1">Open Today</div>
+                <div class="text-muted small">8:00 AM - 10:00 PM</div>
             </div>
         </div>
     </div>
 
-    <!-- Categories Section -->
-    <section class="category-section">
-        <div class="section-title">
-            <p class="text-uppercase letter-spacing-2 fw-bold text-muted small mb-2">Taste Our World</p>
-            <h2>Signature Categories</h2>
+    <!-- Discover More -->
+    <div class="discover-section">
+        <div class="d-flex justify-content-between align-items-end mb-4">
+            <div>
+                <p class="text-uppercase small fw-bold text-muted mb-1">Handpicked Selections</p>
+                <h2 class="font-serif fw-bold m-0" style="color: var(--deep-brown);">Signature Categories</h2>
+            </div>
+            <a href="{{ url_for('main.menu_page') }}" class="btn fw-bold btn-link text-decoration-none">EXPLORE ALL <i class="fas fa-chevron-right ms-2 scale-75"></i></a>
         </div>
-        
-        <div class="category-grid">
-            {% for cat in categories %}
-            <a href="{{ url_for('main.menu_page', category=cat.category) }}" class="category-card">
+
+        <div class="discover-grid">
+            {% for cat in categories[:4] %}
+            <a href="{{ url_for('main.menu_page', category=cat.category) }}" class="discover-card">
                 {% if cat.sample_image %}
-                <img src="{{ cat.sample_image }}" alt="{{ cat.category }}" class="cat-img">
+                <img src="{{ cat.sample_image }}" alt="{{ cat.category }}">
                 {% else %}
-                <div class="cat-img bg-secondary d-flex align-items-center justify-content-center"><i class="fas fa-utensils text-white-50 fa-3x"></i></div>
+                <div class="w-100 h-100 bg-secondary d-flex align-items-center justify-content-center">
+                    <i class="fas fa-mug-saucer text-white-50 fa-3x"></i>
+                </div>
                 {% endif %}
-                <div class="cat-overlay">
-                    <span>Menu / Signature</span>
+                <div class="discover-overlay">
                     <h3>{{ cat.category }}</h3>
-                    <p>Discover our chef's selection</p>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <span class="small fw-bold text-uppercase letter-spacing-1">Explore Selection</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </div>
                 </div>
             </a>
             {% endfor %}
         </div>
-    </section>
+    </div>
 
-    <!-- Location/Info -->
-    <section class="dashWrap">
-        <div class="dashLocation">
-            <div class="dashLocInfo">
-                <h3>Find Us Here</h3>
-                <div class="dashLocRow">
-                    <div class="locIcon"><i class="fas fa-map-marker-alt"></i></div>
+    <!-- Location Integration -->
+    <div class="dash-location border rounded-5 overflow-hidden shadow-sm bg-white p-2">
+        <div class="row g-0">
+            <div class="col-lg-4 p-5">
+                <h3 class="font-serif fw-bold mb-4">Visit Our Sanctuary</h3>
+                <p class="text-muted mb-4">Located in the heart of Pagsanjan, we offer a serene escape for coffee lovers and food enthusiasts alike.</p>
+                
+                <div class="d-flex gap-3 mb-4">
+                    <div class="bg-light p-3 rounded-4"><i class="fas fa-map-marker-alt text-danger"></i></div>
                     <div>
-                        <h6>Location</h6>
-                        <p>Yelo Lane, General Taino Street<br>Pagsanjan, Laguna, Philippines</p>
+                        <div class="fw-bold small">Our Location</div>
+                        <div class="text-muted small">Yelo Lane, General Taino Street, Laguna</div>
                     </div>
                 </div>
-                <div class="dashLocRow">
-                    <div class="locIcon"><i class="fas fa-clock"></i></div>
-                    <div>
-                        <h6>Hours</h6>
-                        <p>Daily · 8:00 AM - 10:00 PM</p>
-                    </div>
-                </div>
+
+                <a href="https://maps.google.com" target="_blank" class="btn btn-dark w-100 rounded-pill py-2 fw-bold">Get Directions</a>
             </div>
-            <div style="min-height: 380px;">
+            <div class="col-lg-8" style="min-height: 400px;">
                 <iframe
                     src="https://maps.google.com/maps?q=Le%20Maison%20de%20Yelo%20Lane,%20General%20Taino%20Street,%20Pagsanjan,%20Laguna,%20Philippines&t=&z=16&ie=UTF8&iwloc=&output=embed"
                     width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"
                     referrerpolicy="no-referrer-when-downgrade"></iframe>
             </div>
         </div>
-    </section>
-</main>
+    </div>
+</div>
 {% endblock %}
