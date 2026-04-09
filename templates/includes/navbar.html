@@ -192,7 +192,7 @@
 
             <li class="nav-item">
                 <a href="{{ url_for('main.index') }}" class="btn navLink">
-                    <i class="fas fa-home me-1"></i> Dashboard
+                    <i class="fas fa-home me-1"></i> Home
                 </a>
             </li>
             <li class="nav-item">
@@ -228,7 +228,7 @@
                         <div class="fw-bold" style="font-size: 0.95rem;">{{ current_user.first_name }} {{ current_user.last_name }}</div>
                         <small style="color: var(--text-muted); font-size: 0.78rem;">{{ current_user.email }}</small>
                     </li>
-                    <li><a class="dropdown-item" href="{{ url_for('main.index') }}"><i class="fas fa-home me-2" style="color: var(--text-muted);"></i>Dashboard</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('main.index') }}"><i class="fas fa-home me-2" style="color: var(--text-muted);"></i>Home</a></li>
                     <li><a class="dropdown-item" href="{{ url_for('main.my_orders') }}"><i class="fas fa-shopping-bag me-2" style="color: var(--text-muted);"></i>My Orders</a></li>
                     <li><a class="dropdown-item" href="{{ url_for('main.profile') }}"><i class="fas fa-user-edit me-2" style="color: var(--text-muted);"></i>Edit Profile</a></li>
                     <li><hr class="dropdown-divider my-1"></li>
@@ -311,7 +311,7 @@
         <li><a href="{{ url_for('main.reserve') }}"><i class="fas fa-calendar-plus"></i> <span class="nav-text">Reserve</span></a></li>
 
         {% if current_user.is_authenticated %}
-        <li><a href="{{ url_for('main.index') }}"><i class="fas fa-home"></i> <span class="nav-text">Dashboard</span></a></li>
+        <li><a href="{{ url_for('main.index') }}"><i class="fas fa-home"></i> <span class="nav-text">Home</span></a></li>
         <li><a href="{{ url_for('main.my_orders') }}"><i class="fas fa-shopping-bag"></i> <span class="nav-text">Orders</span></a></li>
         <li><a href="{{ url_for('main.view_cart') }}"><i class="fas fa-shopping-cart"></i> <span class="nav-text">Cart</span></a></li>
         <li><a href="{{ url_for('main.profile') }}"><i class="fas fa-user-edit"></i> <span class="nav-text">Profile</span></a></li>
