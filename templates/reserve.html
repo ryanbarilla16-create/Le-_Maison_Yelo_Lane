@@ -1,453 +1,560 @@
 {% extends "layouts/base.html" %}
 
-{% block title %}Reserve a Table — Le Maison{% endblock %}
+{% block title %}Book a Table | Le Maison{% endblock %}
 
 {% block content %}
 <style>
-    .resPage {
-        max-width: 720px;
-        margin: 6rem auto 3rem;
+    :root {
+        --res-primary: #5D4037;
+        --res-accent: #8D6E63;
+        --glass-white: rgba(255, 255, 255, 0.95);
+    }
+
+    .reserve-page {
+        max-width: 1200px;
+        margin: 5rem auto 5rem;
         padding: 0 1.5rem;
     }
 
-    .resCard {
-        background: #fff;
-        border-radius: 24px;
-        border: 1px solid var(--border-color);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
-        overflow: hidden;
+    /* Step Indicator */
+    .step-track {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 3rem;
+        position: relative;
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
     }
 
-    .resHeader {
-        background: linear-gradient(135deg, rgba(93, 64, 55, 0.04), rgba(212, 168, 98, 0.06));
-        padding: 2.5rem 2.5rem 1.5rem;
+    .step-track::before {
+        content: '';
+        position: absolute;
+        top: 24px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: #e0e0e0;
+        z-index: 1;
+    }
+
+    .step-node {
+        position: relative;
+        z-index: 2;
         text-align: center;
+        width: 100px;
     }
 
-    .resHeader h2 {
-        font-family: 'Playfair Display', 'Georgia', serif;
-        font-weight: 700;
-        font-size: 2rem;
-        margin-bottom: 0.5rem;
-        background: linear-gradient(135deg, #5D4037, #D4A862);
-        -webkit-background-clip: text;
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-
-    .resHeader p {
-        color: var(--text-muted);
-        font-size: 0.92rem;
-        margin: 0;
-    }
-
-    .resPolicies {
-        margin: 0 2rem;
-        padding: 1.5rem;
-        background: rgba(93, 64, 55, 0.03);
-        border-radius: 16px;
-        border: 1px solid rgba(93, 64, 55, 0.06);
-    }
-
-    .resPolicies h6 {
-        font-family: 'Playfair Display', serif;
-        font-weight: 700;
-        font-size: 0.95rem;
-        color: var(--primary-color);
-        margin-bottom: 1rem;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .resPolicies .polGrid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1rem;
-    }
-
-    .resPolicies .polItem {
-        font-size: 0.82rem;
-        color: var(--text-muted);
-    }
-
-    .resPolicies .polItem strong {
-        color: var(--text-main);
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        margin-bottom: 0.3rem;
-        font-size: 0.85rem;
-    }
-
-    .resPolicies .polItem strong i {
-        color: #D4A862;
-        font-size: 0.8rem;
-    }
-
-    .resPolicies .polItem ul {
-        padding-left: 1.25rem;
-        margin: 0.3rem 0 0;
-    }
-
-    .resPolicies .polItem ul li {
-        margin-bottom: 0.2rem;
-    }
-
-    .resPolicies .polFull {
-        grid-column: 1 / -1;
-        border-top: 1px solid rgba(93, 64, 55, 0.08);
-        padding-top: 0.75rem;
-        margin-top: 0.25rem;
-    }
-
-    .resForm {
-        padding: 2rem 2.5rem 2.5rem;
-    }
-
-    .resRow {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1rem;
-        margin-bottom: 1.25rem;
-    }
-
-    .resField {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .resField label {
-        font-weight: 700;
-        font-size: 0.85rem;
-        color: var(--text-muted);
-        margin-bottom: 0.5rem;
-    }
-
-    .resField input,
-    .resField select,
-    .resField textarea {
-        border: 1.5px solid rgba(93, 64, 55, 0.12);
-        border-radius: 12px;
-        padding: 0.7rem 1rem;
-        font-size: 0.9rem;
-        transition: all 0.3s;
+    .node-circle {
+        width: 48px;
+        height: 48px;
         background: #fff;
-        color: var(--text-main);
-        font-family: 'Inter', sans-serif;
-        appearance: none;
-        -webkit-appearance: none;
-    }
-
-    .resField input:focus,
-    .resField select:focus,
-    .resField textarea:focus {
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 3px rgba(93, 64, 55, 0.08);
-        outline: none;
-    }
-
-    .resField select {
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%235D4037' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: right 1rem center;
-        background-size: 12px;
-        padding-right: 2.5rem;
-    }
-
-    .resSubmit {
-        background: linear-gradient(135deg, #5D4037, #795548);
-        color: #fff;
+        border: 2px solid #e0e0e0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 10px;
         font-weight: 700;
-        border: none;
-        border-radius: 50px;
-        padding: 0.85rem 2rem;
-        width: 100%;
-        font-size: 1rem;
-        cursor: pointer;
+        color: #999;
         transition: all 0.3s;
-        box-shadow: 0 6px 20px rgba(93, 64, 55, 0.2);
-        letter-spacing: 0.5px;
-        margin-top: 0.5rem;
     }
 
-    .resSubmit:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 30px rgba(93, 64, 55, 0.3);
+    .step-node.active .node-circle {
+        background: var(--res-primary);
+        color: #fff;
+        border-color: var(--res-primary);
+        box-shadow: 0 0 15px rgba(93, 64, 55, 0.3);
     }
 
-    @media(max-width: 600px) {
-        .resRow {
-            grid-template-columns: 1fr;
-        }
+    .step-node.completed .node-circle {
+        background: #4CAF50;
+        border-color: #4CAF50;
+        color: #fff;
+    }
 
-        .resPolicies .polGrid {
-            grid-template-columns: 1fr;
-        }
+    .node-label {
+        font-size: 0.75rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        color: #999;
+        letter-spacing: 1px;
+    }
 
-        .resForm {
-            padding: 1.5rem;
-        }
+    .step-node.active .node-label { color: var(--res-primary); }
 
-        .resHeader {
-            padding: 2rem 1.5rem 1.25rem;
-        }
+    /* Form Sections */
+    .reserve-form-step {
+        display: none;
+        animation: fadeIn 0.5s ease-out;
+    }
 
-        .resPolicies {
-            margin: 0 1rem;
-        }
+    .reserve-form-step.active { display: block; }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .glass-card {
+        background: var(--glass-white);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(141, 110, 99, 0.15);
+        border-radius: 30px;
+        padding: 3rem;
+        box-shadow: 0 15px 45px rgba(0,0,0,0.06);
+    }
+
+    /* Step 2: Menu Grid */
+    .menu-selection-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 1.5rem;
+        max-height: 70vh;
+        overflow-y: auto;
+        padding: 10px;
+        padding-right: 15px;
+    }
+
+    .menu-selection-grid::-webkit-scrollbar { width: 4px; }
+    .menu-selection-grid::-webkit-scrollbar-thumb { background: var(--res-accent); border-radius: 10px; }
+
+    .menu-item-card {
+        background: #fff;
+        border-radius: 20px;
+        overflow: hidden;
+        border: 1px solid #f0f0f0;
+        transition: transform 0.2s;
+    }
+
+    .menu-item-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+
+    .item-thumb { width: 100%; height: 140px; object-fit: cover; }
+
+    .item-body { padding: 1rem; }
+
+    .item-name { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.25rem; color: var(--res-primary); }
+
+    .item-price { font-weight: 800; color: var(--res-accent); font-size: 0.9rem; margin-bottom: 0.75rem; }
+
+    /* Cart Sidebar / Drawer */
+    .selection-cart {
+        background: #fdfaf8;
+        border-radius: 24px;
+        padding: 2rem;
+        height: 100%;
+        border: 1px solid var(--glass-border);
+    }
+
+    .order-list-scroll {
+        max-height: 400px;
+        overflow-y: auto;
+        margin: 1.5rem 0;
+        padding-right: 10px;
+    }
+
+    .order-list-scroll::-webkit-scrollbar { width: 3px; }
+    .order-list-scroll::-webkit-scrollbar-thumb { background: var(--res-accent); }
+
+    .cart-item-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px dashed rgba(0,0,0,0.05);
+    }
+
+    /* Qty Control In Grid */
+    .grid-qty {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #f8f8f8;
+        border-radius: 10px;
+        padding: 4px;
+    }
+
+    .btn-qty {
+        width: 28px; height: 28px;
+        border-radius: 8px;
+        border: none;
+        background: #fff;
+        font-size: 0.8rem;
+        transition: all 0.2s;
+    }
+
+    .btn-qty:hover { background: var(--res-primary); color: #fff; }
+
+    /* Layout override for Step 2 */
+    .step2-layout {
+        display: grid;
+        grid-template-columns: 1fr 380px;
+        gap: 2rem;
+    }
+
+    @media (max-width: 992px) {
+        .step2-layout { grid-template-columns: 1fr; }
+        .glass-card { padding: 2rem; }
     }
 </style>
 
-<div class="resPage">
-    <div class="resCard">
-        <div class="resHeader">
-            <h2><i class="fas fa-calendar-plus"
-                    style="font-size: 1.6rem; -webkit-text-fill-color: var(--primary-color);"></i> Book a Table</h2>
-            <p>Experience fine dining. Reserve your spot today.</p>
+<div class="reserve-page">
+    <div class="step-track">
+        <div class="step-node active" id="node1">
+            <div class="node-circle">1</div>
+            <div class="node-label">General</div>
         </div>
-
-        <!-- Enhanced Reservation Policies Section -->
-        <div class="resPolicies"
-            style="background: #fff; border: 1.5px solid rgba(139, 69, 19, 0.08); padding: 1.8rem; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.02); margin: 0 2rem 1.5rem;">
-            <div class="d-flex align-items-center gap-2 mb-4">
-                <div
-                    style="background: #8B4513; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                    <i class="fas fa-info-circle text-white" style="font-size: 0.9rem;"></i>
-                </div>
-                <h5 class="mb-0 fw-bold"
-                    style="font-family: 'Playfair Display', serif; color: #3E2723; font-size: 1.15rem;">Reservation
-                    Guide</h5>
-            </div>
-
-            <div class="row g-4">
-                <!-- Lead Time & Hours -->
-                <div class="col-md-6">
-                    <div class="d-flex gap-3">
-                        <div style="color: #D4A862; font-size: 1.2rem; min-width: 24px;"><i
-                                class="fas fa-calendar-check"></i></div>
-                        <div>
-                            <h6 class="fw-bold mb-1" style="font-size: 0.88rem; color: #5D4037;">Booking Schedule</h6>
-                            <p class="mb-0 text-muted" style="font-size: 0.8rem; line-height: 1.4;">
-                                <span id="advance-text" class="fw-bold" style="color: #8B4513;">Same day to 2
-                                    months</span> in advance.<br>
-                                Slots available from <span class="fw-bold" style="color: #8B4513;">11:30 AM to 8:30
-                                    PM</span>.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Capacity -->
-                <div class="col-md-6">
-                    <div class="d-flex gap-3">
-                        <div style="color: #D4A862; font-size: 1.2rem; min-width: 24px;"><i class="fas fa-users"></i>
-                        </div>
-                        <div>
-                            <h6 class="fw-bold mb-1" style="font-size: 0.88rem; color: #5D4037;">Guest Capacity</h6>
-                            <p class="mb-0 text-muted" style="font-size: 0.8rem; line-height: 1.4;">
-                                Accommodates up to <span id="max-guest-text" class="fw-bold"
-                                    style="color: #8B4513;">20</span> guests per booking.<br>
-                                <span style="font-size: 0.72rem;">*Subject to real-time seat availability checks.</span>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Approval Status -->
-                <div class="col-12 mt-3 pt-3" style="border-top: 1px dashed rgba(139, 69, 19, 0.15);">
-                    <div class="d-flex gap-3 align-items-center">
-                        <div style="color: #D4A862; font-size: 1.2rem; min-width: 24px;"><i
-                                class="fas fa-shield-alt"></i></div>
-                        <div
-                            style="background: rgba(212,168,98,0.06); padding: 10px 15px; border-radius: 12px; border: 1px solid rgba(212,168,98,0.1); width: 100%;">
-                            <p class="mb-0" style="font-size: 0.8rem; line-height: 1.4; color: #5D4037;">
-                                <i class="fas fa-clock-rotate-left me-2" style="font-size: 0.75rem;"></i>
-                                All bookings are initially tagged as <strong
-                                    style="color: #A0522D; text-transform: uppercase; font-size: 0.75rem; background: #fff; padding: 2px 6px; border-radius: 4px; border: 1px solid #A0522D;">Pending</strong>.
-                                Our team will review and approve your request shortly.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div class="step-node" id="node2">
+            <div class="node-circle">2</div>
+            <div class="node-label">Menu</div>
         </div>
-
-        <form method="POST" action="{{ url_for('main.reserve') }}" class="resForm">
-            <div class="resRow">
-                <div class="resField">
-                    <label for="booking_type">Booking Type</label>
-                    <select id="booking_type" name="booking_type" onchange="updateBookingRules()" required>
-                        <option value="REGULAR" selected>Standard Booking</option>
-                        <option value="EXCLUSIVE">Exclusive (Rent Whole Restaurant)</option>
-                    </select>
-                </div>
-                <div class="resField">
-                    <label for="guest_count">Total Guests & Seating Preference</label>
-                    <input type="number" id="guest_count" name="guest_count" min="1" max="50" step="1" required
-                        placeholder="Total number of guests">
-                    <div id="guestHint"
-                        style="background: rgba(139, 69, 19, 0.05); border: 1px solid rgba(139, 69, 19, 0.1); border-radius: 8px; padding: 10px; margin-top: 0.5rem; font-size: 0.78rem; color: #5D4037; line-height: 1.5;">
-                        <i class="fas fa-chair me-2" style="color: #D4A862;"></i><strong>Seating Guide:</strong><br>
-                        • 1-4 Persons: 1 Standard Table<br>
-                        • 5-8 Persons: 2 Combined Tables<br>
-                        • 9+ Persons: Group Banquet Seating
-                    </div>
-                </div>
-            </div>
-
-            <div class="resRow">
-                <div class="resField">
-                    <label for="date">Date</label>
-                    <input type="date" id="date" name="date" required placeholder="Select your preferred date...">
-                </div>
-                <div class="resField">
-                    <label for="time">Time</label>
-                    <select id="time" name="time" required>
-                        <option value="" disabled selected>Select a slot...</option>
-                        <option value="11:30">11:30 AM</option>
-                        <option value="12:00">12:00 PM</option>
-                        <option value="12:30">12:30 PM</option>
-                        <option value="13:00">1:00 PM</option>
-                        <option value="13:30">1:30 PM</option>
-                        <option value="14:00">2:00 PM</option>
-                        <option value="14:30">2:30 PM</option>
-                        <option value="15:00">3:00 PM</option>
-                        <option value="15:30">3:30 PM</option>
-                        <option value="16:00">4:00 PM</option>
-                        <option value="16:30">4:30 PM</option>
-                        <option value="17:00">5:00 PM</option>
-                        <option value="17:30">5:30 PM</option>
-                        <option value="18:00">6:00 PM</option>
-                        <option value="18:30">6:30 PM</option>
-                        <option value="19:00">7:00 PM</option>
-                        <option value="19:30">7:30 PM</option>
-                        <option value="20:00">8:00 PM</option>
-                        <option value="20:30">8:30 PM</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="resRow">
-                <div class="resField">
-                    <label for="duration">Duration</label>
-                    <select id="duration" name="duration" required>
-                        <option value="1">1 Hour</option>
-                        <option value="2" selected>2 Hours (Standard)</option>
-                        <option value="3">3 Hours</option>
-                        <option value="4">4 Hours</option>
-                        <option value="5">5 Hours</option>
-                        <option value="8">8 Hours (Full Day)</option>
-                    </select>
-                </div>
-                <div class="resField">
-                    <label for="occasion">Occasion <span
-                            style="font-weight: 400; color: var(--text-muted); font-size: 0.75rem;">(Optional)</span></label>
-                    <input type="text" id="occasion" name="occasion" maxlength="50"
-                        placeholder="e.g. Birthday, Anniversary">
-                </div>
-            </div>
-
-            <button type="submit" class="resSubmit"><i class="fas fa-calendar-check me-2"></i>Submit
-                Reservation</button>
-        </form>
+        <div class="step-node" id="node3">
+            <div class="node-circle">3</div>
+            <div class="node-label">Payment</div>
+        </div>
     </div>
+
+    <!-- MAIN FORM -->
+    <form action="{{ url_for('main.reserve') }}" method="POST" id="reservationForm">
+        
+        <!-- STEP 1: GENERAL INFO -->
+        <div class="reserve-form-step active" id="step1">
+            <div class="glass-card">
+                <div class="text-center mb-5">
+                    <h2 class="font-serif fw-bold" style="color: var(--res-primary);">Reservation Details</h2>
+                    <p class="text-muted">Let's start with the basics of your visit.</p>
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <label class="fw-bold small text-uppercase mb-2 opacity-50">Booking Type</label>
+                        <div class="d-flex gap-3">
+                            <input type="radio" class="btn-check" name="booking_type" id="type_standard" value="REGULAR" checked onchange="handleTypeChange()">
+                            <label class="btn btn-outline-dark rounded-4 py-3 border-2 flex-grow-1" for="type_standard">
+                                <i class="fas fa-user-friends d-block mb-1"></i> Standard
+                            </label>
+                            
+                            <input type="radio" class="btn-check" name="booking_type" id="type_exclusive" value="EXCLUSIVE" onchange="handleTypeChange()">
+                            <label class="btn btn-outline-dark rounded-4 py-3 border-2 flex-grow-1" for="type_exclusive">
+                                <i class="fas fa-crown d-block mb-1"></i> Exclusive
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="fw-bold small text-uppercase mb-2 opacity-50">Guest Count</label>
+                        <input type="number" class="form-control rounded-4 py-3 border-2" id="guest_count" name="guest_count" min="1" max="50" required placeholder="30-40 for Exclusive">
+                        <div id="paxHint" class="small mt-2 text-primary fw-bold"></div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="fw-bold small text-uppercase mb-2 opacity-50">Reserve Date</label>
+                        <input type="date" class="form-control rounded-4 py-3 border-2" id="date" name="date" required onchange="handleDateChange()">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="fw-bold small text-uppercase mb-2 opacity-50">Preferred Time</label>
+                        <select class="form-select rounded-4 py-3 border-2" id="time" name="time" required>
+                            <option value="11:30">11:30 AM</option>
+                            <option value="12:00">12:00 PM</option>
+                            <option value="13:00">1:00 PM</option>
+                            <option value="15:00">3:00 PM</option>
+                            <option value="17:00">5:00 PM</option>
+                            <option value="19:00">7:00 PM</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="fw-bold small text-uppercase mb-2 opacity-50">Duration</label>
+                        <select class="form-select rounded-4 py-3 border-2" id="duration" name="duration" required>
+                            <option value="2" selected>2 Hours (Standard)</option>
+                            <option value="4">4 Hours (Event)</option>
+                        </select>
+                    </div>
+
+                    <div id="exclusive_alert" class="col-12" style="display:none;">
+                        <div class="p-4 bg-info bg-opacity-10 border border-info rounded-4 d-flex gap-3">
+                            <i class="fas fa-gem fs-3 text-info"></i>
+                            <div>
+                                <h6 class="fw-bold mb-1">Exclusive Reservation Rules</h6>
+                                <p class="small mb-0 opacity-75">
+                                    • Requirement: **30-40 Guests**.<br>
+                                    • Weekdays: **₱20,000** consumable.<br>
+                                    • Weekends: **₱30,000** consumable.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-end mt-5">
+                    <button type="button" class="btn btn-dark rounded-pill px-5 py-3 fw-bold" onclick="goToStep(2)">Next: Selection <i class="fas fa-chevron-right ms-2"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 2: MENU PICKER -->
+        <div class="reserve-form-step" id="step2">
+            <div class="step2-layout">
+                <div class="glass-card p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4 class="font-serif fw-bold m-0">Our Curated Menu</h4>
+                        <button type="button" class="btn btn-link btn-sm text-muted text-decoration-none" onclick="clearSelection()">Clear Selection</button>
+                    </div>
+                    
+                    <div class="menu-selection-grid">
+                        {% for item in menu_items %}
+                        <div class="menu-item-card">
+                            <img src="{{ item.image_url or url_for('static', filename='images/placeholder.jpg') }}" class="item-thumb">
+                            <div class="item-body">
+                                <div class="item-name">{{ item.name }}</div>
+                                <div class="item-price">₱{{ "%.2f"|format(item.price) }}</div>
+                                <div class="grid-qty">
+                                    <button type="button" class="btn-qty" onclick="updateItem('{{ item.id }}', -1, '{{ item.name }}', {{ item.price }})"><i class="fas fa-minus"></i></button>
+                                    <span class="fw-bold" id="grid-qty-{{ item.id }}">0</span>
+                                    <button type="button" class="btn-qty" onclick="updateItem('{{ item.id }}', 1, '{{ item.name }}', {{ item.price }})"><i class="fas fa-plus"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="selection-cart glass-card">
+                    <h5 class="fw-bold font-serif border-bottom pb-3 mb-0">Consumable Summary</h5>
+                    
+                    <div class="order-list-scroll" id="orderList">
+                        <div class="text-center py-5 opacity-50">
+                            <i class="fas fa-shopping-basket fa-2x mb-3"></i>
+                            <p class="small mb-0">Your selection is empty</p>
+                        </div>
+                    </div>
+
+                    <div class="pt-3 border-top border-dashed">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Selected Total</span>
+                            <span class="fw-bold" id="totalDisplay">₱0.00</span>
+                        </div>
+                        <div id="minSpendBox" class="p-3 rounded-4 bg-light mb-4" style="display:none;">
+                            <div class="d-flex justify-content-between small">
+                                <span id="minSpendTargetLabel">Min spend needed</span>
+                                <span class="fw-bold" id="minSpendTargetVal">₱0.00</span>
+                            </div>
+                            <div class="progress mt-2" style="height: 6px;">
+                                <div class="progress-bar bg-success" id="spendProgress" style="width: 0%;"></div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline-dark rounded-pill flex-grow-1 py-1" onclick="goToStep(1)">Back</button>
+                            <button type="button" class="btn btn-dark rounded-pill flex-grow-2 py-3 fw-bold" id="btnNextTo3" onclick="goToStep(3)">Continue</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 3: PAYMENT & CONFIRMATION -->
+        <div class="reserve-form-step" id="step3">
+            <div class="glass-card m-auto" style="max-width: 600px;">
+                <div class="text-center mb-5">
+                    <div class="bg-success bg-opacity-10 text-success p-3 rounded-circle d-inline-block mb-3">
+                        <i class="fas fa-shield-check fa-2x"></i>
+                    </div>
+                    <h2 class="font-serif fw-bold">Finalize Booking</h2>
+                    <p class="text-muted">Review your reservation details and confirm your visit.</p>
+                </div>
+
+                <div class="bg-white p-4 rounded-4 border mb-4">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="small text-muted text-uppercase mb-1 d-block">Schedule</label>
+                            <div class="fw-bold" id="sum_schedule">---</div>
+                        </div>
+                        <div class="col-6">
+                            <label class="small text-muted text-uppercase mb-1 d-block">Guest Count</label>
+                            <div class="fw-bold" id="sum_guests">---</div>
+                        </div>
+                        <div class="col-12 border-top pt-3 mt-3">
+                            <label class="small text-muted text-uppercase mb-1 d-block">Order Total</label>
+                            <div class="fs-4 fw-bold text-brown" id="sum_total">₱0.00</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="fw-bold small text-uppercase mb-3 d-block opacity-50">Select Payment Method</label>
+                    <div class="form-check p-4 border rounded-4 bg-white mb-3">
+                        <input class="form-check-input" type="radio" name="payment_method" id="pay_gcash" value="GCASH" checked>
+                        <label class="form-check-label d-flex align-items-center gap-3 ps-3" for="pay_gcash">
+                            <i class="fas fa-wallet fs-3 text-primary"></i>
+                            <div>
+                                <div class="fw-bold">Gcash / Online Payment</div>
+                                <div class="small text-muted">A confirmation link will be sent.</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <textarea name="order_payload" id="order_payload_hidden" style="display:none;"></textarea>
+                
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-dark rounded-pill flex-grow-1" onclick="goToStep(2)">Back</button>
+                    <button type="submit" class="btn btn-dark rounded-pill flex-grow-2 py-3 fw-bold">Confirm & Reserve</button>
+                </div>
+            </div>
+        </div>
+    </form>
 </div>
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
-    let fpInstance;
+    let currentStep = 1;
+    let selectedItems = {};
 
-    function initCalendar() {
-        fpInstance = flatpickr("#date", {
-            minDate: "today",
-            dateFormat: "Y-m-d",
-            altInput: true,
-            altFormat: "F j, Y (l)",
-            onChange: function(selectedDates, dateStr, instance) {
-                filterTimeSlots();
-            }
-        });
-    }
-
-    function updateBookingRules() {
-        var type = document.getElementById('booking_type').value;
-        var guestInput = document.getElementById('guest_count');
-        var guestHint = document.getElementById('guestHint');
-        var maxGuestText = document.getElementById('max-guest-text');
-        var advanceText = document.getElementById('advance-text');
-        
-        if (!fpInstance) initCalendar();
-        
-        var today = new Date();
-        var maxDate = new Date();
-        maxDate.setDate(today.getDate() + 60);
-
-        fpInstance.set("maxDate", maxDate);
+    function handleTypeChange() {
+        const type = document.querySelector('input[name="booking_type"]:checked').value;
+        const guestInput = document.getElementById('guest_count');
+        const alertBox = document.getElementById('exclusive_alert');
+        const paxHint = document.getElementById('paxHint');
 
         if (type === 'EXCLUSIVE') {
-            guestInput.max = 50;
-            guestHint.innerText = 'Maximum of 50 guests for exclusive bookings.';
-            maxGuestText.innerText = '50';
-            advanceText.innerText = '3 days to 2 months';
-
-            var minDate = new Date();
-            minDate.setDate(today.getDate() + 3);
-            fpInstance.set('minDate', minDate);
-            
-            if (fpInstance.selectedDates[0] && fpInstance.selectedDates[0] < minDate) {
-                fpInstance.clear();
-            }
+            guestInput.min = 30;
+            guestInput.max = 40;
+            guestInput.value = 30;
+            alertBox.style.display = 'block';
+            paxHint.innerText = 'Exclusive requirement: 30 to 40 guests.';
         } else {
+            guestInput.min = 1;
             guestInput.max = 20;
             if (guestInput.value > 20) guestInput.value = 20;
-            guestHint.innerHTML = '<i class="fas fa-chair me-2" style="color: #D4A862;"></i><strong>Seating Guide:</strong><br>• 1-4 Persons: 1 Standard Table<br>• 5-8 Persons: 2 Combined Tables<br>• 9+ Persons: Group Banquet Seating';
-            maxGuestText.innerText = '20';
-            advanceText.innerText = 'Same day to 2 months';
-
-            fpInstance.set('minDate', "today");
+            alertBox.style.display = 'none';
+            paxHint.innerText = '';
         }
-        filterTimeSlots();
+        updateConsumableCheck();
     }
 
-    function filterTimeSlots() {
-        var timeSelect = document.getElementById('time');
-        var options = timeSelect.options;
-        if(!fpInstance || !fpInstance.selectedDates[0]) return;
+    function handleDateChange() {
+        updateConsumableCheck();
+    }
 
-        var selectedDate = fpInstance.selectedDates[0];
-        var today = new Date();
+    function updateItem(id, delta, name, price) {
+        if (!selectedItems[id]) {
+            selectedItems[id] = { name, price, qty: 0 };
+        }
         
-        var isToday = selectedDate.getDate() === today.getDate() && 
-                      selectedDate.getMonth() === today.getMonth() && 
-                      selectedDate.getFullYear() === today.getFullYear();
+        selectedItems[id].qty += delta;
+        if (selectedItems[id].qty < 0) selectedItems[id].qty = 0;
+        
+        // Update Grid UI
+        document.getElementById('grid-qty-' + id).innerText = selectedItems[id].qty;
+        renderCart();
+    }
 
-        var currHour = today.getHours();
-        var currMin = today.getMinutes();
-        var currTimeStr = (currHour < 10 ? '0' + currHour : currHour) + ':' + (currMin < 10 ? '0' + currMin : currMin);
+    function renderCart() {
+        const list = document.getElementById('orderList');
+        let total = 0;
+        let html = '';
+        
+        Object.entries(selectedItems).forEach(([id, item]) => {
+            if (item.qty > 0) {
+                total += (item.qty * item.price);
+                html += `
+                    <div class="cart-item-row">
+                        <div>
+                            <div class="fw-bold small">${item.name}</div>
+                            <div class="small text-muted">${item.qty} x ₱${item.price.toFixed(2)}</div>
+                        </div>
+                        <div class="fw-bold">₱${(item.qty * item.price).toFixed(2)}</div>
+                    </div>
+                `;
+            }
+        });
 
-        for (var i = 1; i < options.length; i++) {
-            var opt = options[i];
-            if (isToday && opt.value <= currTimeStr) {
-                opt.disabled = true;
-                opt.text = opt.value + " (Unavailable)";
+        list.innerHTML = html || '<div class="text-center py-5 opacity-50"><i class="fas fa-shopping-basket fa-2x mb-3"></i><p class="small mb-0">Your selection is empty</p></div>';
+        document.getElementById('totalDisplay').innerText = '₱' + total.toFixed(2);
+        
+        // Final state for Step 3
+        document.getElementById('sum_total').innerText = '₱' + total.toFixed(2);
+        document.getElementById('order_payload_hidden').value = JSON.stringify(selectedItems);
+        
+        updateConsumableCheck();
+    }
+
+    function updateConsumableCheck() {
+        const type = document.querySelector('input[name="booking_type"]:checked').value;
+        const nextBtn = document.getElementById('btnNextTo3');
+        const minBox = document.getElementById('minSpendBox');
+        
+        if (type === 'EXCLUSIVE') {
+            minBox.style.display = 'block';
+            const dateInput = document.getElementById('date').value;
+            const isWeekend = (new Date(dateInput).getDay() === 0 || new Date(dateInput).getDay() === 6);
+            const target = isWeekend ? 30000 : 20000;
+            
+            document.getElementById('minSpendTargetVal').innerText = '₱' + target.toLocaleString();
+            
+            let currentTotal = 0;
+            Object.values(selectedItems).forEach(i => currentTotal += (i.qty * i.price));
+            
+            const progress = Math.min((currentTotal / target) * 100, 100);
+            document.getElementById('spendProgress').style.width = progress + '%';
+            
+            if (currentTotal < target) {
+                nextBtn.disabled = true;
+                nextBtn.innerText = 'Need ₱' + (target - currentTotal).toLocaleString() + ' more';
             } else {
-                opt.disabled = false;
-                var ampm = parseInt(opt.value.split(':')[0]) >= 12 ? ' PM' : ' AM';
-                var h = parseInt(opt.value.split(':')[0]) % 12 || 12;
-                var m = opt.value.split(':')[1];
-                opt.text = h + ":" + m + ampm;
+                nextBtn.disabled = false;
+                nextBtn.innerText = 'Continue';
+                document.getElementById('spendProgress').className = 'progress-bar bg-success';
+            }
+        } else {
+            minBox.style.display = 'none';
+            nextBtn.disabled = false;
+            nextBtn.innerText = 'Continue';
+        }
+    }
+
+    function clearSelection() {
+        Object.keys(selectedItems).forEach(id => {
+            selectedItems[id].qty = 0;
+            document.getElementById('grid-qty-' + id).innerText = '0';
+        });
+        renderCart();
+    }
+
+    function goToStep(s) {
+        if (s === 2) {
+            // Validation for Step 1
+            if (!document.getElementById('date').value) {
+                alert('Please select a reservation date');
+                return;
             }
         }
         
-        if (timeSelect.selectedIndex > 0 && options[timeSelect.selectedIndex].disabled) {
-            timeSelect.value = '';
+        if (s === 3) {
+            // Summary update
+            const dateText = document.getElementById('date').value;
+            const timeText = document.getElementById('time').options[document.getElementById('time').selectedIndex].text;
+            document.getElementById('sum_schedule').innerText = dateText + ' at ' + timeText;
+            document.getElementById('sum_guests').innerText = document.getElementById('guest_count').value + ' Pax';
         }
+
+        document.querySelectorAll('.reserve-form-step').forEach(el => el.classList.remove('active'));
+        document.getElementById('step' + s).classList.add('active');
+        
+        document.querySelectorAll('.step-node').forEach((node, idx) => {
+            if (idx + 1 === s) node.className = 'step-node active';
+            else if (idx + 1 < s) node.className = 'step-node completed';
+            else node.className = 'step-node';
+        });
+        
+        window.scrollTo(0, 0);
+        currentStep = s;
     }
 
-    document.addEventListener("DOMContentLoaded", function () {
-        updateBookingRules();
+    // Init Logic
+    document.addEventListener('DOMContentLoaded', () => {
+        handleTypeChange();
     });
 </script>
 {% endblock %}

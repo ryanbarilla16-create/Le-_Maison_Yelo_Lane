@@ -1,6 +1,6 @@
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
-from models import db, Reservation
+from models import db, Reservation, MenuItem
 from datetime import datetime, date, time as dtime
 from .. import main_bp
 
@@ -141,4 +141,5 @@ def reserve():
         flash("Reservation submitted successfully and is pending admin approval.", "success")
         return redirect(url_for('main.reserve'))
 
-    return render_template('reserve.html')
+    menu_items = MenuItem.query.filter_by(is_available=True).all()
+    return render_template('reserve.html', menu_items=menu_items)
