@@ -16,4 +16,3 @@ Flask-Talisman
 Flask-SocketIO
 flasgger
 eventlet
-gunicorn

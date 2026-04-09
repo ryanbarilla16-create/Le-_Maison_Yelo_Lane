@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Kitchen Login | Le Maison</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Chill Brown Aesthetic */
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #fdfbf9 0%, #e8dccb 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+
+        .login-glass-card {
+            border-radius: 32px;
+            background: rgba(248, 241, 235, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 25px 50px -12px rgba(139, 90, 43, 0.15);
+            padding: 3.5rem 2.5rem;
+            text-align: center;
+            width: 100%;
+            max-width: 440px;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        .admin-icon {
+            color: #8b634b; /* Primary brown */
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .login-title {
+            font-family: 'Georgia', serif;
+            color: #4a3b32; /* Dark shade brown */
+            font-size: 2.25rem;
+            letter-spacing: -0.5px;
+            margin: 0 0 0.5rem 0;
+            font-weight: 700;
+        }
+
+        .login-subtitle {
+            font-size: 1.05rem;
+            color: #8b634b; /* Primary brown */
+            margin: 0 0 2rem 0;
+        }
+
+        /* Inputs */
+        .input-group {
+            text-align: left;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .form-label-custom {
+            font-size: 0.85rem;
+            color: #5c3a21; /* Dark brown */
+            margin-left: 0.5rem;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .glass-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(139, 99, 75, 0.2);
+            border-radius: 16px;
+            padding: 1rem 1.25rem;
+            font-size: 1rem;
+            color: #4a3b32;
+            box-shadow: inset 0 2px 4px rgba(92, 58, 33, 0.02);
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .password-input {
+            padding-right: 3rem;
+        }
+
+        .glass-input:focus {
+            background: #ffffff;
+            border-color: rgba(139, 99, 75, 0.5);
+            box-shadow: 0 0 0 4px rgba(139, 99, 75, 0.15);
+            outline: none;
+        }
+
+        /* Password Eye Icon */
+        .toggle-password {
+            position: absolute;
+            right: 0.5rem;
+            top: 36px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            z-index: 10;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: background 0.2s ease, color 0.2s ease;
+            color: #8b634b;
+        }
+
+        .toggle-password:hover {
+            background: rgba(139, 99, 75, 0.1);
+            color: #5c3a21;
+        }
+
+        /* Gradient Button */
+        .btn-primary-gradient {
+            width: 100%;
+            background: linear-gradient(135deg, #8b634b 0%, #5c3a21 100%);
+            color: #ffffff;
+            padding: 1rem;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 15px -3px rgba(92, 58, 33, 0.25);
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .btn-primary-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 20px -3px rgba(92, 58, 33, 0.35);
+        }
+
+        .btn-primary-gradient i {
+            margin-right: 0.5rem;
+        }
+
+        /* Back Link */
+        .back-link-container {
+            margin-top: 2rem;
+            font-size: 0.95rem;
+        }
+
+        .back-link {
+            color: #8b634b;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s ease;
+            position: relative;
+        }
+
+        .back-link:hover {
+            color: #5c3a21;
+        }
+
+        .back-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: #8b634b;
+            transform: scaleX(0);
+            transform-origin: right;
+            transition: transform 0.3s ease;
+        }
+
+        .back-link:hover::after {
+            transform: scaleX(1);
+            transform-origin: left;
+        }
+
+        .flash-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #b91c1c;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 1.5rem;
+            padding: 0.8rem;
+        }
+
+        /* Chrome Autofill adjustment */
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover, 
+        input:-webkit-autofill:focus, 
+        input:-webkit-autofill:active{
+            -webkit-box-shadow: 0 0 0 30px #fdfbfa inset !important;
+            -webkit-text-fill-color: #4a3b32 !important;
+            border-radius: 16px;
+            border: 1px solid rgba(139, 99, 75, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="login-glass-card">
+        <i class="fas fa-coffee admin-icon"></i>
+        <h2 class="login-title">Le Maison Kitchen</h2>
+        <p class="login-subtitle">Sign in to the Kitchen Portal</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="flash-message">
+            <i class="fas fa-exclamation-circle" style="margin-right: 5px;"></i> {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('kitchen_portal.kitchen_login') }}">
+            <div class="input-group">
+                <label class="form-label-custom">EMAIL</label>
+                <input type="email" name="email" required placeholder="admin@gmail.com" class="glass-input">
+            </div>
+            
+            <div class="input-group">
+                <label class="form-label-custom">PASSWORD</label>
+                <input type="password" id="admin-password" name="password" required placeholder="••••••••" class="glass-input password-input">
+                <i class="fas fa-eye toggle-password" onclick="toggleAdminPassword()"></i>
+            </div>
+            
+            <button type="submit" class="btn-primary-gradient">
+                <i class="fas fa-lock"></i> Sign In
+            </button>
+        </form>
+        
+        <div class="back-link-container">
+            <a href="{{ url_for('main.index') }}" class="back-link">
+                <i class="fas fa-arrow-left" style="font-size: 0.8rem; margin-right: 4px;"></i> Back to website
+            </a>
+        </div>
+    </div>
+    <script>
+        function toggleAdminPassword() {
+            const pwd = document.getElementById('admin-password');
+            const icon = event.currentTarget;
+            if (pwd.type === 'password') {
+                pwd.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                pwd.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+    </script>
+</body>
+</html>
