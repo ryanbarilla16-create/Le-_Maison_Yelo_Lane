@@ -253,34 +253,78 @@
 
 <div class="collapse d-md-none p-3 fixed-top" id="mobileMenu"
     style="top: 56px; background: rgba(255, 255, 255, 0.98); z-index: 1000; box-shadow: 0 8px 24px rgba(0,0,0,0.08); border-radius: 0 0 20px 20px; backdrop-filter: blur(20px);">
-    <ul class="navbar-nav" style="gap: 4px;">
-        <li class="nav-item py-2"><a class="nav-link fw-bold" href="{{ url_for('main.menu_page') }}"
-                style="color: var(--text-main); font-size: 0.9rem; letter-spacing: 1px;">MENU</a></li>
-        <li class="nav-item py-2"><a class="nav-link fw-bold" href="{{ url_for('main.about_page') }}"
-                style="color: var(--text-main); font-size: 0.9rem; letter-spacing: 1px;">ABOUT</a></li>
-        <li class="nav-item py-2" style="border-bottom: 1px solid var(--border-color);"><a class="nav-link fw-bold" href="{{ url_for('main.reviews_page') }}"
-                style="color: var(--text-main); font-size: 0.9rem; letter-spacing: 1px;">REVIEWS</a></li>
+    <style>
+        .nav-links-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            padding: 0;
+            list-style: none;
+            margin: 0;
+        }
+        .nav-links-container li {
+            text-align: center;
+        }
+        .nav-links-container a, .nav-links-container button {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-color, #5D4037) !important;
+            text-decoration: none !important;
+            padding: 12px 5px;
+            border-radius: 12px;
+            background: rgba(93, 64, 55, 0.05);
+            border: 1px dashed rgba(93, 64, 55, 0.15) !important;
+            transition: all 0.3s ease;
+            height: 100%;
+            width: 100%;
+        }
+        .nav-links-container a i, .nav-links-container button i {
+            font-size: 1.4rem;
+            margin-bottom: 6px;
+        }
+        .nav-links-container .nav-text {
+            font-size: 0.70rem;
+            font-weight: 600;
+            line-height: 1.1;
+        }
+        .nav-links-container a:hover, .nav-links-container button:hover {
+            background: rgba(93, 64, 55, 0.1);
+            transform: translateY(-2px);
+        }
+        .nav-links-container .btn-highlight {
+            background: linear-gradient(135deg, #5D4037, #795548);
+            color: white !important;
+            border: none !important;
+        }
+        .nav-links-container .btn-highlight i, .nav-links-container .btn-highlight .nav-text {
+            color: white !important;
+        }
+    </style>
+    <ul class="nav-links-container active" id="navbar-menu">
+        <li><a href="{{ url_for('main.menu_page') }}"><i class="fas fa-utensils"></i> <span class="nav-text">Menu</span></a></li>
+        <li><a href="{{ url_for('main.about_page') }}"><i class="fas fa-info-circle"></i> <span class="nav-text">About</span></a></li>
+        <li><a href="{{ url_for('main.reviews_page') }}"><i class="fas fa-star"></i> <span class="nav-text">Reviews</span></a></li>
+        <li><a href="{{ url_for('main.reserve') }}"><i class="fas fa-calendar-plus"></i> <span class="nav-text">Reserve</span></a></li>
+
         {% if current_user.is_authenticated %}
-        <li class="nav-item mt-2"><a href="{{ url_for('main.index') }}" class="btn navLink w-100 text-start"
-                style="padding: 0.65rem 1rem !important;"><i class="fas fa-home me-2" style="opacity: 0.5;"></i> Dashboard</a></li>
-        <li class="nav-item"><a href="{{ url_for('main.my_orders') }}" class="btn navLink w-100 text-start"
-                style="padding: 0.65rem 1rem !important;"><i class="fas fa-shopping-bag me-2" style="opacity: 0.5;"></i> My Orders</a></li>
-        <li class="nav-item"><a href="{{ url_for('main.view_cart') }}" class="btn navLink w-100 text-start"
-                style="padding: 0.65rem 1rem !important;"><i class="fas fa-shopping-cart me-2" style="opacity: 0.5;"></i> Cart</a></li>
-        <li class="nav-item"><a href="{{ url_for('main.profile') }}" class="btn navLink w-100 text-start"
-                style="padding: 0.65rem 1rem !important;"><i class="fas fa-user-edit me-2" style="opacity: 0.5;"></i> Edit Profile</a></li>
-        <li class="nav-item mt-2"><a href="{{ url_for('main.reserve') }}" class="btn navCta w-100">
-                <i class="fas fa-calendar-plus me-1"></i> Reserve Table</a></li>
-        <li class="nav-item mt-2"><a href="{{ url_for('main.logout') }}"
-                class="btn w-100" style="background: transparent; color: var(--danger); font-weight: 600; border: 1.5px solid rgba(150,75,75,0.2); border-radius: 50px; font-size: 0.88rem;">
-                <i class="fas fa-sign-out-alt me-1"></i> Sign Out</a></li>
+        <li><a href="{{ url_for('main.index') }}"><i class="fas fa-home"></i> <span class="nav-text">Dashboard</span></a></li>
+        <li><a href="{{ url_for('main.my_orders') }}"><i class="fas fa-shopping-bag"></i> <span class="nav-text">Orders</span></a></li>
+        <li><a href="{{ url_for('main.view_cart') }}"><i class="fas fa-shopping-cart"></i> <span class="nav-text">Cart</span></a></li>
+        <li><a href="{{ url_for('main.profile') }}"><i class="fas fa-user-edit"></i> <span class="nav-text">Profile</span></a></li>
+        <li style="grid-column: span 4;"><a href="{{ url_for('main.logout') }}" style="background: rgba(220, 53, 69, 0.1); color: #dc3545 !important; border: 1px dashed rgba(220, 53, 69, 0.2) !important; flex-direction: row; gap: 10px;"><i class="fas fa-sign-out-alt" style="margin: 0; color: #dc3545;"></i> <span class="nav-text" style="color: #dc3545;">Sign Out</span></a></li>
         {% else %}
-        <li class="nav-item mt-3"><button
-                onclick="$('#mobileMenu').collapse('hide'); $('#termsModal').modal('show'); window.authIntent = 'login';"
-                class="btn navSignIn w-100">Sign in</button></li>
-        <li class="nav-item mt-2"><button
-                onclick="$('#mobileMenu').collapse('hide'); $('#termsModal').modal('show'); window.authIntent = 'signup';"
-                class="btn navJoin w-100">Join Now</button></li>
+        <li style="grid-column: span 2;">
+            <button onclick="$('#mobileMenu').collapse('hide'); $('#termsModal').modal('show'); window.authIntent = 'login';" style="flex-direction: row; gap: 8px;">
+                <i class="fas fa-sign-in-alt" style="margin: 0;"></i> <span class="nav-text">Sign In</span>
+            </button>
+        </li>
+        <li style="grid-column: span 2;">
+            <button onclick="$('#mobileMenu').collapse('hide'); $('#termsModal').modal('show'); window.authIntent = 'signup';" class="btn-highlight" style="flex-direction: row; gap: 8px;">
+                <i class="fas fa-user-plus" style="margin: 0;"></i> <span class="nav-text">Join Now</span>
+            </button>
+        </li>
         {% endif %}
     </ul>
 </div>
