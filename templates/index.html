@@ -22,11 +22,11 @@
         <div
             style="position: absolute; inset: 0; z-index: 1; display: flex; align-items: center; justify-content: flex-start; padding-left: 8%; padding-right: 2rem;">
             <div style="text-align: left; max-width: 650px;">
-                <h1
-                    style="font-family: 'Georgia', serif; font-size: 4.5rem; font-weight: 800; color: #ffffff; letter-spacing: -0.5px; margin-bottom: 1.25rem; line-height: 1.1; text-shadow: 2px 2px 10px rgba(0,0,0,0.6);">
+                <h1 class="hero-title"
+                    style="font-family: 'Georgia', serif; font-size: clamp(2.5rem, 8vw, 4.5rem); font-weight: 800; color: #ffffff; letter-spacing: -0.5px; margin-bottom: 1.25rem; line-height: 1.1; text-shadow: 2px 2px 10px rgba(0,0,0,0.6);">
                     Good food, great company.</h1>
-                <p
-                    style="font-family: 'Inter', sans-serif; font-size: 1.25rem; color: #e0e0e0; font-weight: 400; margin-bottom: 3rem; text-shadow: 1px 1px 5px rgba(0,0,0,0.8); line-height: 1.6; max-width: 550px;">
+                <p class="hero-desc"
+                    style="font-family: 'Inter', sans-serif; font-size: clamp(1rem, 4vw, 1.25rem); color: #e0e0e0; font-weight: 400; margin-bottom: 3rem; text-shadow: 1px 1px 5px rgba(0,0,0,0.8); line-height: 1.6; max-width: 550px;">
                     Discover a thoughtfully crafted menu designed to bring you and your <span
                         style="font-style: italic; color: #d4a862;">famille</span> together.</p>
                 <a href="{{ url_for('main.menu_page') }}"
@@ -50,10 +50,10 @@
         <div class="col-md-6 p-5 text-md-start text-center">
             <p class="text-uppercase fw-bold mb-1" style="color: var(--primary-color); letter-spacing: 2px;">{{
                 site.hero2.title1 }}</p>
-            <h2
-                style="font-family: 'Georgia', serif; font-size: 3.5rem; color: var(--text-main); font-weight: bold; line-height: 1.2;">
+            <h2 class="hero2-title"
+                style="font-family: 'Georgia', serif; font-size: clamp(2rem, 6vw, 3.5rem); color: var(--text-main); font-weight: bold; line-height: 1.2;">
                 {{ site.hero2.title2|replace('\n', '<br>')|safe }}</h2>
-            <p class="mt-4 mb-5 text-muted" style="font-size: 1.1rem; max-width: 450px;">
+            <p class="mt-4 mb-5 text-muted hero2-desc" style="font-size: clamp(0.9rem, 3vw, 1.1rem); max-width: 450px;">
                 {{ site.hero2.description }}
             </p>
             {% if current_user.is_authenticated %}

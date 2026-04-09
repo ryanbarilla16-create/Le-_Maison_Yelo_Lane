@@ -4,16 +4,16 @@
 
 {% block content %}
 <!-- Beautiful Hero Section for the Menu -->
-<div class="position-relative w-100 shadow-lg"
-    style="height: 400px; border-radius: 20px; overflow: hidden; margin-bottom: 4rem;">
+<div class="position-relative w-100 shadow-lg menu-hero"
+    style="height: clamp(250px, 40vh, 400px); border-radius: 20px; overflow: hidden; margin-bottom: 2rem;">
     <img src="https://images.unsplash.com/photo-1559925393-8be0ec4767c8?q=80&w=2071&auto=format&fit=crop"
         class="w-100 h-100" style="object-fit: cover; filter: brightness(0.6);" alt="Menu Banner">
     <div class="position-absolute top-50 start-50 translate-middle text-center w-100 px-3">
         <h1
-            style="font-family: 'Georgia', serif; font-size: 4.5rem; color: #fff; font-weight: bold; text-shadow: 2px 2px 8px rgba(0,0,0,0.4); margin-bottom: 0.5rem;">
+            style="font-family: 'Georgia', serif; font-size: clamp(2.5rem, 10vw, 4.5rem); color: #fff; font-weight: bold; text-shadow: 2px 2px 8px rgba(0,0,0,0.4); margin-bottom: 0.5rem;">
             Our Menu</h1>
-        <p class="fs-4 mt-2"
-            style="color: rgba(255,255,255,0.9); font-weight: 300; letter-spacing: 2px; text-shadow: 1px 1px 4px rgba(0,0,0,0.4);">
+        <p class="mt-2 menu-tagline"
+            style="font-size: clamp(1rem, 4vw, 1.5rem); color: rgba(255,255,255,0.9); font-weight: 300; letter-spacing: 2px; text-shadow: 1px 1px 4px rgba(0,0,0,0.4);">
             Crafted with passion, served with excellence.</p>
     </div>
 </div>
@@ -39,8 +39,8 @@
             Menu Categories
         </h2>
 
-        <div
-            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 2rem; align-items: stretch;">
+        <div class="menu-cat-grid"
+            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.5rem; align-items: stretch;">
             {% for cat_name, info in categories_data.items() %}
             <div class="card border-0 shadow-sm category-card d-flex flex-column"
                 style="border-radius: 20px; overflow: hidden; cursor: pointer; transition: all 0.3s ease; height: 100%;"

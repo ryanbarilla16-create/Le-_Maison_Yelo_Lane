@@ -311,7 +311,6 @@
         <li><a href="{{ url_for('main.reserve') }}"><i class="fas fa-calendar-plus"></i> <span class="nav-text">Reserve</span></a></li>
 
         {% if current_user.is_authenticated %}
-        <li><a href="{{ url_for('main.index') }}"><i class="fas fa-home"></i> <span class="nav-text">Home</span></a></li>
         <li><a href="{{ url_for('main.my_orders') }}"><i class="fas fa-shopping-bag"></i> <span class="nav-text">Orders</span></a></li>
         <li><a href="{{ url_for('main.view_cart') }}"><i class="fas fa-shopping-cart"></i> <span class="nav-text">Cart</span></a></li>
         <li><a href="{{ url_for('main.profile') }}"><i class="fas fa-user-edit"></i> <span class="nav-text">Profile</span></a></li>
