@@ -3,38 +3,284 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kitchen Dashboard - Le Maison</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <title>Kitchen Dashboard — Le Maison</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        :root { --primary: #e65100; --bg: #fff3e0; --glass: rgba(255, 255, 255, 0.7); }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; }
-        body { background: var(--bg); color: #333; }
-        .sidebar { width: 250px; background: var(--glass); backdrop-filter: blur(10px); height: 100vh; position: fixed; padding: 20px; border-right: 1px solid rgba(255,255,255,0.8); }
-        .sidebar h2 { color: var(--primary); margin-bottom: 30px; }
-        .nav-link { display: block; padding: 15px; margin-bottom: 10px; border-radius: 10px; color: #555; text-decoration: none; transition: 0.3s; }
-        .nav-link:hover, .nav-link.active { background: white; color: var(--primary); box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .main { margin-left: 250px; padding: 40px; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
-        .card { background: var(--glass); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.8); border-radius: 20px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 20px;}
+        :root {
+            --primary: #BF360C;
+            --primary-light: #E64A19;
+            --accent: #FFCC80;
+            --sidebar-w: 260px;
+            --bg: #FBF0E9;
+            --card: rgba(255,255,255,0.72);
+            --card-border: rgba(255,255,255,0.9);
+            --text: #3E1F00;
+            --muted: #A1887F;
+            --success: #2e7d32;
+            --danger: #c62828;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text); display:flex; min-height:100vh; }
+
+        .sidebar {
+            width:var(--sidebar-w); background:linear-gradient(160deg, #3E1F00 0%, #BF360C 60%, #D84315 100%);
+            position:fixed; top:0; left:0; height:100vh; display:flex; flex-direction:column;
+            box-shadow:4px 0 24px rgba(62,31,0,0.3); z-index:100;
+        }
+        .sidebar-brand { padding:28px 24px 22px; border-bottom:1px solid rgba(255,255,255,0.08); }
+        .sidebar-brand .brand-name { font-family:'Playfair Display',serif; font-size:1.25rem; color:#fff; margin-bottom:4px; }
+        .sidebar-brand .brand-sub { font-size:0.72rem; color:rgba(255,255,255,0.5); letter-spacing:1.5px; text-transform:uppercase; }
+        .sidebar-user { margin:20px 16px; padding:14px 16px; background:rgba(255,255,255,0.07); border-radius:14px; display:flex; align-items:center; gap:12px; }
+        .avatar { width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg, var(--accent), #e5a040); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.9rem; color:#3E1F00; flex-shrink:0; }
+        .sidebar-user .user-info .name { font-size:0.88rem; font-weight:600; color:#fff; }
+        .sidebar-user .user-info .role  { font-size:0.7rem; color:rgba(255,255,255,0.45); letter-spacing:1px; text-transform:uppercase; }
+        .sidebar-nav { flex:1; padding:8px 12px; overflow-y:auto; }
+        .nav-section-label { font-size:0.65rem; font-weight:600; color:rgba(255,255,255,0.3); letter-spacing:1.8px; text-transform:uppercase; padding:16px 12px 8px; }
+        .nav-item { display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:12px; color:rgba(255,255,255,0.65); font-size:0.88rem; font-weight:500; text-decoration:none; transition:all 0.25s; margin-bottom:2px; }
+        .nav-item i { width:18px; text-align:center; font-size:0.85rem; }
+        .nav-item:hover { background:rgba(255,255,255,0.1); color:#fff; }
+        .nav-item.active { background:rgba(255,204,128,0.18); color:var(--accent); font-weight:600; }
+        .sidebar-footer { padding:16px 12px; border-top:1px solid rgba(255,255,255,0.06); }
+        .btn-logout { display:flex; align-items:center; gap:10px; width:100%; padding:11px 14px; background:rgba(198,40,40,0.15); border:1px solid rgba(198,40,40,0.2); border-radius:12px; color:rgba(255,130,120,0.9); font-size:0.85rem; font-weight:600; cursor:pointer; transition:all 0.25s; text-decoration:none; }
+        .btn-logout:hover { background:rgba(198,40,40,0.28); color:#ff8a80; }
+
+        .main { margin-left:var(--sidebar-w); flex:1; padding:32px 36px; }
+        .topbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:32px; }
+        .topbar-title h1 { font-size:1.5rem; font-weight:700; }
+        .topbar-title p { font-size:0.85rem; color:var(--muted); margin-top:2px; }
+        .clock { font-size:1.5rem; font-weight:700; color:var(--primary); font-family:'Playfair Display',serif; }
+        .date-badge { background:var(--card); border:1px solid var(--card-border); border-radius:10px; padding:6px 14px; font-size:0.8rem; color:var(--muted); backdrop-filter:blur(10px); }
+
+        /* Kanban columns */
+        .kanban { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+        .col-header {
+            display:flex; align-items:center; gap:10px;
+            margin-bottom:16px;
+        }
+        .col-header .col-icon { width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:0.9rem; }
+        .col-header .col-title { font-weight:700; font-size:0.95rem; }
+        .col-header .col-count { margin-left:auto; background:var(--card); border:1px solid var(--card-border); border-radius:50px; padding:3px 12px; font-size:0.75rem; font-weight:600; }
+
+        .col-pending .col-icon   { background:rgba(230,81,0,0.12); color:#e65100; }
+        .col-preparing .col-icon { background:rgba(25,118,210,0.1); color:#1976d2; }
+        .col-ready .col-icon     { background:rgba(46,125,50,0.1);  color:#2e7d32; }
+
+        .order-card {
+            background:var(--card); backdrop-filter:blur(12px);
+            border:1px solid var(--card-border); border-radius:16px;
+            padding:18px 18px 14px; margin-bottom:14px;
+            box-shadow:0 4px 16px rgba(191,54,12,0.06);
+            transition:transform 0.25s, box-shadow 0.25s;
+        }
+        .order-card:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(191,54,12,0.11); }
+        .order-card-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+        .order-num { font-weight:700; font-size:0.9rem; color:var(--primary); }
+        .order-time { font-size:0.72rem; color:var(--muted); }
+        .order-customer { font-size:0.82rem; color:var(--muted); margin-bottom:10px; }
+        .order-customer i { font-size:0.75rem; margin-right:4px; }
+        .order-items { margin-bottom:12px; }
+        .order-item-row { font-size:0.82rem; color:var(--text); padding:3px 0; display:flex; justify-content:space-between; }
+        .order-item-row .qty { font-weight:700; color:var(--primary); }
+        .order-divider { border:none; border-top:1px solid rgba(191,54,12,0.08); margin:8px 0; }
+        .order-total { font-weight:700; font-size:0.9rem; color:var(--primary); text-align:right; }
+        .dining-tag { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:50px; font-size:0.7rem; font-weight:600; background:rgba(191,54,12,0.07); color:var(--primary); margin-bottom:10px; }
+
+        .action-btns { display:flex; gap:8px; margin-top:10px; }
+        .btn-action {
+            flex:1; padding:9px; border-radius:10px; border:none;
+            font-family:'Outfit',sans-serif; font-size:0.8rem; font-weight:600;
+            cursor:pointer; transition:all 0.25s; display:flex; align-items:center; justify-content:center; gap:6px;
+        }
+        .btn-prepare { background:rgba(25,118,210,0.1); color:#1565c0; border:1px solid rgba(25,118,210,0.18); }
+        .btn-prepare:hover { background:rgba(25,118,210,0.18); }
+        .btn-ready   { background:rgba(46,125,50,0.1); color:#1b5e20; border:1px solid rgba(46,125,50,0.18); }
+        .btn-ready:hover { background:rgba(46,125,50,0.18); }
+        .btn-done    { background:rgba(93,64,55,0.08); color:#4e342e; border:1px solid rgba(93,64,55,0.15); }
+        .btn-done:hover { background:rgba(93,64,55,0.16); }
+
+        .empty-col { text-align:center; padding:40px 20px; color:var(--muted); font-size:0.85rem; }
+        .empty-col i { font-size:2rem; opacity:0.2; display:block; margin-bottom:10px; }
+
+        ::-webkit-scrollbar { width:5px; }
+        ::-webkit-scrollbar-thumb { background:rgba(191,54,12,0.2); border-radius:4px; }
     </style>
 </head>
 <body>
-    <div class="sidebar">
-        <h2>Kitchen</h2>
-        <a href="#" class="nav-link active">Active Orders</a>
-        <a href="#" class="nav-link">Menu Items</a>
-        <a href="/admin/logout" class="nav-link">Logout</a>
+
+<aside class="sidebar">
+    <div class="sidebar-brand">
+        <div class="brand-name">Le Maison</div>
+        <div class="brand-sub">Kitchen Portal</div>
     </div>
-    <div class="main">
-        <div class="header">
-            <h1>Kitchen View</h1>
-            <p>Welcome, Chef</p>
-        </div>
-        <div class="grid">
-            <div class="card"><h3>Pending Orders</h3><p style="font-size:30px; color:var(--primary); margin-top:10px;">8</p></div>
-            <div class="card"><h3>Ready for Delivery</h3><p style="font-size:30px; color:var(--primary); margin-top:10px;">3</p></div>
+    <div class="sidebar-user">
+        <div class="avatar">{{ portal_name[:1] if portal_name else 'K' }}</div>
+        <div class="user-info">
+            <div class="name">{{ portal_name }}</div>
+            <div class="role">Kitchen Staff</div>
         </div>
     </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section-label">Workspace</div>
+        <a class="nav-item active" href="{{ url_for('kitchen_portal.kitchen_dashboard') }}">
+            <i class="fas fa-fire"></i> Order Board
+        </a>
+        <div class="nav-section-label">Reference</div>
+        <a class="nav-item" href="/menu">
+            <i class="fas fa-utensils"></i> Menu Items
+        </a>
+    </nav>
+    <div class="sidebar-footer">
+        <a class="btn-logout" href="{{ url_for('kitchen_portal.kitchen_logout') }}">
+            <i class="fas fa-sign-out-alt"></i> Sign Out
+        </a>
+    </div>
+</aside>
+
+<main class="main">
+    <div class="topbar">
+        <div class="topbar-title">
+            <h1>Kitchen Order Board</h1>
+            <p>Real-time view of all in-progress orders</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+            <div class="date-badge" id="date-display"></div>
+            <div class="clock" id="clock-display">--:--</div>
+        </div>
+    </div>
+
+    <div class="kanban">
+        <!-- PENDING -->
+        <div class="col-pending">
+            <div class="col-header">
+                <div class="col-icon"><i class="fas fa-hourglass-start"></i></div>
+                <span class="col-title">Incoming</span>
+                <span class="col-count">{{ pending_orders|length }}</span>
+            </div>
+            {% for order in pending_orders %}
+            <div class="order-card">
+                <div class="order-card-top">
+                    <span class="order-num">#{{ '%04d' % order.id }}</span>
+                    <span class="order-time">{{ order.created_at.strftime('%I:%M %p') if order.created_at else '' }}</span>
+                </div>
+                <div class="order-customer">
+                    <i class="fas fa-user"></i>
+                    {% if order.user %}{{ order.user.first_name }}{% elif order.customer_name %}{{ order.customer_name }}{% else %}Walk-in{% endif %}
+                </div>
+                <span class="dining-tag">
+                    <i class="fas fa-{% if order.dining_option=='DINE_IN' %}utensils{% elif order.dining_option=='TAKE_OUT' %}bag-shopping{% else %}truck{% endif %}" style="font-size:0.65rem;"></i>
+                    {{ order.dining_option.replace('_',' ').title() }}
+                </span>
+                <div class="order-items">
+                    {% for item in order.items[:5] %}
+                    <div class="order-item-row">
+                        <span>{{ item.menu_item.name if item.menu_item else 'Item' }}</span>
+                        <span class="qty">x{{ item.quantity }}</span>
+                    </div>
+                    {% endfor %}
+                    {% if order.items|length > 5 %}<div style="font-size:0.75rem;color:var(--muted);margin-top:4px;">+{{ order.items|length - 5 }} more…</div>{% endif %}
+                </div>
+                <hr class="order-divider">
+                <div class="order-total">₱{{ "%.2f"|format(order.total_amount|float) }}</div>
+                <form method="POST" action="{{ url_for('kitchen_portal.kitchen_update_order', order_id=order.id) }}" class="action-btns">
+                    <input type="hidden" name="status" value="PREPARING">
+                    <button class="btn-action btn-prepare" type="submit"><i class="fas fa-fire-flame-curved"></i> Start Cooking</button>
+                </form>
+            </div>
+            {% else %}
+            <div class="empty-col"><i class="fas fa-mug-hot"></i>No incoming orders</div>
+            {% endfor %}
+        </div>
+
+        <!-- PREPARING -->
+        <div class="col-preparing">
+            <div class="col-header">
+                <div class="col-icon"><i class="fas fa-fire-flame-curved"></i></div>
+                <span class="col-title">Preparing</span>
+                <span class="col-count">{{ preparing_orders|length }}</span>
+            </div>
+            {% for order in preparing_orders %}
+            <div class="order-card">
+                <div class="order-card-top">
+                    <span class="order-num">#{{ '%04d' % order.id }}</span>
+                    <span class="order-time">{{ order.created_at.strftime('%I:%M %p') if order.created_at else '' }}</span>
+                </div>
+                <div class="order-customer">
+                    <i class="fas fa-user"></i>
+                    {% if order.user %}{{ order.user.first_name }}{% elif order.customer_name %}{{ order.customer_name }}{% else %}Walk-in{% endif %}
+                </div>
+                <span class="dining-tag">
+                    <i class="fas fa-{% if order.dining_option=='DINE_IN' %}utensils{% elif order.dining_option=='TAKE_OUT' %}bag-shopping{% else %}truck{% endif %}" style="font-size:0.65rem;"></i>
+                    {{ order.dining_option.replace('_',' ').title() }}
+                </span>
+                <div class="order-items">
+                    {% for item in order.items[:5] %}
+                    <div class="order-item-row">
+                        <span>{{ item.menu_item.name if item.menu_item else 'Item' }}</span>
+                        <span class="qty">x{{ item.quantity }}</span>
+                    </div>
+                    {% endfor %}
+                    {% if order.items|length > 5 %}<div style="font-size:0.75rem;color:var(--muted);margin-top:4px;">+{{ order.items|length - 5 }} more…</div>{% endif %}
+                </div>
+                <hr class="order-divider">
+                <div class="order-total">₱{{ "%.2f"|format(order.total_amount|float) }}</div>
+                <form method="POST" action="{{ url_for('kitchen_portal.kitchen_update_order', order_id=order.id) }}" class="action-btns">
+                    <input type="hidden" name="status" value="READY">
+                    <button class="btn-action btn-ready" type="submit"><i class="fas fa-bell"></i> Mark Ready</button>
+                </form>
+            </div>
+            {% else %}
+            <div class="empty-col"><i class="fas fa-bowl-food"></i>Nothing cooking</div>
+            {% endfor %}
+        </div>
+
+        <!-- READY -->
+        <div class="col-ready">
+            <div class="col-header">
+                <div class="col-icon"><i class="fas fa-check-circle"></i></div>
+                <span class="col-title">Ready</span>
+                <span class="col-count">{{ ready_orders|length }}</span>
+            </div>
+            {% for order in ready_orders %}
+            <div class="order-card">
+                <div class="order-card-top">
+                    <span class="order-num">#{{ '%04d' % order.id }}</span>
+                    <span class="order-time">{{ order.created_at.strftime('%I:%M %p') if order.created_at else '' }}</span>
+                </div>
+                <div class="order-customer">
+                    <i class="fas fa-user"></i>
+                    {% if order.user %}{{ order.user.first_name }}{% elif order.customer_name %}{{ order.customer_name }}{% else %}Walk-in{% endif %}
+                </div>
+                <span class="dining-tag" style="background:rgba(46,125,50,0.1);color:#2e7d32;">
+                    <i class="fas fa-check" style="font-size:0.65rem;"></i> Awaiting Pickup
+                </span>
+                <div class="order-items">
+                    {% for item in order.items[:4] %}
+                    <div class="order-item-row">
+                        <span>{{ item.menu_item.name if item.menu_item else 'Item' }}</span>
+                        <span class="qty">x{{ item.quantity }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                <hr class="order-divider">
+                <div class="order-total">₱{{ "%.2f"|format(order.total_amount|float) }}</div>
+            </div>
+            {% else %}
+            <div class="empty-col"><i class="fas fa-circle-check"></i>Nothing ready yet</div>
+            {% endfor %}
+        </div>
+    </div>
+</main>
+
+<script>
+    function tick(){
+        const n=new Date();
+        document.getElementById('clock-display').textContent=n.toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'});
+        document.getElementById('date-display').textContent=n.toLocaleDateString('en-PH',{weekday:'short',month:'short',day:'numeric'});
+    }
+    tick(); setInterval(tick,1000);
+    // Auto-refresh every 20s
+    setTimeout(()=>location.reload(), 20000);
+</script>
 </body>
 </html>

@@ -3,37 +3,273 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cashier Login - Le Maison</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <title>Cashier Portal — Le Maison</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        :root { --primary: #795548; --bg: #f5f0eb; --glass: rgba(255, 255, 255, 0.6); }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; }
-        body { background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; }
-        .bg-shapes { position: absolute; width: 100%; height: 100%; z-index: -1; }
-        .shape1 { position: absolute; width: 400px; height: 400px; background: #e0d0c1; border-radius: 50%; top: -100px; left: -100px; filter: blur(50px); animation: float 6s ease-in-out infinite; }
-        .shape2 { position: absolute; width: 300px; height: 300px; background: #d0b8a8; border-radius: 50%; bottom: -50px; right: -50px; filter: blur(50px); animation: float 8s ease-in-out infinite reverse; }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
-        .login-box { background: var(--glass); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 20px; padding: 40px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.05); transform: translateY(50px); opacity: 0; animation: slideUp 0.6s forwards; }
-        @keyframes slideUp { to { transform: translateY(0); opacity: 1; } }
-        h1 { color: var(--primary); margin-bottom: 30px; font-weight: 600; }
-        input { width: 100%; padding: 15px; margin-bottom: 20px; border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 10px; background: rgba(255, 255, 255, 0.5); font-size: 16px; outline: none; transition: all 0.3s ease; }
-        input:focus { background: white; border-color: var(--primary); box-shadow: 0 0 10px rgba(121, 85, 72, 0.1); }
-        button { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 16px; cursor: pointer; transition: all 0.3s ease; font-weight: 600; }
-        button:hover { background: #5d4037; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(121, 85, 72, 0.2); }
+        :root {
+            --primary: #5D4037;
+            --primary-light: #795548;
+            --primary-dark: #3E2723;
+            --accent: #FFCC80;
+            --bg: #F5EFE8;
+            --glass: rgba(255,255,255,0.55);
+            --glass-border: rgba(255,255,255,0.8);
+            --text: #3E2723;
+            --muted: #8D6E63;
+            --danger: #c62828;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Outfit', sans-serif;
+            min-height: 100vh;
+            background: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Animated background */
+        .bg-canvas {
+            position: fixed; inset: 0; z-index: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 10% 20%, rgba(188,143,92,0.18) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 80% at 90% 80%, rgba(93,64,55,0.12) 0%, transparent 55%),
+                linear-gradient(145deg, #F5EFE8 0%, #EDE0D4 50%, #E8D5C4 100%);
+        }
+        .blob {
+            position: absolute; border-radius: 50%; filter: blur(60px);
+            animation: drift 10s ease-in-out infinite alternate;
+        }
+        .blob-1 { width: 500px; height: 500px; background: rgba(188,143,92,0.15); top: -150px; left: -100px; animation-duration: 12s; }
+        .blob-2 { width: 400px; height: 400px; background: rgba(93,64,55,0.10); bottom: -100px; right: -80px; animation-duration: 9s; animation-direction: alternate-reverse; }
+        .blob-3 { width: 300px; height: 300px; background: rgba(255,204,128,0.12); top: 40%; left: 40%; animation-duration: 14s; }
+        @keyframes drift {
+            from { transform: translate(0,0) scale(1); }
+            to   { transform: translate(30px, 20px) scale(1.08); }
+        }
+
+        /* Card */
+        .card {
+            position: relative; z-index: 1;
+            background: var(--glass);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--glass-border);
+            border-radius: 28px;
+            padding: 48px 44px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 20px 60px rgba(93,64,55,0.12), 0 1px 0 rgba(255,255,255,0.9) inset;
+            animation: slideUp 0.6s cubic-bezier(.22,1,.36,1) forwards;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(40px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .portal-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: rgba(93,64,55,0.08);
+            border: 1px solid rgba(93,64,55,0.15);
+            border-radius: 50px;
+            padding: 6px 16px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: var(--primary);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 22px;
+        }
+        .portal-badge i { font-size: 0.75rem; }
+
+        .brand {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.7rem;
+            color: var(--text);
+            margin-bottom: 6px;
+        }
+        .subtitle {
+            color: var(--muted);
+            font-size: 0.87rem;
+            margin-bottom: 36px;
+            font-weight: 400;
+        }
+
+        /* Flash messages */
+        .alert-error {
+            background: rgba(198,40,40,0.08);
+            border: 1px solid rgba(198,40,40,0.2);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: var(--danger);
+            font-size: 0.84rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .field-group { margin-bottom: 18px; }
+        .field-label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--muted);
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        .field-wrap {
+            position: relative;
+        }
+        .field-icon {
+            position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+            color: var(--muted); font-size: 0.85rem; pointer-events: none;
+        }
+        input[type="email"], input[type="password"] {
+            width: 100%;
+            padding: 14px 16px 14px 42px;
+            border: 1.5px solid rgba(93,64,55,0.15);
+            border-radius: 14px;
+            background: rgba(255,255,255,0.6);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+            color: var(--text);
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        input[type="email"]:focus, input[type="password"]:focus {
+            background: rgba(255,255,255,0.9);
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 4px rgba(121,85,72,0.08);
+        }
+        input::placeholder { color: #BCAAA4; }
+
+        .toggle-pw {
+            position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+            background: none; border: none; cursor: pointer;
+            color: var(--muted); font-size: 0.85rem;
+            transition: color 0.2s;
+        }
+        .toggle-pw:hover { color: var(--primary); }
+
+        .btn-login {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-light) 100%);
+            color: #fff;
+            border: none;
+            border-radius: 14px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(93,64,55,0.28);
+            margin-top: 8px;
+            letter-spacing: 0.4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(93,64,55,0.35);
+        }
+        .btn-login:active { transform: translateY(0); }
+
+        .footer-note {
+            text-align: center;
+            margin-top: 28px;
+            font-size: 0.75rem;
+            color: var(--muted);
+        }
+        .footer-note a { color: var(--primary); text-decoration: none; font-weight: 600; }
+        .footer-note a:hover { text-decoration: underline; }
+
+        /* Decorative corner */
+        .deco {
+            position: absolute;
+            top: -1px; right: 30px;
+            width: 60px; height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 0 0 4px 4px;
+        }
     </style>
 </head>
 <body>
-    <div class="bg-shapes">
-        <div class="shape1"></div>
-        <div class="shape2"></div>
+    <div class="bg-canvas">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
     </div>
-    <div class="login-box">
-        <h1>Cashier Login</h1>
-        <form action="/admin/login" method="POST">
-            <input type="email" name="email" placeholder="Email Address" required>
-            <input type="password" name="password" placeholder="Password" required>
-            <button type="submit">Sign In</button>
+
+    <div class="card">
+        <div class="deco"></div>
+
+        <div class="portal-badge">
+            <i class="fas fa-cash-register"></i> Cashier Portal
+        </div>
+
+        <h1 class="brand">Le Maison</h1>
+        <p class="subtitle">Sign in to access the Cashier workspace</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+            <div class="alert-error">
+                <i class="fas fa-exclamation-circle"></i> {{ message }}
+            </div>
+            {% endfor %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('cashier_portal.cashier_login') }}">
+            <div class="field-group">
+                <label class="field-label" for="email">Email Address</label>
+                <div class="field-wrap">
+                    <i class="fas fa-envelope field-icon"></i>
+                    <input type="email" id="email" name="email" placeholder="you@lemaison.com" required autocomplete="email">
+                </div>
+            </div>
+            <div class="field-group">
+                <label class="field-label" for="password">Password</label>
+                <div class="field-wrap">
+                    <i class="fas fa-lock field-icon"></i>
+                    <input type="password" id="password" name="password" placeholder="••••••••" required autocomplete="current-password">
+                    <button type="button" class="toggle-pw" onclick="togglePw()">
+                        <i class="fas fa-eye" id="pw-eye"></i>
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-login" id="login-btn">
+                <i class="fas fa-sign-in-alt"></i> Sign In
+            </button>
         </form>
+
+        <div class="footer-note">
+            Not a cashier? &nbsp;<a href="/">Back to Home</a>
+        </div>
     </div>
+
+    <script>
+        function togglePw() {
+            const pw  = document.getElementById('password');
+            const eye = document.getElementById('pw-eye');
+            if (pw.type === 'password') {
+                pw.type = 'text'; eye.className = 'fas fa-eye-slash';
+            } else {
+                pw.type = 'password'; eye.className = 'fas fa-eye';
+            }
+        }
+        document.querySelector('form').addEventListener('submit', function() {
+            const btn = document.getElementById('login-btn');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in…';
+            btn.disabled = true;
+        });
+    </script>
 </body>
 </html>
