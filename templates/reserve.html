@@ -299,7 +299,7 @@
             <div class="resRow">
                 <div class="resField">
                     <label for="date">Date</label>
-                    <input type="date" id="date" name="date" required onchange="filterTimeSlots()">
+                    <input type="date" id="date" name="date" required placeholder="Select your preferred date...">
                 </div>
                 <div class="resField">
                     <label for="time">Time</label>
@@ -354,18 +354,37 @@
     </div>
 </div>
 
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
+    let fpInstance;
+
+    function initCalendar() {
+        fpInstance = flatpickr("#date", {
+            minDate: "today",
+            dateFormat: "Y-m-d",
+            altInput: true,
+            altFormat: "F j, Y (l)",
+            onChange: function(selectedDates, dateStr, instance) {
+                filterTimeSlots();
+            }
+        });
+    }
+
     function updateBookingRules() {
         var type = document.getElementById('booking_type').value;
         var guestInput = document.getElementById('guest_count');
         var guestHint = document.getElementById('guestHint');
-        var advanceText = document.getElementById('advance-text');
         var maxGuestText = document.getElementById('max-guest-text');
-        var dateField = document.getElementById('date');
-
+        var advanceText = document.getElementById('advance-text');
+        
+        if (!fpInstance) initCalendar();
+        
         var today = new Date();
-        var minExclusive = new Date(today); minExclusive.setDate(minExclusive.getDate() + 3);
-        var maxDate = new Date(today); maxDate.setDate(maxDate.getDate() + 60);
+        var maxDate = new Date();
+        maxDate.setDate(today.getDate() + 60);
+
+        fpInstance.set("maxDate", maxDate);
 
         if (type === 'EXCLUSIVE') {
             guestInput.max = 50;
@@ -373,60 +392,47 @@
             maxGuestText.innerText = '50';
             advanceText.innerText = '3 days to 2 months';
 
-            // Require 3 days advance
-            var minStr = minExclusive.toISOString().split("T")[0];
-            dateField.min = minStr;
-
-            // If currently selected date is before 3 days from now, clear it
-            if (dateField.value && dateField.value < minStr) {
-                dateField.value = '';
+            var minDate = new Date();
+            minDate.setDate(today.getDate() + 3);
+            fpInstance.set('minDate', minDate);
+            
+            if (fpInstance.selectedDates[0] && fpInstance.selectedDates[0] < minDate) {
+                fpInstance.clear();
             }
         } else {
             guestInput.max = 20;
             if (guestInput.value > 20) guestInput.value = 20;
-            guestHint.innerText = 'Maximum of 20 guests per reservation.';
+            guestHint.innerHTML = '<i class="fas fa-chair me-2" style="color: #D4A862;"></i><strong>Seating Guide:</strong><br>• 1-4 Persons: 1 Standard Table<br>• 5-8 Persons: 2 Combined Tables<br>• 9+ Persons: Group Banquet Seating';
             maxGuestText.innerText = '20';
             advanceText.innerText = 'Same day to 2 months';
 
-            // Allow same day
-            dateField.min = today.toISOString().split("T")[0];
+            fpInstance.set('minDate', "today");
         }
-
-        dateField.max = maxDate.toISOString().split("T")[0];
         filterTimeSlots();
     }
 
     function filterTimeSlots() {
-        var dateField = document.getElementById('date');
         var timeSelect = document.getElementById('time');
         var options = timeSelect.options;
+        if(!fpInstance || !fpInstance.selectedDates[0]) return;
 
-        var selectedDate = dateField.value;
+        var selectedDate = fpInstance.selectedDates[0];
         var today = new Date();
-        var todayStr = today.toISOString().split("T")[0];
+        
+        var isToday = selectedDate.getDate() === today.getDate() && 
+                      selectedDate.getMonth() === today.getMonth() && 
+                      selectedDate.getFullYear() === today.getFullYear();
 
-        // Format current time as HH:MM
         var currHour = today.getHours();
         var currMin = today.getMinutes();
         var currTimeStr = (currHour < 10 ? '0' + currHour : currHour) + ':' + (currMin < 10 ? '0' + currMin : currMin);
 
         for (var i = 1; i < options.length; i++) {
             var opt = options[i];
-            if (selectedDate === todayStr) {
-                // If today, disable timeslots that have passed
-                if (opt.value <= currTimeStr) {
-                    opt.disabled = true;
-                    opt.text = opt.value + " (Unavailable)";
-                } else {
-                    opt.disabled = false;
-                    // Reset text
-                    var ampm = parseInt(opt.value.split(':')[0]) >= 12 ? ' PM' : ' AM';
-                    var h = parseInt(opt.value.split(':')[0]) % 12 || 12;
-                    var m = opt.value.split(':')[1];
-                    opt.text = h + ":" + m + ampm;
-                }
+            if (isToday && opt.value <= currTimeStr) {
+                opt.disabled = true;
+                opt.text = opt.value + " (Unavailable)";
             } else {
-                // Enable everything for future dates
                 opt.disabled = false;
                 var ampm = parseInt(opt.value.split(':')[0]) >= 12 ? ' PM' : ' AM';
                 var h = parseInt(opt.value.split(':')[0]) % 12 || 12;
@@ -434,8 +440,7 @@
                 opt.text = h + ":" + m + ampm;
             }
         }
-
-        // If current selected time is now disabled, reset
+        
         if (timeSelect.selectedIndex > 0 && options[timeSelect.selectedIndex].disabled) {
             timeSelect.value = '';
         }

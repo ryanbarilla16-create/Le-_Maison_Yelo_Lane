@@ -147,7 +147,7 @@
                 <a class="nav-link navTxt" href="{{ url_for('main.about_page') }}">ABOUT</a>
             </li>
             <li class="nav-item me-3">
-                <a class="nav-link navTxt" href="{{ url_for('main.reviews_page') }}">REVIEWS</a>
+                <a class="nav-link navTxt" href="{{ url_for('main.index') }}">HOME</a>
             </li>
         </ul>
 
@@ -307,7 +307,7 @@
     <ul class="nav-links-container active" id="navbar-menu">
         <li><a href="{{ url_for('main.menu_page') }}"><i class="fas fa-utensils"></i> <span class="nav-text">Menu</span></a></li>
         <li><a href="{{ url_for('main.about_page') }}"><i class="fas fa-info-circle"></i> <span class="nav-text">About</span></a></li>
-        <li><a href="{{ url_for('main.reviews_page') }}"><i class="fas fa-star"></i> <span class="nav-text">Reviews</span></a></li>
+        <li><a href="{{ url_for('main.index') }}"><i class="fas fa-home"></i> <span class="nav-text">Home</span></a></li>
         <li><a href="{{ url_for('main.reserve') }}"><i class="fas fa-calendar-plus"></i> <span class="nav-text">Reserve</span></a></li>
 
         {% if current_user.is_authenticated %}
