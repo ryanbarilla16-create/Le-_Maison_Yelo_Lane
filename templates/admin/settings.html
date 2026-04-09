@@ -1,295 +1,186 @@
 {% extends "admin/base.html" %}
-{% block title %}Settings{% endblock %}
+{% block title %}Account Settings{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <h1>Settings</h1>
-    <p>System configuration and admin preferences.</p>
+<div class="page-header mb-5">
+    <h1 class="font-serif fw-bold">Account Hub</h1>
+    <p class="text-muted">Manage your personal details and security preferences.</p>
 </div>
 
-<div class="admin-cards-grid">
-    <div class="admin-card">
-        <h3><i class="fas fa-user-shield me-2" style="color: var(--admin-accent);"></i> Edit Profile</h3>
-        <div style="margin-bottom: 1.5rem;">
-            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
-                <div
-                    style="width: 64px; height: 64px; border-radius: 50%; background: var(--admin-accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.5rem;">
-                    {{ current_user.first_name[0] }}</div>
-                <div>
-                    <div style="font-weight: 700; font-size: 1.1rem;">{{ current_user.first_name }} {{
-                        current_user.last_name }}</div>
-                    <div style="color: var(--admin-text-muted); font-size: 0.85rem;">{{ current_user.email }}</div>
-                    <span class="badge-status badge-active mt-1">{{ current_user.role }}</span>
+<div class="row g-4">
+    <!-- Profile Overview -->
+    <div class="col-lg-4">
+        <div class="admin-card text-center py-5">
+            <div class="mx-auto mb-4" 
+                 style="width: 100px; height: 100px; border-radius: 50%; background: linear-gradient(135deg, #3E2723, #5D4037); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 2.5rem; box-shadow: 0 10px 30px rgba(62,39,35,0.2);">
+                {{ current_user.first_name[0] }}
+            </div>
+            <h3 class="fw-bold mb-1">{{ current_user.first_name }} {{ current_user.last_name }}</h3>
+            <p class="text-muted small mb-3">{{ current_user.email }}</p>
+            <span class="badge bg-light text-dark rounded-pill px-3 py-2 border mb-4">{{ current_user.role|title }}</span>
+            
+            <div class="d-grid px-4">
+                <button class="btn btn-dark rounded-pill py-2" onclick="document.getElementById('editProfileModal').style.display='flex'">
+                    <i class="fas fa-edit me-2"></i>Edit Profile
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Security Settings -->
+    <div class="col-lg-8">
+        <div class="admin-card h-100">
+            <h4 class="fw-bold mb-4 font-serif"><i class="fas fa-shield-halved me-2 text-primary"></i>Security Center</h4>
+            
+            <div class="mb-5">
+                <label class="fw-bold text-uppercase letter-spacing-1 small text-muted mb-3 d-block">Authentication</label>
+                <div class="p-4 rounded-4 border bg-light d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="fw-bold mb-1">Account Password</h6>
+                        <p class="text-muted small mb-0">Stay protected with a strong, unique password.</p>
+                    </div>
+                    <button class="btn btn-primary rounded-pill px-4" onclick="document.getElementById('changePasswordModal').style.display='flex'">
+                        Update Password
+                    </button>
+                </div>
+            </div>
+
+            {% if current_user.role|upper == 'ADMIN' %}
+            <div class="mb-2">
+                <label class="fw-bold text-uppercase letter-spacing-1 small text-muted mb-3 d-block">System Preferences</label>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-4 border d-flex align-items-center justify-content-between">
+                            <span class="small fw-semibold">Dark Mode</span>
+                            <div class="form-check form-switch m-0"><input class="form-check-input" type="checkbox" checked disabled></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-4 border d-flex align-items-center justify-content-between">
+                            <span class="small fw-semibold">Auto-Sync</span>
+                            <span class="badge bg-success-subtle text-success small rounded-pill">Active</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if current_user.role|upper == 'ADMIN' %}
+<!-- Homepage Management (Admin Only) -->
+<div class="admin-card mt-4">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h4 class="fw-bold m-0 font-serif"><i class="fas fa-palette me-2 text-warning"></i>Visual Content Management</h4>
+        <span class="badge bg-warning-subtle text-warning small rounded-pill px-3">Curated Designs</span>
+    </div>
+    
+    <form method="POST" action="{{ url_for('admin.settings') }}">
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="p-4 rounded-4 border bg-light h-100">
+                    <h6 class="fw-bold mb-3">Hero Spotlight</h6>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Subtitle Text</label>
+                        <input type="text" class="form-control" name="hero2_title1" value="{{ site.hero2.title1 }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Primary Title</label>
+                        <input type="text" class="form-control" name="hero2_title2" value="{{ site.hero2.title2 }}" required>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label small fw-bold">Hero Background Image</label>
+                        <input type="url" class="form-control" name="hero2_img" value="{{ site.hero2.image_url }}" required>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="p-4 rounded-4 border bg-light h-100">
+                    <h6 class="fw-bold mb-3">Brand Socials</h6>
+                    <div class="input-group mb-3">
+                        <span class="input-group-text bg-white border-end-0"><i class="fab fa-facebook text-primary"></i></span>
+                        <input type="url" class="form-control border-start-0" name="footer_fb" value="{{ site.footer.facebook_link }}" required>
+                    </div>
+                    <div class="input-group mb-3">
+                        <span class="input-group-text bg-white border-end-0"><i class="fab fa-instagram text-danger"></i></span>
+                        <input type="url" class="form-control border-start-0" name="footer_ig" value="{{ site.footer.instagram_link }}" required>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label small fw-bold">Platform Copyright</label>
+                        <input type="text" class="form-control" name="footer_copyright" value="{{ site.footer.copyright_text }}" required>
+                    </div>
                 </div>
             </div>
         </div>
-        <div style="display: flex; gap: 0.75rem;">
-            <button class="btn-admin btn-admin-outline"
-                onclick="document.getElementById('editProfileModal').style.display='flex'">
-                <i class="fas fa-pen"></i> Edit Profile & Password
+
+        <div class="text-end mt-4">
+            <button type="submit" class="btn btn-dark rounded-pill px-5 py-2 shadow-sm">
+                Update Visuals
             </button>
         </div>
-    </div>
-
-    {% if current_user.role|upper == 'ADMIN' %}
-    <div class="admin-card">
-        <h3><i class="fas fa-sliders me-2" style="color: var(--admin-blue);"></i> General</h3>
-        <div style="display: flex; flex-direction: column; gap: 1rem;">
-            <div
-                style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--admin-border);">
-                <div>
-                    <div style="font-weight: 600;">Dark Mode</div>
-                    <div style="font-size: 0.8rem; color: var(--admin-text-muted);">Currently active</div>
-                </div>
-                <div class="form-check form-switch"><input class="form-check-input" type="checkbox" checked disabled>
-                </div>
-            </div>
-            <div
-                style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--admin-border);">
-                <div>
-                    <div style="font-weight: 600;">Email Notifications</div>
-                    <div style="font-size: 0.8rem; color: var(--admin-text-muted);">Reservation alerts via email</div>
-                </div>
-                <div class="form-check form-switch"><input class="form-check-input" type="checkbox"></div>
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0;">
-                <div>
-                    <div style="font-weight: 600;">Supabase Sync</div>
-                    <div style="font-size: 0.8rem; color: var(--admin-text-muted);">Real-time database mirroring</div>
-                </div>
-                <span class="badge-status badge-active">Active</span>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Homepage Content Management Settings -->
-<div class="admin-card" style="margin-top: 1.5rem;">
-    <h3><i class="fas fa-home me-2" style="color: var(--admin-yellow);"></i> Homepage Design & Content</h3>
-    <form method="POST" action="{{ url_for('admin.settings') }}">
-
-        <!-- Hero 2 Section -->
-        <div
-            style="background: var(--admin-bg); padding: 1.25rem; border-radius: 8px; border: 1px solid var(--admin-border); margin-bottom: 1.5rem;">
-            <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--admin-text); margin-bottom: 1rem;"><i
-                    class="fas fa-image me-1"></i> Secondary Hero Section</h4>
-
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label"
-                        style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);">Subtitle (e.g.,
-                        Premium Dining)</label>
-                    <input type="text" class="form-control" name="hero2_title1" value="{{ site.hero2.title1 }}"
-                        required>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label"
-                        style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);">Main Title (e.g.,
-                        Drift into Joy)</label>
-                    <input type="text" class="form-control" name="hero2_title2" value="{{ site.hero2.title2 }}"
-                        required>
-                </div>
-                <div class="col-12">
-                    <label class="form-label"
-                        style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);">Short
-                        Description</label>
-                    <textarea class="form-control" name="hero2_desc" rows="2"
-                        required>{{ site.hero2.description }}</textarea>
-                </div>
-                <div class="col-12">
-                    <label class="form-label"
-                        style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);">Background Image
-                        URL</label>
-                    <input type="url" class="form-control" name="hero2_img" value="{{ site.hero2.image_url }}" required>
-                </div>
-            </div>
-        </div>
-
-        <!-- Promo Cards Section -->
-        <div class="row g-3 mb-3">
-            <div class="col-md-6">
-                <div
-                    style="background: var(--admin-bg); padding: 1.25rem; border-radius: 8px; border: 1px solid var(--admin-border); height: 100%;">
-                    <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--admin-text); margin-bottom: 1rem;"><i
-                            class="fas fa-columns me-1"></i> Left Promo Card</h4>
-
-                    <div class="mb-2">
-                        <label class="form-label"
-                            style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);">Card
-                            Title</label>
-                        <input type="text" class="form-control" name="c1_title" value="{{ site.card1.title }}" required>
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label"
-                            style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);">Card
-                            Description</label>
-                        <textarea class="form-control" name="c1_desc" rows="2"
-                            required>{{ site.card1.description }}</textarea>
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label"
-                            style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);">Image URL /
-                            Unsplash Link</label>
-                        <input type="url" class="form-control" name="c1_img" value="{{ site.card1.image_url }}"
-                            required>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6">
-                <div
-                    style="background: var(--admin-bg); padding: 1.25rem; border-radius: 8px; border: 1px solid var(--admin-border); height: 100%;">
-                    <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--admin-text); margin-bottom: 1rem;"><i
-                            class="fas fa-columns me-1"></i> Right Promo Card</h4>
-
-                    <div class="mb-2">
-                        <label class="form-label"
-                            style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);">Card
-                            Title</label>
-                        <input type="text" class="form-control" name="c2_title" value="{{ site.card2.title }}" required>
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label"
-                            style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);">Card
-                            Description</label>
-                        <textarea class="form-control" name="c2_desc" rows="2"
-                            required>{{ site.card2.description }}</textarea>
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label"
-                            style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);">Image URL /
-                            Unsplash Link</label>
-                        <input type="url" class="form-control" name="c2_img" value="{{ site.card2.image_url }}"
-                            required>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Footer Settings Section -->
-        <div
-            style="background: var(--admin-bg); padding: 1.25rem; border-radius: 8px; border: 1px solid var(--admin-border); margin-bottom: 1.5rem;">
-            <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--admin-text); margin-bottom: 1rem;"><i
-                    class="fas fa-link me-1"></i> Footer Content & Socials</h4>
-
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label"
-                        style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);"><i
-                            class="fab fa-facebook" style="color:#1877F2;"></i> Facebook Link</label>
-                    <input type="url" class="form-control" name="footer_fb" value="{{ site.footer.facebook_link }}"
-                        required>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label"
-                        style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);"><i
-                            class="fab fa-instagram" style="color:#E4405F;"></i> Instagram Link</label>
-                    <input type="url" class="form-control" name="footer_ig" value="{{ site.footer.instagram_link }}"
-                        required>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label"
-                        style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);"><i
-                            class="fab fa-twitter" style="color:#1DA1F2;"></i> Twitter Link</label>
-                    <input type="url" class="form-control" name="footer_tw" value="{{ site.footer.twitter_link }}"
-                        required>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label"
-                        style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);"><i
-                            class="fab fa-youtube" style="color:#FF0000;"></i> YouTube Link</label>
-                    <input type="url" class="form-control" name="footer_yt" value="{{ site.footer.youtube_link }}"
-                        required>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label"
-                        style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);">Shop Address
-                        Text</label>
-                    <input type="text" class="form-control" name="footer_address" value="{{ site.footer.address_text }}"
-                        required>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label"
-                        style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);">Copyright
-                        Text</label>
-                    <input type="text" class="form-control" name="footer_copyright"
-                        value="{{ site.footer.copyright_text }}" required>
-                </div>
-            </div>
-        </div>
-
-        <div class="text-end">
-            <button type="submit" class="btn-admin btn-admin-primary px-4"><i class="fas fa-save me-1"></i> Save
-                Homepage Content</button>
-        </div>
     </form>
-</div>
-
-<div class="admin-card" style="margin-top: 1.5rem;">
-    <h3><i class="fas fa-info-circle me-2" style="color: var(--admin-text-muted);"></i> System Info</h3>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
-        <div>
-            <div style="color: var(--admin-text-muted); font-size: 0.8rem;">Platform</div>
-            <div style="font-weight: 600;">Flask + PostgreSQL</div>
-        </div>
-        <div>
-            <div style="color: var(--admin-text-muted); font-size: 0.8rem;">Primary DB</div>
-            <div style="font-weight: 600;">NeonDB</div>
-        </div>
-        <div>
-            <div style="color: var(--admin-text-muted); font-size: 0.8rem;">Secondary DB</div>
-            <div style="font-weight: 600;">Supabase</div>
-        </div>
-        <div>
-            <div style="color: var(--admin-text-muted); font-size: 0.8rem;">Version</div>
-            <div style="font-weight: 600;">1.0.0</div>
-        </div>
-    </div>
-</div>
 </div>
 {% endif %}
 
 <!-- EDIT PROFILE MODAL -->
 <div id="editProfileModal" class="admin-modal" style="display: none;">
-    <div class="admin-modal-content" style="max-width: 500px; padding: 24px; border-radius: 12px;">
-        <div class="admin-modal-header border-bottom pb-3 mb-4 d-flex justify-content-between align-items-center">
-            <h3 class="m-0" style="color: var(--text-main); font-family: 'Georgia', serif;">
-                <i class="fas fa-user-edit me-2" style="color: var(--admin-accent);"></i>Update Profile
-            </h3>
-            <span class="admin-close fs-4" style="cursor: pointer;"
-                onclick="document.getElementById('editProfileModal').style.display='none'">&times;</span>
+    <div class="admin-modal-content" style="max-width: 500px; padding: 32px; border-radius: 20px;">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="fw-bold m-0 font-serif">Quick Profile Update</h4>
+            <button class="btn-close" onclick="document.getElementById('editProfileModal').style.display='none'"></button>
         </div>
+        
         <form method="POST" action="{{ url_for('admin.update_profile') }}">
-            <div class="row g-3 mb-3">
-                <div class="col-md-6">
-                    <label class="form-label fw-bold text-muted" style="font-size: 0.85rem;">First Name</label>
-                    <input type="text" name="first_name" class="form-control" value="{{ current_user.first_name }}"
-                        required>
+            <div class="row g-3 mb-4">
+                <div class="col-6">
+                    <label class="form-label small fw-bold">First Name</label>
+                    <input type="text" name="first_name" class="form-control rounded-pill" value="{{ current_user.first_name }}" required>
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-bold text-muted" style="font-size: 0.85rem;">Last Name</label>
-                    <input type="text" name="last_name" class="form-control" value="{{ current_user.last_name }}"
-                        required>
+                <div class="col-6">
+                    <label class="form-label small fw-bold">Last Name</label>
+                    <input type="text" name="last_name" class="form-control rounded-pill" value="{{ current_user.last_name }}" required>
+                </div>
+                <div class="col-12">
+                    <label class="form-label small fw-bold">Email</label>
+                    <input type="email" name="email" class="form-control rounded-pill" value="{{ current_user.email }}" required>
                 </div>
             </div>
-            <div class="mb-3">
-                <label class="form-label fw-bold text-muted" style="font-size: 0.85rem;">Email Address</label>
-                <input type="email" name="email" class="form-control" value="{{ current_user.email }}" required>
+            
+            <div class="d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-light rounded-pill px-4" onclick="document.getElementById('editProfileModal').style.display='none'">Discard</button>
+                <button type="submit" class="btn btn-primary rounded-pill px-4">Save Profile</button>
             </div>
-            <hr class="opacity-25 my-4">
-            <h6 class="fw-bold mb-3"><i class="fas fa-lock me-2 text-muted"></i>Change Password (Optional)</h6>
+        </form>
+    </div>
+</div>
+
+<!-- CHANGE PASSWORD MODAL -->
+<div id="changePasswordModal" class="admin-modal" style="display: none;">
+    <div class="admin-modal-content" style="max-width: 500px; padding: 32px; border-radius: 20px;">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="fw-bold m-0 font-serif">Update Passcode</h4>
+            <button class="btn-close" onclick="document.getElementById('changePasswordModal').style.display='none'"></button>
+        </div>
+        
+        <form method="POST" action="{{ url_for('admin.update_profile') }}">
+            <!-- Hidden fields to keep current profile info -->
+            <input type="hidden" name="first_name" value="{{ current_user.first_name }}">
+            <input type="hidden" name="last_name" value="{{ current_user.last_name }}">
+            <input type="hidden" name="email" value="{{ current_user.email }}">
+            
             <div class="mb-4">
-                <label class="form-label fw-bold text-muted" style="font-size: 0.85rem;">New Password</label>
-                <input type="password" name="password" class="form-control"
-                    placeholder="Leave blank to keep current password">
-                <div class="form-text mt-2" style="font-size: 0.75rem;">If you enter a new password, you will use it on
-                    your next login.</div>
+                <p class="text-muted small">Enter your new desired password below. Minimum 8 characters recommended.</p>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">New Password</label>
+                    <input type="password" name="password" class="form-control rounded-pill" placeholder="••••••••" required>
+                </div>
             </div>
-            <div class="d-flex justify-content-end gap-2 border-top pt-3">
-                <button type="button" class="btn btn-outline-secondary rounded-pill px-4"
-                    onclick="document.getElementById('editProfileModal').style.display='none'">Cancel</button>
-                <button type="submit" class="btn btn-primary rounded-pill px-4"><i class="fas fa-save me-1"></i> Save
-                    Changes</button>
+            
+            <div class="d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-light rounded-pill px-4" onclick="document.getElementById('changePasswordModal').style.display='none'">Cancel</button>
+                <button type="submit" class="btn btn-primary rounded-pill px-4">Apply Passcode</button>
             </div>
         </form>
     </div>

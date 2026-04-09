@@ -4,178 +4,125 @@
 
 {% block content %}
 <style>
+    :root {
+        --glass-bg: rgba(255, 255, 255, 0.9);
+        --glass-border: rgba(93, 64, 55, 0.1);
+        --primary-gradient: linear-gradient(135deg, #5D4037, #8D6E63);
+        --accent-gold: #D4A862;
+    }
+
     .moPage {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 1.5rem;
-        margin-top: 2rem;
+        width: 100%;
+        max-width: 1000px;
+        margin: 5rem auto 3rem;
+        padding: 0 1rem;
+        animation: fadeIn 0.8s ease-out;
+        overflow-x: hidden;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 
     .moHeader {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 1rem;
         margin-bottom: 2rem;
-    }
-
-    .moBack {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        color: var(--text-muted);
-        text-decoration: none;
-        font-weight: 600;
-        font-size: 0.85rem;
-        padding: 0.45rem 1rem;
-        border-radius: 10px;
-        transition: all 0.3s;
-    }
-
-    .moBack:hover {
-        background: rgba(93, 64, 55, 0.06);
-        color: var(--primary-color);
+        text-align: center;
     }
 
     .moTitle h2 {
-        font-family: 'Playfair Display', 'Georgia', serif;
-        font-weight: 700;
-        font-size: 1.8rem;
-        margin: 0;
-    }
-
-    .moTitle p {
-        color: var(--text-muted);
-        font-size: 0.85rem;
-        margin: 0.25rem 0 0;
-    }
-
-    .moOrderBtn {
-        background: linear-gradient(135deg, #5D4037, #795548);
-        color: #fff;
-        font-weight: 700;
-        font-size: 0.85rem;
-        padding: 0.6rem 1.5rem;
-        border-radius: 50px;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        transition: all 0.3s;
-        box-shadow: 0 4px 14px rgba(93, 64, 55, 0.2);
-    }
-
-    .moOrderBtn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(93, 64, 55, 0.3);
-        color: #fff;
+        font-family: 'Playfair Display', serif;
+        font-weight: 800;
+        font-size: clamp(2rem, 5vw, 2.8rem);
+        color: #3E2723;
+        margin-bottom: 0.5rem;
     }
 
     .moStats {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
-        gap: 1rem;
+        gap: 0.75rem;
         margin-bottom: 2rem;
     }
 
     .moStat {
         background: #fff;
         border-radius: 16px;
-        padding: 1.5rem;
+        padding: 1rem 0.5rem;
         text-align: center;
-        border: 1px solid var(--border-color);
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
-        transition: all 0.3s;
-    }
-
-    .moStat:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+        border: 1px solid var(--glass-border);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+        transition: transform 0.3s;
     }
 
     .moStat h4 {
         font-family: 'Playfair Display', serif;
         font-weight: 800;
-        font-size: 1.8rem;
+        font-size: clamp(1.2rem, 4vw, 1.8rem);
         margin: 0;
     }
 
     .moStat p {
-        color: var(--text-muted);
-        font-size: 0.78rem;
-        margin: 0.25rem 0 0;
-        font-weight: 600;
+        color: #757575;
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 700;
+        margin-top: 0.25rem;
+        margin-bottom: 0;
     }
 
     .moTabs {
         display: flex;
         gap: 0.5rem;
-        flex-wrap: wrap;
-        margin-bottom: 2rem;
-        background: #fff;
-        padding: 0.5rem;
-        border-radius: 14px;
-        border: 1px solid var(--border-color);
+        overflow-x: auto;
+        padding: 0.5rem 0;
+        margin-bottom: 1.5rem;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
     }
+    .moTabs::-webkit-scrollbar { display: none; }
 
     .moTab {
-        background: transparent;
-        color: var(--text-muted);
-        border: none;
-        border-radius: 10px;
-        padding: 0.5rem 1.25rem;
-        font-size: 0.82rem;
+        white-space: nowrap;
+        background: #fff;
+        border: 1px solid var(--glass-border);
+        padding: 0.6rem 1.25rem;
+        border-radius: 50px;
+        font-size: 0.85rem;
         font-weight: 600;
-        cursor: pointer;
+        color: #5D4037;
         transition: all 0.3s;
     }
-
-    .moTab:hover {
-        background: rgba(93, 64, 55, 0.05);
-    }
-
     .moTab.active {
-        background: var(--primary-color) !important;
-        color: #fff !important;
-        box-shadow: 0 3px 10px rgba(93, 64, 55, 0.2);
+        background: var(--primary-gradient);
+        color: #fff;
+        border-color: transparent;
+        box-shadow: 0 4px 12px rgba(93, 64, 55, 0.2);
     }
 
     .moCards {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: 1fr;
         gap: 1.5rem;
-        grid-auto-rows: 1fr;
-        /* This helps match heights in the same row */
     }
 
     .moCard {
         background: #fff;
         border-radius: 24px;
-        padding: 1.75rem;
-        border: 1px solid var(--border-color);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-        transition: all 0.3s ease;
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-        min-height: 0;
+        border: 1px solid var(--glass-border);
+        padding: 1.5rem;
         position: relative;
-    }
-
-    .moCard:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 12px 40px rgba(93, 64, 55, 0.12);
-        border-color: rgba(93, 64, 55, 0.15);
+        overflow: hidden;
     }
 
     .moCard-head {
         display: flex;
         justify-content: space-between;
-        align-items: flex-start;
-        padding-bottom: 1rem;
+        align-items: center;
         margin-bottom: 1.25rem;
-        border-bottom: 2px solid rgba(93, 64, 55, 0.04);
+        padding-bottom: 1rem;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
     }
 
     .moCard-id {
@@ -185,65 +132,31 @@
         color: #3E2723;
     }
 
-    .moCard-date {
-        font-size: 0.8rem;
-        color: var(--text-muted);
-        margin-top: 0.2rem;
-        font-weight: 500;
-    }
-
-    .moCard-price {
-        font-family: 'Playfair Display', serif;
+    .moBadge {
+        padding: 0.4rem 0.8rem;
+        border-radius: 50px;
+        font-size: 0.65rem;
         font-weight: 800;
-        color: var(--primary-color);
-        font-size: 1.3rem;
-        text-align: right;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
-    /* ITEM SCROLL AREA - This keeps containers uniform */
-    .moCard-items-wrap {
-        flex: 1;
-        overflow-y: auto;
-        max-height: 260px;
-        margin-bottom: 1rem;
-        padding-right: 6px;
-    }
-
-    .moCard-items-wrap::-webkit-scrollbar {
-        width: 4px;
-    }
-
-    .moCard-items-wrap::-webkit-scrollbar-track {
-        background: rgba(93, 64, 55, 0.03);
-        border-radius: 10px;
-    }
-
-    .moCard-items-wrap::-webkit-scrollbar-thumb {
-        background: rgba(93, 64, 55, 0.15);
-        border-radius: 10px;
-    }
-
-    .moCard-items-wrap::-webkit-scrollbar-thumb:hover {
-        background: rgba(93, 64, 55, 0.35);
-    }
+    .moBadge-done { background: #E8F5E9; color: #2E7D32; }
+    .moBadge-pending { background: #FFF8E1; color: #E65100; }
+    .moBadge-prep { background: #E3F2FD; color: #1565C0; }
 
     .moCard-items {
         list-style: none;
         padding: 0;
-        margin: 0;
+        margin-bottom: 1.5rem;
     }
 
     .moCard-items li {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
-        padding: 0.6rem 0;
-        font-size: 0.88rem;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.03);
-    }
-
-    .moCard-items li:last-child {
-        border-bottom: none;
+        gap: 1rem;
+        padding: 0.8rem 0;
+        border-bottom: 1px solid rgba(0,0,0,0.03);
     }
 
     .moItem-img {
@@ -251,659 +164,301 @@
         height: 48px;
         border-radius: 10px;
         object-fit: cover;
-        flex-shrink: 0;
-        border: 1px solid rgba(93, 64, 55, 0.08);
-    }
-
-    .moItem-noImg {
-        width: 48px;
-        height: 48px;
-        border-radius: 10px;
-        background: rgba(93, 64, 55, 0.06);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        border: 1px solid rgba(93, 64, 55, 0.08);
-    }
-
-    .moItem-noImg i {
-        color: rgba(93, 64, 55, 0.25);
-        font-size: 1rem;
-    }
-
-    .moItem-info {
-        flex: 1;
-        min-width: 0;
     }
 
     .moItem-name {
-        font-weight: 600;
+        font-weight: 700;
         color: #3E2723;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        font-size: 0.88rem;
+        font-size: 0.95rem;
+        line-height: 1.2;
     }
 
-    .moItem-sub {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        margin-top: 1px;
-    }
-
-    .moCard-items li .qty {
-        background: rgba(93, 64, 55, 0.08);
-        color: var(--primary-color);
-        padding: 2px 7px;
-        border-radius: 6px;
-        font-weight: 700;
-        font-size: 0.72rem;
-        white-space: nowrap;
-        flex-shrink: 0;
-    }
-
-    .moItem-price {
-        color: var(--text-muted);
-        font-weight: 600;
-        font-size: 0.82rem;
-        white-space: nowrap;
-        flex-shrink: 0;
-    }
-
-    .moCard-notes {
-        font-size: 0.8rem;
-        color: #795548;
-        background: #FFFBF0;
-        padding: 0.75rem;
-        border-radius: 12px;
-        margin-top: auto;
-        margin-bottom: 1rem;
-        border-left: 3px solid #FFC107;
-    }
-
-    /* FOOTER AREA - Tags and Actions */
     .moCard-footer {
-        margin-top: auto;
-    }
-
-    .moCard-tags {
         display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        padding-top: 1rem;
-        border-top: 1px solid rgba(93, 64, 55, 0.08);
-    }
-
-    .moTag {
-        padding: 0.3rem 0.8rem;
-        border-radius: 50px;
-        font-size: 0.72rem;
-        font-weight: 700;
-        display: inline-flex;
+        justify-content: space-between;
         align-items: center;
-        gap: 5px;
-        background: rgba(93, 64, 55, 0.04);
-        color: #5D4037;
+        gap: 1rem;
     }
 
-    .moBadge {
-        padding: 0.35rem 0.9rem;
+    .moCard-price {
+        font-family: 'Playfair Display', serif;
+        font-weight: 900;
+        color: #3E2723;
+        font-size: 1.4rem;
+    }
+
+    .moTrackBtn, .moRateBtn {
+        background: var(--primary-gradient);
+        color: #fff !important;
+        border: none;
+        padding: 0.6rem 1.2rem;
         border-radius: 50px;
-        font-size: 0.72rem;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .moBadge-done {
-        background: #E8F5E9;
-        color: #2E7D32;
-    }
-
-    .moBadge-pending {
-        background: #FFF8E1;
-        color: #E65100;
-    }
-
-    .moBadge-prep {
-        background: #E3F2FD;
-        color: #1565C0;
-    }
-
-    .moBadge-cancel {
-        background: #FFEBEE;
-        color: #C62828;
-    }
-
-    .moBadge-otw {
-        background: #E8EAF6;
-        color: #283593;
+        font-weight: 700;
+        font-size: 0.8rem;
+        white-space: nowrap;
     }
 
     .moEmpty {
         text-align: center;
-        padding: 4rem 1rem;
+        padding: 4rem 1.5rem;
     }
-
     .moEmpty-icon {
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        background: rgba(93, 64, 55, 0.05);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 1.5rem;
-    }
-
-    .moEmpty-icon i {
-        font-size: 2rem;
-        color: rgba(93, 64, 55, 0.2);
-    }
-
-    .moEmpty h4 {
-        font-family: 'Playfair Display', serif;
-        margin-bottom: 0.5rem;
-    }
-
-    .moEmpty p {
-        color: var(--text-muted);
+        font-size: 3rem;
+        color: #D7CCC8;
         margin-bottom: 1.5rem;
     }
 
-    .moRateBtn {
-        background: transparent;
-        border: 1.5px solid #D4A862;
-        color: #D4A862;
-        border-radius: 50px;
-        padding: 0.2rem 0.75rem;
-        font-size: 0.68rem;
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.3s;
-    }
-
-    .moRateBtn:hover {
-        background: #D4A862;
-        color: #fff;
-    }
-
-    .moTrackBtn {
-        background: transparent;
-        border: 1.5px solid #283593;
-        color: #283593;
-        border-radius: 50px;
-        padding: 0.2rem 0.75rem;
-        font-size: 0.68rem;
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.3s;
-    }
-
-    .moTrackBtn:hover {
-        background: #283593;
-        color: #fff;
-    }
-
-    @media(max-width: 768px) {
-        .moStats {
-            grid-template-columns: 1fr 1fr;
+    @media (max-width: 600px) {
+        .moPage { margin-top: 4rem; padding: 0 0.75rem; }
+        .moStats { grid-template-columns: repeat(2, 1fr); }
+        .moCard { padding: 1.25rem; }
+        .moCard-footer { flex-direction: row; align-items: center; }
+        .moItem-info { flex: 1; min-width: 0; }
+        .moItem-name { 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+            max-width: 150px; 
         }
-
-        .moCards {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    .msg-bubble {
-        max-width: 80%;
-        padding: 8px 14px;
-        border-radius: 16px;
-        margin-bottom: 8px;
-        font-size: 0.9rem;
-        clear: both;
-    }
-
-    .msg-sent {
-        background: linear-gradient(135deg, #5D4037, #795548);
-        color: white;
-        float: right;
-        border-bottom-right-radius: 4px;
-    }
-
-    .msg-received {
-        background: #f0f0f0;
-        color: #333;
-        float: left;
-        border-bottom-left-radius: 4px;
-    }
-
-    .msg-time {
-        font-size: 0.65rem;
-        padding: 0 4px;
-        opacity: 0.7;
-        clear: both;
-        margin-bottom: 12px;
-    }
-
-    .time-sent {
-        float: right;
-    }
-
-    .time-received {
-        float: left;
     }
 </style>
 
 <main class="moPage">
-    <!-- Header -->
     <div class="moHeader">
-        <div class="d-flex align-items-center gap-3">
-            <a href="{{ url_for('main.index') }}" class="moBack"><i class="fas fa-arrow-left"></i> Back</a>
-            <div class="moTitle">
-                <h2><i class="fas fa-shopping-bag me-2" style="color: var(--primary-color); font-size: 1.4rem;"></i>My
-                    Orders</h2>
-                <p>Track and manage all your orders</p>
-            </div>
+        <div class="moTitle">
+            <h2>Track Your Orders</h2>
+            <p class="text-muted small">Stay updated on your culinary journey</p>
         </div>
-        <a href="{{ url_for('main.menu_page') }}" class="moOrderBtn"><i class="fas fa-plus"></i> Order More</a>
     </div>
 
+    {% if all_orders %}
     <!-- Stats -->
     <div class="moStats">
         <div class="moStat">
             <h4 style="color: var(--primary-color);">{{ all_orders|length }}</h4>
-            <p>Total Orders</p>
+            <p>Total</p>
         </div>
         <div class="moStat">
             <h4 style="color: #E65100;">{{ pending_count }}</h4>
-            <p>Pending</p>
+            <p>Received</p>
         </div>
         <div class="moStat">
             <h4 style="color: #1565C0;">{{ preparing_count }}</h4>
-            <p>Preparing</p>
+            <p>Active</p>
         </div>
         <div class="moStat">
             <h4 style="color: #2E7D32;">{{ completed_count }}</h4>
-            <p>Completed</p>
+            <p>History</p>
         </div>
     </div>
 
     <!-- Filter Tabs -->
-    <div class="moTabs">
+    <div class="moTabs d-flex justify-content-start justify-content-md-center">
         <button class="moTab active" onclick="filterOrders('all', this)">All Orders</button>
-        <button class="moTab" onclick="filterOrders('PENDING', this)">Pending</button>
-        <button class="moTab" onclick="filterOrders('PREPARING', this)">Preparing</button>
-        <button class="moTab" onclick="filterOrders('COMPLETED', this)">Completed</button>
-        <button class="moTab" onclick="filterOrders('CANCELLED', this)">Cancelled</button>
+        <button class="moTab" onclick="filterOrders('PENDING', this)">Received</button>
+        <button class="moTab" onclick="filterOrders('PREPARING', this)">Crafting</button>
+        <button class="moTab" onclick="filterOrders('COMPLETED', this)">Delivered</button>
     </div>
 
     <!-- Orders -->
-    {% if all_orders %}
     <div class="moCards" id="ordersContainer">
         {% for order in all_orders %}
         <div class="order-card" data-status="{{ order.overall_status }}">
             <div class="moCard">
                 <div class="moCard-head">
                     <div>
-                        <div class="moCard-id">Order #{{ order.id }}</div>
-                        <div class="moCard-date">{{ order.created_at.strftime('%b %d, %Y - %I:%M %p') }}</div>
+                        <div class="moCard-id">#{{ order.id }}</div>
+                        <div class="text-muted extra-small fw-bold text-uppercase mt-1" style="font-size: 0.6rem; letter-spacing: 1px;">
+                            {{ order.created_at.strftime('%b %d, %Y') }}
+                        </div>
                     </div>
-                    <div class="text-end">
-                        <div class="moCard-price">₱{{ "%.2f"|format(order.total_amount) }}</div>
-                        {% if order.overall_status == 'COMPLETED' %}
-                        <span class="moBadge moBadge-done">Completed</span>
-                        {% elif order.overall_status == 'PENDING' %}
-                        <span class="moBadge moBadge-pending">Pending</span>
-                        {% elif order.overall_status == 'ON_THE_WAY' %}
-                        <span class="moBadge moBadge-otw">On the Way</span>
-                        {% elif order.overall_status == 'PREPARING' %}
-                        <span class="moBadge moBadge-prep">Preparing</span>
-                        {% elif order.overall_status == 'CANCELLED' %}
-                        <span class="moBadge moBadge-cancel">Cancelled</span>
+                    {% if order.overall_status == 'COMPLETED' %}
+                    <span class="moBadge moBadge-done">Delivered</span>
+                    {% elif order.overall_status == 'PENDING' %}
+                    <span class="moBadge moBadge-pending">Received</span>
+                    {% elif order.overall_status == 'ON_THE_WAY' %}
+                    <span class="moBadge moBadge-prep" style="background: #E8EAF6; color: #283593;">Out for Delivery</span>
+                    {% elif order.overall_status == 'PREPARING' %}
+                    <span class="moBadge moBadge-prep">Crafting</span>
+                    {% elif order.overall_status == 'CANCELLED' %}
+                    <span class="moBadge moBadge-done" style="background:#FFEBEE; color:#C62828;">Cancelled</span>
+                    {% endif %}
+                </div>
+
+                <ul class="moCard-items">
+                    {% for item in order.items %}
+                    <li>
+                        {% if item.menu_item and item.menu_item.image_url %}
+                        <img src="{{ item.menu_item.image_url }}" alt="{{ item.menu_item.name }}" class="moItem-img">
                         {% else %}
-                        <span class="moBadge" style="background:#f5f5f5; color:#666;">{{ order.overall_status }}</span>
+                        <div class="moItem-img bg-light d-flex align-items-center justify-content-center"><i class="fas fa-utensils text-muted small"></i></div>
                         {% endif %}
-                    </div>
-                </div>
-
-                <div class="moCard-items-wrap">
-                    <ul class="moCard-items">
-                        {% for item in order.items %}
-                        <li>
-                            {% if item.menu_item and item.menu_item.image_url %}
-                            <img src="{{ item.menu_item.image_url }}" alt="{{ item.menu_item.name }}" class="moItem-img">
-                            {% else %}
-                            <div class="moItem-noImg"><i class="fas fa-utensils"></i></div>
-                            {% endif %}
-                            <div class="moItem-info">
-                                <div class="moItem-name">{{ item.menu_item.name if item.menu_item else 'Item Unavailable' }}</div>
-                                <div class="moItem-sub">₱{{ "%.2f"|format(item.price_at_time) }} each</div>
-                            </div>
-                            <span class="qty">{{ item.quantity }}x</span>
-                            <span class="moItem-price">₱{{ "%.2f"|format(item.price_at_time * item.quantity) }}</span>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                </div>
-
-                {% if order.notes %}
-                <div class="moCard-notes"><i class="fas fa-sticky-note me-1"></i> {{ order.notes }}</div>
-                {% endif %}
+                        <div class="moItem-info">
+                            <div class="moItem-name">{{ item.menu_item.name if item.menu_item else 'Item' }}</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">Qty: {{ item.quantity }}</div>
+                        </div>
+                        <div class="ms-auto fw-bold" style="font-size: 0.9rem;">₱{{ "%.2f"|format(item.price_at_time * item.quantity) }}</div>
+                    </li>
+                    {% endfor %}
+                </ul>
 
                 <div class="moCard-footer">
-                    <div class="moCard-tags">
-                        {% if order.dining_option == 'DINE_IN' %}
-                        <span class="moTag"><i class="fas fa-utensils"></i> Dine In</span>
-                        {% else %}
-                        <span class="moTag"><i class="fas fa-shopping-bag"></i> Pick-up</span>
-                        {% endif %}
-
-                        {% if order.payment_method == 'COUNTER' %}
-                        <span class="moTag"><i class="fas fa-cash-register"></i> Counter</span>
-                        {% else %}
-                        <span class="moTag"><i class="fas fa-mobile-alt"></i> Online</span>
-                        {% endif %}
-
-                        {% if order.payment_status == 'PAID' %}
-                        <span class="moTag" style="background: #E8F5E9; color: #2E7D32;"><i
-                                class="fas fa-check-circle"></i> Paid</span>
-                        {% else %}
-                        <span class="moTag" style="background: #FFEBEE; color: #C62828;"><i
-                                class="fas fa-times-circle"></i> Unpaid</span>
-                        {% endif %}
-                    </div>
-
-                    <!-- Actions -->
-                    {% if order.overall_status == 'COMPLETED' %}
-                    <div class="mt-3 text-end">
-                        {% if order.id in user_reviews_by_order %}
-                        <div style="font-size: 0.78rem; color: #D4A862;">
-                            {% for _ in range(user_reviews_by_order[order.id].rating) %}<i class="fas fa-star"></i>{%
-                            endfor %}{% for _ in range(5 - user_reviews_by_order[order.id].rating) %}<i
-                                class="far fa-star"></i>{% endfor %}
-                        </div>
-                        {% else %}
+                    <div class="moCard-price">₱{{ "%.2f"|format(order.total_amount) }}</div>
+                    
+                    <div class="d-flex gap-2">
+                        {% if order.overall_status == 'ON_THE_WAY' %}
+                        <button class="moTrackBtn" onclick="openTrackingModal({{ order.id }})"><i class="fas fa-map-marker-alt me-1"></i>Track</button>
+                        {% elif order.overall_status == 'COMPLETED' and order.id not in user_reviews_by_order %}
                         <button class="moRateBtn" data-bs-toggle="modal" data-bs-target="#reviewModal"
-                            onclick="document.getElementById('reviewOrderForm').action = '/order/{{ order.id }}/review';"><i
-                                class="fas fa-star me-1"></i>Rate Order</button>
+                                onclick="document.getElementById('reviewOrderForm').action = '/order/{{ order.id }}/review';">
+                            <i class="fas fa-star me-1"></i>Rate
+                        </button>
                         {% endif %}
                     </div>
-                    {% elif order.overall_status == 'ON_THE_WAY' %}
-                    <div class="mt-3 text-end">
-                        <button class="moRateBtn me-2" style="border-color: #5D4037; color: #5D4037;"
-                            onclick="openOrderChatModal({{ order.id }})"><i class="fas fa-comment-dots me-1"></i>Chat
-                            Rider</button>
-                        <button class="moTrackBtn" onclick="openTrackingModal({{ order.id }})"><i
-                                class="fas fa-location-arrow me-1"></i>Track Rider</button>
-                    </div>
-                    {% endif %}
                 </div>
             </div>
         </div>
         {% endfor %}
     </div>
+
     <div id="noOrdersFiltered" style="display: none;" class="moEmpty">
         <div class="moEmpty-icon"><i class="fas fa-filter"></i></div>
-        <p>No orders found with this filter.</p>
+        <p>No orders matched this filter.</p>
     </div>
+
     {% else %}
     <div class="moEmpty">
         <div class="moEmpty-icon"><i class="fas fa-shopping-bag"></i></div>
-        <h4>No orders yet</h4>
-        <p>Browse our menu and start ordering!</p>
-        <a href="{{ url_for('main.menu_page') }}" class="moOrderBtn"><i class="fas fa-book-open"></i> Browse Menu</a>
+        <h4 class="font-serif fw-bold">No orders found</h4>
+        <p class="text-muted">Your culinary journey starts with your first order.</p>
+        <div class="mt-4">
+            <a href="{{ url_for('main.menu_page') }}" class="btn btn-dark rounded-pill px-5 py-3 shadow-sm">Explore Menu</a>
+        </div>
     </div>
     {% endif %}
-
-    <!-- Review Modal -->
-    <div class="modal fade" id="reviewModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content"
-                style="border-radius: 20px; border: none; box-shadow: 0 16px 48px rgba(0,0,0,0.12); overflow: hidden;">
-                <div class="modal-header border-0 pb-0 px-4 pt-4">
-                    <h5 class="modal-title" style="font-family: 'Playfair Display', serif; font-weight: 700;">Rate Your
-                        Experience</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body px-4 pb-4">
-                    <p style="color: var(--text-muted); font-size: 0.88rem;">We'd love to hear your feedback.</p>
-                    <form id="reviewOrderForm" method="POST" action="">
-                        <div class="mb-4 text-center"><input type="hidden" name="rating" id="reviewRatingInput"
-                                value="5" required>
-                            <div class="d-flex justify-content-center gap-2" style="font-size: 2.2rem; color: #e0e0e0;">
-                                {% for i in range(1,6) %}<i class="fas fa-star text-warning"
-                                    onclick="setStarRating({{ i }})" id="star-{{ i }}"
-                                    style="cursor:pointer; transition: transform 0.2s;"
-                                    onmouseover="this.style.transform='scale(1.15)'"
-                                    onmouseout="this.style.transform='scale(1)'"></i>{% endfor %}</div>
-                        </div>
-                        <div class="mb-3"><label class="form-label fw-bold"
-                                style="font-size:0.88rem; color: var(--text-muted);">Comment (Optional)</label><textarea
-                                class="form-control" name="comment" rows="3" placeholder="Tell us what you liked..."
-                                style="border-radius: 12px; border: 1px solid var(--border-color); resize: none;"></textarea>
-                        </div>
-                        <div class="d-grid mt-4"><button type="submit" class="btn text-white fw-bold"
-                                style="background: linear-gradient(135deg, #5D4037, #795548); border-radius: 50px; padding: 0.75rem; box-shadow: 0 4px 14px rgba(93,64,55,0.2);">Submit
-                                Review</button></div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Tracking Modal -->
-    <div class="modal fade" id="trackingModal" data-bs-backdrop="static" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content"
-                style="border-radius: 20px; overflow: hidden; border: none; box-shadow: 0 16px 48px rgba(0,0,0,0.15);">
-                <div class="modal-header border-0 text-white pb-2"
-                    style="background: linear-gradient(135deg, #283593, #3949AB);">
-                    <h5 class="modal-title" style="font-family: 'Playfair Display', serif;"><i
-                            class="fas fa-map-marker-alt me-2"></i>Order #<span id="trackOrderId"></span></h5><button
-                        type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                        onclick="stopTracking()"></button>
-                </div>
-                <div class="px-3 pb-3 text-white shadow-sm"
-                    style="background: linear-gradient(135deg, #283593, #3949AB); position: relative; z-index: 10;">
-                    <div class="d-flex align-items-center mb-1">
-                        <div
-                            style="background: rgba(255,255,255,0.15); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; margin-right: 10px;">
-                            <i class="fas fa-motorcycle"></i>
-                        </div>
-                        <div>
-                            <div class="fw-bold" style="font-size: 0.95rem;" id="trackRiderName">Locating rider...</div>
-                            <div style="font-size: 0.7rem; opacity: 0.7;"><i class="fas fa-satellite-dish me-1"></i>Last
-                                update: <span id="trackLastUpdate">--</span></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-body p-0" style="position: relative;">
-                    <div id="trackingMap" style="height: 350px; width: 100%; background: #f5f0eb;"></div>
-                    <div
-                        style="position: absolute; bottom: 15px; left: 15px; background: white; padding: 4px 10px; border-radius: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 999; display: flex; align-items: center;">
-                        <i class="fas fa-circle text-success me-1 pulse-dot" style="font-size: 8px;"></i><span
-                            style="font-size: 0.7rem; font-weight: bold;">LIVE</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        function setStarRating(num) { document.getElementById('reviewRatingInput').value = num; for (let i = 1; i <= 5; i++) { document.getElementById('star-' + i).classList.toggle('text-warning', i <= num); } }
-        function filterOrders(status, btn) {
-            const cards = document.querySelectorAll('.order-card'); let vis = 0;
-            cards.forEach(c => { if (status === 'all' || c.dataset.status === status) { c.style.display = ''; vis++; } else { c.style.display = 'none'; } });
-            document.getElementById('noOrdersFiltered').style.display = vis === 0 ? 'block' : 'none';
-            document.querySelectorAll('.moTab').forEach(b => b.classList.remove('active')); btn.classList.add('active');
-        }
-    </script>
-    <style>
-        @keyframes pulse-dot {
-            0% {
-                transform: scale(.95);
-                opacity: .5
-            }
-
-            50% {
-                transform: scale(1.1);
-                opacity: 1
-            }
-
-            100% {
-                transform: scale(.95);
-                opacity: .5
-            }
-        }
-
-        .pulse-dot {
-            animation: pulse-dot 1s infinite
-        }
-
-        .store-marker {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #D4A862, #5D4037);
-            border: 3px solid #fff;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, .3)
-        }
-
-        .rider-pulse-marker {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: #283593;
-            border: 3px solid #fff;
-            box-shadow: 0 0 0 3px rgba(40, 53, 147, .3), 0 2px 6px rgba(0, 0, 0, .3);
-            animation: pulse-ring-blue 1.5s cubic-bezier(.215, .61, .355, 1) infinite
-        }
-
-        @keyframes pulse-ring-blue {
-            0% {
-                box-shadow: 0 0 0 0 rgba(40, 53, 147, .5), 0 2px 6px rgba(0, 0, 0, .3)
-            }
-
-            80%,
-            100% {
-                box-shadow: 0 0 0 12px rgba(40, 53, 147, 0), 0 2px 6px rgba(0, 0, 0, .3)
-            }
-        }
-    </style>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- Order Chat Modal -->
-    <div class="modal fade" id="orderChatModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content"
-                style="border-radius: 20px; overflow: hidden; border: none; box-shadow: 0 16px 48px rgba(0,0,0,0.15);">
-                <div class="modal-header text-white"
-                    style="background: linear-gradient(135deg, #5D4037, #795548); border: none;">
-                    <h5 class="modal-title" style="font-family: 'Playfair Display', serif;"><i
-                            class="fas fa-comments me-2"></i> Chat with Rider</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                        onclick="closeChat()"></button>
-                </div>
-                <div class="modal-body p-0"
-                    style="background: #fdfdfd; height: 350px; display: flex; flex-direction: column;">
-                    <div id="chatMessagesContainer"
-                        style="flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column;">
-                        <!-- dynamic msgs -->
-                    </div>
-                    <div
-                        style="border-top: 1px solid var(--border-color); padding: 10px; background: #fff; display: flex; gap: 8px;">
-                        <input type="text" id="chatMessageInput" class="form-control"
-                            style="border-radius: 20px; font-size:0.9rem;" placeholder="Type message..."
-                            onkeypress="if(event.key==='Enter') sendOrderChatMessage()">
-                        <button class="btn text-white"
-                            style="border-radius: 50%; width: 40px; height: 40px; background: #5D4037; flex-shrink:0;"
-                            onclick="sendOrderChatMessage()">
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        let trackMap = null, trackStoreMarker = null, trackRiderMarker = null, trackingInterval = null; const storeLatLng = [14.2730, 121.4550];
-        function initTrackingMap() { if (trackMap !== null) { trackMap.invalidateSize(); return; } trackMap = L.map('trackingMap', { center: storeLatLng, zoom: 15, zoomControl: false }); L.control.zoom({ position: 'topright' }).addTo(trackMap); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap', maxZoom: 19 }).addTo(trackMap); const sIcon = L.divIcon({ className: '', html: '<div class="store-marker"></div>', iconSize: [20, 20], iconAnchor: [10, 10] }); trackStoreMarker = L.marker(storeLatLng, { icon: sIcon }).addTo(trackMap); trackStoreMarker.bindPopup('<b style="color:#5D4037">☕ Le Maison Store</b>'); }
-        function openTrackingModal(id) { document.getElementById('trackOrderId').textContent = id; document.getElementById('trackRiderName').textContent = "Locating rider..."; document.getElementById('trackLastUpdate').textContent = "--"; const m = new bootstrap.Modal(document.getElementById('trackingModal')); m.show(); setTimeout(() => { initTrackingMap(); fetchRiderLocation(id); trackingInterval = setInterval(() => fetchRiderLocation(id), 5000); }, 300); }
-        function stopTracking() { if (trackingInterval) { clearInterval(trackingInterval); trackingInterval = null; } }
-        function fetchRiderLocation(id) { fetch(`/api/delivery/track/${id}`, { headers: { 'Bypass-Tunnel-Reminder': 'true' } }).then(r => r.json()).then(d => { if (d.success && d.rider_location) { const l = d.rider_location, rll = [l.lat, l.lng]; document.getElementById('trackRiderName').textContent = d.rider_name; document.getElementById('trackLastUpdate').textContent = new Date(l.timestamp).toLocaleTimeString(); if (trackRiderMarker) { trackRiderMarker.setLatLng(rll); } else { const ri = L.divIcon({ className: '', html: '<div class="rider-pulse-marker"></div>', iconSize: [16, 16], iconAnchor: [8, 8] }); trackRiderMarker = L.marker(rll, { icon: ri }).addTo(trackMap); trackRiderMarker.bindPopup('<b>🏍️ ' + d.rider_name + '</b><br><small>Rider on the way</small>'); } if (!trackMap._userZoomed) { trackMap.fitBounds(L.latLngBounds([storeLatLng, rll]), { padding: [40, 40], maxZoom: 16 }); } } else { document.getElementById('trackRiderName').textContent = "No live location yet"; } }).catch(e => console.error(e)); }
-        document.getElementById('trackingModal').addEventListener('shown.bs.modal', function () { if (trackMap) { trackMap.on('zoomstart dragstart', function () { trackMap._userZoomed = true; }); } });
-        document.getElementById('trackingModal').addEventListener('hidden.bs.modal', stopTracking);
-
-        let currentChatOrderId = null;
-        let chatInterval = null;
-        const currentUserId = {{ current_user.id }};
-
-        function openOrderChatModal(orderId) {
-            currentChatOrderId = orderId;
-            document.getElementById('chatMessagesContainer').innerHTML = '<div class="text-center mt-4 w-100"><div class="spinner-border text-primary spinner-border-sm"></div></div>';
-            new bootstrap.Modal(document.getElementById('orderChatModal')).show();
-            loadOrderChats();
-            chatInterval = setInterval(loadOrderChats, 4000);
-        }
-
-        function closeChat() {
-            if (chatInterval) clearInterval(chatInterval);
-            currentChatOrderId = null;
-        }
-
-        document.getElementById('orderChatModal').addEventListener('hidden.bs.modal', closeChat);
-
-        function loadOrderChats() {
-            if (!currentChatOrderId) return;
-            fetch(`/api/order/${currentChatOrderId}/chat`)
-                .then(r => r.json())
-                .then(d => {
-                    if (d.success) renderChatMessages(d.messages);
-                });
-        }
-
-        function renderChatMessages(msgs) {
-            const c = document.getElementById('chatMessagesContainer');
-            if (msgs.length === 0) {
-                if (!c.innerHTML.includes('No messages')) c.innerHTML = '<div class="text-center text-muted mt-5 w-100"><i class="fas fa-comment-slash fa-2x mb-2 opacity-50"></i><p>No messages yet.<br>Send a message to your rider.</p></div>';
-                return;
-            }
-            let html = '';
-            msgs.forEach(m => {
-                const isMe = m.sender_id === currentUserId;
-                const d = new Date(m.created_at);
-                const t = d.getHours() > 12 ? `${d.getHours() - 12}:${d.getMinutes().toString().padStart(2, '0')} PM` : `${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')} AM`;
-                html += `<div class="msg-bubble ${isMe ? 'msg-sent' : 'msg-received'}">${m.message}</div>`;
-                html += `<div class="msg-time ${isMe ? 'time-sent' : 'time-received'}">${t}</div>`;
-                html += `<div style="clear:both;"></div>`;
-            });
-            const isScrolledToBottom = c.scrollHeight - c.clientHeight <= c.scrollTop + 50;
-            c.innerHTML = html;
-            if (isScrolledToBottom) c.scrollTop = c.scrollHeight;
-        }
-
-        function sendOrderChatMessage() {
-            if (!currentChatOrderId) return;
-            const i = document.getElementById('chatMessageInput');
-            const msg = i.value.trim();
-            if (!msg) return;
-
-            i.value = '';
-
-            // optimistic ui
-            const c = document.getElementById('chatMessagesContainer');
-            if (c.innerHTML.includes('No messages')) c.innerHTML = '';
-            c.innerHTML += `<div class="msg-bubble msg-sent">${msg}</div><div class="msg-time time-sent">sending...</div><div style="clear:both;"></div>`;
-            c.scrollTop = c.scrollHeight;
-
-            fetch(`/api/order/${currentChatOrderId}/chat/send`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sender_id: currentUserId, message: msg })
-            }).then(() => loadOrderChats());
-        }
-    </script>
 </main>
+
+<!-- Review Modal -->
+<div class="modal fade" id="reviewModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header border-0 pb-0 px-4 pt-4">
+                <h5 class="modal-title font-serif fw-bold">Rate Experience</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body px-4 pb-4">
+                <p class="text-muted small">How was your meal today?</p>
+                <form id="reviewOrderForm" method="POST" action="">
+                    <div class="mb-4 text-center">
+                        <input type="hidden" name="rating" id="reviewRatingInput" value="5" required>
+                        <div class="d-flex justify-content-center gap-2" style="font-size: 2rem; color: #e0e0e0;">
+                            {% for i in range(1,6) %}
+                            <i class="fas fa-star text-warning" onclick="setStarRating({{ i }})" id="star-{{ i }}" style="cursor:pointer;"></i>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">Comments</label>
+                        <textarea class="form-control rounded-4" name="comment" rows="3" placeholder="What stood out?"></textarea>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-dark rounded-pill py-3 fw-bold">Submit Review</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tracking Modal -->
+<div class="modal fade" id="trackingModal" data-bs-backdrop="static" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+            <div class="modal-header border-0 text-white" style="background: var(--primary-gradient);">
+                <h5 class="modal-title font-serif">Order #<span id="trackOrderId"></span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="stopTracking()"></button>
+            </div>
+            <div class="p-3 text-white" style="background: var(--primary-gradient); font-size: 0.8rem;">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-motorcycle me-2"></i>
+                    <div id="trackRiderName">Locating rider...</div>
+                    <div class="ms-auto opacity-75" id="trackLastUpdate">--:--</div>
+                </div>
+            </div>
+            <div class="modal-body p-0 position-relative">
+                <div id="trackingMap" style="height: 300px; width: 100%;"></div>
+                <div style="position: absolute; bottom: 10px; left: 10px; background: rgba(255,255,255,0.9); padding: 4px 10px; border-radius: 20px; z-index: 1000; font-size: 0.7rem; font-weight: bold;">
+                    <i class="fas fa-circle text-success pulse-dot me-1"></i>LIVE
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function setStarRating(num) {
+        document.getElementById('reviewRatingInput').value = num;
+        for (let i = 1; i <= 5; i++) {
+            document.getElementById('star-' + i).classList.toggle('text-warning', i <= num);
+        }
+    }
+    function filterOrders(status, btn) {
+        const cards = document.querySelectorAll('.order-card'); 
+        let visibleCount = 0;
+        cards.forEach(card => { 
+            if (status === 'all' || card.dataset.status === status) { 
+                card.style.display = 'block'; 
+                visibleCount++; 
+            } else { 
+                card.style.display = 'none'; 
+            } 
+        });
+        document.getElementById('noOrdersFiltered').style.display = visibleCount === 0 ? 'block' : 'none';
+        document.querySelectorAll('.moTab').forEach(tab => tab.classList.remove('active')); 
+        btn.classList.add('active');
+    }
+
+    let trackMap = null, trackStoreMarker = null, trackRiderMarker = null, trackingInterval = null; 
+    const storeLatLng = [14.2730, 121.4550];
+
+    function initTrackingMap() {
+        if (trackMap !== null) { trackMap.invalidateSize(); return; }
+        trackMap = L.map('trackingMap', { center: storeLatLng, zoom: 15, zoomControl: false });
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(trackMap);
+        const sIcon = L.divIcon({ className: '', html: '<div class="store-marker"></div>', iconSize: [20, 20] });
+        trackStoreMarker = L.marker(storeLatLng, { icon: sIcon }).addTo(trackMap);
+    }
+
+    function openTrackingModal(id) {
+        document.getElementById('trackOrderId').textContent = id;
+        new bootstrap.Modal(document.getElementById('trackingModal')).show();
+        setTimeout(() => { 
+            initTrackingMap(); 
+            fetchRiderLocation(id); 
+            trackingInterval = setInterval(() => fetchRiderLocation(id), 5000); 
+        }, 300);
+    }
+
+    function stopTracking() { if (trackingInterval) clearInterval(trackingInterval); }
+    
+    function fetchRiderLocation(id) {
+        fetch(`/api/delivery/track/${id}`).then(r => r.json()).then(d => {
+            if (d.success && d.rider_location) {
+                const ll = [d.rider_location.lat, d.rider_location.lng];
+                document.getElementById('trackRiderName').textContent = d.rider_name;
+                document.getElementById('trackLastUpdate').textContent = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                if (trackRiderMarker) trackRiderMarker.setLatLng(ll);
+                else trackRiderMarker = L.marker(ll, { icon: L.divIcon({ className: '', html: '<div class="rider-pulse-marker"></div>', iconSize: [16, 16] }) }).addTo(trackMap);
+                trackMap.panTo(ll);
+            }
+        });
+    }
+</script>
+
+<style>
+    @keyframes pulse-dot { 0% { opacity: 0.5; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1); } 100% { opacity: 0.5; transform: scale(0.8); } }
+    .pulse-dot { animation: pulse-dot 1.5s infinite; }
+    .store-marker { width: 20px; height: 20px; border-radius: 50%; background: #D4A862; border: 3px solid #fff; box-shadow: 0 0 10px rgba(0,0,0,0.2); }
+    .rider-pulse-marker { width: 16px; height: 16px; border-radius: 50%; background: #283593; border: 3px solid #fff; box-shadow: 0 0 0 4px rgba(40,53,147,0.2); }
+</style>
 {% endblock %}

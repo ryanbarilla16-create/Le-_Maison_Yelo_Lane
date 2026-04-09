@@ -6,637 +6,360 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
+    :root {
+        --glass-bg: rgba(255, 255, 255, 0.85);
+        --glass-border: rgba(93, 64, 55, 0.1);
+        --primary-gradient: linear-gradient(135deg, #5D4037, #8D6E63);
+        --accent-gold: #D4A862;
+    }
+
     .cartPage {
-        max-width: 1100px;
-        margin: 6rem auto 3rem;
+        max-width: 1200px;
+        margin: 5rem auto 3rem;
         padding: 0 1.5rem;
-        min-height: 70vh;
+        min-height: 80vh;
+        animation: fadeIn 0.8s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 
     .cartHead {
+        margin-bottom: 2.5rem;
+        border-bottom: 2px solid var(--glass-border);
+        padding-bottom: 1.5rem;
         display: flex;
+        justify-content: space-between;
         align-items: center;
-        gap: 1rem;
-        margin-bottom: 2rem;
     }
 
     .cartHead h2 {
-        font-family: 'Playfair Display', 'Georgia', serif;
-        font-weight: 700;
-        font-size: 2rem;
+        font-family: 'Playfair Display', serif;
+        font-weight: 800;
+        font-size: 2.5rem;
+        color: #3E2723;
         margin: 0;
-    }
-
-    .cartHead h2 i {
-        color: var(--primary-color);
-        font-size: 1.5rem;
-    }
-
-    .cartHead .cartCount {
-        background: rgba(93, 64, 55, 0.08);
-        color: var(--primary-color);
-        padding: 0.2rem 0.75rem;
-        border-radius: 50px;
-        font-size: 0.78rem;
-        font-weight: 700;
     }
 
     .cartGrid {
         display: grid;
-        grid-template-columns: 1fr 380px;
-        gap: 2rem;
-        align-items: start;
+        grid-template-columns: 1fr 400px;
+        gap: 3rem;
+        position: relative;
     }
 
+    /* Cart Items Container */
     .cartList {
         background: #fff;
-        border-radius: 20px;
-        border: 1px solid var(--border-color);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+        border-radius: 30px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03);
+        border: 1px solid var(--glass-border);
         overflow: hidden;
     }
 
     .cartItem {
         display: grid;
-        grid-template-columns: auto 1fr auto auto auto;
-        gap: 1rem;
+        grid-template-columns: 50px 100px 2fr 1.5fr 1fr auto;
+        gap: 1.5rem;
+        padding: 2rem;
         align-items: center;
-        padding: 1.25rem 1.5rem;
         border-bottom: 1px solid rgba(93, 64, 55, 0.05);
-        transition: background 0.2s;
+        transition: all 0.3s;
+    }
+
+    .cartItem:hover {
+        background: rgba(93, 64, 55, 0.02);
     }
 
     .cartItem:last-child {
         border-bottom: none;
     }
 
-    .cartItem:hover {
-        background: rgba(93, 64, 55, 0.02);
-    }
-    
-    /* Custom Checkbox */
-    .custom-checkbox {
-        width: 22px;
-        height: 22px;
-        border: 2px solid rgba(93, 64, 55, 0.3);
-        border-radius: 6px;
-        cursor: pointer;
-        appearance: none;
-        -webkit-appearance: none;
-        outline: none;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        background-color: #fff;
-        transition: all 0.2s;
-        margin: 0;
-        vertical-align: middle;
-    }
-    .custom-checkbox:hover {
-        border-color: #5D4037;
-    }
-    .custom-checkbox:checked {
-        background-color: #5D4037;
-        border-color: #5D4037;
-    }
-    .custom-checkbox:checked::after {
-        content: '\f00c';
-        font-family: 'Font Awesome 5 Free';
-        font-weight: 900;
-        color: #fff;
-        font-size: 11px;
-    }
-
     .cartItem-img {
-        width: 64px;
-        height: 64px;
-        border-radius: 14px;
+        width: 100px;
+        height: 100px;
+        border-radius: 20px;
         object-fit: cover;
-    }
-
-    .cartItem-noImg {
-        width: 64px;
-        height: 64px;
-        border-radius: 14px;
-        background: rgba(93, 64, 55, 0.06);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .cartItem-noImg i {
-        color: rgba(93, 64, 55, 0.2);
-        font-size: 1.2rem;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
     }
 
     .cartItem-name {
+        font-family: 'Playfair Display', serif;
         font-weight: 700;
-        font-size: 0.95rem;
-        margin-bottom: 0.1rem;
+        font-size: 1.2rem;
+        color: #3E2723;
+        margin-bottom: 0.25rem;
     }
 
     .cartItem-cat {
-        font-size: 0.78rem;
-        color: var(--text-muted);
-    }
-
-    .cartItem-price {
-        color: var(--text-muted);
-        font-weight: 600;
-        font-size: 0.88rem;
-        white-space: nowrap;
-    }
-
-    .cartItem-qty {
-        background: rgba(93, 64, 55, 0.06);
-        padding: 0.3rem 0.75rem;
-        border-radius: 8px;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        font-size: 0.7rem;
         font-weight: 700;
-        font-size: 0.88rem;
-        text-align: center;
-    }
-
-    .cartItem-subtotal {
-        font-family: 'Playfair Display', serif;
-        font-weight: 700;
-        color: var(--primary-color);
-        font-size: 1rem;
-        white-space: nowrap;
-    }
-
-    .cartItem-remove {
-        width: 34px;
-        height: 34px;
-        border-radius: 10px;
-        border: 1px solid rgba(200, 50, 50, 0.15);
-        background: rgba(200, 50, 50, 0.04);
-        color: #C62828;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: all 0.3s;
-        font-size: 0.8rem;
-    }
-
-    .cartItem-remove:hover {
-        background: #C62828;
-        color: #fff;
-        border-color: #C62828;
-    }
-
-    .cartSummary {
-        background: #fff;
-        border-radius: 20px;
-        border: 1px solid var(--border-color);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-        padding: 1.75rem;
-        position: sticky;
-        top: 80px;
-    }
-
-    .cartSummary h5 {
-        font-family: 'Playfair Display', serif;
-        font-weight: 700;
-        padding-bottom: 1rem;
-        margin-bottom: 1rem;
-        border-bottom: 1px solid rgba(93, 64, 55, 0.08);
-    }
-
-    .cartSummary .sumRow {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 0.75rem;
-        color: var(--text-muted);
-        font-size: 0.9rem;
-    }
-
-    .cartSummary .sumTotal {
-        display: flex;
-        justify-content: space-between;
-        padding-top: 0.75rem;
-        margin-top: 0.5rem;
-        border-top: 1.5px solid rgba(93, 64, 55, 0.1);
-    }
-
-    .cartSummary .sumTotal span:first-child {
-        font-weight: 700;
-        font-size: 1.1rem;
-    }
-
-    .cartSummary .sumTotal span:last-child {
-        font-family: 'Playfair Display', serif;
-        font-weight: 800;
-        font-size: 1.3rem;
-        color: var(--primary-color);
-    }
-
-
-    .cartOpt {
-        display: flex;
-        gap: 0.5rem;
-        margin-bottom: 1.25rem;
-    }
-
-    .cartOpt label {
-        flex: 1;
-        background: rgba(93, 64, 55, 0.04);
-        border: 1.5px solid transparent;
-        border-radius: 12px;
-        padding: 0.6rem 0.75rem;
-        text-align: center;
-        font-weight: 600;
-        font-size: 0.82rem;
-        cursor: pointer;
-        transition: all 0.3s;
-    }
-
-    .cartOpt input:checked+label {
-        border-color: var(--primary-color);
-        background: rgba(93, 64, 55, 0.08);
-        color: var(--primary-color);
-    }
-
-    .cartPay {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-        margin-bottom: 1.25rem;
-    }
-
-    .cartItem {
-        display: grid;
-        grid-template-columns: 24px 80px 2fr 1.2fr 1.2fr 1.5fr auto;
-        gap: 1.5rem;
-        align-items: center;
-        padding: 1.5rem;
-        border-bottom: 1px solid rgba(93, 64, 55, 0.06);
-        transition: background 0.2s;
-    }
-
-    .cartItem-img,
-    .cartItem-noImg {
-        width: 80px;
-        height: 80px;
-        border-radius: 16px;
-        object-fit: cover;
-    }
-
-    .cartItem-noImg {
-        background: rgba(93, 64, 55, 0.06);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .cartItem-noImg i {
-        color: rgba(93, 64, 55, 0.2);
-        font-size: 1.5rem;
+        color: var(--accent-gold);
     }
 
     .qty-control {
         display: flex;
         align-items: center;
         background: #f8f5f2;
+        padding: 6px;
         border-radius: 12px;
-        padding: 4px;
-        gap: 4px;
-        border: 1px solid rgba(139, 69, 19, 0.1);
         width: fit-content;
-        margin: 0 auto;
     }
 
     .qty-btn {
-        width: 28px;
-        height: 28px;
+        width: 32px;
+        height: 32px;
         border-radius: 8px;
         border: none;
         background: #fff;
         color: var(--primary-color);
-        cursor: pointer;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         transition: all 0.2s;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.8rem;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
     }
 
-    .qty-btn:hover {
+    .qty-btn:hover:not(:disabled) {
         background: var(--primary-color);
         color: #fff;
     }
 
     .qty-val {
-        width: 32px;
-        text-align: center;
+        padding: 0 15px;
         font-weight: 800;
-        font-size: 0.9rem;
-        color: #3E2723;
-    }
-
-    .cartItem-price {
-        color: var(--text-muted);
-        font-weight: 500;
-        font-size: 0.9rem;
-        text-align: right;
+        min-width: 40px;
+        text-align: center;
     }
 
     .cartItem-subtotal {
         font-family: 'Playfair Display', serif;
-        font-weight: 700;
+        font-weight: 800;
+        font-size: 1.2rem;
         color: var(--primary-color);
-        font-size: 1.15rem;
-        text-align: right;
-        min-width: 90px;
     }
 
-    .cartItem-remove {
-        margin-left: 10px;
-        width: 38px;
-        height: 38px;
-        border-radius: 12px;
-        border: 1px solid rgba(200, 50, 50, 0.1);
-        background: rgba(200, 50, 50, 0.02);
-        color: #C62828;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: all 0.3s;
-        font-size: 0.9rem;
-    }
-
-    .cartItem-remove:hover {
-        background: #C62828;
-        color: #fff;
-        box-shadow: 0 4px 12px rgba(198, 40, 40, 0.2);
-    }
-
+    /* Summary Card - Glassmorphism */
     .cartSummary {
-        background: #fff;
-        border-radius: 20px;
-        border: 1px solid var(--border-color);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.04);
-        padding: 2rem;
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-radius: 30px;
+        border: 1px solid var(--glass-border);
+        padding: 2.5rem;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.05);
         position: sticky;
         top: 100px;
+        height: fit-content;
     }
 
     .cartSummary h5 {
         font-family: 'Playfair Display', serif;
         font-weight: 800;
-        padding-bottom: 1.25rem;
-        margin-bottom: 1.5rem;
-        font-size: 1.35rem;
-        color: #3E2723;
+        font-size: 1.8rem;
+        margin-bottom: 2rem;
+        border-bottom: 1px solid var(--glass-border);
+        padding-bottom: 1rem;
     }
 
-    .cartSummary .sumRow {
+    .sumRow {
         display: flex;
         justify-content: space-between;
-        margin-bottom: 0.75rem;
-        color: var(--text-muted);
-        font-size: 0.9rem;
+        margin-bottom: 1rem;
+        font-size: 1rem;
+        color: #5D4037;
     }
 
-    .cartSummary .sumTotal {
+    .sumTotal {
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 2px dashed var(--glass-border);
         display: flex;
         justify-content: space-between;
-        padding-top: 0.75rem;
-        margin-top: 0.5rem;
-        border-top: 1.5px solid rgba(93, 64, 55, 0.1);
+        align-items: center;
     }
 
-    .cartSummary .sumTotal span:first-child {
-        font-weight: 700;
-        font-size: 1.1rem;
-    }
-
-    .cartSummary .sumTotal span:last-child {
+    .sumTotal .label { font-weight: 700; font-size: 1.1rem; }
+    .sumTotal .val { 
         font-family: 'Playfair Display', serif;
-        font-weight: 800;
-        font-size: 1.3rem;
+        font-weight: 900;
+        font-size: 1.8rem;
         color: var(--primary-color);
     }
 
     .cartSubmit {
-        background: linear-gradient(135deg, #5D4037, #795548);
+        background: var(--primary-gradient);
         color: #fff;
-        font-weight: 700;
         border: none;
         border-radius: 50px;
-        padding: 0.85rem;
+        padding: 1.2rem;
         width: 100%;
-        font-size: 1rem;
-        cursor: pointer;
+        font-weight: 700;
+        font-size: 1.1rem;
+        margin-top: 2rem;
+        box-shadow: 0 10px 30px rgba(93, 64, 55, 0.3);
         transition: all 0.3s;
-        box-shadow: 0 6px 20px rgba(93, 64, 55, 0.2);
-        letter-spacing: 0.5px;
     }
 
     .cartSubmit:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 30px rgba(93, 64, 55, 0.3);
-    }
-    
-    /* Scrollbar for cartList */
-    .cartList {
-        max-height: 550px;
-        overflow-y: auto;
-        overflow-x: hidden;
-    }
-    .cartList::-webkit-scrollbar {
-        width: 6px;
-    }
-    .cartList::-webkit-scrollbar-track {
-        background: rgba(93, 64, 55, 0.02);
-        border-radius: 10px;
-        margin: 10px 0;
-    }
-    .cartList::-webkit-scrollbar-thumb {
-        background: rgba(93, 64, 55, 0.2);
-        border-radius: 10px;
-    }
-    .cartList::-webkit-scrollbar-thumb:hover {
-        background: rgba(93, 64, 55, 0.4);
+        transform: translateY(-3px);
+        box-shadow: 0 15px 40px rgba(93, 64, 55, 0.4);
     }
 
-    @media(max-width: 900px) {
-        .cartPage {
-            max-width: 98%;
-            margin: 5rem auto 2rem;
-            padding: 0 1rem;
-        }
+    /* Dining Options UI */
+    .cartOpt {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
 
-        .cartHead {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 0.75rem;
-        }
+    .cartOpt label {
+        background: #fdfaf8;
+        border: 2px solid #f1ece8;
+        border-radius: 15px;
+        padding: 1rem 0.5rem;
+        text-align: center;
+        font-size: 0.8rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
 
-        .cart-controls {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 0.75rem;
-            padding: 0.5rem 0 0;
-        }
+    .cartOpt input:checked + label {
+        border-color: var(--primary-color);
+        background: #fff;
+        color: var(--primary-color);
+        box-shadow: 0 5px 15px rgba(93, 64, 55, 0.1);
+    }
 
-        .cart-controls .btn {
-            width: 100%;
-            justify-content: center;
-        }
+    /* Floating Checkout for Mobile */
+    .mobileCheckoutBar {
+        display: none;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: #fff;
+        padding: 1rem 1.5rem 2rem;
+        box-shadow: 0 -10px 30px rgba(0,0,0,0.1);
+        z-index: 1000;
+        border-top-left-radius: 30px;
+        border-top-right-radius: 30px;
+    }
 
-        .cartGrid {
-            grid-template-columns: 1fr;
-        }
+    @media (max-width: 992px) {
+        .cartGrid { grid-template-columns: 1fr; gap: 2rem; }
+        .cartSummary { position: static; }
+    }
 
+    @media (max-width: 600px) {
+        .cartPage { margin-top: 4rem; padding: 0 1rem; }
+        .cartHead h2 { font-size: 1.8rem; }
         .cartItem {
-            grid-template-columns: auto 60px minmax(0, 1fr);
-            grid-template-rows: auto auto auto auto;
-            gap: 0.75rem;
-            padding: 1rem;
+            grid-template-columns: 40px 80px 1fr;
+            grid-template-rows: auto auto auto;
+            gap: 1rem;
+            padding: 1.5rem 1rem;
+            position: relative;
         }
-
-        .cartItem-name {
-            white-space: normal;
-            font-size: 0.95rem;
-        }
-
-        .cartItem-cat {
-            font-size: 0.8rem;
-        }
-
-        .cartItem-price {
-            grid-column: 3;
-            color: var(--text-muted);
-            font-size: 0.95rem;
-        }
-
-        .qty-control-wrap {
-            grid-column: 3;
-        }
-
-        .cartItem-subtotal {
-            grid-column: 3;
-            justify-self: start;
-            margin-top: 0.4rem;
-            font-size: 0.95rem;
-        }
-
-        .cartItem-remove {
-            grid-column: 3;
-            justify-self: end;
-            margin-top: 0.25rem;
-        }
-
-        .cartSummary {
-            width: 100%;
-        }
+        .item-chk-wrap { grid-row: span 3; }
+        .cartItem-img { width: 80px; height: 80px; }
+        .cartItem-info { grid-column: 3; }
+        .cartItem-price-qty { grid-column: 2 / span 2; display: flex; justify-content: space-between; align-items: center; }
+        .cartItem-price { font-size: 0.9rem; }
+        .cartItem-remove-mobile { position: absolute; top: 1rem; right: 1rem; }
+        
+        .cartSummary { margin-bottom: 120px; }
+        .mobileCheckoutBar { display: block; }
+        .cartSubmit-desktop { display: none; }
     }
 </style>
 
 <div class="cartPage">
     {% if cart_items %}
-    <div class="cartHead mb-2">
-        <h2><i class="fas fa-shopping-cart"></i> Your Cart</h2>
-        <span class="cartCount">{{ cart_items|length }} item{{ 's' if cart_items|length > 1 else '' }}</span>
+    <div class="cartHead">
+        <div>
+            <h2>Your Cart</h2>
+            <p class="text-muted" style="font-size: 0.9rem; margin-top: 0.5rem;"><i class="fas fa-shopping-basket me-1"></i> {{ cart_items|length }} item{{ 's' if cart_items|length > 1 else '' }} in your selection</p>
+        </div>
+        <button class="btn btn-link text-decoration-none p-0 d-none d-md-block" id="deleteSelectedBtn" style="color: #C62828; font-weight: 600;">
+            <i class="fas fa-trash-alt me-1"></i> Clear Selection
+        </button>
     </div>
 
     <div class="cartGrid">
         <div class="left-column">
-            <div class="cart-controls d-flex justify-content-between align-items-center mb-3 px-2">
-                <div class="d-flex align-items-center gap-2" style="cursor:pointer;" onclick="document.getElementById('selectAllCheckbox').click();">
-                    <input class="custom-checkbox" type="checkbox" id="selectAllCheckbox" checked onclick="event.stopPropagation();">
-                    <label class="fw-bold mb-0" for="selectAllCheckbox" style="cursor:pointer; color: #5D4037; font-size: 1rem;">
-                        Select All Items
-                    </label>
-                </div>
-                <button class="btn btn-sm" id="deleteSelectedBtn" style="border-radius: 8px; background: rgba(200, 50, 50, 0.08); color: #C62828; border: 1px solid rgba(200, 50, 50, 0.2); font-weight: 600; padding: 0.4rem 1rem; transition: all 0.2s;" onmouseover="this.style.background='#C62828'; this.style.color='#fff';" onmouseout="this.style.background='rgba(200, 50, 50, 0.08)'; this.style.color='#C62828';">
-                    <i class="fas fa-trash-alt me-1"></i> Delete Selected
-                </button>
-            </div>
-
             <div class="cartList">
                 {% for c_item in cart_items %}
                 <div class="cartItem" id="cart-row-{{ c_item.item.id }}">
-                    <div class="m-0 p-0 text-center d-flex align-items-center justify-content-center">
+                    <div class="item-chk-wrap text-center">
                         <input class="item-checkbox custom-checkbox" type="checkbox" value="{{ c_item.item.id }}" checked>
                     </div>
                 
-                {% if c_item.item.image_url %}
-                <img src="{{ c_item.item.image_url }}" alt="{{ c_item.item.name }}" class="cartItem-img">
-                {% else %}
-                <div class="cartItem-noImg"><i class="fas fa-utensils"></i></div>
-                {% endif %}
+                    <div class="cartItem-img-wrap">
+                        {% if c_item.item.image_url %}
+                        <img src="{{ c_item.item.image_url }}" alt="{{ c_item.item.name }}" class="cartItem-img">
+                        {% else %}
+                        <div class="cartItem-img bg-light d-flex align-items-center justify-content-center"><i class="fas fa-utensils text-muted"></i></div>
+                        {% endif %}
+                    </div>
 
-                <div style="min-width: 0;">
-                    <div class="cartItem-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                        {{ c_item.item.name }}</div>
-                    <div class="cartItem-cat">{{ c_item.item.category }}</div>
-                </div>
+                    <div class="cartItem-info">
+                        <div class="cartItem-cat">{{ c_item.item.category }}</div>
+                        <div class="cartItem-name">{{ c_item.item.name }}</div>
+                        <div class="text-muted d-md-block d-none" style="font-size: 0.8rem; line-height: 1.2;">{{ c_item.item.description[:60] }}{{ '...' if c_item.item.description|length > 60 }}</div>
+                    </div>
 
-                <div class="cartItem-price">₱{{ "%.2f"|format(c_item.item.price) }}</div>
+                    <div class="cartItem-price-qty">
+                        <div class="qty-control">
+                            <form action="{{ url_for('main.update_cart', item_id=c_item.item.id) }}" method="POST" style="margin:0;">
+                                <input type="hidden" name="cart_action" value="decrement">
+                                <button type="submit" class="qty-btn" {{ 'disabled' if c_item.quantity <=1 }}><i class="fas fa-minus"></i></button>
+                            </form>
+                            <div class="qty-val">{{ c_item.quantity }}</div>
+                            <form action="{{ url_for('main.update_cart', item_id=c_item.item.id) }}" method="POST" style="margin:0;">
+                                <input type="hidden" name="cart_action" value="increment">
+                                <button type="submit" class="qty-btn"><i class="fas fa-plus"></i></button>
+                            </form>
+                        </div>
+                    </div>
 
-                <div class="qty-control-wrap">
-                    <div class="qty-control">
-                        <form action="{{ url_for('main.update_cart', item_id=c_item.item.id) }}" method="POST"
-                            class="qty-update-form" style="margin:0;">
-                            <input type="hidden" name="cart_action" value="decrement">
-                            <button type="submit" class="qty-btn" {{ 'disabled' if c_item.quantity <=1 }}><i
-                                    class="fas fa-minus"></i></button>
-                        </form>
-                        <div class="qty-val" id="qty-{{ c_item.item.id }}">{{ c_item.quantity }}</div>
-                        <form action="{{ url_for('main.update_cart', item_id=c_item.item.id) }}" method="POST"
-                            class="qty-update-form" style="margin:0;">
-                            <input type="hidden" name="cart_action" value="increment">
-                            <button type="submit" class="qty-btn"><i class="fas fa-plus"></i></button>
+                    <div class="cartItem-subtotal d-none d-md-block">₱{{ "%.2f"|format(c_item.subtotal) }}</div>
+
+                    <div class="cartItem-actions">
+                        <form action="{{ url_for('main.remove_from_cart', item_id=c_item.item.id) }}" method="POST" class="m-0">
+                            <button type="submit" class="cartItem-remove btn btn-link text-danger p-2" title="Remove"><i class="fas fa-times"></i></button>
                         </form>
                     </div>
                 </div>
-
-                <div class="cartItem-subtotal" id="subtotal-{{ c_item.item.id }}">₱{{ "%.2f"|format(c_item.subtotal) }}
-                </div>
-
-                <form action="{{ url_for('main.remove_from_cart', item_id=c_item.item.id) }}" method="POST" class="m-0">
-                    <button type="submit" class="cartItem-remove" title="Remove"><i
-                            class="fas fa-trash-alt"></i></button>
-                </form>
+                {% endfor %}
             </div>
-            {% endfor %}
-        </div>
         </div>
 
         <div class="cartSummary">
-            <h5>Order Summary</h5>
-            <div class="sumRow"><span>Items Subtotal</span><span id="itemsSubtotalDisplay">₱{{ "%.2f"|format(total)
-                    }}</span></div>
-            <div class="sumRow"><span>Tax & Fees</span><span style="font-style:italic;">At store</span></div>
-            <div class="sumRow" id="delivery_fee_row" style="display: none !important;"><span>Delivery
-                    Fee</span><span>₱50.00</span></div>
-            <div class="sumTotal"><span>Total</span><span id="totalAmountDisplay">₱{{ "%.2f"|format(total) }}</span>
-            </div>
-
-            <form action="{{ url_for('main.checkout') }}" method="POST" style="margin-top: 1.5rem;">
-                <label class="form-label">Dining Option</label>
-                <div class="cartOpt">
-                    <input type="radio" class="btn-check" name="dining_option" id="dine_in" value="DINE_IN" checked>
-                    <label for="dine_in"><i class="fas fa-utensils me-1"></i>Dine In</label>
-                    <input type="radio" class="btn-check" name="dining_option" id="take_out" value="TAKE_OUT">
-                    <label for="take_out"><i class="fas fa-shopping-bag me-1"></i>Pick-up</label>
-                    <input type="radio" class="btn-check" name="dining_option" id="delivery" value="DELIVERY">
-                    <label for="delivery"><i class="fas fa-motorcycle me-1"></i>Delivery</label>
+            <h5>Reservation & Payment</h5>
+            
+            <form action="{{ url_for('main.checkout') }}" method="POST">
+                <div class="mb-4">
+                    <label class="form-label fw-bold">1. Choose Dining Method</label>
+                    <div class="cartOpt">
+                        <input type="radio" class="btn-check" name="dining_option" id="dine_in" value="DINE_IN" checked>
+                        <label for="dine_in"><i class="fas fa-utensils d-block mb-1"></i>Dine In</label>
+                        <input type="radio" class="btn-check" name="dining_option" id="take_out" value="TAKE_OUT">
+                        <label for="take_out"><i class="fas fa-shopping-bag d-block mb-1"></i>Pick-up</label>
+                        <input type="radio" class="btn-check" name="dining_option" id="delivery" value="DELIVERY">
+                        <label for="delivery"><i class="fas fa-motorcycle d-block mb-1"></i>Delivery</label>
+                    </div>
                 </div>
 
-                <div id="delivery_fields" style="display: none;" class="mb-3">
-                    <div
-                        style="background: rgba(93,64,55,0.03); border-radius: 14px; padding: 1rem; border: 1px solid rgba(93,64,55,0.06);">
-                        <label class="form-label" style="font-size: 0.85rem;"><i class="fas fa-map-marker-alt"
-                                style="color:var(--primary-color);"></i> Select Delivery Area</label>
-                        <div class="row mb-2">
+                <!-- Delivery Fields -->
+                <div id="delivery_fields" style="display:none;" class="mb-4 animate__animated animate__fadeIn">
+                    <div style="background: #fdfaf8; border-radius: 20px; padding: 1.5rem; border: 1px solid #f1ece8;">
+                        <div class="row g-2 mb-3">
                             <div class="col-6">
-                                <select id="select_municipality" class="form-select form-select-sm"
-                                    style="border-radius: 8px; border: 1px solid var(--border-color);">
+                                <select id="select_municipality" class="form-select border-0 shadow-sm">
                                     <option value="">Municipality</option>
                                     <option value="Santa Cruz">Santa Cruz</option>
                                     <option value="Pila">Pila</option>
@@ -646,61 +369,87 @@
                                 </select>
                             </div>
                             <div class="col-6">
-                                <select id="select_barangay" class="form-select form-select-sm"
-                                    style="border-radius: 8px; border: 1px solid var(--border-color);" disabled>
+                                <select id="select_barangay" class="form-select border-0 shadow-sm" disabled>
                                     <option value="">Barangay</option>
                                 </select>
                             </div>
                         </div>
-                        <label class="form-label mt-2" style="font-size: 0.85rem;">House No. / Street / Landmark</label>
-                        <textarea id="street_address" class="form-control mb-2" rows="2"
-                            placeholder="e.g. 123 Main St, Near Plaza..."
-                            style="border-radius: 10px; border: 1px solid var(--border-color); resize: none;"></textarea>
-
-                        <label class="form-label mt-2" style="font-size: 0.85rem;">Pin Exact Location (Optional)</label>
-                        <div id="delivery_map"
-                            style="height: 200px; border-radius: 10px; border: 1px solid var(--border-color); margin-bottom: 0.5rem; z-index: 1;">
-                        </div>
-
-                        <!-- Combined address sent to backend -->
+                        <textarea id="street_address" class="form-control border-0 shadow-sm mb-3" rows="2" placeholder="Street Name, Building, Landmark..."></textarea>
+                        <div id="delivery_map" style="height: 180px; border-radius: 15px; overflow: hidden; z-index: 1;"></div>
                         <textarea name="delivery_address" id="delivery_address" style="display:none;"></textarea>
                         <input type="hidden" name="delivery_area" id="delivery_area_hidden">
                     </div>
                 </div>
 
-                <label class="form-label">Payment Method</label>
-                <div class="cartPay">
-                    <input type="radio" class="btn-check" name="payment_method" id="pay_counter" value="COUNTER"
-                        checked>
-                    <label for="pay_counter">
-                        <div class="payTitle" id="label_pay_counter"><i class="fas fa-cash-register text-success me-2"></i>Pay at Counter</div>
-                        <div class="payDesc" id="desc_pay_counter">Pay cash or card in-store.</div>
-                    </label>
-                    <input type="radio" class="btn-check" name="payment_method" id="pay_online" value="ONLINE">
-                    <label for="pay_online">
-                        <div class="payTitle"><i class="fas fa-mobile-alt" style="color: #1565C0;"></i> Online Payment
-                            (GCash)</div>
-                        <div class="payDesc" id="desc_pay_online">Pay securely via e-wallet.</div>
-                    </label>
+                <div class="mb-4">
+                    <label class="form-label fw-bold">2. Payment Method</label>
+                    <div class="cartPay d-flex flex-column gap-2">
+                        <input type="radio" class="btn-check" name="payment_method" id="pay_counter" value="COUNTER" checked>
+                        <label for="pay_counter" class="btn btn-outline-dark border-2 text-start p-3 rounded-4 w-100">
+                           <div class="d-flex align-items-center">
+                               <i class="fas fa-cash-register me-3 fs-4 text-success"></i>
+                               <div>
+                                   <div class="fw-bold" id="label_pay_counter">Pay at Counter</div>
+                                   <div class="text-muted small" id="desc_pay_counter">Pay cash or card in-store.</div>
+                               </div>
+                           </div>
+                        </label>
+
+                        <input type="radio" class="btn-check" name="payment_method" id="pay_online" value="ONLINE">
+                        <label for="pay_online" class="btn btn-outline-dark border-2 text-start p-3 rounded-4 w-100">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-mobile-alt me-3 fs-4 text-primary"></i>
+                                <div>
+                                    <div class="fw-bold">GCash / E-Wallet</div>
+                                    <div class="text-muted small">Pay securely via online payment.</div>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
                 </div>
 
+                <div class="sumContent">
+                    <div class="sumRow"><span>Subtotal</span><span id="itemsSubtotalDisplay">₱{{ "%.2f"|format(total) }}</span></div>
+                    <div id="delivery_fee_row" class="sumRow text-primary" style="display: none !important;"><span>Delivery Fee</span><span>₱50.00</span></div>
+                    <div class="sumTotal">
+                        <span class="label">Total Amount</span>
+                        <span class="val" id="totalAmountDisplay">₱{{ "%.2f"|format(total) }}</span>
+                    </div>
+                </div>
 
                 {% if current_user.is_authenticated %}
-                <button type="submit" class="cartSubmit"><i class="fas fa-check-circle me-2"></i>Submit Order</button>
+                <button type="submit" class="cartSubmit cartSubmit-desktop">Secure Checkout</button>
                 {% else %}
-                <button type="button" class="cartSubmit" style="background: linear-gradient(135deg,#333,#555);"
-                    onclick="$('#termsModal').modal('show'); window.authIntent = 'login';">Sign in to Checkout</button>
+                <button type="button" class="cartSubmit" style="background: #333;" onclick="$('#termsModal').modal('show'); window.authIntent = 'login';">Sign in to Checkout</button>
                 {% endif %}
             </form>
-            <div class="text-center mt-3">
-                <a href="{{ url_for('main.menu_page') }}"
-                    style="color: var(--text-muted); font-size: 0.85rem; text-decoration: none; transition: color 0.2s;"
-                    onmouseover="this.style.color='var(--primary-color)'"
-                    onmouseout="this.style.color='var(--text-muted)'"><i class="fas fa-arrow-left me-1"></i> Continue
-                    Shopping</a>
-            </div>
         </div>
     </div>
+    {% else %}
+    <div class="text-center py-5">
+        <div class="mb-4"><i class="fas fa-shopping-basket fa-4x opacity-25"></i></div>
+        <h2 class="font-serif fw-bold">Your cart is empty</h2>
+        <p class="text-muted">It looks like you haven't added anything yet.</p>
+        <a href="{{ url_for('main.menu_page') }}" class="btn btn-primary rounded-pill px-5 py-3 mt-3 shadow">Discover Our Menu</a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Mobile Checkout Bottom Bar -->
+{% if cart_items and current_user.is_authenticated %}
+<div class="mobileCheckoutBar animate__animated animate__slideInUp">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <div class="text-muted small">Total amount</div>
+            <div class="fw-bold fs-4 text-primary" id="mobileTotalDisplay">₱{{ "%.2f"|format(total) }}</div>
+        </div>
+        <div class="text-end">
+            <span class="badge bg-light text-dark border">{{ cart_items|length }} items</span>
+        </div>
+    </div>
+    <button type="button" class="cartSubmit m-0" onclick="document.querySelector('.cartSubmit-desktop').click();">Checkout Now</button>
+</div>
+{% endif %}
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {

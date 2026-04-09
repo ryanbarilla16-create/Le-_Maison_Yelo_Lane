@@ -3,952 +3,251 @@
 {% block title %}Welcome, {{ current_user.first_name }}{% endblock %}
 
 {% block content %}
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+    :root {
+        --primary-gradient: linear-gradient(135deg, #3E2723, #5D4037);
+        --accent-gold: #D4A862;
+        --glass-white: rgba(255, 255, 255, 0.95);
+    }
 
-    /* ═══ HERO ═══ */
     .dashHero {
         position: relative;
-        width: 100vw;
-        height: 55vh;
-        min-height: 380px;
+        height: 70vh;
+        min-height: 500px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #3E2723;
         overflow: hidden;
-        margin-top: -56px;
-        left: 50%;
-        margin-left: -50vw;
+        margin-top: -80px;
     }
 
     .dashHero img {
+        position: absolute;
+        inset: 0;
         width: 100%;
         height: 100%;
         object-fit: cover;
-        filter: brightness(0.3) saturate(0.9);
-        transform: scale(1.02);
+        opacity: 0.6;
+        filter: saturate(1.2) brightness(0.8);
+        transform: scale(1.05);
+        animation: slowZoom 20s infinite alternate;
     }
 
-    .dashHero::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(180deg,
-                rgba(62, 39, 35, 0.2) 0%,
-                rgba(62, 39, 35, 0.5) 60%,
-                rgba(253, 251, 249, 1) 100%);
-        z-index: 1;
+    @keyframes slowZoom {
+        from { transform: scale(1.05); }
+        to { transform: scale(1.15); }
     }
 
     .dashHero-content {
-        position: absolute;
-        inset: 0;
-        z-index: 2;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .dashHero-text {
+        position: relative;
+        z-index: 10;
         text-align: center;
-        padding: 2rem;
-        animation: heroFade 1s ease-out;
+        padding: 0 1.5rem;
+        max-width: 900px;
+        animation: slideUpFade 1.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    @keyframes heroFade {
-        from {
-            opacity: 0;
-            transform: translateY(30px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+    @keyframes slideUpFade {
+        from { opacity: 0; transform: translateY(40px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 
-    .dashHero-text .greeting {
+    .greeting {
         font-family: 'Playfair Display', serif;
         font-style: italic;
-        font-size: 1.15rem;
-        color: #D4A862;
-        margin-bottom: 0.4rem;
-        letter-spacing: 1px;
+        color: var(--accent-gold);
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+        display: block;
     }
 
-    .dashHero-text h1 {
+    .dashHero h1 {
         font-family: 'Playfair Display', serif;
-        font-size: clamp(2.2rem, 5vw, 3.5rem);
-        font-weight: 700;
+        font-weight: 900;
+        font-size: clamp(3rem, 8vw, 5.5rem);
         color: #fff;
-        margin-bottom: 0.6rem;
-        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-        letter-spacing: -0.5px;
+        line-height: 1;
+        margin-bottom: 2rem;
+        text-shadow: 0 10px 30px rgba(0,0,0,0.3);
     }
 
-    .dashHero-text .tagline {
-        color: rgba(255, 255, 255, 0.5);
-        font-size: 0.8rem;
-        letter-spacing: 4px;
-        text-transform: uppercase;
-        font-weight: 500;
-    }
-
-    /* ═══ LAYOUT ═══ */
     .dashWrap {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 1.5rem;
-    }
-
-    /* ═══ QUICK ACTIONS ═══ */
-    .dashActions {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        max-width: 800px;
-        margin: -50px auto 0;
-        gap: 1.5rem;
+        max-width: 1300px;
+        margin: -80px auto 4rem;
+        padding: 0 2rem;
         position: relative;
-        z-index: 3;
+        z-index: 20;
     }
 
-    .dashAction {
-        background: #fff;
-        border-radius: 20px;
-        padding: 2rem 1.5rem;
-        text-align: center;
-        text-decoration: none !important;
-        color: inherit !important;
-        border: 1px solid rgba(93, 64, 55, 0.06);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .dashAction::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: linear-gradient(90deg, var(--accent-start), var(--accent-end));
-        opacity: 0;
-        transition: opacity 0.3s;
-    }
-
-    .dashAction:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 16px 48px rgba(93, 64, 55, 0.15);
-    }
-
-    .dashAction:hover::before {
-        opacity: 1;
-    }
-
-    .dashAction-icon {
-        width: 60px;
-        height: 60px;
-        border-radius: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 1.1rem;
-        font-size: 1.4rem;
-        color: #fff;
-        transition: transform 0.3s;
-    }
-
-    .dashAction:hover .dashAction-icon {
-        transform: scale(1.1) rotate(-3deg);
-    }
-
-    .dashAction h6 {
-        font-weight: 700;
-        font-size: 0.95rem;
-        margin-bottom: 0.3rem;
-        color: var(--text-main);
-    }
-
-    .dashAction p {
-        font-size: 0.78rem;
-        color: var(--text-muted);
-        margin: 0;
-    }
-
-    /* ═══ STATS ═══ */
     .dashStats {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1.25rem;
-        margin-top: -50px;
-        position: relative;
-        z-index: 3;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 2rem;
     }
 
     .dashStat {
-        background: #fff;
-        border-radius: 20px;
-        padding: 2rem;
-        border: 1px solid rgba(93, 64, 55, 0.06);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-        display: flex;
-        align-items: center;
-        gap: 1.5rem;
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
+        background: var(--glass-white);
+        backdrop-filter: blur(20px);
+        border-radius: 30px;
+        padding: 3rem;
+        border: 1px solid rgba(255,255,255,0.3);
+        box-shadow: 0 20px 50px rgba(0,0,0,0.08);
+        text-align: center;
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .dashStat::after {
-        content: '';
-        position: absolute;
-        right: -30px;
-        bottom: -30px;
-        width: 100px;
-        height: 100px;
-        border-radius: 50%;
-        background: var(--stat-accent, rgba(93, 64, 55, 0.04));
-    }
-
-    .dashStat:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.07);
-    }
-
-    .dashStat-icon {
-        width: 56px;
-        height: 56px;
-        border-radius: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.3rem;
-        flex-shrink: 0;
-    }
+    .dashStat:hover { transform: translateY(-10px); }
 
     .dashStat h3 {
         font-family: 'Playfair Display', serif;
+        font-size: 3.5rem;
+        font-weight: 900;
+        color: #3E2723;
+        margin-bottom: 0.5rem;
+    }
+
+    .dashStat p {
+        color: #8D6E63;
         font-weight: 700;
-        font-size: 2rem;
-        margin: 0;
-        line-height: 1;
-    }
-
-    .dashStat .statLabel {
-        color: var(--text-muted);
-        font-size: 0.82rem;
-        margin: 0.15rem 0 0;
-        font-weight: 500;
-    }
-
-    /* ═══ PANELS ═══ */
-    .dashPanels {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1.5rem;
-        margin-top: 2.5rem;
-    }
-
-    .dashPanel {
-        background: #fff;
-        border-radius: 20px;
-        padding: 1.75rem;
-        border: 1px solid rgba(93, 64, 55, 0.06);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-    }
-
-    .dashPanel-head {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1.25rem;
-        padding-bottom: 1rem;
-        border-bottom: 1px solid rgba(93, 64, 55, 0.06);
-    }
-
-    .dashPanel-head h5 {
-        font-family: 'Playfair Display', serif;
-        font-weight: 700;
-        font-size: 1.1rem;
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap: 0.6rem;
-    }
-
-    .dashPanel-head .panelBtn {
-        background: linear-gradient(135deg, #5D4037, #795548);
-        color: #fff;
-        padding: 0.4rem 1rem;
-        border-radius: 50px;
-        font-size: 0.72rem;
-        font-weight: 700;
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        transition: all 0.3s;
-        box-shadow: 0 3px 12px rgba(93, 64, 55, 0.2);
-    }
-
-    .dashPanel-head .panelBtn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(93, 64, 55, 0.3);
-        color: #fff;
-    }
-
-    /* List Items */
-    .dashItem {
-        background: linear-gradient(135deg, rgba(93, 64, 55, 0.02), rgba(212, 168, 98, 0.03));
-        border-radius: 14px;
-        padding: 1rem 1.1rem;
-        margin-bottom: 0.6rem;
-        border: 1px solid rgba(93, 64, 55, 0.04);
-        transition: all 0.25s;
-    }
-
-    .dashItem:hover {
-        background: rgba(93, 64, 55, 0.05);
-        transform: translateX(3px);
-    }
-
-    .dashItem:last-child {
-        margin-bottom: 0;
-    }
-
-    .dashItem .itemTitle {
-        font-weight: 700;
-        font-size: 0.9rem;
-        color: var(--text-main);
-    }
-
-    .dashItem .itemSub {
-        color: var(--text-muted);
-        font-size: 0.78rem;
-        margin-top: 0.2rem;
-    }
-
-    /* Badges */
-    .dbadge {
-        padding: 0.2rem 0.65rem;
-        border-radius: 50px;
-        font-size: 0.65rem;
-        font-weight: 700;
-        letter-spacing: 0.3px;
-    }
-
-    .dbadge-green {
-        background: #E8F5E9;
-        color: #2E7D32;
-    }
-
-    .dbadge-amber {
-        background: #FFF8E1;
-        color: #E65100;
-    }
-
-    .dbadge-blue {
-        background: #E3F2FD;
-        color: #1565C0;
-    }
-
-    .dbadge-grey {
-        background: #F5F5F5;
-        color: #616161;
-    }
-
-    /* Empty State */
-    .dashEmpty {
-        text-align: center;
-        padding: 2.5rem 1rem;
-    }
-
-    .dashEmpty-icon {
-        width: 64px;
-        height: 64px;
-        border-radius: 50%;
-        background: rgba(93, 64, 55, 0.05);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 1rem;
-    }
-
-    .dashEmpty-icon i {
-        font-size: 1.5rem;
-        color: rgba(93, 64, 55, 0.2);
-    }
-
-    .dashEmpty p {
-        color: var(--text-muted);
         font-size: 0.85rem;
-        margin-bottom: 1rem;
-    }
-
-    /* ═══ SECTION HEADER ═══ */
-    .dashSecHead {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-end;
-        margin-top: 3.5rem;
-        margin-bottom: 1.75rem;
-    }
-
-    .dashSecHead .eyebrow {
         text-transform: uppercase;
-        font-weight: 700;
-        letter-spacing: 3px;
-        font-size: 0.72rem;
-        color: #D4A862;
-        margin-bottom: 0.3rem;
+        letter-spacing: 2.5px;
     }
 
-    .dashSecHead h3 {
+    .category-section {
+        padding: 6rem 0;
+        background: #fdfaf8;
+    }
+
+    .section-title {
+        text-align: center;
+        margin-bottom: 4rem;
+    }
+
+    .section-title h2 {
         font-family: 'Playfair Display', serif;
-        font-weight: 700;
-        font-size: 1.75rem;
-        color: var(--text-main);
-        margin: 0;
+        font-weight: 800;
+        font-size: 3rem;
+        color: #3E2723;
     }
 
-    .dashSecHead .secBtn {
-        background: linear-gradient(135deg, #5D4037, #795548);
-        color: #fff !important;
-        padding: 0.55rem 1.4rem;
-        border-radius: 50px;
-        font-size: 0.85rem;
-        font-weight: 600;
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        transition: all 0.3s;
-        box-shadow: 0 4px 16px rgba(93, 64, 55, 0.2);
-        white-space: nowrap;
-    }
-
-    .dashSecHead .secBtn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(93, 64, 55, 0.3);
-    }
-
-    /* ═══ MENU CARDS ═══ */
-    .dashMenuGrid {
+    .category-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-        gap: 1.25rem;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 2.5rem;
+        padding: 0 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
     }
 
-    .dashMenuCard {
-        background: #fff;
-        border-radius: 18px;
-        overflow: hidden;
-        border: 1px solid rgba(93, 64, 55, 0.06);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .dashMenuCard:hover {
-        transform: translateY(-6px);
-        box-shadow: 0 16px 40px rgba(93, 64, 55, 0.12);
-    }
-
-    .dashMenuCard .mcImg {
-        height: 190px;
+    .category-card {
+        height: 450px;
+        border-radius: 40px;
         overflow: hidden;
         position: relative;
+        text-decoration: none;
+        display: block;
+        transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .dashMenuCard .mcImg img {
+    .category-card:hover { transform: scale(1.02); }
+
+    .cat-img {
         width: 100%;
         height: 100%;
         object-fit: cover;
-        transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: transform 0.8s;
     }
 
-    .dashMenuCard:hover .mcImg img {
-        transform: scale(1.08);
-    }
+    .category-card:hover .cat-img { transform: scale(1.1); }
 
-    .dashMenuCard .mcBadge {
+    .cat-overlay {
         position: absolute;
-        top: 12px;
-        left: 12px;
-        background: linear-gradient(135deg, #D4A862, #c49652);
-        color: #fff;
-        padding: 0.25rem 0.75rem;
-        border-radius: 50px;
-        font-size: 0.65rem;
-        font-weight: 700;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    }
-
-    .dashMenuCard .mcNoImg {
-        height: 190px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: linear-gradient(135deg, #5D4037 0%, #8D6E63 50%, #D4A862 100%);
-    }
-
-    .dashMenuCard .mcInfo {
-        padding: 1.15rem 1.25rem;
-    }
-
-    .dashMenuCard .mcInfo h6 {
-        font-family: 'Playfair Display', serif;
-        font-weight: 700;
-        font-size: 1rem;
-        margin-bottom: 0.2rem;
-    }
-
-    .dashMenuCard .mcInfo .mcPrice {
-        font-weight: 800;
-        color: var(--primary-color);
-        font-size: 1rem;
-        font-family: 'Playfair Display', serif;
-    }
-
-    .dashMenuCard .mcInfo .mcCat {
-        display: inline-block;
-        background: rgba(93, 64, 55, 0.06);
-        color: var(--text-muted);
-        padding: 0.18rem 0.65rem;
-        border-radius: 50px;
-        font-size: 0.68rem;
-        font-weight: 600;
-        margin-top: 0.4rem;
-    }
-
-    /* ═══ CATEGORY GRID ═══ */
-    .dashCatGrid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 1.25rem;
-    }
-
-    .dashCatCard {
-        background: #fff;
-        border-radius: 16px;
-        overflow: hidden;
-        border: 1px solid rgba(93, 64, 55, 0.06);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-        transition: all 0.35s ease;
-        text-decoration: none !important;
-        color: inherit !important;
-    }
-
-    .dashCatCard:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 12px 32px rgba(93, 64, 55, 0.1);
-    }
-
-    .dashCatCard .ccImg {
-        height: 130px;
-        overflow: hidden;
-    }
-
-    .dashCatCard .ccImg img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        transition: transform 0.5s;
-    }
-
-    .dashCatCard:hover .ccImg img {
-        transform: scale(1.08);
-    }
-
-    .dashCatCard .ccInfo {
-        padding: 0.9rem 1.1rem;
-    }
-
-    .dashCatCard .ccInfo h5 {
-        font-family: 'Playfair Display', serif;
-        font-weight: 700;
-        font-size: 0.95rem;
-        margin-bottom: 0.15rem;
-    }
-
-    .dashCatCard .ccInfo p {
-        color: var(--text-muted);
-        font-size: 0.75rem;
-        margin: 0;
-    }
-
-    /* ═══ LOCATION ═══ */
-    .dashLocation {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0;
-        border-radius: 24px;
-        overflow: hidden;
-        box-shadow: 0 8px 36px rgba(0, 0, 0, 0.06);
-        border: 1px solid rgba(93, 64, 55, 0.06);
-        margin: 3.5rem 0;
-    }
-
-    .dashLocInfo {
-        background: #fff;
+        inset: 0;
+        background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 60%);
         padding: 3rem;
         display: flex;
         flex-direction: column;
-        justify-content: center;
+        justify-content: flex-end;
+        color: #fff;
     }
 
-    .dashLocInfo h3 {
+    .cat-overlay h3 {
         font-family: 'Playfair Display', serif;
-        font-size: 2rem;
-        margin-bottom: 2rem;
-    }
-
-    .dashLocRow {
-        display: flex;
-        align-items: flex-start;
-        gap: 1.15rem;
-        margin-bottom: 1.5rem;
-    }
-
-    .dashLocRow:last-child {
-        margin-bottom: 0;
-    }
-
-    .dashLocRow .locIcon {
-        width: 40px;
-        height: 40px;
-        border-radius: 12px;
-        background: rgba(93, 64, 55, 0.06);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-    }
-
-    .dashLocRow .locIcon i {
-        color: var(--primary-color);
-        font-size: 0.95rem;
-    }
-
-    .dashLocRow h6 {
+        font-size: 2.5rem;
         font-weight: 700;
-        font-size: 0.88rem;
-        margin-bottom: 0.15rem;
+        margin-bottom: 0.5rem;
     }
 
-    .dashLocRow p {
-        color: var(--text-muted);
-        font-size: 0.85rem;
-        margin: 0;
-        line-height: 1.6;
+    .cat-overlay p {
+        opacity: 0.8;
+        font-size: 0.9rem;
+        letter-spacing: 1px;
     }
 
-    /* ═══ RESPONSIVE ═══ */
-    @media (max-width: 992px) {
-        .dashActions {
-            grid-template-columns: repeat(2, 1fr);
-        }
+    @media (max-width: 900px) {
+        .dashHero { height: 60vh; margin-top: -60px; }
+        .dashWrap { margin-top: -40px; padding: 0 1.5rem; }
+        .dashStats { grid-template-columns: 1fr; gap: 1.5rem; }
+        .dashStat { padding: 2rem; }
+        .category-grid { grid-template-columns: 1fr; padding: 0 1.5rem; }
+        .category-card { height: 320px; border-radius: 30px; }
+        .cat-overlay { padding: 2rem; }
+        .cat-overlay h3 { font-size: 1.8rem; }
     }
-
-    @media (max-width: 768px) {
-        .dashStats {
-            grid-template-columns: 1fr;
-        }
-
-        .dashPanels {
-            grid-template-columns: 1fr;
-        }
-
-        .dashLocation {
-            grid-template-columns: 1fr;
-        }
-
-        .dashLocInfo {
-            padding: 2rem;
-        }
-
-        .dashSecHead {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 0.75rem;
-        }
-    }
-
-    @media (max-width: 480px) {
-        .dashActions {
-            grid-template-columns: 1fr;
-        }
-    }
-</style>
 
 <main>
-    <!-- ═══ CINEMATIC HERO ═══ -->
     <section class="dashHero">
-        <img src="https://images.unsplash.com/photo-1600093463592-8e36ae95ef56?q=80&w=2070&auto=format&fit=crop"
-            alt="Restaurant Ambiance">
+        <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=2070&auto=format&fit=crop" alt="Le Maison Ambiance">
         <div class="dashHero-content">
-            <div class="dashHero-text">
-                <p class="greeting">Welcome back,</p>
-                <h1>{{ current_user.first_name }} {{ current_user.last_name }}</h1>
-                <p class="tagline">Le Maison de Yelo Lane</p>
+            <span class="greeting">Welcome back, {{ current_user.first_name }}</span>
+            <h1>Curating Moments,<br>Crafting Flavors.</h1>
+            <div class="d-flex flex-wrap justify-content-center gap-3">
+                <a href="{{ url_for('main.menu_page') }}" class="btn btn-light rounded-pill px-5 py-3 fw-bold shadow-lg">Explore Menu</a>
+                <a href="{{ url_for('main.reserve') }}" class="btn btn-outline-light rounded-pill px-5 py-3 fw-bold">Book a Table</a>
             </div>
         </div>
     </section>
 
-
-
-    <!-- ═══ STATS ═══ -->
-    <section class="dashWrap">
+    <div class="dashWrap">
         <div class="dashStats">
-            <div class="dashStat" style="--stat-accent: rgba(93,64,55,0.06);">
-                <div class="dashStat-icon"
-                    style="background: linear-gradient(135deg, rgba(93,64,55,0.08), rgba(93,64,55,0.15)); color: var(--primary-color);">
-                    <i class="fas fa-calendar-check"></i>
-                </div>
-                <div>
-                    <h3>{{ upcoming|length }}</h3>
-                    <p class="statLabel">Upcoming Reservations</p>
-                </div>
+            <div class="dashStat">
+                <h3>{{ upcoming|length }}</h3>
+                <p>Upcoming Bookings</p>
             </div>
-            <div class="dashStat" style="--stat-accent: rgba(96,108,56,0.06);">
-                <div class="dashStat-icon"
-                    style="background: linear-gradient(135deg, rgba(96,108,56,0.08), rgba(96,108,56,0.15)); color: #606C38;">
-                    <i class="fas fa-check-circle"></i>
-                </div>
-                <div>
-                    <h3>{{ total_visits }}</h3>
-                    <p class="statLabel">Completed Visits</p>
-                </div>
+            <div class="dashStat">
+                <h3>{{ total_visits }}</h3>
+                <p>Culinary Chapters</p>
             </div>
         </div>
-    </section>
+    </div>
 
-    <!-- ═══ RESERVATIONS + ORDERS ═══ -->
-    <section class="dashWrap">
-        <div class="dashPanels">
-            <!-- Upcoming Reservations -->
-            <div class="dashPanel">
-                <div class="dashPanel-head">
-                    <h5><i class="fas fa-clock" style="color: var(--primary-color); font-size: 0.95rem;"></i> Upcoming
-                        Reservations</h5>
-                    <a href="{{ url_for('main.reserve') }}" class="panelBtn"><i class="fas fa-plus"></i> New</a>
-                </div>
-                {% if upcoming %}
-                {% for res in upcoming %}
-                <div class="dashItem">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <span class="itemTitle">{{ res.date.strftime('%b %d, %Y') }}</span>
-                            <span style="color: var(--text-muted); margin: 0 6px;">·</span>
-                            <span style="color: var(--text-muted); font-size: 0.85rem;">{{ res.time.strftime('%I:%M %p')
-                                }}</span>
-                        </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <span style="font-size: 0.75rem; color: var(--text-muted);"><i
-                                    class="fas fa-users me-1"></i>{{ res.guest_count }}</span>
-                            {% if res.status == 'CONFIRMED' %}
-                            <span class="dbadge dbadge-green"><i class="fas fa-check-circle me-1"></i>Confirmed</span>
-                            {% elif res.status == 'PENDING' %}
-                            <span class="dbadge dbadge-amber"><i class="fas fa-hourglass-half me-1"></i>Pending</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                    {% if res.occasion %}
-                    <div class="itemSub">{{ res.occasion }}</div>
-                    {% endif %}
-                </div>
-                {% endfor %}
-                {% else %}
-                <div class="dashEmpty">
-                    <div class="dashEmpty-icon"><i class="far fa-calendar"></i></div>
-                    <p>No upcoming reservations</p>
-                    <a href="{{ url_for('main.reserve') }}" class="panelBtn" style="display: inline-flex;">Book a
-                        Table</a>
-                </div>
-                {% endif %}
-            </div>
-
-            <!-- Recent Orders -->
-            <div class="dashPanel">
-                <div class="dashPanel-head">
-                    <h5><i class="fas fa-shopping-bag" style="color: var(--primary-color); font-size: 0.95rem;"></i>
-                        Recent Orders</h5>
-                    <a href="{{ url_for('main.my_orders') }}" class="panelBtn">View All <i
-                            class="fas fa-arrow-right ms-1"></i></a>
-                </div>
-                {% if recent_orders %}
-                {% for order in recent_orders[:3] %}
-                <div class="dashItem">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <span class="itemTitle">Order #{{ order.id }}</span>
-                            <span style="color: var(--text-muted); margin: 0 6px;">·</span>
-                            <span style="color: var(--text-muted); font-size: 0.8rem;">{{ order.created_at.strftime('%b
-                                %d') }}</span>
-                        </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <span
-                                style="font-weight: 700; color: var(--primary-color); font-size: 0.9rem; font-family:'Playfair Display',serif;">₱{{
-                                "%.2f"|format(order.total_amount) }}</span>
-                            {% if order.status == 'COMPLETED' %}
-                            <span class="dbadge dbadge-green">Done</span>
-                            {% elif order.status == 'PENDING' %}
-                            <span class="dbadge dbadge-amber">Pending</span>
-                            {% elif order.status == 'PREPARING' %}
-                            <span class="dbadge dbadge-blue">Preparing</span>
-                            {% else %}
-                            <span class="dbadge dbadge-grey">{{ order.status }}</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                    <div class="itemSub">
-                        {{ order.items|length }} item{{ 's' if order.items|length > 1 else '' }}
-                        {% if order.items %} — {{ order.items[0].menu_item.name }}{% if order.items|length > 1 %}, +{{
-                        order.items|length - 1 }} more{% endif %}{% endif %}
-                    </div>
-                </div>
-                {% endfor %}
-                {% else %}
-                <div class="dashEmpty">
-                    <div class="dashEmpty-icon"><i class="fas fa-shopping-bag"></i></div>
-                    <p>No orders yet</p>
-                    <a href="{{ url_for('main.menu_page') }}" class="panelBtn" style="display: inline-flex;">Browse
-                        Menu</a>
-                </div>
-                {% endif %}
-            </div>
+    <!-- Categories Section -->
+    <section class="category-section">
+        <div class="section-title">
+            <p class="text-uppercase letter-spacing-2 fw-bold text-muted small mb-2">Taste Our World</p>
+            <h2>Signature Categories</h2>
         </div>
-    </section>
-
-    <!-- ═══ BESTSELLERS ═══ -->
-    <section class="dashWrap">
-        <div class="dashSecHead">
-            <div>
-                <p class="eyebrow">🔥 Bestsellers</p>
-                <h3>Today's Specials</h3>
-            </div>
-            <a href="{{ url_for('main.menu_page') }}" class="secBtn">Full Menu <i class="fas fa-arrow-right"></i></a>
-        </div>
-        <div class="dashMenuGrid">
-            {% for item in bestsellers %}
-            <div class="dashMenuCard">
-                {% if item.image_url %}
-                <div class="mcImg">
-                    <img src="{{ item.image_url }}" alt="{{ item.name }}">
-                    <span class="mcBadge"><i class="fas fa-fire me-1"></i>Popular</span>
-                </div>
-                {% else %}
-                <div class="mcNoImg">
-                    <i class="fas fa-utensils" style="font-size: 2.5rem; color: rgba(255,255,255,0.2);"></i>
-                </div>
-                {% endif %}
-                <div class="mcInfo">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <h6>{{ item.name }}</h6>
-                        <span class="mcPrice">₱{{ item.price }}</span>
-                    </div>
-                    <span class="mcCat">{{ item.category }}</span>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </section>
-
-    <!-- ═══ PAST VISITS ═══ -->
-    {% if past %}
-    <section class="dashWrap" style="margin-top: 3rem;">
-        <div class="dashPanel">
-            <div class="dashPanel-head">
-                <h5><i class="fas fa-history" style="color: var(--text-muted); font-size: 0.95rem;"></i> Recent History
-                </h5>
-            </div>
-            <div class="row g-3">
-                {% for res in past %}
-                <div class="col-md-4">
-                    <div class="dashItem">
-                        <div class="d-flex justify-content-between align-items-start mb-1">
-                            <span class="itemTitle">{{ res.date.strftime('%b %d, %Y') }}</span>
-                            {% if res.status == 'COMPLETED' %}
-                            <span class="dbadge dbadge-green">Completed</span>
-                            {% else %}
-                            <span class="dbadge" style="background: rgba(150,75,75,0.1); color: #964B4B;">{{ res.status
-                                }}</span>
-                            {% endif %}
-                        </div>
-                        <div class="itemSub">
-                            <i class="fas fa-clock me-1"></i> {{ res.time.strftime('%I:%M %p') }} ·
-                            <i class="fas fa-users me-1"></i> {{ res.guest_count }} guests
-                            {% if res.occasion %} · {{ res.occasion }}{% endif %}
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-    </section>
-    {% endif %}
-
-    <!-- ═══ FEATURED PICKS ═══ -->
-    <section class="dashWrap">
-        <div class="dashSecHead">
-            <div>
-                <p class="eyebrow">Curated For You</p>
-                <h3>Today's Featured Picks</h3>
-            </div>
-            <a href="{{ url_for('main.menu_page') }}" class="secBtn">Full Menu <i class="fas fa-arrow-right"></i></a>
-        </div>
-        <div class="dashMenuGrid">
-            {% for item in featured %}
-            <div class="dashMenuCard">
-                {% if item.image_url %}
-                <div class="mcImg">
-                    <img src="{{ item.image_url }}" alt="{{ item.name }}">
-                </div>
-                {% else %}
-                <div class="mcNoImg">
-                    <i class="fas fa-utensils" style="font-size: 2.5rem; color: rgba(255,255,255,0.2);"></i>
-                </div>
-                {% endif %}
-                <div class="mcInfo">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <h6>{{ item.name }}</h6>
-                        <span class="mcPrice">₱{{ item.price }}</span>
-                    </div>
-                    <span class="mcCat">{{ item.category }}</span>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </section>
-
-    <!-- ═══ CATEGORIES ═══ -->
-    <section class="dashWrap">
-        <div class="dashSecHead">
-            <div>
-                <p class="eyebrow">Browse By</p>
-                <h3>Menu Categories</h3>
-            </div>
-        </div>
-        <div class="dashCatGrid">
+        
+        <div class="category-grid">
             {% for cat in categories %}
-            <a href="{{ url_for('main.menu_page') }}" class="dashCatCard">
+            <a href="{{ url_for('main.menu_page', category=cat.category) }}" class="category-card">
                 {% if cat.sample_image %}
-                <div class="ccImg"><img src="{{ cat.sample_image }}" alt="{{ cat.category }}"></div>
+                <img src="{{ cat.sample_image }}" alt="{{ cat.category }}" class="cat-img">
                 {% else %}
-                <div class="ccImg"
-                    style="background: linear-gradient(135deg, #5D4037, #8D6E63, #D4A862); display: flex; align-items: center; justify-content: center;">
-                    <i class="fas fa-utensils" style="font-size: 2rem; color: rgba(255,255,255,0.2);"></i>
-                </div>
+                <div class="cat-img bg-secondary d-flex align-items-center justify-content-center"><i class="fas fa-utensils text-white-50 fa-3x"></i></div>
                 {% endif %}
-                <div class="ccInfo">
-                    <h5>{{ cat.category }}</h5>
-                    <p class="fw-bold" style="color: var(--primary-color); font-size: 0.75rem; margin: 0;">Browse
-                        Selection <i class="fas fa-angle-right ms-1"></i></p>
+                <div class="cat-overlay">
+                    <span>Menu / Signature</span>
+                    <h3>{{ cat.category }}</h3>
+                    <p>Discover our chef's selection</p>
                 </div>
             </a>
             {% endfor %}
         </div>
     </section>
 
-    <!-- ═══ LOCATION ═══ -->
+    <!-- Location/Info -->
     <section class="dashWrap">
         <div class="dashLocation">
             <div class="dashLocInfo">
@@ -964,21 +263,11 @@
                     <div class="locIcon"><i class="fas fa-clock"></i></div>
                     <div>
                         <h6>Hours</h6>
-                        <p>Mon - Sun · 8:00 AM - 10:00 PM</p>
-                    </div>
-                </div>
-                <div class="dashLocRow">
-                    <div class="locIcon"><i class="fas fa-phone"></i></div>
-                    <div>
-                        <h6>Contact</h6>
-                        <p>+63 (912) 345-6789 · hello@lemaison.com</p>
+                        <p>Daily · 8:00 AM - 10:00 PM</p>
                     </div>
                 </div>
             </div>
             <div style="min-height: 380px;">
-                <iframe
-                    src="https://maps.google.com/maps?q=Le%20Maison%20de%20Yelo%20Lane,%20General%20Taino%20Street,%20Pagsanjan,%20Laguna,%20Philippines&t=&z=16&ie=UTF8&iwloc=&output=embed"
-                    width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"
                     referrerpolicy="no-referrer-when-downgrade"></iframe>
             </div>
         </div>
