@@ -1,336 +1,235 @@
 {% extends "layouts/base.html" %}
 
-{% block title %}Your Cart — Le Maison{% endblock %}
+{% block title %}Your Basket | Le Maison yelo Lane{% endblock %}
 
 {% block content %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <style>
     :root {
         --glass-bg: rgba(255, 255, 255, 0.85);
-        --glass-border: rgba(93, 64, 55, 0.1);
-        --primary-gradient: linear-gradient(135deg, #5D4037, #8D6E63);
-        --accent-gold: #D4A862;
+        --glass-border: rgba(139, 69, 19, 0.15);
+        --espresso: #3E2723;
+        --caramel: #8B4513;
+        --sand: #D7CCC8;
     }
 
-    .cartPage {
-        max-width: 1200px;
-        margin: 5rem auto 3rem;
-        padding: 0 1.5rem;
-        min-height: 80vh;
-        animation: fadeIn 0.8s ease-out;
+    .cart-wrapper {
+        max-width: 1400px;
+        margin: 4rem auto 6rem;
+        padding: 0 2rem;
+        animation: slideUp 0.6s ease-out;
     }
 
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(20px); }
         to { opacity: 1; transform: translateY(0); }
     }
 
-    .cartHead {
-        margin-bottom: 2.5rem;
-        border-bottom: 2px solid var(--glass-border);
-        padding-bottom: 1.5rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+    .glass-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid var(--glass-border);
+        border-radius: 30px;
+        box-shadow: 0 15px 45px rgba(0,0,0,0.08);
     }
 
-    .cartHead h2 {
+    /* Cart Table Header */
+    .cart-header-row {
+        display: flex;
+        align-items: center;
+        padding: 1rem 2rem;
+        background: rgba(139, 69, 19, 0.05);
+        border-radius: 15px;
+        margin-bottom: 1rem;
+        font-weight: 700;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--espresso);
+    }
+
+    /* Cart Item Row */
+    .item-row {
+        display: grid;
+        grid-template-columns: 50px 100px 1fr 150px 120px 40px;
+        gap: 1.5rem;
+        padding: 1.5rem 2rem;
+        align-items: center;
+        border-bottom: 1px solid rgba(139, 69, 19, 0.05);
+        transition: background 0.3s;
+    }
+
+    .item-row:hover { background: rgba(255,255,255,0.4); }
+    .item-row:last-child { border-bottom: none; }
+
+    .item-img {
+        width: 100px;
+        height: 80px;
+        border-radius: 16px;
+        object-fit: cover;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .item-title {
         font-family: 'Playfair Display', serif;
         font-weight: 800;
-        font-size: 2.5rem;
-        color: #3E2723;
-        margin: 0;
+        font-size: 1.25rem;
+        color: var(--espresso);
     }
 
-    .cartGrid {
-        display: grid;
-        grid-template-columns: 1fr 400px;
-        gap: 3rem;
-        position: relative;
-    }
-
-    /* Cart Items Container */
-    .cartList {
-        background: #fff;
-        border-radius: 30px;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03);
-        border: 1px solid var(--glass-border);
-        overflow: hidden;
-    }
-
-    .cartItem {
-        display: grid;
-        grid-template-columns: 50px 100px 2fr 1.5fr 1fr auto;
-        gap: 1.5rem;
-        padding: 2rem;
-        align-items: center;
-        border-bottom: 1px solid rgba(93, 64, 55, 0.05);
-        transition: all 0.3s;
-    }
-
-    .cartItem:hover {
-        background: rgba(93, 64, 55, 0.02);
-    }
-
-    .cartItem:last-child {
-        border-bottom: none;
-    }
-
-    .cartItem-img {
-        width: 100px;
-        height: 100px;
-        border-radius: 20px;
-        object-fit: cover;
-        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-    }
-
-    .cartItem-name {
-        font-family: 'Playfair Display', serif;
-        font-weight: 700;
-        font-size: 1.2rem;
-        color: #3E2723;
-        margin-bottom: 0.25rem;
-    }
-
-    .cartItem-cat {
-        text-transform: uppercase;
-        letter-spacing: 1.5px;
-        font-size: 0.7rem;
-        font-weight: 700;
-        color: var(--accent-gold);
-    }
-
-    .qty-control {
+    /* Qty Control */
+    .qty-grp {
         display: flex;
         align-items: center;
-        background: #f8f5f2;
-        padding: 6px;
-        border-radius: 12px;
+        background: rgba(255,255,255,0.6);
+        padding: 5px;
+        border-radius: 50px;
+        border: 1px solid var(--glass-border);
         width: fit-content;
     }
 
     .qty-btn {
-        width: 32px;
-        height: 32px;
-        border-radius: 8px;
+        width: 30px; height: 30px;
+        border-radius: 50%;
         border: none;
         background: #fff;
-        color: var(--primary-color);
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        color: var(--caramel);
+        display: flex;
+        align-items: center;
+        justify-content: center;
         transition: all 0.2s;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     }
 
     .qty-btn:hover:not(:disabled) {
-        background: var(--primary-color);
+        background: var(--caramel);
         color: #fff;
     }
 
-    .qty-val {
-        padding: 0 15px;
-        font-weight: 800;
-        min-width: 40px;
-        text-align: center;
-    }
+    .qty-num { padding: 0 12px; font-weight: 800; min-width: 35px; text-align: center; }
 
-    .cartItem-subtotal {
-        font-family: 'Playfair Display', serif;
-        font-weight: 800;
-        font-size: 1.2rem;
-        color: var(--primary-color);
-    }
-
-    /* Summary Card - Glassmorphism */
-    .cartSummary {
-        background: var(--glass-bg);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border-radius: 30px;
-        border: 1px solid var(--glass-border);
-        padding: 2.5rem;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.05);
+    /* Summary Pane */
+    .summary-pane {
         position: sticky;
         top: 100px;
-        height: fit-content;
+        padding: 2.5rem;
     }
 
-    .cartSummary h5 {
-        font-family: 'Playfair Display', serif;
-        font-weight: 800;
-        font-size: 1.8rem;
-        margin-bottom: 2rem;
-        border-bottom: 1px solid var(--glass-border);
-        padding-bottom: 1rem;
-    }
-
-    .sumRow {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 1rem;
-        font-size: 1rem;
-        color: #5D4037;
-    }
-
-    .sumTotal {
-        margin-top: 1.5rem;
-        padding-top: 1.5rem;
-        border-top: 2px dashed var(--glass-border);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .sumTotal .label { font-weight: 700; font-size: 1.1rem; }
-    .sumTotal .val { 
+    .summary-title {
         font-family: 'Playfair Display', serif;
         font-weight: 900;
         font-size: 1.8rem;
-        color: var(--primary-color);
+        margin-bottom: 2rem;
+        color: var(--espresso);
     }
 
-    .cartSubmit {
-        background: var(--primary-gradient);
+    .pay-btn {
+        background: linear-gradient(135deg, #3E2723, #5D4037);
         color: #fff;
         border: none;
+        padding: 1.25rem;
         border-radius: 50px;
-        padding: 1.2rem;
         width: 100%;
         font-weight: 700;
         font-size: 1.1rem;
-        margin-top: 2rem;
-        box-shadow: 0 10px 30px rgba(93, 64, 55, 0.3);
+        box-shadow: 0 10px 25px rgba(62, 39, 35, 0.25);
         transition: all 0.3s;
     }
 
-    .cartSubmit:hover {
+    .pay-btn:hover {
         transform: translateY(-3px);
-        box-shadow: 0 15px 40px rgba(93, 64, 55, 0.4);
+        box-shadow: 0 15px 35px rgba(62, 39, 35, 0.35);
     }
 
-    /* Dining Options UI */
-    .cartOpt {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 0.75rem;
-        margin-bottom: 1.5rem;
-    }
-
-    .cartOpt label {
-        background: #fdfaf8;
-        border: 2px solid #f1ece8;
-        border-radius: 15px;
-        padding: 1rem 0.5rem;
-        text-align: center;
-        font-size: 0.8rem;
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-
-    .cartOpt input:checked + label {
-        border-color: var(--primary-color);
-        background: #fff;
-        color: var(--primary-color);
-        box-shadow: 0 5px 15px rgba(93, 64, 55, 0.1);
-    }
-
-    /* Floating Checkout for Mobile */
-    .mobileCheckoutBar {
-        display: none;
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background: #fff;
-        padding: 1rem 1.5rem 2rem;
-        box-shadow: 0 -10px 30px rgba(0,0,0,0.1);
-        z-index: 1000;
-        border-top-left-radius: 30px;
-        border-top-right-radius: 30px;
-    }
-
+    /* Responsive */
     @media (max-width: 992px) {
-        .cartGrid { grid-template-columns: 1fr; gap: 2rem; }
-        .cartSummary { position: static; }
+        .cart-grid { grid-template-columns: 1fr !important; }
+        .summary-pane { position: static; margin-top: 2rem; }
     }
 
     @media (max-width: 600px) {
-        .cartPage { margin-top: 4rem; padding: 0 1rem; }
-        .cartHead h2 { font-size: 1.8rem; }
-        .cartItem {
+        .cart-wrapper { padding: 0 1rem; margin-top: 2rem; }
+        .item-row {
             grid-template-columns: 40px 80px 1fr;
-            grid-template-rows: auto auto auto;
-            gap: 1rem;
+            grid-template-rows: auto auto;
             padding: 1.5rem 1rem;
-            position: relative;
+            gap: 1rem;
         }
-        .item-chk-wrap { grid-row: span 3; }
-        .cartItem-img { width: 80px; height: 80px; }
-        .cartItem-info { grid-column: 3; }
-        .cartItem-price-qty { grid-column: 2 / span 2; display: flex; justify-content: space-between; align-items: center; }
-        .cartItem-price { font-size: 0.9rem; }
-        .cartItem-remove-mobile { position: absolute; top: 1rem; right: 1rem; }
-        
-        .cartSummary { margin-bottom: 120px; }
-        .mobileCheckoutBar { display: block; }
-        .cartSubmit-desktop { display: none; }
+        .item-chk-col { grid-row: span 2; }
+        .item-img-col { grid-row: span 2; }
+        .item-qty-col { grid-column: 3; display: flex; justify-content: space-between; align-items: center; }
+        .cart-header-row, .d-mobile-none { display: none !important; }
+        .item-img { width: 80px; height: 80px; }
     }
 </style>
 
-<div class="cartPage">
+<div class="cart-wrapper">
     {% if cart_items %}
-    <div class="cartHead">
+    <div class="d-flex justify-content-between align-items-end mb-4 px-2">
         <div>
-            <h2>Your Cart</h2>
-            <p class="text-muted" style="font-size: 0.9rem; margin-top: 0.5rem;"><i class="fas fa-shopping-basket me-1"></i> {{ cart_items|length }} item{{ 's' if cart_items|length > 1 else '' }} in your selection</p>
+            <h1 class="font-serif fw-bold m-0" style="color: var(--espresso);">Your Selection</h1>
+            <p class="text-muted m-0"><i class="fas fa-shopping-bag me-2"></i>{{ cart_items|length }} delicious items in basket</p>
         </div>
-        <button class="btn btn-link text-decoration-none p-0 d-none d-md-block" id="deleteSelectedBtn" style="color: #C62828; font-weight: 600;">
-            <i class="fas fa-trash-alt me-1"></i> Clear Selection
+        <button class="btn btn-outline-danger btn-sm rounded-pill px-4 fw-bold" id="deleteSelectedBtn">
+            <i class="fas fa-trash-alt me-2"></i>Remove Selected
         </button>
     </div>
 
-    <div class="cartGrid">
-        <div class="left-column">
-            <div class="cartList">
+    <div class="row g-4 cart-grid" style="display: grid; grid-template-columns: 1fr 420px; gap: 2.5rem;">
+        <!-- Left Column: Items -->
+        <div class="item-list-container">
+            <div class="glass-card overflow-hidden">
+                <div class="cart-header-row">
+                    <div style="width: 50px;" class="text-center">
+                        <input type="checkbox" id="selectAllCheckbox" checked class="form-check-input">
+                    </div>
+                    <div style="width: 100px;">Photo</div>
+                    <div style="flex: 1;">Product Details</div>
+                    <div style="width: 150px;">Quantity</div>
+                    <div style="width: 120px;" class="text-end">Subtotal</div>
+                    <div style="width: 40px;"></div>
+                </div>
+
                 {% for c_item in cart_items %}
-                <div class="cartItem" id="cart-row-{{ c_item.item.id }}">
-                    <div class="item-chk-wrap text-center">
-                        <input class="item-checkbox custom-checkbox" type="checkbox" value="{{ c_item.item.id }}" checked>
+                <div class="item-row" id="cart-row-{{ c_item.item.id }}">
+                    <div class="item-chk-col text-center">
+                        <input type="checkbox" class="item-checkbox form-check-input" value="{{ c_item.item.id }}" checked>
                     </div>
-                
-                    <div class="cartItem-img-wrap">
-                        {% if c_item.item.image_url %}
-                        <img src="{{ c_item.item.image_url }}" alt="{{ c_item.item.name }}" class="cartItem-img">
-                        {% else %}
-                        <div class="cartItem-img bg-light d-flex align-items-center justify-content-center"><i class="fas fa-utensils text-muted"></i></div>
-                        {% endif %}
+                    
+                    <div class="item-img-col">
+                        <img src="{{ c_item.item.image_url or url_for('static', filename='images/placeholder.jpg') }}" class="item-img">
                     </div>
 
-                    <div class="cartItem-info">
-                        <div class="cartItem-cat">{{ c_item.item.category }}</div>
-                        <div class="cartItem-name">{{ c_item.item.name }}</div>
-                        <div class="text-muted d-md-block d-none" style="font-size: 0.8rem; line-height: 1.2;">{{ c_item.item.description[:60] }}{{ '...' if c_item.item.description|length > 60 }}</div>
+                    <div class="item-info-col">
+                        <div class="text-uppercase small fw-bold opacity-50 mb-1" style="letter-spacing:1px;">{{ c_item.item.category }}</div>
+                        <div class="item-title">{{ c_item.item.name }}</div>
+                        <div class="text-muted small d-mobile-none">Unit Price: ₱{{ "%.2f"|format(c_item.item.price) }}</div>
                     </div>
 
-                    <div class="cartItem-price-qty">
-                        <div class="qty-control">
-                            <form action="{{ url_for('main.update_cart', item_id=c_item.item.id) }}" method="POST" style="margin:0;">
+                    <div class="item-qty-col">
+                        <div class="qty-grp">
+                            <form action="{{ url_for('main.update_cart', item_id=c_item.item.id) }}" method="POST" class="qty-update-form">
                                 <input type="hidden" name="cart_action" value="decrement">
-                                <button type="submit" class="qty-btn" {{ 'disabled' if c_item.quantity <=1 }}><i class="fas fa-minus"></i></button>
+                                <button type="submit" class="qty-btn" {{ 'disabled' if c_item.quantity <= 1 }}><i class="fas fa-minus"></i></button>
                             </form>
-                            <div class="qty-val">{{ c_item.quantity }}</div>
-                            <form action="{{ url_for('main.update_cart', item_id=c_item.item.id) }}" method="POST" style="margin:0;">
+                            <span class="qty-num" id="qty-{{ c_item.item.id }}">{{ c_item.quantity }}</span>
+                            <form action="{{ url_for('main.update_cart', item_id=c_item.item.id) }}" method="POST" class="qty-update-form">
                                 <input type="hidden" name="cart_action" value="increment">
                                 <button type="submit" class="qty-btn"><i class="fas fa-plus"></i></button>
                             </form>
                         </div>
                     </div>
 
-                    <div class="cartItem-subtotal d-none d-md-block">₱{{ "%.2f"|format(c_item.subtotal) }}</div>
+                    <div class="text-end fw-bold d-mobile-none" style="font-size: 1.1rem; color: var(--caramel);">
+                        ₱<span id="subtotal-{{ c_item.item.id }}">{{ "%.2f"|format(c_item.subtotal) }}</span>
+                    </div>
 
-                    <div class="cartItem-actions">
+                    <div class="text-end">
                         <form action="{{ url_for('main.remove_from_cart', item_id=c_item.item.id) }}" method="POST" class="m-0">
-                            <button type="submit" class="cartItem-remove btn btn-link text-danger p-2" title="Remove"><i class="fas fa-times"></i></button>
+                            <button type="submit" class="btn text-danger p-2 opacity-50 hover-opacity-100"><i class="fas fa-times"></i></button>
                         </form>
                     </div>
                 </div>
@@ -338,396 +237,258 @@
             </div>
         </div>
 
-        <div class="cartSummary">
-            <h5>Reservation & Payment</h5>
-            
-            <form action="{{ url_for('main.checkout') }}" method="POST">
-                <div class="mb-4">
-                    <label class="form-label fw-bold">1. Choose Dining Method</label>
-                    <div class="cartOpt">
-                        <input type="radio" class="btn-check" name="dining_option" id="dine_in" value="DINE_IN" checked>
-                        <label for="dine_in"><i class="fas fa-utensils d-block mb-1"></i>Dine In</label>
-                        <input type="radio" class="btn-check" name="dining_option" id="take_out" value="TAKE_OUT">
-                        <label for="take_out"><i class="fas fa-shopping-bag d-block mb-1"></i>Pick-up</label>
-                        <input type="radio" class="btn-check" name="dining_option" id="delivery" value="DELIVERY">
-                        <label for="delivery"><i class="fas fa-motorcycle d-block mb-1"></i>Delivery</label>
-                    </div>
-                </div>
-
-                <!-- Delivery Fields -->
-                <div id="delivery_fields" style="display:none;" class="mb-4 animate__animated animate__fadeIn">
-                    <div style="background: #fdfaf8; border-radius: 20px; padding: 1.5rem; border: 1px solid #f1ece8;">
-                        <div class="row g-2 mb-3">
-                            <div class="col-6">
-                                <select id="select_municipality" class="form-select border-0 shadow-sm">
-                                    <option value="">Municipality</option>
-                                    <option value="Santa Cruz">Santa Cruz</option>
-                                    <option value="Pila">Pila</option>
-                                    <option value="Victoria">Victoria</option>
-                                    <option value="Lumban">Lumban</option>
-                                    <option value="Magdalena">Magdalena</option>
-                                </select>
+        <!-- Right Column: Summary -->
+        <div class="summary-container">
+            <div class="glass-card summary-pane">
+                <h3 class="summary-title">Order Logistics</h3>
+                
+                <form action="{{ url_for('main.checkout') }}" method="POST" id="checkoutForm">
+                    <!-- Dining Options -->
+                    <div class="mb-4">
+                        <label class="fw-bold small text-uppercase mb-3 d-block opacity-50">1. Service Type</label>
+                        <div class="row g-2">
+                            <div class="col-4">
+                                <input type="radio" class="btn-check" name="dining_option" id="dine_in" value="DINE_IN" checked>
+                                <label class="btn btn-outline-dark w-100 rounded-4 py-3 border-2" for="dine_in"><i class="fas fa-utensils d-block mb-1"></i><span class="small fw-bold">Dine In</span></label>
                             </div>
-                            <div class="col-6">
-                                <select id="select_barangay" class="form-select border-0 shadow-sm" disabled>
-                                    <option value="">Barangay</option>
-                                </select>
+                            <div class="col-4">
+                                <input type="radio" class="btn-check" name="dining_option" id="take_out" value="TAKE_OUT">
+                                <label class="btn btn-outline-dark w-100 rounded-4 py-3 border-2" for="take_out"><i class="fas fa-shopping-bag d-block mb-1"></i><span class="small fw-bold">Pick-up</span></label>
+                            </div>
+                            <div class="col-4">
+                                <input type="radio" class="btn-check" name="dining_option" id="delivery" value="DELIVERY">
+                                <label class="btn btn-outline-dark w-100 rounded-4 py-3 border-2" for="delivery"><i class="fas fa-motorcycle d-block mb-1"></i><span class="small fw-bold">Delivery</span></label>
                             </div>
                         </div>
-                        <textarea id="street_address" class="form-control border-0 shadow-sm mb-3" rows="2" placeholder="Street Name, Building, Landmark..."></textarea>
-                        <div id="delivery_map" style="height: 180px; border-radius: 15px; overflow: hidden; z-index: 1;"></div>
-                        <textarea name="delivery_address" id="delivery_address" style="display:none;"></textarea>
-                        <input type="hidden" name="delivery_area" id="delivery_area_hidden">
                     </div>
-                </div>
 
-                <div class="mb-4">
-                    <label class="form-label fw-bold">2. Payment Method</label>
-                    <div class="cartPay d-flex flex-column gap-2">
-                        <input type="radio" class="btn-check" name="payment_method" id="pay_counter" value="COUNTER" checked>
-                        <label for="pay_counter" class="btn btn-outline-dark border-2 text-start p-3 rounded-4 w-100">
-                           <div class="d-flex align-items-center">
-                               <i class="fas fa-cash-register me-3 fs-4 text-success"></i>
-                               <div>
-                                   <div class="fw-bold" id="label_pay_counter">Pay at Counter</div>
-                                   <div class="text-muted small" id="desc_pay_counter">Pay cash or card in-store.</div>
-                               </div>
-                           </div>
-                        </label>
-
-                        <input type="radio" class="btn-check" name="payment_method" id="pay_online" value="ONLINE">
-                        <label for="pay_online" class="btn btn-outline-dark border-2 text-start p-3 rounded-4 w-100">
-                            <div class="d-flex align-items-center">
-                                <i class="fas fa-mobile-alt me-3 fs-4 text-primary"></i>
-                                <div>
-                                    <div class="fw-bold">GCash / E-Wallet</div>
-                                    <div class="text-muted small">Pay securely via online payment.</div>
+                    <!-- Delivery Details (Hidden initially) -->
+                    <div id="delivery_fields" style="display:none;" class="mb-4">
+                        <div class="bg-white p-4 rounded-4 border border-dashed mb-3">
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <select id="select_municipality" class="form-select border-0 bg-light rounded-pill">
+                                        <option value="">Municipality</option>
+                                        <option value="Santa Cruz">Santa Cruz</option>
+                                        <option value="Pila">Pila</option>
+                                        <option value="Victoria">Victoria</option>
+                                        <option value="Lumban">Lumban</option>
+                                        <option value="Magdalena">Magdalena</option>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <select id="select_barangay" class="form-select border-0 bg-light rounded-pill" disabled>
+                                        <option value="">Barangay</option>
+                                    </select>
                                 </div>
                             </div>
-                        </label>
+                            <input type="text" id="street_address" class="form-control border-0 bg-light rounded-pill mb-3 px-3" placeholder="Exact Street/Landmark">
+                            <div id="delivery_map" style="height: 150px; border-radius: 15px; overflow: hidden;" class="mb-2"></div>
+                            <textarea name="delivery_address" id="delivery_address" style="display:none;"></textarea>
+                            <input type="hidden" name="delivery_area" id="delivery_area_hidden">
+                        </div>
                     </div>
-                </div>
 
-                <div class="sumContent">
-                    <div class="sumRow"><span>Subtotal</span><span id="itemsSubtotalDisplay">₱{{ "%.2f"|format(total) }}</span></div>
-                    <div id="delivery_fee_row" class="sumRow text-primary" style="display: none !important;"><span>Delivery Fee</span><span>₱50.00</span></div>
-                    <div class="sumTotal">
-                        <span class="label">Total Amount</span>
-                        <span class="val" id="totalAmountDisplay">₱{{ "%.2f"|format(total) }}</span>
+                    <!-- Payment Options -->
+                    <div class="mb-4">
+                        <label class="fw-bold small text-uppercase mb-3 d-block opacity-50">2. Payment Method</label>
+                        <div class="form-check p-3 border rounded-4 bg-white mb-2 cursor-pointer transition-all hover-border-brown">
+                            <input class="form-check-input ms-0 me-3" type="radio" name="payment_method" id="pay_counter" value="COUNTER" checked>
+                            <label class="form-check-label flex-grow-1" for="pay_counter">
+                                <div class="fw-bold" id="label_pay_counter">Pay at Counter</div>
+                                <div class="small text-muted" id="desc_pay_counter">Confirm now, pay physically in-store.</div>
+                            </label>
+                        </div>
+                        <div class="form-check p-3 border rounded-4 bg-white cursor-pointer transition-all hover-border-brown">
+                            <input class="form-check-input ms-0 me-3" type="radio" name="payment_method" id="pay_online" value="ONLINE">
+                            <label class="form-check-label flex-grow-1" for="pay_online">
+                                <div class="fw-bold">Gcash / Online Pay</div>
+                                <div class="small text-muted">Instant payment for zero-contact dining.</div>
+                            </label>
+                        </div>
                     </div>
-                </div>
 
-                {% if current_user.is_authenticated %}
-                <button type="submit" class="cartSubmit cartSubmit-desktop">Secure Checkout</button>
-                {% else %}
-                <button type="button" class="cartSubmit" style="background: #333;" onclick="$('#termsModal').modal('show'); window.authIntent = 'login';">Sign in to Checkout</button>
-                {% endif %}
-            </form>
-        </div>
-    </div>
-    {% else %}
-    <div class="text-center py-5">
-        <div class="mb-4"><i class="fas fa-shopping-basket fa-4x opacity-25"></i></div>
-        <h2 class="font-serif fw-bold">Your cart is empty</h2>
-        <p class="text-muted">It looks like you haven't added anything yet.</p>
-        <a href="{{ url_for('main.menu_page') }}" class="btn btn-primary rounded-pill px-5 py-3 mt-3 shadow">Discover Our Menu</a>
-    </div>
-    {% endif %}
-</div>
+                    <!-- Totals -->
+                    <div class="pt-3 border-top border-dashed">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Item Subtotal</span>
+                            <span class="fw-bold" id="itemsSubtotalDisplay">₱{{ "%.2f"|format(total) }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-4" id="delivery_fee_row" style="display:none !important;">
+                            <span class="text-muted">Delivery Charge</span>
+                            <span class="text-success fw-bold">₱50.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h4 class="m-0 fw-bold">Grand Total</h4>
+                            <h3 class="m-0 fw-bold text-brown" id="totalAmountDisplay">₱{{ "%.2f"|format(total) }}</h3>
+                        </div>
+                    </div>
 
-<!-- Mobile Checkout Bottom Bar -->
-{% if cart_items and current_user.is_authenticated %}
-<div class="mobileCheckoutBar animate__animated animate__slideInUp">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div>
-            <div class="text-muted small">Total amount</div>
-            <div class="fw-bold fs-4 text-primary" id="mobileTotalDisplay">₱{{ "%.2f"|format(total) }}</div>
-        </div>
-        <div class="text-end">
-            <span class="badge bg-light text-dark border">{{ cart_items|length }} items</span>
+                    {% if current_user.is_authenticated %}
+                        <button type="submit" class="pay-btn">Proceed to Purchase</button>
+                    {% else %}
+                        <button type="button" class="pay-btn opacity-75" onclick="$('#termsModal').modal('show'); window.authIntent = 'login';">Login to Checkout</button>
+                    {% endif %}
+                </form>
+            </div>
         </div>
     </div>
-    <button type="button" class="cartSubmit m-0" onclick="document.querySelector('.cartSubmit-desktop').click();">Checkout Now</button>
-</div>
-{% endif %}
 
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // --- State Management ---
-            let currentBaseTotal = parseFloat("{{ total }}") || 0;
-            const deliveryFee = 50.00;
+    document.addEventListener('DOMContentLoaded', function() {
+        let currentBaseTotal = parseFloat("{{ total }}") || 0;
+        const deliveryFee = 50.00;
+        let map, marker, mapInitialized = false;
 
-            // --- Delivery & Map Management ---
-            let map, marker, mapInitialized = false, deliveryAllowed = false;
-            const locationData = {
-                'Santa Cruz': ['Alipit', 'Bagong Bayan', 'Bubukal', 'Calios', 'Duhat', 'Gatid', 'Giling-Giling', 'Labuin', 'Malinao', 'Matalatala', 'Oogong', 'Pagsawitan', 'Palanas', 'Poblacion I', 'Poblacion II', 'Poblacion III', 'Poblacion IV', 'Poblacion V', 'San Jose', 'San Juan', 'San Nicolas', 'San Pablo Norte', 'San Pablo Sur', 'Santisima Cruz', 'Santo Angel Central', 'Santo Angel Norte', 'Santo Angel Sur'],
-                'Pila': ['Aplaya', 'Bagong Pook', 'Bukal', 'Bulilan Sur', 'Concepcion', 'Labuin', 'Linga', 'Masico', 'Mojon', 'Pansol', 'Pinagbayanan', 'Poblacion', 'San Antonio', 'San Miguel', 'Santa Clara Norte', 'Santa Clara Sur', 'Tubuan'],
-                'Victoria': ['Banca-banca', 'Daniw', 'Masapang', 'Nanhaya', 'Pagalangan', 'San Francisco', 'San Roque', 'San Nicolas', 'Santa Cruz'],
-                'Lumban': ['Bagong Silang', 'Balimbingan', 'Balubad', 'Caliraya', 'Concepcion', 'Luwac', 'Maracta', 'Maytalang I', 'Maytalang II', 'Primeiro Distrito', 'Salac', 'Santo Niño', 'Segundo Distrito', 'Talahib', 'Talongue', 'Wawa'],
-                'Magdalena': ['Alipit', 'Baanan', 'Balanac', 'Bucal', 'Buenavista', 'Bungkol', 'Burol', 'Capayapaan', 'Cigaras', 'Halayhayin', 'Ibabang Atingay', 'Ibabang Butnong', 'Ilayang Atingay', 'Ilayang Butnong', 'Ilog', 'Malaking Ambling', 'Mali-mali', 'Mamatid', 'Poblacion', 'Sabang', 'Salaking', 'San Antonio', 'San Francisco', 'Tipunan']
-            };
-            const townCoordinates = { 'Santa Cruz': [14.2833, 121.4167], 'Pila': [14.2333, 121.3667], 'Victoria': [14.2250, 121.3283], 'Lumban': [14.2981, 121.4608], 'Magdalena': [14.2000, 121.4333] };
+        const locationData = {
+            'Santa Cruz': ['Alipit', 'Bagong Bayan', 'Bubukal', 'Calios', 'Duhat', 'Gatid', 'Giling-Giling', 'Labuin', 'Malinao', 'Matalatala', 'Oogong', 'Pagsawitan', 'Palanas', 'Poblacion I', 'Poblacion II', 'Poblacion III', 'Poblacion IV', 'Poblacion V', 'San Jose', 'San Juan', 'San Nicolas', 'San Pablo Norte', 'San Pablo Sur', 'Santisima Cruz', 'Santo Angel Central', 'Santo Angel Norte', 'Santo Angel Sur'],
+            'Pila': ['Aplaya', 'Bagong Pook', 'Bukal', 'Bulilan Sur', 'Concepcion', 'Labuin', 'Linga', 'Masico', 'Mojon', 'Pansol', 'Pinagbayanan', 'Poblacion', 'San Antonio', 'San Miguel', 'Santa Clara Norte', 'Santa Clara Sur', 'Tubuan'],
+            'Victoria': ['Banca-banca', 'Daniw', 'Masapang', 'Nanhaya', 'Pagalangan', 'San Francisco', 'San Roque', 'San Nicolas', 'Santa Cruz'],
+            'Lumban': ['Bagong Silang', 'Balimbingan', 'Balubad', 'Caliraya', 'Concepcion', 'Luwac', 'Maracta', 'Maytalang I', 'Maytalang II', 'Primeiro Distrito', 'Salac', 'Santo Niño', 'Segundo Distrito', 'Talahib', 'Talongue', 'Wawa'],
+            'Magdalena': ['Alipit', 'Baanan', 'Balanac', 'Bucal', 'Buenavista', 'Bungkol', 'Burol', 'Capayapaan', 'Cigaras', 'Halayhayin', 'Ibabang Atingay', 'Ibabang Butnong', 'Ilayang Atingay', 'Ilayang Butnong', 'Ilog', 'Malaking Ambling', 'Mali-mali', 'Mamatid', 'Poblacion', 'Sabang', 'Salaking', 'San Antonio', 'San Francisco', 'Tipunan']
+        };
+        const townCoords = { 'Santa Cruz': [14.2833, 121.4167], 'Pila': [14.2333, 121.3667], 'Victoria': [14.2250, 121.3283], 'Lumban': [14.2981, 121.4608], 'Magdalena': [14.2000, 121.4333] };
 
-            function initMap() {
-                if (mapInitialized) return;
-                mapInitialized = true;
-                map = L.map('delivery_map').setView([14.2833, 121.4167], 12);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
-                marker = L.marker([14.2833, 121.4167], { draggable: true }).addTo(map);
-                marker.on('dragend', validateForm);
-                map.on('click', e => { marker.setLatLng(e.latlng); validateForm(); });
-            }
-
-            // --- UI Update Helpers ---
-            function refreshTotalsDisplay() {
-                const isDel = document.getElementById('delivery').checked;
-                const finalTotal = isDel ? currentBaseTotal + deliveryFee : currentBaseTotal;
-
-                document.getElementById('itemsSubtotalDisplay').innerText = '₱' + currentBaseTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                document.getElementById('totalAmountDisplay').innerText = '₱' + finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                document.getElementById('delivery_fee_row').style.setProperty('display', isDel ? 'flex' : 'none', 'important');
-
-                // Update Labels
-                document.getElementById('label_pay_counter').innerHTML = isDel ? '<i class="fas fa-hand-holding-usd text-success me-2"></i>Cash on Delivery' : '<i class="fas fa-cash-register text-success me-2"></i>Pay at Counter';
-                document.getElementById('desc_pay_counter').innerText = isDel ? 'Pay cash when your order arrives.' : 'Pay cash or card in-store.';
-            }
-
-            function recalculateCheckedTotal() {
-                let newTotal = 0;
-                let anyChecked = false;
-                document.querySelectorAll('.item-checkbox:checked').forEach(cb => {
-                    anyChecked = true;
-                    let subEl = document.getElementById('subtotal-' + cb.value);
-                    if (subEl) {
-                        let subTxt = subEl.innerText.replace(/[^0-9.]/g, '');
-                        newTotal += parseFloat(subTxt) || 0;
-                    }
-                });
-                currentBaseTotal = newTotal;
-                refreshTotalsDisplay();
-                
-                let totalCbs = document.querySelectorAll('.item-checkbox').length;
-                let checkedCbs = document.querySelectorAll('.item-checkbox:checked').length;
-                document.getElementById('selectAllCheckbox').checked = (totalCbs > 0 && totalCbs === checkedCbs);
-                
-                const delBtn = document.getElementById('deleteSelectedBtn');
-                if (delBtn) delBtn.disabled = !anyChecked;
-                validateForm();
-            }
-
-            function validateForm() {
-                const isDel = document.getElementById('delivery').checked;
-                const submitBtn = document.querySelector('.cartSubmit');
-                if (isDel) {
-                    const muni = document.getElementById('select_municipality').value;
-                    const brgy = document.getElementById('select_barangay').value;
-                    const street = document.getElementById('street_address').value.trim();
-                    if (muni && brgy && street) {
-                        deliveryAllowed = true;
-                        let addr = `${street}, Brgy. ${brgy}, ${muni}, Laguna.`;
-                        if (marker) addr += ` (Map Pin: ${marker.getLatLng().lat.toFixed(5)}, ${marker.getLatLng().lng.toFixed(5)})`;
-                        document.getElementById('delivery_address').value = addr;
-                        document.getElementById('delivery_area_hidden').value = muni;
-                    } else deliveryAllowed = false;
-                }
-                if (submitBtn) {
-                    const anyChecked = document.querySelectorAll('.item-checkbox:checked').length > 0;
-                    submitBtn.disabled = (isDel && !deliveryAllowed);
-                    submitBtn.style.opacity = ((isDel && !deliveryAllowed) || !anyChecked) ? '0.5' : '1';
-                }
-            }
-
-            // --- Event Listeners: Checkboxes ---
-            document.querySelectorAll('.item-checkbox').forEach(cb => {
-                cb.addEventListener('change', recalculateCheckedTotal);
-            });
-            document.getElementById('selectAllCheckbox').addEventListener('change', function() {
-                const isChecked = this.checked;
-                document.querySelectorAll('.item-checkbox').forEach(cb => {
-                    cb.checked = isChecked;
-                });
-                recalculateCheckedTotal();
-            });
+        function updateUI() {
+            const isDel = document.getElementById('delivery').checked;
+            const finalTotal = isDel ? currentBaseTotal + deliveryFee : currentBaseTotal;
             
-            document.getElementById('deleteSelectedBtn').addEventListener('click', function() {
-                let ids = Array.from(document.querySelectorAll('.item-checkbox:checked')).map(cb => cb.value);
-                if (ids.length === 0) return;
-                if (!confirm('Are you sure you want to remove the ' + ids.length + ' selected item(s)?')) return;
+            document.getElementById('itemsSubtotalDisplay').innerText = '₱' + currentBaseTotal.toFixed(2);
+            document.getElementById('totalAmountDisplay').innerText = '₱' + finalTotal.toFixed(2);
+            document.getElementById('delivery_fee_row').style.setProperty('display', isDel ? 'flex' : 'none', 'important');
+            
+            // Contextual labels
+            document.getElementById('label_pay_counter').innerText = isDel ? 'Cash on Delivery' : 'Pay at Counter';
+            document.getElementById('desc_pay_counter').innerText = isDel ? 'Pay when the rider arrives.' : 'Confirm now, pay in-store.';
+        }
+
+        // Selection Logic
+        function calcChecked() {
+            let total = 0;
+            document.querySelectorAll('.item-checkbox:checked').forEach(cb => {
+                const sub = document.getElementById('subtotal-' + cb.value);
+                if(sub) total += parseFloat(sub.innerText);
+            });
+            currentBaseTotal = total;
+            updateUI();
+        }
+
+        document.getElementById('selectAllCheckbox').addEventListener('change', function() {
+            document.querySelectorAll('.item-checkbox').forEach(cb => cb.checked = this.checked);
+            calcChecked();
+        });
+
+        document.querySelectorAll('.item-checkbox').forEach(cb => {
+            cb.addEventListener('change', () => {
+                const all = document.querySelectorAll('.item-checkbox').length;
+                const checked = document.querySelectorAll('.item-checkbox:checked').length;
+                document.getElementById('selectAllCheckbox').checked = (all === checked);
+                calcChecked();
+            });
+        });
+
+        // Quantity AJAX
+        document.querySelectorAll('.qty-update-form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                const rowId = this.action.split('/').pop() || this.closest('.item-row').id.split('-').pop();
                 
-                let formData = new FormData();
-                ids.forEach(id => formData.append('item_ids[]', id));
-                
-                fetch("{{ url_for('main.remove_multiple_from_cart') }}", {
+                fetch(this.action, {
                     method: 'POST',
                     body: formData,
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 }).then(r => r.json()).then(data => {
                     if(data.status === 'success') {
-                        window.location.reload();
-                    } else {
-                        if(window.showToast) window.showToast('danger', data.message);
+                        document.getElementById('qty-'+rowId).innerText = data.new_quantity;
+                        document.getElementById('subtotal-'+rowId).innerText = data.item_subtotal.replace(/[^0-9.]/g, '');
+                        calcChecked();
+                        if(window.updateCartBadge) window.updateCartBadge(data.cart_count);
                     }
                 });
             });
-            
-            // Manage Checkout Selection Payload
-            const checkoutForm = document.querySelector('.cartSummary form');
-            if (checkoutForm) {
-                checkoutForm.addEventListener('submit', function(e) {
-                    // Collect selected items
-                    document.querySelectorAll('.checkout-hidden-item').forEach(el => el.remove());
-                    let hasChecked = false;
-                    document.querySelectorAll('.item-checkbox:checked').forEach(cb => {
-                        hasChecked = true;
-                        let inp = document.createElement('input');
-                        inp.type = 'hidden';
-                        inp.name = 'selected_items';
-                        inp.value = cb.value;
-                        inp.className = 'checkout-hidden-item';
-                        this.appendChild(inp);
-                    });
-                    if (!hasChecked) {
-                        e.preventDefault();
-                        if (window.showToast) window.showToast('danger', 'Please select at least one item to checkout.');
-                    }
-                });
-            }
-
-            // --- Event Listeners: Dining Option ---
-            document.querySelectorAll('input[name="dining_option"]').forEach(r => {
-                r.addEventListener('change', function () {
-                    const isDel = this.value === 'DELIVERY';
-                    document.getElementById('delivery_fields').style.display = isDel ? 'block' : 'none';
-                    if (isDel) setTimeout(() => { if (!map) initMap(); else map.invalidateSize(); }, 200);
-                    recalculateCheckedTotal(); // Re-validate everything including checkbox presence
-                    validateForm();
-                    const ad = document.getElementById('delivery_address');
-                    if (ad) ad.required = isDel;
-                });
-            });
-
-            // --- Event Listeners: Quantity AJAX (Plus/Minus Buttons) ---
-            document.querySelectorAll('.qty-update-form').forEach(function(form) {
-                form.addEventListener('submit', function (e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-
-                    const thisForm = this;
-                    const url = thisForm.action;
-                    const row = thisForm.closest('.cartItem');
-                    if (!row) return;
-
-                    const rowId = row.id.replace('cart-row-', '');
-                    const btns = row.querySelectorAll('.qty-btn');
-
-                    // Disable all qty buttons in this row to prevent double-clicks
-                    btns.forEach(function(b) {
-                        b.disabled = true;
-                        b.style.opacity = '0.5';
-                    });
-
-                    fetch(url, {
-                        method: 'POST',
-                        body: new FormData(thisForm),
-                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                    })
-                    .then(function(r) {
-                        if (!r.ok) throw new Error('Server error: ' + r.status);
-                        return r.json();
-                    })
-                    .then(function(data) {
-                        if (data.status === 'success') {
-                            // Update quantity display
-                            var qtyEl = document.getElementById('qty-' + rowId);
-                            if (qtyEl) qtyEl.innerText = data.new_quantity;
-
-                            // Update subtotal display
-                            var subEl = document.getElementById('subtotal-' + rowId);
-                            if (subEl) subEl.innerText = data.item_subtotal;
-
-                            // Update grand total based on visible DOM elements plus the update!
-                            recalculateCheckedTotal();
-
-                            // Update cart badge in navbar
-                            updateCartBadge(data.cart_count);
-
-                            // Re-enable buttons with correct disabled state
-                            var currQty = parseInt(data.new_quantity) || 1;
-                            row.querySelectorAll('.qty-update-form').forEach(function(f) {
-                                var btn = f.querySelector('.qty-btn');
-                                var actionInput = f.querySelector('input[name="cart_action"]');
-                                if (btn && actionInput) {
-                                    var isDec = actionInput.value === 'decrement';
-                                    btn.disabled = (isDec && currQty <= 1);
-                                    btn.style.opacity = (isDec && currQty <= 1) ? '0.5' : '1';
-                                }
-                            });
-                        } else {
-                            // If server returned non-success, reload
-                            window.location.reload();
-                        }
-                    })
-                    .catch(function(err) {
-                        console.error('Cart update error:', err);
-                        // Re-enable buttons on error instead of silent reload
-                        btns.forEach(function(b) {
-                            b.disabled = false;
-                            b.style.opacity = '1';
-                        });
-                        if (window.showToast) {
-                            window.showToast('danger', 'Failed to update quantity. Please try again.');
-                        }
-                    });
-                });
-            });
-
-            // --- Utility: Navbar Badge Update ---
-            function updateCartBadge(count) {
-                const badges = document.querySelectorAll('.cart-badge');
-                badges.forEach(badge => {
-                    if (count > 0) {
-                        badge.innerText = count;
-                        badge.style.display = 'inline-block';
-                    } else {
-                        badge.innerText = '';
-                        badge.style.display = 'none';
-                    }
-                });
-            }
-
-            // --- Initialize ---
-            const selMuni = document.getElementById('select_municipality');
-            const selBrgy = document.getElementById('select_barangay');
-            selMuni.addEventListener('change', function () {
-                const muni = this.value;
-                selBrgy.innerHTML = '<option value="">Barangay</option>';
-                if (muni && locationData[muni]) {
-                    selBrgy.disabled = false;
-                    locationData[muni].forEach(b => {
-                        const opt = document.createElement('option');
-                        opt.value = opt.textContent = b;
-                        selBrgy.appendChild(opt);
-                    });
-                    if (map && townCoordinates[muni]) map.flyTo(townCoordinates[muni], 14);
-                } else selBrgy.disabled = true;
-                validateForm();
-            });
-            selBrgy.addEventListener('change', validateForm);
-            document.getElementById('street_address').addEventListener('input', validateForm);
-
-            refreshTotalsDisplay();
-            const co = document.querySelector('input[name="dining_option"]:checked');
-            if (co && co.value === 'DELIVERY') co.dispatchEvent(new Event('change'));
         });
+
+        // Delivery Logic
+        document.querySelectorAll('input[name="dining_option"]').forEach(r => {
+            r.addEventListener('change', function() {
+                const isDel = this.value === 'DELIVERY';
+                document.getElementById('delivery_fields').style.display = isDel ? 'block' : 'none';
+                if(isDel && !mapInitialized) {
+                    setTimeout(() => {
+                        map = L.map('delivery_map').setView([14.2833, 121.4167], 13);
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+                        marker = L.marker([14.2833, 121.4167], {draggable: true}).addTo(map);
+                        mapInitialized = true;
+                    }, 200);
+                }
+                updateUI();
+            });
+        });
+
+        document.getElementById('select_municipality').addEventListener('change', function() {
+            const muni = this.value;
+            const bSelect = document.getElementById('select_barangay');
+            bSelect.innerHTML = '<option value="">Barangay</option>';
+            if(muni && locationData[muni]) {
+                bSelect.disabled = false;
+                locationData[muni].forEach(b => bSelect.innerHTML += `<option value="${b}">${b}</option>`);
+                if(map && townCoords[muni]) map.flyTo(townCoords[muni], 14);
+            } else bSelect.disabled = true;
+        });
+
+        // Delete Selection
+        document.getElementById('deleteSelectedBtn').addEventListener('click', function() {
+            const checked = Array.from(document.querySelectorAll('.item-checkbox:checked')).map(cb => cb.value);
+            if(!checked.length || !confirm(`Remove ${checked.length} items?`)) return;
+            
+            const fd = new FormData();
+            checked.forEach(id => fd.append('item_ids[]', id));
+            fetch("{{ url_for('main.remove_multiple_from_cart') }}", {
+                method: 'POST',
+                body: fd,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            }).then(() => window.location.reload());
+        });
+
+        // Checkout Validation
+        document.getElementById('checkoutForm').addEventListener('submit', function(e) {
+            const checked = document.querySelectorAll('.item-checkbox:checked');
+            if(!checked.length) {
+                e.preventDefault();
+                alert('Select at least one item.');
+                return;
+            }
+            
+            // Add hidden inputs for selected items
+            checked.forEach(cb => {
+                const inp = document.createElement('input');
+                inp.type = 'hidden'; inp.name = 'selected_items'; inp.value = cb.value;
+                this.appendChild(inp);
+            });
+
+            if(document.getElementById('delivery').checked) {
+                const street = document.getElementById('street_address').value;
+                const muni = document.getElementById('select_municipality').value;
+                const brgy = document.getElementById('select_barangay').value;
+                if(!street || !muni || !brgy) {
+                    e.preventDefault();
+                    alert('Please complete delivery address.');
+                } else {
+                    document.getElementById('delivery_address').value = `${street}, ${brgy}, ${muni}`;
+                    document.getElementById('delivery_area_hidden').value = muni;
+                }
+            }
+        });
+    });
     </script>
+    
     {% else %}
-    <div class="cartEmpty d-flex flex-column align-items-center justify-content-center text-center py-5 mt-4 w-100">
-        <i class="fas fa-shopping-basket mb-4" style="font-size: 4.5rem; color: rgba(93, 64, 55, 0.2);"></i>
-        <h3 class="fw-bold mb-2" style="font-family: 'Playfair Display', serif; color: #3E2723; font-size: 2.2rem;">Your cart is empty</h3>
-        <p class="text-muted mb-4" style="font-size: 1.1rem;">Looks like you haven't added any of our delicious items yet.</p>
-        <a href="{{ url_for('main.menu_page') }}" class="cartSubmit d-inline-flex align-items-center justify-content-center"
-            style="width: auto; padding: 0.85rem 2.5rem; text-decoration: none; border-radius: 50px;"><i
-                class="fas fa-book-open me-2"></i>Browse Menu</a>
+    <div class="text-center py-5 glass-card" style="margin: 4rem auto; max-width: 600px; padding: 4rem;">
+        <i class="fas fa-shopping-basket fa-4x opacity-25 mb-4" style="color: var(--caramel);"></i>
+        <h2 class="font-serif fw-bold" style="color: var(--espresso);">Your basket is empty</h2>
+        <p class="text-muted">Discover our curated selection of flavors and start your journey.</p>
+        <a href="{{ url_for('main.menu_page') }}" class="pay-btn d-inline-block px-5 mt-3" style="width: auto; text-decoration: none;">Explore Our Menu</a>
     </div>
     {% endif %}
 </div>
