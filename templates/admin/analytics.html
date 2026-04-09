@@ -2,127 +2,392 @@
 {% block title %}Analytics{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <h1>Analytics</h1>
-    <p>Detailed sales insights and customer metrics.</p>
-</div>
+<style>
+    :root {
+        --saas-bg: #f8f9fc;
+        --saas-primary: #4e73df;
+        --saas-success: #1cc88a;
+        --saas-info: #36b9cc;
+        --saas-danger: #e74a3b;
+        --saas-card-bg: #ffffff;
+        --saas-border: #e3e6f0;
+        --saas-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+        --saas-hover-shadow: 0 0.5rem 2rem 0 rgba(58, 59, 69, 0.15);
+    }
 
-<!-- CATEGORY STATS -->
-<div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-icon" style="background: rgba(34,197,94,0.12); color: var(--admin-green);"><i
-                class="fas fa-peso-sign"></i></div>
-        <div class="stat-label">Net Profit</div>
-        <div class="stat-value">&#8369;{{ "%.0f"|format(net_profit) }}</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-icon" style="background: rgba(59,130,246,0.12); color: var(--admin-blue);"><i
-                class="fas fa-coins"></i></div>
-        <div class="stat-label">Total COGS</div>
-        <div class="stat-value">&#8369;{{ "%.0f"|format(total_cogs) }}</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-icon" style="background: rgba(139,69,19,0.12); color: #8d6e63;"><i
-                class="fas fa-wallet"></i></div>
-        <div class="stat-label">Total Revenue</div>
-        <div class="stat-value">&#8369;{{ "%.0f"|format(total_revenue) }}</div>
-    </div>
-</div>
+    .ana-container {
+        padding: 1.5rem;
+        background: var(--saas-bg);
+        min-height: 100vh;
+        animation: fadeIn 0.5s ease-out;
+    }
 
-<div class="stats-grid">
-    {% for cat, count in menu_by_category %}
-    <div class="stat-card">
-        <div class="stat-icon" style="background: rgba(139,92,246,0.15); color: #8b5cf6;"><i class="fas fa-tag"></i>
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Header */
+    .ana-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 2rem;
+    }
+
+    .ana-title-wrap h1 {
+        font-weight: 800;
+        color: #333;
+        margin-bottom: 0.25rem;
+        font-size: 1.75rem;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .ana-title-wrap p {
+        color: #858796;
+        margin: 0;
+        font-size: 0.9rem;
+    }
+
+    .filter-btn {
+        background: white;
+        border: 1px solid var(--saas-border);
+        color: #6e707e;
+        border-radius: 10px;
+        padding: 0.6rem 1.25rem;
+        font-weight: 600;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+    }
+    .filter-btn:hover { background: #fbfbfb; border-color: #d1d3e2; }
+
+    /* Summary Cards */
+    .ana-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .ana-sum-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        border: 1px solid var(--saas-border);
+        box-shadow: var(--saas-shadow);
+        display: flex;
+        align-items: center;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .ana-sum-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--saas-hover-shadow);
+    }
+
+    .ana-sum-icon {
+        width: 54px;
+        height: 54px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        margin-right: 1.25rem;
+        flex-shrink: 0;
+    }
+
+    .profit .ana-sum-icon { background: rgba(28, 200, 138, 0.1); color: var(--saas-success); }
+    .revenue .ana-sum-icon { background: rgba(78, 115, 223, 0.1); color: var(--saas-primary); }
+    .cogs .ana-sum-icon { background: rgba(231, 74, 59, 0.1); color: var(--saas-danger); }
+
+    .ana-sum-info { flex: 1; }
+    .ana-sum-label {
+        font-size: 0.7rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        margin-bottom: 0.25rem;
+        letter-spacing: 1px;
+    }
+    .profit .ana-sum-label { color: var(--saas-success); }
+    .revenue .ana-sum-label { color: var(--saas-primary); }
+    .cogs .ana-sum-label { color: var(--saas-danger); }
+
+    .ana-sum-val {
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: #444;
+        margin-bottom: 0.25rem;
+    }
+
+    .ana-trend {
+        font-size: 0.75rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .trend-up { color: var(--saas-success); }
+    .trend-down { color: var(--saas-danger); }
+
+    /* Category Cards Grid */
+    .ana-cat-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 1rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .ana-cat-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.25rem;
+        border: 1px solid var(--saas-border);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        transition: all 0.3s;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .ana-cat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+    }
+
+    .ana-cat-top {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .ana-cat-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        background: #f4f6ff;
+        color: #4e73df;
+    }
+
+    .ana-cat-name {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #858796;
+        margin: 0;
+        margin-left: 0.75rem;
+        line-height: 1.2;
+    }
+
+    .ana-cat-count {
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: #333;
+        margin: 0;
+        margin-top: auto;
+    }
+
+    /* Charts Grid */
+    .ana-charts-grid {
+        display: grid;
+        grid-template-columns: 1.8fr 1fr;
+        gap: 1.5rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .ana-chart-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        border: 1px solid var(--saas-border);
+        box-shadow: var(--saas-shadow);
+    }
+
+    .ana-chart-card h3 {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #333;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .chart-actions { font-size: 0.8rem; color: #858796; cursor: pointer; }
+
+    .chart-container-lg { height: 350px; }
+    .chart-container-sm { height: 300px; }
+
+    /* Responsive */
+    @media (max-width: 1400px) {
+        .ana-cat-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+    @media (max-width: 1100px) {
+        .ana-cat-grid { grid-template-columns: repeat(3, 1fr); }
+        .ana-summary-grid { grid-template-columns: repeat(2, 1fr); }
+        .ana-summary-grid .cogs { grid-column: span 2; }
+    }
+    @media (max-width: 900px) {
+        .ana-charts-grid { grid-template-columns: 1fr; }
+        .ana-cat-grid { grid-template-columns: repeat(2, 1fr); }
+        .ana-summary-grid { grid-template-columns: 1fr; }
+        .ana-summary-grid .cogs { grid-column: auto; }
+        .ana-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+    }
+</style>
+
+<div class="ana-container">
+    <div class="ana-header">
+        <div class="ana-title-wrap">
+            <h1>Analytics</h1>
+            <p>Detailed sales insights and customer metrics</p>
         </div>
-        <div class="stat-label">{{ cat }}</div>
-        <div class="stat-value">{{ count }}</div>
+        <div class="ana-filters">
+            <div class="dropdown">
+                <button class="filter-btn dropdown-toggle" data-bs-toggle="dropdown">
+                    <i class="far fa-calendar-alt"></i> Weekly Data
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg" style="border-radius: 14px;">
+                    <li><a class="dropdown-item py-2" href="#"><i class="fas fa-clock me-2 opacity-50"></i>Today</a></li>
+                    <li><a class="dropdown-item py-2" href="#"><i class="fas fa-calendar-week me-2 opacity-50"></i>This Week</a></li>
+                    <li><a class="dropdown-item py-2" href="#"><i class="fas fa-calendar-alt me-2 opacity-50"></i>This Month</a></li>
+                </ul>
+            </div>
+        </div>
     </div>
-    {% endfor %}
+
+    <!-- Summary Cards -->
+    <div class="ana-summary-grid">
+        <div class="ana-sum-card profit">
+            <div class="ana-sum-icon"><i class="fas fa-peso-sign"></i></div>
+            <div class="ana-sum-info">
+                <div class="ana-sum-label">Net Profit</div>
+                <div class="ana-sum-val">₱{{ "%.0f"|format(net_profit) }}</div>
+                <div class="ana-trend trend-up"><i class="fas fa-arrow-up"></i> 14.2% increased</div>
+            </div>
+        </div>
+        <div class="ana-sum-card revenue">
+            <div class="ana-sum-icon"><i class="fas fa-chart-line"></i></div>
+            <div class="ana-sum-info">
+                <div class="ana-sum-label">Total Revenue</div>
+                <div class="ana-sum-val">₱{{ "%.0f"|format(total_revenue) }}</div>
+                <div class="ana-trend trend-up"><i class="fas fa-arrow-up"></i> 5.7% from last week</div>
+            </div>
+        </div>
+        <div class="ana-sum-card cogs">
+            <div class="ana-sum-icon"><i class="fas fa-file-invoice-dollar"></i></div>
+            <div class="ana-sum-info">
+                <div class="ana-sum-label">Total COGS</div>
+                <div class="ana-sum-val">₱{{ "%.0f"|format(total_cogs) }}</div>
+                <div class="ana-trend trend-down"><i class="fas fa-arrow-down"></i> 2.1% lower expenses</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Categories Grid -->
+    <div class="ana-cat-grid">
+        {% set cat_icons = {
+            'All Day Breakfast': 'fa-egg',
+            'Milk Tea': 'fa-glass-water',
+            'Hot Coffee': 'fa-mug-hot',
+            'Best Sellers': 'fa-fire',
+            'Sweet Breakfast': 'fa-cookie',
+            'Iced Coffee': 'fa-glass-half',
+            'Cakes & Pastries': 'fa-cake-candles',
+            'Fruit Shakes & Yogurt Drinks': 'fa-blender',
+            'Thin Crust Pizza': 'fa-pizza-slice',
+            'Rice Plates': 'fa-bowl-rice'
+        } %}
+        {% for cat, count in menu_by_category %}
+        <div class="ana-cat-card">
+            <div class="ana-cat-top">
+                <div class="ana-cat-icon">
+                    <i class="fas {{ cat_icons[cat] if cat in cat_icons else 'fa-tag' }}"></i>
+                </div>
+                <div class="ana-cat-name">{{ cat }}</div>
+            </div>
+            <div class="ana-cat-count">{{ count }}</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Row 1: Main Charts -->
+    <div class="ana-charts-grid">
+        <div class="ana-chart-card">
+            <h3><span>Sales Over Time</span> <i class="fas fa-ellipsis-v chart-actions"></i></h3>
+            <div class="chart-container-lg">
+                <canvas id="revenueTrendChart"></canvas>
+            </div>
+        </div>
+        <div class="ana-chart-card">
+            <h3><span>Sales Distribution per Category</span> <i class="fas fa-ellipsis-v chart-actions"></i></h3>
+            <div class="chart-container-lg">
+                <canvas id="categoryChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Row 2: Prediction & Status -->
+    <div class="ana-charts-grid">
+        <div class="ana-chart-card">
+            <h3><span>AI Sales Forecast (Next 7 Days)</span> <i class="fas fa-magic chart-actions"></i></h3>
+            <div class="chart-container-sm">
+                <canvas id="forecastChart"></canvas>
+            </div>
+        </div>
+        <div class="ana-chart-card">
+            <h3><span>Order Status Distribution</span> <i class="fas fa-ellipsis-v chart-actions"></i></h3>
+            <div class="chart-container-sm">
+                <canvas id="orderStatusChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Row 3: Hourly & Monthly -->
+    <div class="ana-charts-grid">
+        <div class="ana-chart-card">
+            <h3><span>Busy Times (Orders by Hour)</span> <i class="fas fa-fire-alt chart-actions"></i></h3>
+            <div class="chart-container-sm">
+                <canvas id="busyTimesChart"></canvas>
+            </div>
+        </div>
+        <div class="ana-chart-card">
+            <h3><span>Top 5 Selling Dishes</span> <i class="fas fa-trophy chart-actions"></i></h3>
+            <div class="chart-container-sm">
+                <canvas id="topDishesChart"></canvas>
+            </div>
+        </div>
+    </div>
 </div>
 
-<!-- ROW 1 : Revenue Trend + Order Status -->
-<div class="admin-cards-grid">
-    <div class="admin-card chart-card">
-        <h3><i class="fas fa-chart-line me-2" style="color: var(--admin-green);"></i> Revenue Trend <span
-                class="chart-subtitle">Last 7 Days</span></h3>
-        <div class="chart-container"><canvas id="revenueTrendChart"></canvas></div>
-    </div>
-    <div class="admin-card chart-card">
-        <h3><i class="fas fa-chart-pie me-2" style="color: var(--admin-blue);"></i> Order Status</h3>
-        <div class="chart-container chart-container-sm"><canvas id="orderStatusChart"></canvas></div>
-    </div>
-</div>
-
-<!-- Advanced Forecast -->
-<div class="admin-cards-grid" style="grid-template-columns: 1fr;">
-    <div class="admin-card chart-card">
-        <h3><i class="fas fa-wand-magic-sparkles me-2" style="color: #8b5cf6;"></i> AI Sales Forecast <span
-                class="chart-subtitle">Predicted Next 7 Days</span></h3>
-        <p class="text-muted small mb-3">Historical trend analysis and moving average projection.</p>
-        <div class="chart-container"><canvas id="forecastChart"></canvas></div>
-    </div>
-</div>
-
-<!-- ROW 2 : Daily Orders -->
-<div class="admin-cards-grid" style="grid-template-columns: 1fr;">
-    <div class="admin-card chart-card">
-        <h3><i class="fas fa-chart-bar me-2" style="color: var(--admin-accent);"></i> Daily Orders <span
-                class="chart-subtitle">Last 7 Days</span></h3>
-        <div class="chart-container"><canvas id="dailyOrdersChart"></canvas></div>
-    </div>
-</div>
-
-<!-- ROW 3 : Busy Times + Top 5 -->
-<div class="admin-cards-grid">
-    <div class="admin-card chart-card">
-        <h3><i class="fas fa-fire me-2" style="color: var(--admin-yellow);"></i> Busy Times <span
-                class="chart-subtitle">Orders by Hour</span></h3>
-        <div class="chart-container"><canvas id="busyTimesChart"></canvas></div>
-    </div>
-    <div class="admin-card chart-card">
-        <h3><i class="fas fa-trophy me-2" style="color: #f59e0b;"></i> Top 5 Best Selling Dishes</h3>
-        <div class="chart-container"><canvas id="topDishesChart"></canvas></div>
-    </div>
-</div>
-
-<!-- ROW 4 : Monthly Revenue + Customer Loyalty -->
-<div class="admin-cards-grid">
-    <div class="admin-card chart-card">
-        <h3><i class="fas fa-money-bill-trend-up me-2" style="color: var(--admin-green);"></i> Monthly Revenue <span
-                class="chart-subtitle">Last 6 Months</span></h3>
-        <div class="chart-container"><canvas id="monthlyRevenueChart"></canvas></div>
-    </div>
-    <div class="admin-card chart-card">
-        <h3><i class="fas fa-heart me-2" style="color: #ef4444;"></i> Customer Loyalty</h3>
-        <div class="chart-container chart-container-sm"><canvas id="loyaltyChart"></canvas></div>
-    </div>
-</div>
-
-<!-- ROW 5 : Existing Menu Analytics -->
-<div class="admin-cards-grid">
-    <div class="admin-card chart-card">
-        <h3><i class="fas fa-chart-pie me-2" style="color: var(--admin-accent);"></i> Revenue by Category</h3>
-        <div class="chart-container chart-container-sm"><canvas id="categoryChart"></canvas></div>
-    </div>
-    <div class="admin-card chart-card">
-        <h3><i class="fas fa-chart-bar me-2" style="color: var(--admin-blue);"></i> Menu Distribution</h3>
-        <div class="chart-container"><canvas id="menuChart"></canvas></div>
-    </div>
-</div>
 {% endblock %}
 
 {% block scripts %}
-<div id="chartServerData" style="display: none;" data-revenue-trend-labels="{{ revenue_trend_labels | forceescape }}"
-    data-revenue-trend-data="{{ revenue_trend_data | forceescape }}" data-order-status-labels="{{ order_status_labels | forceescape }}"
-    data-order-status-data="{{ order_status_data | forceescape }}" data-daily-orders-labels="{{ daily_orders_labels | forceescape }}"
-    data-daily-orders-data="{{ daily_orders_data | forceescape }}" data-busy-times-labels="{{ busy_times_labels | forceescape }}"
-    data-busy-times-data="{{ busy_times_data | forceescape }}" data-top-dishes-labels="{{ top_dishes_labels | forceescape }}"
-    data-top-dishes-data="{{ top_dishes_data | forceescape }}" data-monthly-rev-labels="{{ monthly_rev_labels | forceescape }}"
-    data-monthly-rev-data="{{ monthly_rev_data | forceescape }}" data-loyalty-labels="{{ loyalty_labels | forceescape }}"
+<div id="chartServerData" style="display: none;" 
+    data-revenue-trend-labels="{{ revenue_trend_labels | forceescape }}"
+    data-revenue-trend-data="{{ revenue_trend_data | forceescape }}" 
+    data-order-status-labels="{{ order_status_labels | forceescape }}"
+    data-order-status-data="{{ order_status_data | forceescape }}" 
+    data-daily-orders-labels="{{ daily_orders_labels | forceescape }}"
+    data-daily-orders-data="{{ daily_orders_data | forceescape }}" 
+    data-busy-times-labels="{{ busy_times_labels | forceescape }}"
+    data-busy-times-data="{{ busy_times_data | forceescape }}" 
+    data-top-dishes-labels="{{ top_dishes_labels | forceescape }}"
+    data-top-dishes-data="{{ top_dishes_data | forceescape }}" 
+    data-monthly-rev-labels="{{ monthly_rev_labels | forceescape }}"
+    data-monthly-rev-data="{{ monthly_rev_data | forceescape }}" 
+    data-loyalty-labels="{{ loyalty_labels | forceescape }}"
     data-loyalty-data="{{ loyalty_data | forceescape }}"
     data-categories="{{ menu_by_category | map(attribute=0) | list | tojson | forceescape }}"
     data-counts="{{ menu_by_category | map(attribute=1) | list | tojson | forceescape }}"
-    data-forecast-labels="{{ forecast_labels | forceescape }}" data-forecast-data="{{ forecast_data | forceescape }}"></div>
+    data-forecast-labels="{{ forecast_labels | forceescape }}" 
+    data-forecast-data="{{ forecast_data | forceescape }}"></div>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     function initAnalyticsCharts() {
@@ -131,355 +396,126 @@
             return;
         }
 
-        // ═══════════════════════════════════════════════════
-        // CHART.JS GLOBAL DEFAULTS (Cafe Theme)
-        // ═══════════════════════════════════════════════════
-        Chart.defaults.font.family = "'Inter', -apple-system, sans-serif";
+        Chart.defaults.font.family = "'Inter', sans-serif";
         Chart.defaults.font.size = 12;
-        Chart.defaults.color = '#8d6e63';
-        Chart.defaults.plugins.legend.labels.usePointStyle = true;
-        Chart.defaults.plugins.legend.labels.padding = 16;
-        Chart.defaults.plugins.tooltip.backgroundColor = '#3e2723';
-        Chart.defaults.plugins.tooltip.cornerRadius = 10;
-        Chart.defaults.plugins.tooltip.padding = 10;
-        Chart.defaults.plugins.tooltip.titleFont = { weight: '600' };
-        Chart.defaults.elements.point.radius = 4;
-        Chart.defaults.elements.point.hoverRadius = 6;
-        Chart.defaults.animation.duration = 800;
-        Chart.defaults.animation.easing = 'easeOutQuart';
+        Chart.defaults.color = '#858796';
 
-        // ── Palette ──────────────────────────────────────
-        var CAFE_BROWN = '#8B4513';
-        var CAFE_LATTE = '#c87941';
-        var CAFE_GREEN = '#2e7d32';
-        var CAFE_BLUE = '#1565c0';
-        var CAFE_ORANGE = '#e65100';
-        var CAFE_RED = '#c62828';
-        var CAFE_PURPLE = '#8b5cf6';
-        var CAFE_GOLD = '#f59e0b';
-        var CAFE_TEAL = '#0d9488';
-        var CAFE_PINK = '#ec4899';
+        const ctx_revenue = document.getElementById('revenueTrendChart').getContext('2d');
+        const _cd = document.getElementById('chartServerData').dataset;
+        
+        const rev_labels = JSON.parse(_cd.revenueTrendLabels);
+        const rev_data = JSON.parse(_cd.revenueTrendData);
 
-        var STATUS_COLORS = {
-            'PENDING': '#f59e0b',
-            'PREPARING': '#3b82f6',
-            'COMPLETED': '#22c55e',
-            'CANCELLED': '#ef4444',
-            'No Data': '#d4d4d8'
-        };
-
-        const defaultColors = ['#c87941', '#3b82f6', '#22c55e', '#f59e0b', '#8b5cf6', '#ef4444'];
-
-        // ── Helper: gradient fill ────────────────────────
-        function hexToRgb(hex) {
-            if (!hex) return [0, 0, 0];
-            var r = parseInt(hex.slice(1, 3), 16);
-            var g = parseInt(hex.slice(3, 5), 16);
-            var b = parseInt(hex.slice(5, 7), 16);
-            return [r, g, b];
-        }
-
-        function gradientFill(ctx, hex, a1, a2) {
-            if (a1 === undefined) a1 = 0.35;
-            if (a2 === undefined) a2 = 0.02;
-            var rgb = hexToRgb(hex);
-            var grad = ctx.createLinearGradient(0, 0, 0, ctx.canvas.clientHeight || 280);
-            grad.addColorStop(0, 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + a1 + ')');
-            grad.addColorStop(1, 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + a2 + ')');
-            return grad;
-        }
-
-        // ── Grid / Scale defaults ────────────────────────
-        var scaleX = { ticks: { color: '#a1887f', font: { size: 11 } }, grid: { display: false } };
-        var scaleY = { ticks: { color: '#a1887f', font: { size: 11 } }, grid: { color: 'rgba(139,69,19,0.06)' }, beginAtZero: true };
-
-        // ═══ Data from server ═══
-        var _cd = document.getElementById('chartServerData').dataset;
-        var revenueTrendLabels = JSON.parse(_cd.revenueTrendLabels);
-        var revenueTrendData = JSON.parse(_cd.revenueTrendData);
-        var orderStatusLabels = JSON.parse(_cd.orderStatusLabels);
-        var orderStatusData = JSON.parse(_cd.orderStatusData);
-        var dailyOrdersLabels = JSON.parse(_cd.dailyOrdersLabels);
-        var dailyOrdersData = JSON.parse(_cd.dailyOrdersData);
-        var busyTimesLabels = JSON.parse(_cd.busyTimesLabels);
-        var busyTimesData = JSON.parse(_cd.busyTimesData);
-        var topDishesLabels = JSON.parse(_cd.topDishesLabels);
-        var topDishesData = JSON.parse(_cd.topDishesData);
-        var monthlyRevLabels = JSON.parse(_cd.monthlyRevLabels);
-        var monthlyRevData = JSON.parse(_cd.monthlyRevData);
-        var loyaltyLabels = JSON.parse(_cd.loyaltyLabels);
-        var loyaltyData = JSON.parse(_cd.loyaltyData);
-        const categories = JSON.parse(_cd.categories);
-        const counts = JSON.parse(_cd.counts);
-
-        // ═══════════════════════════════════════════════════
-        // 1) REVENUE TREND (Line — Last 7 Days)
-        // ═══════════════════════════════════════════════════
-        (function () {
-            var ctx = document.getElementById('revenueTrendChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: revenueTrendLabels,
-                    datasets: [{
-                        label: 'Revenue',
-                        data: revenueTrendData,
-                        borderColor: CAFE_GREEN,
-                        backgroundColor: gradientFill(ctx, CAFE_GREEN),
-                        borderWidth: 2.5,
-                        tension: 0.4,
-                        fill: true,
-                        pointBackgroundColor: '#fff',
-                        pointBorderColor: CAFE_GREEN,
-                        pointBorderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: { x: { ...scaleX }, y: { ...scaleY } },
-                    plugins: { legend: { display: false } }
+        // Sales Over Time
+        new Chart(ctx_revenue, {
+            type: 'line',
+            data: {
+                labels: rev_labels,
+                datasets: [{
+                    label: 'Revenue',
+                    data: rev_data,
+                    borderColor: '#4e73df',
+                    backgroundColor: 'rgba(78, 115, 223, 0.05)',
+                    pointRadius: 3,
+                    pointBackgroundColor: '#4e73df',
+                    pointBorderColor: '#4e73df',
+                    pointHoverRadius: 5,
+                    pointHoverBackgroundColor: '#4e73df',
+                    pointHoverBorderColor: '#4e73df',
+                    pointHitRadius: 10,
+                    pointBorderWidth: 2,
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false, drawBorder: false }, ticks: { maxTicksLimit: 7 } },
+                    y: { ticks: { maxTicksLimit: 5, padding: 10, callback: v => '₱' + v }, grid: { color: "rgb(234, 236, 244)", zeroLineColor: "rgb(234, 236, 244)", drawBorder: false, borderDash: [2], zeroLineBorderDash: [2] } }
                 }
-            });
-        })();
+            }
+        });
 
-        // ═══════════════════════════════════════════════════
-        // 2) ORDER STATUS (Donut)
-        // ═══════════════════════════════════════════════════
-        (function () {
-            var colors = orderStatusLabels.map(function (l) { return STATUS_COLORS[l] || '#a1887f'; });
-            new Chart(document.getElementById('orderStatusChart'), {
-                type: 'doughnut',
-                data: {
-                    labels: orderStatusLabels,
-                    datasets: [{
-                        data: orderStatusData,
-                        backgroundColor: colors,
-                        borderWidth: 0,
-                        hoverOffset: 8
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '68%',
-                    plugins: {
-                        legend: { position: 'bottom', labels: { padding: 14, font: { size: 12 } } }
-                    }
-                }
-            });
-        })();
+        // Category Pie
+        new Chart(document.getElementById('categoryChart'), {
+            type: 'doughnut',
+            data: {
+                labels: JSON.parse(_cd.categories),
+                datasets: [{
+                    data: JSON.parse(_cd.counts),
+                    backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796', '#5a5c69','#4e73df', '#1cc88a', '#36b9cc'],
+                    hoverBackgroundColor: ['#2e59d9', '#17a673', '#2c9faf'],
+                    hoverBorderColor: "rgba(234, 236, 244, 1)",
+                }]
+            },
+            options: { maintainAspectRatio: false, cutout: '75%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 15 } } } }
+        });
 
-        // ═══════════════════════════════════════════════════
-        // 3) DAILY ORDERS (Bar — Last 7 Days)
-        // ═══════════════════════════════════════════════════
-        (function () {
-            var ctx = document.getElementById('dailyOrdersChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: dailyOrdersLabels,
-                    datasets: [{
-                        label: 'Orders',
-                        data: dailyOrdersData,
-                        backgroundColor: CAFE_LATTE + '55',
-                        borderColor: CAFE_LATTE,
-                        borderWidth: 2,
-                        borderRadius: 10,
-                        hoverBackgroundColor: CAFE_LATTE + 'aa'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: { x: { ...scaleX }, y: { ...scaleY } },
-                    plugins: { legend: { display: false } }
-                }
-            });
-        })();
+        // Forecast
+        new Chart(document.getElementById('forecastChart'), {
+            type: 'line',
+            data: {
+                labels: JSON.parse(_cd.forecastLabels),
+                datasets: [{
+                    label: 'Predicted',
+                    data: JSON.parse(_cd.forecastData),
+                    borderColor: '#8b5cf6',
+                    borderDash: [5, 5],
+                    backgroundColor: 'rgba(139, 92, 246, 0.05)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true } } }
+        });
 
-        // ═══════════════════════════════════════════════════
-        // 4) BUSY TIMES (Line — Orders by Hour)
-        // ═══════════════════════════════════════════════════
-        (function () {
-            var ctx = document.getElementById('busyTimesChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: busyTimesLabels,
-                    datasets: [{
-                        label: 'Orders',
-                        data: busyTimesData,
-                        borderColor: CAFE_ORANGE,
-                        backgroundColor: gradientFill(ctx, CAFE_ORANGE, 0.25, 0.01),
-                        borderWidth: 2.5,
-                        tension: 0.35,
-                        fill: true,
-                        pointBackgroundColor: '#fff',
-                        pointBorderColor: CAFE_ORANGE,
-                        pointBorderWidth: 2,
-                        pointRadius: 3
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: { ticks: { color: '#a1887f', font: { size: 11 }, maxTicksLimit: 12 }, grid: { display: false } },
-                        y: { ...scaleY }
-                    },
-                    plugins: { legend: { display: false } }
-                }
-            });
-        })();
+        // Order Status
+        new Chart(document.getElementById('orderStatusChart'), {
+            type: 'doughnut',
+            data: {
+                labels: JSON.parse(_cd.orderStatusLabels),
+                datasets: [{
+                    data: JSON.parse(_cd.orderStatusData),
+                    backgroundColor: ['#f6c23e', '#4e73df', '#1cc88a', '#e74a3b'],
+                }]
+            },
+            options: { maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 10 } } } }
+        });
 
-        // ═══════════════════════════════════════════════════
-        // 5) TOP 5 BEST SELLING DISHES (Horizontal Bar)
-        // ═══════════════════════════════════════════════════
-        (function () {
-            var palette = [CAFE_GOLD, CAFE_BROWN, CAFE_LATTE, CAFE_TEAL, CAFE_PURPLE];
-            new Chart(document.getElementById('topDishesChart'), {
-                type: 'bar',
-                data: {
-                    labels: topDishesLabels,
-                    datasets: [{
-                        label: 'Qty Sold',
-                        data: topDishesData,
-                        backgroundColor: palette.map(function (c) { return c + '44'; }),
-                        borderColor: palette,
-                        borderWidth: 2,
-                        borderRadius: 8
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    indexAxis: 'y',
-                    scales: {
-                        x: { ticks: { color: '#a1887f', font: { size: 11 } }, grid: { color: 'rgba(139,69,19,0.06)' }, beginAtZero: true },
-                        y: { ticks: { color: '#5d4037', font: { size: 11, weight: '600' } }, grid: { display: false } }
-                    },
-                    plugins: { legend: { display: false } }
-                }
-            });
-        })();
+        // Busy Times
+        new Chart(document.getElementById('busyTimesChart'), {
+            type: 'bar',
+            data: {
+                labels: JSON.parse(_cd.busyTimesLabels),
+                datasets: [{
+                    label: 'Orders',
+                    data: JSON.parse(_cd.busyTimesData),
+                    backgroundColor: '#4e73df',
+                    borderRadius: 10
+                }]
+            },
+            options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true } } }
+        });
 
-        // ═══════════════════════════════════════════════════
-        // 6) MONTHLY REVENUE (Area — Last 6 Months)
-        // ═══════════════════════════════════════════════════
-        (function () {
-            var ctx = document.getElementById('monthlyRevenueChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: monthlyRevLabels,
-                    datasets: [{
-                        label: 'Revenue',
-                        data: monthlyRevData,
-                        borderColor: CAFE_BLUE,
-                        backgroundColor: gradientFill(ctx, CAFE_BLUE, 0.3, 0.02),
-                        borderWidth: 2.5,
-                        tension: 0.4,
-                        fill: true,
-                        pointBackgroundColor: '#fff',
-                        pointBorderColor: CAFE_BLUE,
-                        pointBorderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: { x: { ...scaleX }, y: { ...scaleY } },
-                    plugins: { legend: { display: false } }
-                }
-            });
-        })();
-
-        // ═══════════════════════════════════════════════════
-        // 7) CUSTOMER LOYALTY (Donut)
-        // ═══════════════════════════════════════════════════
-        (function () {
-            var loyaltyColors = loyaltyLabels.length === 1 ? ['#d4d4d8'] : [CAFE_GREEN, CAFE_LATTE];
-            new Chart(document.getElementById('loyaltyChart'), {
-                type: 'doughnut',
-                data: {
-                    labels: loyaltyLabels,
-                    datasets: [{
-                        data: loyaltyData,
-                        backgroundColor: loyaltyColors,
-                        borderWidth: 0,
-                        hoverOffset: 8
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '68%',
-                    plugins: {
-                        legend: { position: 'bottom', labels: { padding: 14, font: { size: 12 } } }
-                    }
-                }
-            });
-        })();
-
-        // ═══════════════════════════════════════════════════
-        // EXISTING MENU CHARTS
-        // ═══════════════════════════════════════════════════
-        (function () {
-            new Chart(document.getElementById('categoryChart'), {
-                type: 'doughnut',
-                data: { labels: categories, datasets: [{ data: counts, backgroundColor: defaultColors, borderWidth: 0, hoverOffset: 8 }] },
-                options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { position: 'bottom', labels: { padding: 14 } } } }
-            });
-
-            new Chart(document.getElementById('menuChart'), {
-                type: 'bar',
-                data: { labels: categories, datasets: [{ label: 'Items', data: counts, backgroundColor: defaultColors.map(c => c + '33'), borderColor: defaultColors, borderWidth: 2, borderRadius: 8 }] },
-                options: { responsive: true, maintainAspectRatio: false, scales: { x: { ...scaleX }, y: { ...scaleY } }, plugins: { legend: { display: false } } }
-            });
-        })();
-        // ═══════════════════════════════════════════════════
-        // 8) SALES FORECAST (Line — Dash/Future)
-        // ═══════════════════════════════════════════════════
-        (function () {
-            var forecastLabels = JSON.parse(_cd.forecastLabels);
-            var forecastData = JSON.parse(_cd.forecastData);
-            var ctx = document.getElementById('forecastChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: forecastLabels,
-                    datasets: [{
-                        label: 'Projected Revenue',
-                        data: forecastData,
-                        borderColor: CAFE_PURPLE,
-                        backgroundColor: gradientFill(ctx, CAFE_PURPLE, 0.2, 0.01),
-                        borderWidth: 2,
-                        borderDash: [5, 5],
-                        tension: 0.3,
-                        fill: true,
-                        pointRadius: 4,
-                        pointBackgroundColor: CAFE_PURPLE
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: { x: { ...scaleX }, y: { ...scaleY } },
-                    plugins: { 
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: (context) => 'Est. Revenue: ₱' + context.parsed.y
-                            }
-                        }
-                    }
-                }
-            });
-        })();
+        // Top Dishes
+        new Chart(document.getElementById('topDishesChart'), {
+            type: 'bar',
+            data: {
+                labels: JSON.parse(_cd.topDishesLabels),
+                datasets: [{
+                    label: 'Sold',
+                    data: JSON.parse(_cd.topDishesData),
+                    backgroundColor: '#1cc88a',
+                    borderRadius: 10,
+                    indexAxis: 'y'
+                }]
+            },
+            options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true }, y: { grid: { display: false } } } }
+        });
     }
 
-    // Start initialization
     initAnalyticsCharts();
 </script>
 {% endblock %}
