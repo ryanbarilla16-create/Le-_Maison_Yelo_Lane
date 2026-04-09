@@ -1,263 +1,231 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html class="h-100" lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <title>Admin Login | Le Maison</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <meta content='width=device-width, initial-scale=1.0, shrink-to-fit=no' name='viewport' />
+
+    <!-- Fonts and icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+
     <style>
-        /* Chill Brown Aesthetic */
         body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #fdfbf9 0%, #e8dccb 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
+            /* Using a high-quality relevant background image for the restaurant, overlaid with a dark blue tint to match the requested palette's feel */
+            background: linear-gradient(rgba(30, 139, 195, 0.2), rgba(0, 0, 0, 0.7)), url('https://i.postimg.cc/PqLbFYhr/9.webp');
+            background-position: center;
+            background-size: cover;
+            background-attachment: fixed;
+            font-family: 'Poppins', sans-serif;
             margin: 0;
-            padding: 1rem;
-            box-sizing: border-box;
         }
 
-        .login-glass-card {
-            border-radius: 32px;
-            background: rgba(248, 241, 235, 0.85);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            box-shadow: 0 25px 50px -12px rgba(139, 90, 43, 0.15);
-            padding: 3.5rem 2.5rem;
-            text-align: center;
-            width: 100%;
-            max-width: 440px;
-            box-sizing: border-box;
-            transition: all 0.3s ease;
+        .h-custom {
+            height: calc(100vh - 30px);
         }
 
-        .admin-icon {
-            color: #8b634b; /* Primary brown */
-            font-size: 3.5rem;
-            margin-bottom: 1rem;
+        @media (max-width: 450px) {
+            .h-custom { height: 100vh; }
         }
 
-        .login-title {
-            font-family: 'Georgia', serif;
-            color: #4a3b32; /* Dark shade brown */
-            font-size: 2.25rem;
-            letter-spacing: -0.5px;
-            margin: 0 0 0.5rem 0;
-            font-weight: 700;
-        }
-
-        .login-subtitle {
-            font-size: 1.05rem;
-            color: #8b634b; /* Primary brown */
-            margin: 0 0 2rem 0;
-        }
-
-        /* Inputs */
-        .input-group {
-            text-align: left;
-            margin-bottom: 1.5rem;
-            position: relative;
-        }
-
-        .form-label-custom {
-            font-size: 0.85rem;
-            color: #5c3a21; /* Dark brown */
-            margin-left: 0.5rem;
-            font-weight: 600;
-            display: block;
-            margin-bottom: 0.5rem;
-        }
-
-        .glass-input {
-            width: 100%;
-            background: rgba(255, 255, 255, 0.6);
-            border: 1px solid rgba(139, 99, 75, 0.2);
-            border-radius: 16px;
-            padding: 1rem 1.25rem;
+        .admin_input {
+            margin: 0 auto;
+            height: 3.3rem !important;
+            border-radius: 1rem;
             font-size: 1rem;
-            color: #4a3b32;
-            box-shadow: inset 0 2px 4px rgba(92, 58, 33, 0.02);
-            transition: all 0.3s ease;
-            box-sizing: border-box;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Poppins', sans-serif;
+            padding-left: 2.5rem; /* Space for the absolute icon */
+            box-shadow: none !important;
+            border: 1px solid #ddd;
         }
 
-        .password-input {
-            padding-right: 3rem;
+        .admin_input:focus {
+            border-color: #1e8bc3;
+            box-shadow: 0 0 0 0.2rem rgba(30, 139, 195, 0.25) !important;
         }
 
-        .glass-input:focus {
-            background: #ffffff;
-            border-color: rgba(139, 99, 75, 0.5);
-            box-shadow: 0 0 0 4px rgba(139, 99, 75, 0.15);
-            outline: none;
-        }
-
-        /* Password Eye Icon */
-        .toggle-password {
-            position: absolute;
-            right: 0.5rem;
-            top: 36px;
-            cursor: pointer;
-            font-size: 1.1rem;
-            z-index: 10;
-            padding: 0.5rem;
-            border-radius: 50%;
-            transition: background 0.2s ease, color 0.2s ease;
-            color: #8b634b;
-        }
-
-        .toggle-password:hover {
-            background: rgba(139, 99, 75, 0.1);
-            color: #5c3a21;
-        }
-
-        /* Gradient Button */
-        .btn-primary-gradient {
-            width: 100%;
-            background: linear-gradient(135deg, #8b634b 0%, #5c3a21 100%);
-            color: #ffffff;
-            padding: 1rem;
-            border: none;
-            border-radius: 50px;
-            font-size: 1.05rem;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            transition: all 0.3s ease;
-            box-shadow: 0 10px 15px -3px rgba(92, 58, 33, 0.25);
-            cursor: pointer;
-            font-family: 'Inter', sans-serif;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-top: 2rem;
-        }
-
-        .btn-primary-gradient:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 20px -3px rgba(92, 58, 33, 0.35);
-        }
-
-        .btn-primary-gradient i {
-            margin-right: 0.5rem;
-        }
-
-        /* Back Link */
-        .back-link-container {
-            margin-top: 2rem;
-            font-size: 0.95rem;
-        }
-
-        .back-link {
-            color: #8b634b;
-            text-decoration: none;
-            font-weight: 600;
-            transition: color 0.2s ease;
+        .input-icon {
             position: relative;
         }
 
-        .back-link:hover {
-            color: #5c3a21;
-        }
-
-        .back-link::after {
-            content: '';
+        .input-icon-addon {
             position: absolute;
-            bottom: -2px;
-            left: 0;
+            top: 50%;
+            left: 1rem;
+            transform: translateY(-50%);
+            color: #888;
+            z-index: 4;
+        }
+
+        .admin_btn_login {
+            margin: 0 auto;
+            height: 3.3rem !important;
+            border-radius: 1rem;
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.1rem;
+            letter-spacing: 0.15rem;
+            font-weight: 600;
             width: 100%;
-            height: 2px;
-            background: #8b634b;
-            transform: scaleX(0);
-            transform-origin: right;
-            transition: transform 0.3s ease;
+            background-color: #1e8bc3 !important;
+            color: white !important;
+            border: none;
+            transition: all 0.3s ease;
         }
 
-        .back-link:hover::after {
-            transform: scaleX(1);
-            transform-origin: left;
+        .admin_btn_login:hover {
+            background-color: #166b96 !important;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(30, 139, 195, 0.4);
         }
 
-        .flash-message {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            color: #b91c1c;
+        .lulms-card {
+            display: flex !important;
+            width: 100% !important;
+            justify-content: center !important;
+            align-items: center !important;
+        }
+
+        .lulms {
+            width: 100% !important;
+            font-family: 'Poppins', sans-serif !important;
+            font-size: 1rem !important;
+            color: #666;
+            word-wrap: break-word !important;
+            font-weight: 400 !important;
+        }
+
+        .lu-welcome {
+            color: rgb(69, 69, 69) !important;
+            font-family: 'Poppins', sans-serif !important;
+            font-size: 2rem !important;
+            font-weight: 800 !important;
+        }
+
+        .lu-user_type {
+            color: #1e8bc3;
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.1rem;
+            letter-spacing: 0.2rem;
+            font-weight: 600;
+        }
+
+        .flash-msg {
+            background: #ffebee;
+            color: #c62828;
             border-radius: 12px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            margin-bottom: 1.5rem;
             padding: 0.8rem;
+            margin-top: 1rem;
+            font-weight: 500;
+            font-size: 0.9rem;
+            text-align: center;
+            border: 1px solid #ffcdd2;
         }
 
-        /* Chrome Autofill adjustment */
-        input:-webkit-autofill,
-        input:-webkit-autofill:hover, 
-        input:-webkit-autofill:focus, 
-        input:-webkit-autofill:active{
-            -webkit-box-shadow: 0 0 0 30px #fdfbfa inset !important;
-            -webkit-text-fill-color: #4a3b32 !important;
-            border-radius: 16px;
-            border: 1px solid rgba(139, 99, 75, 0.2);
+        @media screen and (max-width: 400px) {
+            #login_form {
+               padding: 0 1rem 0 1rem !important;
+            }
+            .lu-user_type {
+                font-size: 0.9rem;
+            }
         }
     </style>
 </head>
-<body>
-    <div class="login-glass-card">
-        <i class="fas fa-coffee admin-icon"></i>
-        <h2 class="login-title">Le Maison Admin</h2>
-        <p class="login-subtitle">Sign in to the Super Admin Dashboard</p>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-        {% for category, message in messages %}
-        <div class="flash-message">
-            <i class="fas fa-exclamation-circle" style="margin-right: 5px;"></i> {{ message }}
-        </div>
-        {% endfor %}
-        {% endif %}
-        {% endwith %}
+<body class="h-100">
 
-        <form method="POST" action="{{ url_for('admin.admin_login') }}">
-            <div class="input-group">
-                <label class="form-label-custom">EMAIL</label>
-                <input type="email" name="email" required placeholder="admin@gmail.com" class="glass-input">
-            </div>
+<section class="h-100">
+    <div class="container-fluid h-custom">
+        <div class="row d-flex justify-content-center align-items-center h-100">
             
-            <div class="input-group">
-                <label class="form-label-custom">PASSWORD</label>
-                <input type="password" id="admin-password" name="password" required placeholder="••••••••" class="glass-input password-input">
-                <i class="fas fa-eye toggle-password" onclick="toggleAdminPassword()"></i>
+            <!-- Branding Section (Right side on Desktop, Top on Mobile) -->
+            <div class="col-md-8 col-lg-5 col-xl-4 offset-xl-1 text-center order-1 order-lg-2 mb-5 mb-lg-0">
+                <i class="fas fa-gem text-white mb-3" style="font-size: 5rem; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));"></i>
+                <h1 class="display-3 text-white mb-1" style="font-weight: 800; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));"><b>Le Maison</b></h1>
+                <h2 class="text-white mb-0" style="font-weight: 300; letter-spacing: 0.3rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">PREMIUM DINING</h2>
             </div>
-            
-            <button type="submit" class="btn-primary-gradient">
-                <i class="fas fa-lock"></i> Sign In
-            </button>
-        </form>
-        
-        <div class="back-link-container">
-            <a href="{{ url_for('main.index') }}" class="back-link">
-                <i class="fas fa-arrow-left" style="font-size: 0.8rem; margin-right: 4px;"></i> Back to website
-            </a>
+
+            <!-- Login Form Card Section (Left side on Desktop, Bottom on Mobile) -->
+            <div class="col-md-8 col-lg-5 col-xl-4 order-2 order-lg-1">
+                <div class="card card-body shadow py-5 my-2 my-lg-5" style="border-radius: 1.5rem; background: rgba(255, 255, 255, 0.98);">
+                    <div class="lulms-card text-center">
+                        <div style="width: 100%;">
+                            <h3 class="lu-welcome mb-1">Welcome to <span style="color:#1e8bc3;">Le Maison</span></h3>
+                            <h6 class="lulms mb-4">
+                                Premium Restaurant Management System
+                            </h6>
+                        </div>
+                    </div>
+
+                    <hr class="my-1" style="width:80%; margin: 0 auto; border-color: #eee;">
+                    <h2 class="text-center lu-user_type my-3">SYSTEM ADMINISTRATOR</h2>
+                    <hr class="my-1" style="width:80%; margin: 0 auto; border-color: #eee;">
+
+                    <!-- Flash messages -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="px-4">
+                        {% for category, message in messages %}
+                            <div class="flash-msg">
+                                <i class="fas fa-exclamation-triangle me-2"></i> {{ message }}
+                            </div>
+                        {% endfor %}
+                        </div>
+                    {% endif %}
+                    {% endwith %}
+
+                    <form method="POST" action="{{ url_for('admin.admin_login') }}" id="login_form" style="padding: 1rem 2rem 1rem 2rem;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+                        
+                        <div class="form-group mt-3 mb-3">
+                            <div class="input-icon">
+                                <span class="input-icon-addon"><i class="fa fa-envelope"></i></span>
+                                <input placeholder="Account Email" class="admin_input form-control" type="email" id="email" name="email" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <div class="input-icon">
+                                <span class="input-icon-addon"><i class="fa fa-lock"></i></span>
+                                <input class="admin_input form-control" type="password" id="password" name="password" placeholder="Passcode" required>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center mt-2">
+                            <button type="submit" class="admin_btn_login btn" id="login_btn">LOGIN</button>
+                        </div>
+                        
+                        <div class="text-center mt-4 pt-2">
+                            <a href="{{ url_for('main.index') }}" class="text-muted text-decoration-none" style="font-size: 0.9rem; transition: color 0.2s;">
+                                <i class="fas fa-arrow-left me-1"></i> Return to Gateway
+                            </a>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+
         </div>
     </div>
-    <script>
-        function toggleAdminPassword() {
-            const pwd = document.getElementById('admin-password');
-            const icon = event.currentTarget;
-            if (pwd.type === 'password') {
-                pwd.type = 'text';
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-            } else {
-                pwd.type = 'password';
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
-            }
-        }
-    </script>
+</section>
+
+<!-- Core scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const form = document.getElementById('login_form');
+        const btn = document.getElementById('login_btn');
+        
+        form.addEventListener('submit', function() {
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> AUTHENTICATING...';
+            btn.style.opacity = '0.8';
+        });
+    });
+</script>
+
 </body>
 </html>
