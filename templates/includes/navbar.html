@@ -16,7 +16,7 @@
     }
     
     .nav-scrolled, .nav-always-solid {
-        background: rgba(139, 99, 75, 0.96) !important; /* Lighter Coffee Brown */
+        background: linear-gradient(135deg, rgba(93, 64, 55, 0.95), rgba(139, 99, 75, 0.95)) !important; /* Lighter version of footer */
         backdrop-filter: blur(15px) !important;
         -webkit-backdrop-filter: blur(15px) !important;
         padding: 0.7rem 0 !important;
@@ -34,6 +34,7 @@
         display: flex;
         align-items: center; gap: 12px;
         text-decoration: none !important;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.5); /* Universal legibility */
     }
 
     .navTxt {
@@ -45,6 +46,7 @@
         text-decoration: none !important;
         transition: all 0.3s ease;
         position: relative;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.5); /* Universal legibility */
     }
     .navTxt::after {
         content: ''; position: absolute; bottom: 0; left: 50%; width: 0; height: 2px;
@@ -136,7 +138,7 @@
     }
 </style>
 
-<nav class="navbar main-nav fixed-top navbar-expand-md {{ 'navbar-transparent' if (request.endpoint == 'main.index' or request.path == '/') else 'nav-scrolled' }}">
+<nav class="navbar main-nav fixed-top navbar-expand-md navbar-transparent">
     <div class="container-fluid px-md-5">
         <a class="navBrand" href="{{ url_for('main.index') }}">
             <i class="fas fa-coffee" style="color: #8B634B;"></i> 
@@ -391,14 +393,13 @@
 
         // Navbar Scroll Handler
         const mainNav = document.querySelector('.main-nav');
-        const isHomePage = window.location.pathname === '/';
         
         if (mainNav) {
             const handleScroll = () => {
                 if (window.scrollY > 30) {
                     mainNav.classList.add('nav-scrolled');
-                    if (isHomePage) mainNav.classList.remove('navbar-transparent');
-                } else if (isHomePage) {
+                    mainNav.classList.remove('navbar-transparent');
+                } else {
                     mainNav.classList.remove('nav-scrolled');
                     mainNav.classList.add('navbar-transparent');
                 }
