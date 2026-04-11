@@ -391,6 +391,23 @@
         // Refresh count every 30s
         setInterval(updateNotifCount, 30000);
 
+    });
+
+    // Mobile shortcut helper
+    function toggleUserNotifPanel() {
+        closeMobileMenu();
+        // Use a modal for mobile for much better UX
+        const modalEl = document.getElementById('mobileNotifModal');
+        if (modalEl) {
+            const bsModal = new bootstrap.Modal(modalEl);
+            bsModal.show();
+            loadUserNotifs('userNotifListMobile');
+        }
+    }
+    {% endif %}
+
+    // Global Initialization
+    document.addEventListener('DOMContentLoaded', () => {
         // Navbar Scroll Handler
         const mainNav = document.querySelector('.main-nav');
         
@@ -412,19 +429,6 @@
         const toggler = document.querySelector('.navbar-toggler');
         if (toggler) toggler.onclick = toggleMobileMenu;
     });
-
-    // Mobile shortcut helper
-    function toggleUserNotifPanel() {
-        closeMobileMenu();
-        // Use a modal for mobile for much better UX
-        const modalEl = document.getElementById('mobileNotifModal');
-        if (modalEl) {
-            const bsModal = new bootstrap.Modal(modalEl);
-            bsModal.show();
-            loadUserNotifs('userNotifListMobile');
-        }
-    }
-    {% endif %}
 
     // Mobile Menu Control (Dropdown)
     function toggleMobileMenu() {
