@@ -101,7 +101,7 @@
     /* REDUCED DARKNESS FOR DROP-DOWN */
     .navDropdown {
         border-radius: 20px !important; 
-        background: rgba(139, 99, 75, 0.96) !important; /* Lighter shade */
+        background: rgba(109, 76, 65, 0.96) !important; /* Matched from Navbar */
         backdrop-filter: blur(25px) !important;
         -webkit-backdrop-filter: blur(25px) !important;
         padding: 0.75rem !important; 
@@ -203,7 +203,7 @@
                     {% endif %}
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end navDropdown">
-                    <li class="px-3 py-2 border-bottom border-secondary mb-2">
+                    <li class="px-3 py-2 mb-2" style="border-bottom: 1px solid rgba(255,255,255,0.15);">
                         <div class="fw-bold text-white" style="font-size: 0.95rem;">{{ current_user.first_name }} {{ current_user.last_name }}</div>
                         <small style="color: rgba(255,255,255,0.5);">{{ current_user.email }}</small>
                     </li>
