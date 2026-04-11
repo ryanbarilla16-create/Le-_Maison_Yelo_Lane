@@ -244,10 +244,16 @@
                 </a>
             </li>
             <li id="mobile-background-icons">
-                <a href="javascript:void(0)" onclick="closeMobileMenu(); toggleUserNotifPanel();">
+                <a href="javascript:void(0)" onclick="closeMobileMenu(); toggleUserNotifPanel();" class="position-relative">
                     <i class="fas fa-bell"></i> <span class="nav-text">Notifs</span>
+                    <span id="userNotifBadgeMobile" class="position-absolute badge rounded-pill bg-danger" style="font-size: 0.55rem; top: 8px; right: 25px; min-width: 16px; display: none;">0</span>
                 </a>
             </li>
+
+            <script>
+                window.addEventListener('scroll', updateNav);
+                window.addEventListener('load', updateNav);
+            </script>
             {% endif %}
             
             <li class="mobile-login-wrapper">
@@ -288,54 +294,66 @@
             nav.classList.remove('nav-always-solid');
         }
     }
-    window.addEventListener('scroll', updateNav);
-    window.addEventListener('load', updateNav);
-
     // Notification System Logic
     {% if current_user.is_authenticated %}
     const userId = {{ current_user.id }};
     
     function updateNotifCount() {
-        fetch(`/api/user/${userId}/notifications/unread-count`)
+        if (!userId) return;
+        fetch(`/api/user/${userId}/unread-notifications/count`)
+            .catch(() => fetch(`/api/user/${userId}/notifications/unread-count`)) // Fallback if name differs
             .then(res => res.json())
             .then(data => {
                 const badge = document.getElementById('userNotifBadge');
-                if (data.count > 0) {
-                    badge.innerText = data.count;
-                    badge.style.display = 'block';
-                } else {
-                    badge.style.display = 'none';
-                }
+                const mBadge = document.getElementById('userNotifBadgeMobile');
+                const count = data.count || 0;
+                
+                [badge, mBadge].forEach(b => {
+                    if (b) {
+                        if (count > 0) {
+                            b.innerText = count;
+                            b.style.display = 'block';
+                        } else {
+                            b.style.display = 'none';
+                        }
+                    }
+                });
             })
             .catch(err => console.error('Error fetching notif count:', err));
     }
 
-    function loadUserNotifs() {
-        const list = document.getElementById('userNotifList');
+    function renderNotifItems(data, listId) {
+        const list = document.getElementById(listId);
+        if (!list) return;
+        
+        list.innerHTML = '';
+        if (data.notifications && data.notifications.length > 0) {
+            data.notifications.forEach(n => {
+                const item = document.createElement('div');
+                item.className = `p-3 border-bottom border-white border-opacity-10 ${n.is_read ? 'opacity-75' : 'bg-white bg-opacity-5'}`;
+                item.style.transition = 'all 0.2s';
+                item.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                        <strong class="text-white small">${n.title}</strong>
+                        <small style="font-size: 0.65rem; color: rgba(255,255,255,0.5);">${n.created_at}</small>
+                    </div>
+                    <p class="mb-0 text-white-50" style="font-size: 0.75rem; line-height: 1.4;">${n.message}</p>
+                `;
+                list.appendChild(item);
+            });
+        } else {
+            list.innerHTML = '<div class="p-5 text-center text-white-50 small">No notifications yet</div>';
+        }
+    }
+
+    function loadUserNotifs(targetListId = 'userNotifList') {
+        const list = document.getElementById(targetListId);
+        if (!list) return;
         list.innerHTML = '<div class="text-center p-4"><div class="spinner-border spinner-border-sm text-light opacity-50"></div></div>';
         
         fetch(`/api/user/${userId}/notifications`)
             .then(res => res.json())
-            .then(data => {
-                list.innerHTML = '';
-                if (data.notifications && data.notifications.length > 0) {
-                    data.notifications.forEach(n => {
-                        const item = document.createElement('div');
-                        item.className = `p-3 border-bottom border-white border-opacity-10 ${n.is_read ? 'opacity-75' : 'bg-white bg-opacity-5'}`;
-                        item.style.transition = 'all 0.2s';
-                        item.innerHTML = `
-                            <div class="d-flex justify-content-between align-items-start mb-1">
-                                <strong class="text-white small">${n.title}</strong>
-                                <small style="font-size: 0.65rem; color: rgba(255,255,255,0.5);">${n.created_at}</small>
-                            </div>
-                            <p class="mb-0 text-white-50" style="font-size: 0.75rem; line-height: 1.4;">${n.message}</p>
-                        `;
-                        list.appendChild(item);
-                    });
-                } else {
-                    list.innerHTML = '<div class="p-5 text-center text-white-50 small">No notifications yet</div>';
-                }
-            })
+            .then(data => renderNotifItems(data, targetListId))
             .catch(err => {
                 console.error('Error loading notifs:', err);
                 list.innerHTML = '<div class="p-3 text-center text-danger small">Failed to load notifications</div>';
@@ -349,27 +367,33 @@
             .then(data => {
                 if (data.success) {
                     updateNotifCount();
-                    loadUserNotifs();
+                    loadUserNotifs('userNotifList');
+                    loadUserNotifs('userNotifListMobile');
                 }
             })
             .catch(err => console.error('Error marking read:', err));
     }
 
-    // Attach listener to dropdown open
-    document.getElementById('notifDropdown')?.addEventListener('show.bs.dropdown', loadUserNotifs);
-    
-    // Initial count update
-    updateNotifCount();
-    // Refresh count every 30s
-    setInterval(updateNotifCount, 30000);
+    // Initialize when everything is ready
+    document.addEventListener('DOMContentLoaded', () => {
+        // Desktop listener
+        document.getElementById('notifDropdown')?.addEventListener('show.bs.dropdown', () => loadUserNotifs('userNotifList'));
+        
+        // Initial count update
+        updateNotifCount();
+        // Refresh count every 30s
+        setInterval(updateNotifCount, 30000);
+    });
 
     // Mobile shortcut helper
     function toggleUserNotifPanel() {
         closeMobileMenu();
-        const dropdownElement = document.getElementById('notifDropdown');
-        if (dropdownElement) {
-            const bsDropdown = bootstrap.Dropdown.getOrCreateInstance(dropdownElement);
-            bsDropdown.show();
+        // Use a modal for mobile for much better UX
+        const modalEl = document.getElementById('mobileNotifModal');
+        if (modalEl) {
+            const bsModal = new bootstrap.Modal(modalEl);
+            bsModal.show();
+            loadUserNotifs('userNotifListMobile');
         }
     }
     {% endif %}
@@ -391,8 +415,10 @@
     }
 
     // Toggle button in navbar needs to call toggleMobileMenu
-    const toggler = document.querySelector('.navbar-toggler');
-    if (toggler) toggler.onclick = toggleMobileMenu;
+    document.addEventListener('DOMContentLoaded', () => {
+        const toggler = document.querySelector('.navbar-toggler');
+        if (toggler) toggler.onclick = toggleMobileMenu;
+    });
 
     // Close menu on window resize to desktop
     window.addEventListener('resize', function() {
@@ -401,4 +427,24 @@
         }
     });
 </script>
+
+{% if current_user.is_authenticated %}
+<!-- Mobile Notification Modal -->
+<div class="modal fade" id="mobileNotifModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm" style="max-width: 95vw; margin: 10px auto;">
+        <div class="modal-content overflow-hidden" style="background: rgba(139, 99, 75, 1); border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
+            <div class="modal-header border-white border-opacity-10 py-3">
+                <h6 class="modal-title text-white fw-bold"><i class="fas fa-bell me-2"></i>Notifications</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" style="font-size: 0.8rem;"></button>
+            </div>
+            <div class="modal-body p-0" id="userNotifListMobile" style="max-height: 70vh; overflow-y: auto;">
+                <!-- Content loads here -->
+            </div>
+            <div class="modal-footer border-white border-opacity-10 p-2">
+                <button type="button" class="btn btn-sm w-100 text-white opacity-75" onclick="markAllUserNotifRead()" style="font-size: 0.75rem;">Mark all read</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
