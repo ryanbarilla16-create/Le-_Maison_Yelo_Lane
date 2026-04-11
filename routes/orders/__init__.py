@@ -244,7 +244,13 @@ def checkout():
             'description': f"Order #{new_order.id} from Le Maison",
             'success_redirect_url': success_url,
             'failure_redirect_url': failure_url,
-            'currency': 'PHP'
+            'currency': 'PHP',
+            'customer': {
+                'given_names': current_user.first_name,
+                'surname': current_user.last_name,
+                'email': current_user.email
+            },
+            'payment_methods': ['GCASH', 'PAYMAYA']
         }
         
         try:
@@ -346,3 +352,17 @@ def add_order_review(order_id):
     
     flash("Thank you for your review! It has been submitted for approval.", "success")
     return redirect(url_for('main.my_orders'))
+
+@main_bp.route('/order/<int:order_id>/receipt')
+@login_required
+def view_receipt(order_id):
+    order = Order.query.get_or_404(order_id)
+    if order.user_id != current_user.id:
+        flash("Unauthorized", "danger")
+        return redirect(url_for('main.index'))
+    
+    if order.payment_status != 'PAID':
+        flash("Receipt is only available for paid orders.", "info")
+        return redirect(url_for('main.my_orders'))
+        
+    return render_template('receipt.html', order=order)
