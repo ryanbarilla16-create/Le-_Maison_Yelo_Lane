@@ -1,6 +1,6 @@
 {% extends "layouts/staff_layout.html" %}
 
-{% block title %}Kitchen Order Board — Le Maison{% endblock %}
+{% block title %}Kitchen Board — Le Maison{% endblock %}
 
 {% block portal_sub %}Kitchen Portal{% endblock %}
 {% block portal_role %}Kitchen Staff{% endblock %}
@@ -24,144 +24,276 @@
 {% block page_subtitle %}Live preparation queue and production tracking{% endblock %}
 
 {% block extra_style %}
-    .kanban-board { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; align-items:start; }
-    .kanban-col { background:rgba(255,255,255,0.4); border-radius:18px; padding:16px; min-height:70vh; border:1px solid var(--card-border); }
-    .col-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; padding:0 8px; }
-    .col-header h3 { font-size:0.9rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; }
-    .col-count { background:var(--primary); color:#fff; font-size:0.7rem; padding:2px 8px; border-radius:50px; }
+    .kitchen-board { 
+        display: grid; 
+        grid-template-columns: repeat(3, 1fr); 
+        gap: 24px; 
+        align-items: start; 
+        min-height: 80vh;
+    }
 
+    /* Column Styles */
+    .board-col { 
+        background: rgba(93, 64, 55, 0.03); 
+        border-radius: 20px; 
+        padding: 18px; 
+        border: 1px solid rgba(93, 64, 55, 0.08); 
+        min-height: 75vh;
+        display: flex;
+        flex-direction: column;
+    }
+    .col-header { 
+        display: flex; 
+        align-items: center; 
+        justify-content: space-between; 
+        margin-bottom: 20px; 
+        padding: 0 10px;
+    }
+    .col-header h3 { 
+        font-size: 0.85rem; 
+        font-weight: 800; 
+        text-transform: uppercase; 
+        letter-spacing: 1.5px; 
+        color: var(--primary);
+    }
+    .col-count { 
+        background: var(--primary); 
+        color: #fff; 
+        font-size: 0.7rem; 
+        padding: 2px 10px; 
+        border-radius: 50px; 
+        font-weight: 700;
+        box-shadow: 0 4px 8px rgba(93,64,55,0.2);
+    }
+
+    /* Order Card Styles */
     .order-card {
-        background:var(--card); border:1px solid var(--card-border); border-radius:14px;
-        padding:16px; margin-bottom:12px; box-shadow:0 4px 12px rgba(62,39,35,0.05);
-        transition:transform 0.2s;
+        background: var(--card); 
+        border: 1px solid var(--card-border); 
+        border-radius: 16px; 
+        padding: 20px; 
+        margin-bottom: 16px; 
+        box-shadow: 0 4px 12px rgba(62,39,35,0.04);
+        transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+        position: relative;
     }
-    .order-card:hover { transform:translateY(-2px); box-shadow:0 6px 16px rgba(62,39,35,0.1); }
-    .order-card .order-meta { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
-    .order-card .order-id { font-weight:700; font-size:0.85rem; color:var(--primary); }
-    .order-card .time { font-size:0.75rem; color:var(--muted); }
-
-    .order-items { list-style:none; margin-bottom:14px; }
-    .order-items li { display:flex; align-items:center; gap:8px; padding:4px 0; font-size:0.9rem; font-weight:500; }
-    .order-items .qty { width:24px; font-weight:700; color:var(--primary); }
-
-    .btn-action {
-        width:100%; padding:10px; border-radius:10px; border:none;
-        font-weight:700; font-size:0.85rem; cursor:pointer; transition:all 0.2s;
-        display:flex; align-items:center; justify-content:center; gap:8px;
+    .order-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(62,39,35,0.08); }
+    
+    .order-header { 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+        margin-bottom: 14px; 
     }
-    .btn-start { background:rgba(93,64,55,0.1); color:var(--primary); }
-    .btn-start:hover { background:var(--primary); color:#fff; }
-    .btn-ready { background:rgba(46,125,50,0.1); color:#2e7d32; }
-    .btn-ready:hover { background:#2e7d32; color:#fff; }
+    .order-num { font-weight: 800; color: var(--primary); font-size: 0.9rem; letter-spacing: 1px; }
+    .order-time { font-size: 0.75rem; color: var(--muted); font-weight: 500; }
+    
+    .order-customer { 
+        display: flex; 
+        align-items: center; 
+        gap: 8px; 
+        margin-bottom: 12px; 
+        font-size: 0.85rem; 
+        font-weight: 600; 
+        color: var(--text);
+    }
+    .order-customer i { opacity: 0.4; font-size: 0.75rem; }
+
+    .dining-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        background: rgba(93, 64, 55, 0.05);
+        color: var(--muted);
+        margin-bottom: 16px;
+    }
+
+    .order-items { 
+        border-top: 1px solid rgba(93,64,55,0.05);
+        padding-top: 14px;
+        margin-bottom: 16px;
+    }
+    .item-row { 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+        margin-bottom: 6px; 
+        font-size: 0.9rem; 
+        font-weight: 500;
+    }
+    .item-qty { 
+        background: rgba(93, 64, 55, 0.08); 
+        color: var(--primary); 
+        width: 22px; height: 22px; 
+        display: flex; align-items: center; justify-content: center; 
+        border-radius: 6px; font-weight: 700; font-size: 0.75rem; 
+    }
+
+    /* Action Buttons */
+    .action-btn {
+        width: 100%; padding: 12px; 
+        border-radius: 12px; border: none;
+        font-weight: 700; font-size: 0.8rem; 
+        cursor: pointer; transition: all 0.2s;
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+        text-transform: uppercase; letter-spacing: 1px;
+    }
+    .btn-start { 
+        background: var(--primary); color: #fff; 
+        box-shadow: 0 4px 12px rgba(93,64,55,0.2);
+    }
+    .btn-start:hover { background: #3E2723; transform: scale(1.02); }
+    
+    .btn-ready { 
+        background: var(--success); color: #fff; 
+        box-shadow: 0 4px 12px rgba(46,125,50,0.2);
+    }
+    .btn-ready:hover { background: #1b5e20; transform: scale(1.02); }
+
+    .empty-state {
+        margin: auto;
+        text-align: center;
+        color: rgba(93,64,55,0.2);
+        padding: 40px 20px;
+    }
+    .empty-state i { font-size: 2.5rem; margin-bottom: 15px; display: block; }
+    .empty-state p { font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* Special Status Colors */
+    .card-preparing { border-left: 4px solid var(--primary); }
+    .card-ready { border-left: 4px solid var(--success); }
 {% endblock %}
 
 {% block content %}
-    <div class="kanban-board">
-        <!-- Pending -->
-        <div class="kanban-col">
+    <div class="kitchen-board">
+        <!-- TO COOK -->
+        <div class="board-col">
             <div class="col-header">
-                <h3 style="color:var(--muted);"><i class="fas fa-clock me-2"></i>Pending</h3>
+                <h3><i class="fas fa-list-check me-2" style="opacity:0.5;"></i> To Cook</h3>
                 <span class="col-count">{{ pending_orders|length }}</span>
             </div>
             {% for order in pending_orders %}
             <div class="order-card">
-                </span>
+                <div class="order-header">
+                    <span class="order-num">#{{ '%04d' % order.id }}</span>
+                    <span class="order-time">{{ order.created_at.strftime('%I:%M %p') if order.created_at else '' }}</span>
+                </div>
+                <div class="order-customer">
+                    <i class="fas fa-user-circle"></i>
+                    {% if order.user %}{{ order.user.first_name }}{% elif order.customer_name %}{{ order.customer_name }}{% else %}Walk-in Guest{% endif %}
+                </div>
+                <div class="dining-tag">
+                    <i class="fas fa-{% if order.dining_option=='DINE_IN' %}utensils{% elif order.dining_option=='TAKE_OUT' %}bag-shopping{% else %}truck{% endif %}"></i>
+                    {{ order.dining_option.replace('_',' ').title() }}
+                </div>
                 <div class="order-items">
-                    {% for item in order.items[:5] %}
-                    <div class="order-item-row">
-                        <span>{{ item.menu_item.name if item.menu_item else 'Item' }}</span>
-                        <span class="qty">x{{ item.quantity }}</span>
+                    {% for item in order.items %}
+                    <div class="item-row">
+                        <span class="item-qty">{{ item.quantity }}</span>
+                        <span class="item-name">{{ item.menu_item.name if item.menu_item else 'Item' }}</span>
                     </div>
                     {% endfor %}
-                    {% if order.items|length > 5 %}<div style="font-size:0.75rem;color:var(--muted);margin-top:4px;">+{{ order.items|length - 5 }} more…</div>{% endif %}
                 </div>
-                <hr class="order-divider">
-                <div class="order-total">₱{{ "%.2f"|format(order.total_amount|float) }}</div>
-                <form method="POST" action="{{ url_for('kitchen_portal.kitchen_update_order', order_id=order.id) }}" class="action-btns">
+                <form method="POST" action="{{ url_for('kitchen_portal.kitchen_update_order', order_id=order.id) }}">
                     <input type="hidden" name="status" value="PREPARING">
-                    <button class="btn-action btn-prepare" type="submit"><i class="fas fa-fire-flame-curved"></i> Start Cooking</button>
+                    <button class="action-btn btn-start" type="submit">
+                        <i class="fas fa-fire-flame-curved"></i> Start
+                    </button>
                 </form>
             </div>
             {% else %}
-            <div class="empty-col"><i class="fas fa-mug-hot"></i>No incoming orders</div>
+            <div class="empty-state">
+                <i class="fas fa-clipboard-list"></i>
+                <p>Clean Board</p>
+            </div>
             {% endfor %}
         </div>
 
-        <!-- PREPARING -->
-        <div class="col-preparing">
+        <!-- COOKING NOW -->
+        <div class="board-col">
             <div class="col-header">
-                <div class="col-icon"><i class="fas fa-fire-flame-curved"></i></div>
-                <span class="col-title">Preparing</span>
+                <h3><i class="fas fa-fire-burner me-2" style="opacity:0.5;"></i> Cooking Now</h3>
                 <span class="col-count">{{ preparing_orders|length }}</span>
             </div>
             {% for order in preparing_orders %}
-            <div class="order-card">
-                <div class="order-card-top">
+            <div class="order-card card-preparing">
+                <div class="order-header">
                     <span class="order-num">#{{ '%04d' % order.id }}</span>
                     <span class="order-time">{{ order.created_at.strftime('%I:%M %p') if order.created_at else '' }}</span>
                 </div>
                 <div class="order-customer">
-                    <i class="fas fa-user"></i>
-                    {% if order.user %}{{ order.user.first_name }}{% elif order.customer_name %}{{ order.customer_name }}{% else %}Walk-in{% endif %}
+                    <i class="fas fa-user-circle"></i>
+                    {% if order.user %}{{ order.user.first_name }}{% elif order.customer_name %}{{ order.customer_name }}{% else %}Walk-in Guest{% endif %}
                 </div>
-                <span class="dining-tag">
-                    <i class="fas fa-{% if order.dining_option=='DINE_IN' %}utensils{% elif order.dining_option=='TAKE_OUT' %}bag-shopping{% else %}truck{% endif %}" style="font-size:0.65rem;"></i>
+                <div class="dining-tag">
+                    <i class="fas fa-{% if order.dining_option=='DINE_IN' %}utensils{% elif order.dining_option=='TAKE_OUT' %}bag-shopping{% else %}truck{% endif %}"></i>
                     {{ order.dining_option.replace('_',' ').title() }}
-                </span>
+                </div>
                 <div class="order-items">
-                    {% for item in order.items[:5] %}
-                    <div class="order-item-row">
-                        <span>{{ item.menu_item.name if item.menu_item else 'Item' }}</span>
-                        <span class="qty">x{{ item.quantity }}</span>
+                    {% for item in order.items %}
+                    <div class="item-row">
+                        <span class="item-qty">{{ item.quantity }}</span>
+                        <span class="item-name">{{ item.menu_item.name if item.menu_item else 'Item' }}</span>
                     </div>
                     {% endfor %}
-                    {% if order.items|length > 5 %}<div style="font-size:0.75rem;color:var(--muted);margin-top:4px;">+{{ order.items|length - 5 }} more…</div>{% endif %}
                 </div>
-                <hr class="order-divider">
-                <div class="order-total">₱{{ "%.2f"|format(order.total_amount|float) }}</div>
-                <form method="POST" action="{{ url_for('kitchen_portal.kitchen_update_order', order_id=order.id) }}" class="action-btns">
+                <form method="POST" action="{{ url_for('kitchen_portal.kitchen_update_order', order_id=order.id) }}">
                     <input type="hidden" name="status" value="READY">
-                    <button class="btn-action btn-ready" type="submit"><i class="fas fa-bell"></i> Mark Ready</button>
+                    <button class="action-btn btn-ready" type="submit">
+                        <i class="fas fa-check"></i> Ready
+                    </button>
                 </form>
             </div>
             {% else %}
-            <div class="empty-col"><i class="fas fa-bowl-food"></i>Nothing cooking</div>
+            <div class="empty-state">
+                <i class="fas fa-mug-hot"></i>
+                <p>Oven Off</p>
+            </div>
             {% endfor %}
         </div>
 
-        <!-- READY -->
-        <div class="col-ready">
+        <!-- FOR PICKUP -->
+        <div class="board-col">
             <div class="col-header">
-                <div class="col-icon"><i class="fas fa-check-circle"></i></div>
-                <span class="col-title">Ready</span>
+                <h3><i class="fas fa-circle-check me-2" style="opacity:0.5;"></i> For Pickup</h3>
                 <span class="col-count">{{ ready_orders|length }}</span>
             </div>
             {% for order in ready_orders %}
-            <div class="order-card">
-                <div class="order-card-top">
+            <div class="order-card card-ready">
+                <div class="order-header">
                     <span class="order-num">#{{ '%04d' % order.id }}</span>
                     <span class="order-time">{{ order.created_at.strftime('%I:%M %p') if order.created_at else '' }}</span>
                 </div>
                 <div class="order-customer">
-                    <i class="fas fa-user"></i>
-                    {% if order.user %}{{ order.user.first_name }}{% elif order.customer_name %}{{ order.customer_name }}{% else %}Walk-in{% endif %}
+                    <i class="fas fa-user-circle"></i>
+                    {% if order.user %}{{ order.user.first_name }}{% elif order.customer_name %}{{ order.customer_name }}{% else %}Walk-in Guest{% endif %}
                 </div>
-                <span class="dining-tag" style="background:rgba(46,125,50,0.1);color:#2e7d32;">
-                    <i class="fas fa-check" style="font-size:0.65rem;"></i> Awaiting Pickup
-                </span>
+                <div class="dining-tag" style="background:rgba(46,125,50,0.1); color:var(--success);">
+                    <i class="fas fa-bell"></i> Service Required
+                </div>
                 <div class="order-items">
-                    {% for item in order.items[:4] %}
-                    <div class="order-item-row">
-                        <span>{{ item.menu_item.name if item.menu_item else 'Item' }}</span>
-                        <span class="qty">x{{ item.quantity }}</span>
+                    {% for item in order.items %}
+                    <div class="item-row">
+                        <span class="item-qty">{{ item.quantity }}</span>
+                        <span class="item-name" style="opacity:0.7;">{{ item.menu_item.name if item.menu_item else 'Item' }}</span>
                     </div>
                     {% endfor %}
                 </div>
-                <hr class="order-divider">
-                <div class="order-total">₱{{ "%.2f"|format(order.total_amount|float) }}</div>
+                <div style="font-size:0.65rem; color:var(--muted); text-align:center; font-weight:700; text-transform:uppercase;">
+                    Awaiting Cashier Handover
+                </div>
             </div>
             {% else %}
-            <div class="empty-col"><i class="fas fa-circle-check"></i>Nothing ready yet</div>
+            <div class="empty-state">
+                <i class="fas fa-bell-slash"></i>
+                <p>Pass Empty</p>
+            </div>
             {% endfor %}
         </div>
     </div>
@@ -169,7 +301,7 @@
 
 {% block extra_script %}
 <script>
-    // Auto-refresh every 20s to keep kitchen updated
-    setTimeout(() => location.reload(), 20000);
+    // Live update every 15 seconds for intensive kitchen monitoring
+    setTimeout(() => location.reload(), 15000);
 </script>
 {% endblock %}
