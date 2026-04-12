@@ -506,7 +506,7 @@
         <!-- MANAGEMENT -->
         <div class="sidebar-group-title collapsible-trigger active" onclick="toggleSidebarGroup(this, 'mgmtGroup')"
             style="margin-top: 0.5rem;">
-            <span>General Tasks</span>
+            <span>Management</span>
             <i class="fas fa-chevron-down ms-auto arrow-icon" style="opacity: 1.0;"></i>
         </div>
         <div id="mgmtGroup" class="collapsible-content">
@@ -514,10 +514,10 @@
                 {% if current_user.role|upper == 'ADMIN' %}
                 <li><a href="{{ url_for('admin.approvals') }}"
                         class="{% if request.endpoint == 'admin.approvals' %}active{% endif %}"><i
-                            class="fas fa-user-check"></i><span class="sidebar-label">New Accounts</span></a></li>
+                            class="fas fa-user-check"></i><span class="sidebar-label">Account Approvals</span></a></li>
                 <li><a href="{{ url_for('admin.users') }}"
                         class="{% if request.endpoint == 'admin.users' %}active{% endif %}"><i
-                            class="fas fa-users-cog"></i><span class="sidebar-label">User List</span></a></li>
+                            class="fas fa-users-cog"></i><span class="sidebar-label">User Management</span></a></li>
                 {% endif %}
 
                 {% if current_user.role|upper in ['ADMIN', 'CASHIER', 'STAFF'] %}
@@ -535,10 +535,10 @@
                 {% if current_user.role|upper in ['CASHIER', 'STAFF'] %}
                 <li><a href="{{ url_for('cashier_portal.cashier_dashboard') }}"
                         class="{% if 'cashier' in request.path %}active{% endif %}"><i
-                            class="fas fa-shopping-bag"></i><span class="sidebar-label">Daily Orders</span></a></li>
+                            class="fas fa-shopping-bag"></i><span class="sidebar-label">Orders</span></a></li>
                 <li><a href="{{ url_for('cashier_portal.cashier_walkin_order') }}"
                         class="{% if 'walkin' in request.path %}active{% endif %}"><i
-                            class="fas fa-walking"></i><span class="sidebar-label">In-Store Order</span></a></li>
+                            class="fas fa-walking"></i><span class="sidebar-label">Walk-In Order</span></a></li>
                 <li><a href="{{ url_for('cashier_portal.cashier_chats') }}"
                         class="{% if 'chats' in request.path %}active{% endif %}"><i
                             class="fas fa-comments"></i><span class="sidebar-label">Customer Chat</span></a></li>
@@ -550,7 +550,7 @@
                             class="fas fa-fire-burner"></i><span class="sidebar-label">Kitchen View</span></a></li>
                 <li><a href="{{ url_for('kitchen_portal.kitchen_pantry') }}"
                         class="{% if 'pantry' in request.path %}active{% endif %}"><i
-                            class="fas fa-box-open"></i><span class="sidebar-label">On-Hand Stock</span></a></li>
+                            class="fas fa-box-open"></i><span class="sidebar-label">Kitchen Pantry (On-Hand)</span></a></li>
                 <li><a href="{{ url_for('kitchen_portal.kitchen_stock_requests') }}"
                         class="{% if 'request' in request.path %}active{% endif %}"><i
                             class="fas fa-paper-plane"></i><span class="sidebar-label">Stock Requests</span></a></li>
@@ -559,7 +559,7 @@
                 {% if current_user.role|upper == 'ADMIN' %}
                 <li><a href="{{ url_for('admin.kitchen_pantry') }}"
                         class="{% if request.endpoint == 'admin.kitchen_pantry' %}active{% endif %}"><i
-                            class="fas fa-box-open"></i><span class="sidebar-label">Kitchen Status</span></a></li>
+                            class="fas fa-box-open"></i><span class="sidebar-label">Kitchen Pantry</span></a></li>
                 {% endif %}
 
                 {% if current_user.role|upper in ['CASHIER', 'STAFF', 'RIDER'] %}
@@ -571,21 +571,21 @@
                 {% if current_user.role|upper in ['INVENTORY_STAFF', 'INVENTORY'] %}
                 <li><a href="{{ url_for('inventory_portal.inventory_dashboard') }}"
                         class="{% if 'inventory' in request.path and 'audit' not in request.path and 'batches' not in request.path and 'waste' not in request.path and 'request' not in request.path %}active{% endif %}"><i
-                            class="fas fa-boxes-stacked"></i><span class="sidebar-label">Stock Control</span></a>
+                            class="fas fa-boxes-stacked"></i><span class="sidebar-label">Inventory Master</span></a>
                 </li>
                 <li><a href="{{ url_for('inventory_portal.inventory_ingredient_batches') }}"
                         class="{% if 'batches' in request.path %}active{% endif %}"><i
-                            class="fas fa-box-open"></i><span class="sidebar-label">Ingredient Batches</span></a></li>
+                            class="fas fa-box-open"></i><span class="sidebar-label">FIFO Batches</span></a></li>
                 <li><a href="{{ url_for('inventory_portal.inventory_waste_records') }}"
                         class="{% if 'waste' in request.path %}active{% endif %}"><i
-                            class="fas fa-trash-alt"></i><span class="sidebar-label">Wasted Items</span></a></li>
+                            class="fas fa-trash-alt"></i><span class="sidebar-label">Waste Mgmt</span></a></li>
                 <li><a href="{{ url_for('inventory_portal.inventory_stock_requests') }}"
                         class="{% if 'request' in request.path %}active{% endif %}"><i
                             class="fas fa-clipboard-check"></i><span class="sidebar-label">Stock Requests</span></a>
                 </li>
                 <li><a href="{{ url_for('inventory_portal.inventory_audit') }}"
                         class="{% if 'audit' in request.path %}active{% endif %}"><i
-                            class="fas fa-history"></i><span class="sidebar-label">Activity Logs</span></a></li>
+                            class="fas fa-history"></i><span class="sidebar-label">Audit History</span></a></li>
                 {% endif %}
 
                 {% if current_user.role|upper == 'ADMIN' %}
