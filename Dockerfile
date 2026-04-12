@@ -25,6 +25,8 @@ EXPOSE 5000
 # Set environment variables for Flask
 ENV FLASK_APP=app.py
 ENV FLASK_ENV=production
+ENV PYTHONUNBUFFERED=1
 
-# Run gunicorn server instead of flask development server
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "3", "app:app"]
+# Run gunicorn server with eventlet worker for Socket.IO support
+# We use 1 worker because Socket.IO without a Redis message queue doesn't support multi-worker sticky sessions easily on Render.
+CMD ["gunicorn", "--worker-class", "eventlet", "-w", "1", "--bind", "0.0.0.0:5000", "--access-logfile", "-", "--error-logfile", "-", "app:app"]

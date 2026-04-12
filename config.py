@@ -25,6 +25,10 @@ class Config:
     # Neon strings often use `postgres://`, but SQLAlchemy requires `postgresql://`
     if _db_url.startswith("postgres://"):
         _db_url = _db_url.replace("postgres://", "postgresql://", 1)
+    
+    # Force sslmode=require for production postgres connections if not present
+    if "postgresql" in _db_url and "sslmode" not in _db_url:
+        _db_url += ("&" if "?" in _db_url else "?") + "sslmode=require"
         
     SQLALCHEMY_DATABASE_URI = _db_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
