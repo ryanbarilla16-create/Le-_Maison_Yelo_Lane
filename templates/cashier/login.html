@@ -55,7 +55,7 @@
             letter-spacing: 0.2rem;
             font-weight: 500;
             width: 94%;
-            background-color: #5D4037 !important; /* Staff Brown */
+            background-color: #5D4037 !important; /* Cashier Brown */
             color: white !important;
             transition: all 0.3s ease;
             border: none;
@@ -137,7 +137,7 @@
                 <div class="col-md-8 col-lg-5 col-xl-4 offset-xl-1 text-center order-lg-2 mb-5 mb-lg-0">
                     <i class="fas fa-cash-register text-white mb-3" style="font-size: 5rem; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));"></i>
                     <h1 class="display-3 text-white mb-1" style="font-weight: 800;"><b>Le Maison</b></h1>
-                    <h2 class="text-white mb-0" style="font-weight: 300; letter-spacing: 5px;">TERMINAL</h2>
+                    <h2 class="text-white mb-0" style="font-weight: 300; letter-spacing: 5px;">CASHIER POINT</h2>
                 </div>
 
                 <div class="col-md-8 col-lg-5 col-xl-4 order-lg-1">
@@ -146,12 +146,12 @@
                             <div style="width:80%">
                                 <h3 class="lu-welcome mb-1">Welcome to <span style="color:#5D4037;">Le Maison</span></h3>
                                 <h6 class="lulms mb-5">
-                                    POS & Cashier Transaction Hub
+                                    POS & Transaction Terminal
                                 </h6>
                             </div>
                         </div>
                         <hr class="my-1" style="width:80%; margin: 0 auto; opacity: 0.1;">
-                        <h2 class="text-center lu-user_type my-3">CASHIER</h2>
+                        <h2 class="text-center lu-user_type my-3">CASHIER ACCESS</h2>
                         <hr class="my-1" style="width:80%; margin: 0 auto; opacity: 0.1;">
 
                         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -168,7 +168,6 @@
 
                         <form method="POST" action="{{ url_for('cashier_portal.cashier_login') }}" id="login_form" style="padding: 1rem 2rem 2rem 2rem;">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
-                            
                             <div class="form-group mt-4 mb-3">
                                 <div class="input-icon">
                                     <span class="input-icon-addon"><i class="fa fa-envelope"></i></span>
@@ -180,9 +179,12 @@
                                 <div class="input-icon">
                                     <span class="input-icon-addon"><i class="fa fa-lock"></i></span>
                                     <input placeholder="Password" class="faculty_input form-control" type="password" id="password" name="password" required>
-                                    <span id="togglePassword" style="position:absolute; right:20px; top:50%; transform:translateY(-50%); cursor:pointer; color: #16A085; z-index: 10;">
+                                    <span id="togglePassword" style="position:absolute; right:20px; top:50%; transform:translateY(-50%); cursor:pointer; color: #5D4037; z-index: 10;">
                                         <i class="fa fa-eye" id="passwordToggleIcon"></i>
                                     </span>
+                                </div>
+                                <div class="text-end mt-2">
+                                    <a href="{{ url_for('cashier_portal.cashier_forgot_password') }}" style="color: #5D4037; font-size: 0.8rem; text-decoration: none; font-weight: 500;">Forgot Password?</a>
                                 </div>
                             </div>
 
@@ -192,13 +194,7 @@
                                 </button>
                             </div>
 
-                            <div class="text-center mt-3">
-                                <a href="{{ url_for('cashier_portal.cashier_forgot_password') }}" style="color: #5D4037; text-decoration: none; font-size: 0.85rem; font-weight: 600;">
-                                    <i class="fas fa-lock me-1"></i> Forgot Password?
-                                </a>
-                            </div>
-
-                            <div class="text-center mt-3 pt-2">
+                            <div class="text-center mt-4 pt-2">
                                 <a href="{{ url_for('main.index') }}" style="color: #999; text-decoration: none; font-size: 0.85rem;">
                                     <i class="fas fa-arrow-left me-1"></i> Return to Gateway
                                 </a>

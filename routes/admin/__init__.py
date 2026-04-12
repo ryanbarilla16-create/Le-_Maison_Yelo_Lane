@@ -1351,12 +1351,22 @@ def inventory():
     ingredients_query = ingredients_query.order_by(Ingredient.category, Ingredient.name)
     all_ingredients = ingredients_query.all()
     
-    # Pre-calculate menu categories for each ingredient for local filtering
-    # We'll attach this as a temporary attribute to the ingredient objects
+    # ⚡ OPTIMIZED: Fetch all mappings in a single query instead of a loop
+    ing_ids = [ing.id for ing in all_ingredients]
+    mappings = (
+        db.session.query(MenuItemIngredient.ingredient_id, MenuItem.category)
+        .join(MenuItem, MenuItem.id == MenuItemIngredient.menu_item_id)
+        .filter(MenuItemIngredient.ingredient_id.in_(ing_ids))
+        .distinct()
+        .all()
+    )
+    from collections import defaultdict
+    cats_by_ing = defaultdict(list)
+    for i_id, cat in mappings:
+        cats_by_ing[i_id].append(cat)
+    
     for ing in all_ingredients:
-        # Get unique menu categories this ingredient is part of
-        cats = db.session.query(MenuItem.category).join(MenuItemIngredient).filter(MenuItemIngredient.ingredient_id == ing.id).distinct().all()
-        ing.mapped_menu_categories = [c[0] for c in cats]
+        ing.mapped_menu_categories = cats_by_ing.get(ing.id, [])
 
     # Get unique menu categories for the dropdown
     menu_categories = [r[0] for r in db.session.query(MenuItem.category).filter(MenuItem.is_deleted == False).distinct().order_by(MenuItem.category).all()]
@@ -1381,12 +1391,22 @@ def inventory():
     all_suppliers = _get_suppliers_cached()
     all_ingredients_raw = _get_all_ingredients_raw_cached()
     
+    # ⚡ OPTIMIZED: Bulk fetch supplier specialties
+    sup_ids = [s.id for s in all_suppliers]
+    sup_mappings = (
+        db.session.query(Ingredient.supplier_id, MenuItem.category)
+        .join(MenuItemIngredient, MenuItemIngredient.ingredient_id == Ingredient.id)
+        .join(MenuItem, MenuItem.id == MenuItemIngredient.menu_item_id)
+        .filter(Ingredient.supplier_id.in_(sup_ids))
+        .distinct()
+        .all()
+    )
+    cats_by_sup = defaultdict(list)
+    for s_id, cat in sup_mappings:
+        cats_by_sup[s_id].append(cat)
+
     for sup in all_suppliers:
-        # A supplier specializes in a menu category if they supply an ingredient used in that category
-        cats = db.session.query(MenuItem.category).join(MenuItemIngredient).filter(MenuItemIngredient.ingredient_id.in_(
-            db.session.query(Ingredient.id).filter(Ingredient.supplier_id == sup.id)
-        )).distinct().all()
-        sup.supplied_menu_categories = [c[0] for c in cats if c[0]]
+        sup.supplied_menu_categories = cats_by_sup.get(sup.id, [])
 
     return render_template('admin/inventory.html', 
         grouped_items=grouped_items, 

@@ -1,229 +1,129 @@
-<!doctype html>
-<html class="h-100" lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <title>Rider Login | Le Maison</title>
-    <meta content='width=device-width, initial-scale=1.0, shrink-to-fit=no' name='viewport' />
-    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon"/>
-
-    <!-- Fonts and icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rider Login — Le Maison</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-
     <style>
-        .divider:after,
-        .divider:before {
-            content: "";
-            flex: 1;
-            height: 1px;
-            background: #eee;
+        :root {
+            --primary: #A85A2A; /* Burnt Brown/Orange for Rider */
+            --primary-light: #BF360C;
+            --primary-dark: #5D4037;
+            --accent: #FFAB91;
+            --bg: #FFF8F1;
+            --glass: rgba(255, 255, 255, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.9);
+            --text: #3E2723;
+            --muted: #8D6E63;
         }
-        .h-custom {
-            height: calc(100vh - 30px);
-        }
-        @media (max-width: 450px) {
-            .h-custom {
-                height: 100vh;
-            }
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=2000');
-            background-position: center;
-            background-size: cover;
-            background-attachment: fixed;
-            font-family: 'Poppins', sans-serif;
+            font-family: 'Outfit', sans-serif;
+            min-height: 100vh;
+            background: var(--bg);
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden; position: relative;
         }
+        .bg-canvas {
+            position: fixed; inset: 0; z-index: 0;
+            background:
+                radial-gradient(ellipse 70% 60% at 15% 20%, rgba(168, 90, 42, 0.1) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 70% at 85% 85%, rgba(93, 64, 55, 0.08) 0%, transparent 55%),
+                linear-gradient(150deg, #FFF8F1 0%, #F5E6D3 50%, #E8D5C8 100%);
+        }
+        .blob { position: absolute; border-radius: 50%; filter: blur(70px); animation: drift 15s ease-in-out infinite alternate; }
+        .blob-1 { width: 450px; height: 450px; background: rgba(93, 64, 55, 0.08); top: -100px; left: -100px; }
+        .blob-2 { width: 350px; height: 350px; background: rgba(168, 90, 42, 0.06); bottom: -50px; right: -50px; }
+        @keyframes drift { from { transform: translate(0,0) scale(1); } to { transform: translate(30px,25px) scale(1.1); } }
 
-        .faculty_input {
-            margin: 0 auto;
-            height: 3.3rem !important;
-            border-radius: 1rem;
-            font-size: 1rem;
-            font-family: 'Poppins', sans-serif;
-            padding-left: 2.5rem !important;
+        .card {
+            position: relative; z-index: 1;
+            background: var(--glass); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border); border-radius: 32px;
+            padding: 50px; width: 100%; max-width: 440px;
+            box-shadow: 0 25px 50px -12px rgba(93, 64, 55, 0.12);
+            animation: fadeIn 0.8s ease-out;
         }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-        .faculty_btn_login {
-            margin: 0 auto;
-            height: 3.3rem !important;
-            border-radius: 1rem;
-            font-family: 'Poppins', sans-serif;
-            font-size: 1rem;
-            letter-spacing: 0.2rem;
-            font-weight: 500;
-            width: 94%;
-            background-color: #E65100 !important; /* Rider Orange */
-            color: white !important;
-            transition: all 0.3s ease;
-            border: none;
-        }
-        .faculty_btn_login:hover {
-            background-color: #BF360C !important;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(230, 81, 0, 0.4);
-        }
+        .portal-badge { display:inline-flex; align-items:center; gap:8px; background:rgba(93, 64, 55, 0.08); border:1px solid rgba(93, 64, 55, 0.15); border-radius:50px; padding:6px 16px; font-size:0.75rem; font-weight:700; color:var(--primary-dark); letter-spacing:1px; text-transform:uppercase; margin-bottom:24px; }
+        .brand { font-family:'Playfair Display',serif; font-size:1.8rem; color:var(--text); margin-bottom:6px; }
+        .subtitle { color:var(--muted); font-size:0.9rem; margin-bottom:36px; }
 
-        .lulms-card {
-            display: flex !important;
-            width: 100% !important;
-            justify-content: center !important;
-            align-items: center !important;
-        }
+        .form-group { margin-bottom:20px; }
+        .label { display:block; font-size:0.8rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
+        .input-wrap { position:relative; }
+        .input-icon { position:absolute; left:16px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:0.9rem; }
+        input { width:100%; padding:14px 16px 14px 44px; background:rgba(255, 255, 255, 0.5); border:1.5px solid rgba(168, 90, 42, 0.1); border-radius:16px; font-family:'Outfit',sans-serif; font-size:1rem; color:var(--text); transition:0.3s; }
+        input:focus { background:#fff; border-color:var(--primary-dark); outline:none; box-shadow:0 0 0 4px rgba(93, 64, 55, 0.05); }
 
-        .lulms {
-            width: 80% !important;
-            font-family: 'Poppins', sans-serif !important;
-            font-size: 0.9rem !important;
-            word-wrap: break-word !important;
-            font-weight: 400 !important;
-            color: #666;
-        }
+        .btn-login { width:100%; padding:16px; background:var(--primary-dark); color:#fff; border:none; border-radius:16px; font-size:1rem; font-weight:700; cursor:pointer; transition:0.3s; box-shadow:0 10px 20px rgba(93, 64, 55, 0.2); margin-top:10px; display:flex; align-items:center; justify-content:center; gap:10px; }
+        .btn-login:hover { background:var(--primary-light); transform:translateY(-2px); box-shadow:0 15px 30px rgba(93, 64, 55, 0.3); }
+        .btn-login:disabled { opacity:0.7; cursor:not-allowed; }
 
-        .lu-welcome {
-            color: rgb(69, 69, 69) !important;
-            font-family: 'Poppins', sans-serif !important;
-            font-size: 1.8rem !important;
-            font-weight: 800 !important;
-        }
-
-        .lu-user_type {
-            color: #E65100;
-            font-family: 'Poppins', sans-serif;
-            font-size: 1.5rem;
-            letter-spacing: 0.2rem;
-            font-weight: 600;
-        }
-
-        .input-icon {
-            position: relative;
-        }
-        .input-icon-addon {
-            position: absolute;
-            left: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #E65100;
-            z-index: 10;
-        }
-
-        .flash-message {
-            background: #ffebee;
-            color: #c62828;
-            border-radius: 12px;
-            padding: 0.8rem;
-            margin-bottom: 1.5rem;
-            font-weight: 500;
-            font-size: 0.85rem;
-            border: 1px solid #ffcdd2;
-        }
-
-        @media screen and (max-width: 400px) {
-            #login_form {
-               padding: 0 1rem 0 1rem !important;
-            }
-            .lulms { width: 100% !important; }
-            .lu-user_type { font-size: 1.2rem; }
-        }
+        .flash-msg { background:rgba(198,40,40,0.05); color:#c62828; padding:12px; border-radius:12px; font-size:0.85rem; margin-bottom:20px; border:1px solid rgba(198,40,40,0.1); display:flex; align-items:center; gap:10px; }
+        .footer-links { text-align:center; margin-top:30px; font-size:0.8rem; color:var(--muted); }
+        .footer-links a { color:var(--primary-dark); text-decoration:none; font-weight:700; transition:0.2s; }
+        .footer-links a:hover { color:var(--primary-light); }
     </style>
 </head>
-
 <body>
-    <section class="h-100">
-        <div class="container-fluid h-custom">
-            <div class="row d-flex justify-content-center align-items-center h-100">
-                <div class="col-md-8 col-lg-5 col-xl-4 offset-xl-1 text-center order-lg-2 mb-5 mb-lg-0">
-                    <i class="fas fa-motorcycle text-white mb-3" style="font-size: 5rem; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));"></i>
-                    <h1 class="display-3 text-white mb-1" style="font-weight: 800;"><b>Le Maison</b></h1>
-                    <h2 class="text-white mb-0" style="font-weight: 300; letter-spacing: 5px;">DELIVERY</h2>
-                </div>
+    <div class="bg-canvas">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+    <div class="card">
+        <div class="portal-badge"><i class="fas fa-motorcycle"></i> Rider Portal</div>
+        <h1 class="brand">Le Maison</h1>
+        <p class="subtitle">Secure login for dispatch and delivery tracking</p>
 
-                <div class="col-md-8 col-lg-5 col-xl-4 order-lg-1">
-                    <div class="card card-body shadow py-5 my-5" style="border-radius: 1.5rem; background: rgba(255, 255, 255, 0.95);">
-                        <div class="lulms-card">
-                            <div style="width:80%">
-                                <h3 class="lu-welcome mb-1">Welcome to <span style="color:#E65100;">Le Maison</span></h3>
-                                <h6 class="lulms mb-5">
-                                    Dispatch & Logistics Portal
-                                </h6>
-                            </div>
-                        </div>
-                        <hr class="my-1" style="width:80%; margin: 0 auto; opacity: 0.1;">
-                        <h2 class="text-center lu-user_type my-3">RIDER</h2>
-                        <hr class="my-1" style="width:80%; margin: 0 auto; opacity: 0.1;">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+            <div class="flash-msg"><i class="fas fa-exclamation-circle"></i> {{ message }}</div>
+            {% endfor %}
+        {% endwith %}
 
-                        {% with messages = get_flashed_messages(with_categories=true) %}
-                        {% if messages %}
-                        <div class="mt-4 px-2">
-                            {% for category, message in messages %}
-                            <div class="flash-message text-center">
-                                <i class="fas fa-exclamation-circle me-2"></i> {{ message }}
-                            </div>
-                            {% endfor %}
-                        </div>
-                        {% endif %}
-                        {% endwith %}
-
-                        <form method="POST" action="{{ url_for('rider_portal.rider_login') }}" id="login_form" style="padding: 1rem 2rem 2rem 2rem;">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
-                            
-                            <div class="form-group mt-4 mb-3">
-                                <div class="input-icon">
-                                    <span class="input-icon-addon"><i class="fa fa-envelope"></i></span>
-                                    <input placeholder="Email Address" class="faculty_input form-control" type="email" name="email" required>
-                                </div>
-                            </div>
-
-                            <div class="form-group mb-3 position-relative">
-                                <div class="input-icon">
-                                    <span class="input-icon-addon"><i class="fa fa-lock"></i></span>
-                                    <input placeholder="Password" class="faculty_input form-control" type="password" id="password" name="password" required>
-                                    <span id="togglePassword" style="position:absolute; right:20px; top:50%; transform:translateY(-50%); cursor:pointer; color: #E65100; z-index: 10;">
-                                        <i class="fa fa-eye" id="passwordToggleIcon"></i>
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div class="text-center mt-4">
-                                <button type="submit" class="faculty_btn_login btn" id="login_btn">
-                                    <i class="fa fa-sign-in-alt me-2"></i> LOGIN
-                                </button>
-                            </div>
-
-                            <div class="text-center mt-4 pt-2">
-                                <a href="{{ url_for('main.index') }}" style="color: #999; text-decoration: none; font-size: 0.85rem;">
-                                    <i class="fas fa-arrow-left me-1"></i> Return to Gateway
-                                </a>
-                            </div>
-                        </form>
-                    </div>
+        <form method="POST" action="{{ url_for('rider_portal.rider_login') }}" id="loginForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+            <div class="form-group">
+                <label class="label">Email Address</label>
+                <div class="input-wrap">
+                    <i class="fas fa-envelope input-icon"></i>
+                    <input type="email" name="email" placeholder="rider@lemaison.com" required>
                 </div>
             </div>
+            <div class="form-group pb-2">
+                <label class="label">Password</label>
+                <div class="input-wrap">
+                    <i class="fas fa-lock input-icon"></i>
+                    <input type="password" name="password" id="password" placeholder="••••••••" required>
+                    <button type="button" onclick="togglePw()" style="position:absolute; right:16px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--muted); cursor:pointer;">
+                        <i class="fas fa-eye" id="pwIcon"></i>
+                    </button>
+                </div>
+            </div>
+            <button type="submit" class="btn-login" id="loginBtn">
+                <i class="fas fa-sign-in-alt"></i> Sign In
+            </button>
+        </form>
+
+        <div class="footer-links">
+            <a href="/" style="color:var(--muted); font-weight:400;"><i class="fas fa-arrow-left me-1"></i> Back to Gateway</a>
         </div>
-    </section>
+    </div>
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        $(document).on('click', '#login_btn', function (e) {
-            const form = $('#login_form')[0];
-            if (form.checkValidity()) {
-                $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i> LOADING');
-                form.submit();
-            }
-        });
-
-        $('#togglePassword').click(function() {
-            var passwordInput = $('#password');
-            var passwordToggleIcon = $('#passwordToggleIcon');
-            if (passwordInput.attr('type') === 'password') {
-                passwordInput.attr('type', 'text');
-                passwordToggleIcon.removeClass('fa-eye').addClass('fa-eye-slash');
-            } else {
-                passwordInput.attr('type', 'password');
-                passwordToggleIcon.removeClass('fa-eye-slash').addClass('fa-eye');
-            }
+        function togglePw() {
+            const p = document.getElementById('password'), i = document.getElementById('pwIcon');
+            p.type = p.type === 'password' ? 'text' : 'password';
+            i.className = p.type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
+        }
+        document.getElementById('loginForm').addEventListener('submit', function() {
+            const btn = document.getElementById('loginBtn');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Initializing...';
+            btn.disabled = true;
         });
     </script>
 </body>

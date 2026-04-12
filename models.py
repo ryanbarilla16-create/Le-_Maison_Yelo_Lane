@@ -20,7 +20,7 @@ class User(db.Model, UserMixin):
     
     # Status and Roles
     status = db.Column(db.String(20), default='PENDING') # PENDING, ACTIVE, REJECTED
-    role = db.Column(db.String(20), default='USER') # USER, ADMIN, CASHIER, INVENTORY_STAFF, RIDER
+    role = db.Column(db.String(20), default='USER', index=True) # USER, ADMIN, CASHIER, INVENTORY_STAFF, RIDER
     
     # Email Verification
     is_verified = db.Column(db.Boolean, default=False)
@@ -44,10 +44,10 @@ class Reservation(db.Model):
     booking_type = db.Column(db.String(20), nullable=False) # REGULAR, EXCLUSIVE
     duration = db.Column(db.Integer, default=2) # duration in hours
     
-    status = db.Column(db.String(20), default='PENDING') # PENDING, CONFIRMED, REJECTED, COMPLETED
+    status = db.Column(db.String(20), default='PENDING', index=True) # PENDING, CONFIRMED, REJECTED, COMPLETED
     table_number = db.Column(db.String(20), nullable=True) # Assigned by admin
     cancellation_reason = db.Column(db.Text, nullable=True)
-    created_at = db.Column(db.DateTime, default=get_ph_time)
+    created_at = db.Column(db.DateTime, default=get_ph_time, index=True)
 
     user = db.relationship('User', backref=db.backref('reservations', lazy=True))
 
@@ -56,10 +56,10 @@ class MenuItem(db.Model):
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=True)
     price = db.Column(db.Numeric(10, 2), nullable=False)
-    category = db.Column(db.String(50), nullable=False)
+    category = db.Column(db.String(50), nullable=False, index=True)
     image_url = db.Column(db.String(255), nullable=True)
-    is_available = db.Column(db.Boolean, default=True)
-    is_deleted = db.Column(db.Boolean, default=False) # Soft delete
+    is_available = db.Column(db.Boolean, default=True, index=True)
+    is_deleted = db.Column(db.Boolean, default=False, index=True) # Soft delete
     created_at = db.Column(db.DateTime, default=get_ph_time)
     
     @property
@@ -80,9 +80,9 @@ class Order(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     customer_name = db.Column(db.String(100), nullable=True)  # For walk-in customers
     total_amount = db.Column(db.Numeric(10, 2), nullable=False)
-    status = db.Column(db.String(20), default='PENDING') # PENDING, PREPARING, COMPLETED, CANCELLED
+    status = db.Column(db.String(20), default='PENDING', index=True) # PENDING, PREPARING, COMPLETED, CANCELLED
     payment_status = db.Column(db.String(20), default='UNPAID') # UNPAID, PAID
-    dining_option = db.Column(db.String(20), default='DINE_IN') # DINE_IN, TAKE_OUT, DELIVERY
+    dining_option = db.Column(db.String(20), default='DINE_IN', index=True) # DINE_IN, TAKE_OUT, DELIVERY
     payment_method = db.Column(db.String(20), default='COUNTER') # COUNTER, ONLINE
     amount_tendered = db.Column(db.Numeric(10, 2), nullable=True)
     change_amount = db.Column(db.Numeric(10, 2), nullable=True)
@@ -98,7 +98,7 @@ class Order(db.Model):
     prep_end_at = db.Column(db.DateTime, nullable=True)
     prep_duration = db.Column(db.Integer, nullable=True) # Prep time in seconds
     estimated_cost = db.Column(db.Numeric(10, 2), default=0) # Total cost of ingredients
-    created_at = db.Column(db.DateTime, default=get_ph_time)
+    created_at = db.Column(db.DateTime, default=get_ph_time, index=True)
     processed_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True) # Cashier who processed
     reservation_id = db.Column(db.Integer, db.ForeignKey('reservation.id'), nullable=True) # Linked reservation (if any)
     
@@ -124,8 +124,8 @@ class Review(db.Model):
     order_id = db.Column(db.Integer, db.ForeignKey('order.id'), nullable=True) # Reference to the specific order being reviewed
     rating = db.Column(db.Integer, nullable=False) # 1 to 5
     comment = db.Column(db.Text, nullable=True)
-    status = db.Column(db.String(20), default='PENDING') # PENDING, APPROVED, REJECTED
-    created_at = db.Column(db.DateTime, default=get_ph_time)
+    status = db.Column(db.String(20), default='PENDING', index=True) # PENDING, APPROVED, REJECTED
+    created_at = db.Column(db.DateTime, default=get_ph_time, index=True)
 
     user = db.relationship('User', backref=db.backref('reviews', lazy=True))
 

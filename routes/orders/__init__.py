@@ -227,7 +227,7 @@ def checkout():
     
     # Generate Xendit Invoice
     xendit_secret_key = os.environ.get('XENDIT_SECRET_KEY')
-    if xendit_secret_key and xendit_secret_key != 'add_your_xendit_secret_key_here':
+    if xendit_secret_key and xendit_secret_key.strip() not in ('add_your_xendit_secret_key_here', ''):
         api_key_b64 = base64.b64encode(f"{xendit_secret_key}:".encode('utf-8')).decode('utf-8')
         headers = {
             'Authorization': f'Basic {api_key_b64}',

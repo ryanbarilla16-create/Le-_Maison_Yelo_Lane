@@ -329,7 +329,7 @@ def kitchen_login():
             login_user(user)
             return redirect(url_for('kitchen_portal.kitchen_dashboard'))
         flash('Invalid credentials or insufficient permissions for Kitchen Portal.', 'error')
-    return render_template('kitchen view/login.html')
+    return render_template('kitchen/login.html')
 
 @kitchen_bp.route('/staff/kitchen')
 def kitchen_dashboard():
@@ -339,11 +339,10 @@ def kitchen_dashboard():
     # Required by templates/kitchen/dashboard.html:
     # pending_orders, preparing_orders, ready_orders
     
-    pending_orders = Order.query.filter_by(status='PENDING').order_by(Order.created_at.asc()).all()
-    preparing_orders = Order.query.filter_by(status='PREPARING').order_by(Order.created_at.asc()).all()
-    # If the system uses COMPLETED as "done from kitchen", we use it for Ready column
-    # But if it uses READY, we fetch those. We'll fetch both to be safe or just READY if we implement it.
-    ready_orders = Order.query.filter_by(status='READY').order_by(Order.created_at.desc()).limit(20).all()
+    from sqlalchemy.orm import selectinload
+    pending_orders = Order.query.options(selectinload(Order.items).selectinload(OrderItem.menu_item)).filter_by(status='PENDING').order_by(Order.created_at.asc()).all()
+    preparing_orders = Order.query.options(selectinload(Order.items).selectinload(OrderItem.menu_item)).filter_by(status='PREPARING').order_by(Order.created_at.asc()).all()
+    ready_orders = Order.query.options(selectinload(Order.items).selectinload(OrderItem.menu_item)).filter_by(status='READY').order_by(Order.created_at.desc()).limit(20).all()
     
     return render_template('kitchen/dashboard.html',
                            portal_name=f"{current_user.first_name} {current_user.last_name}",

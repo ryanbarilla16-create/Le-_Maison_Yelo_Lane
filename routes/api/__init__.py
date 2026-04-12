@@ -931,67 +931,78 @@ def api_checkout():
     db.session.commit()
     
     # ═══ HANDLE ONLINE PAYMENT (XENDIT) ═══
-    invoice_url = None
+    payment_method_upper = payment_method.upper()
     xendit_secret = os.environ.get('XENDIT_SECRET_KEY')
-    if payment_method == 'GCASH' and xendit_secret:
-        try:
-            # Build auth header
-            auth_str = base64.b64encode(f'{xendit_secret}:'.encode()).decode()
-            
-            # Build invoice items
-            inv_items = []
-            for item in order_items:
-                m = menu_items_by_id.get(item.menu_item_id)
-                inv_items.append({
-                    'name': m.name if m else f"Item #{item.menu_item_id}",
-                    'quantity': int(item.quantity),
-                    'price': float(item.price_at_time),
-                })
-            
-            # Create Xendit Invoice via REST API
-            xendit_resp = http_requests.post(
-                XENDIT_API_URL,
-                headers={
-                    'Authorization': f'Basic {auth_str}',
-                    'Content-Type': 'application/json'
-                },
-                json={
-                    'external_id': f'order_{new_order.id}',
-                    'amount': float(total),
-                    'payer_email': (User.query.with_entities(User.email).filter_by(id=user_id).scalar() or ''),
-                    'description': f'Order #{new_order.id} - Le Maison Yelo Lane',
-                    'invoice_duration': 86400,
-                    'currency': 'PHP',
-                    'items': inv_items
-                },
-                timeout=15
-            )
-            
-            if xendit_resp.status_code == 200:
-                inv_data = xendit_resp.json()
-                new_order.xendit_invoice_id = inv_data.get('id')
-                new_order.xendit_invoice_url = inv_data.get('invoice_url')
-                new_order.payment_method = 'ONLINE'
-                db.session.commit()
-                invoice_url = inv_data.get('invoice_url')
-            else:
-                print(f'Xendit Error {xendit_resp.status_code}: {xendit_resp.text}')
+    is_online_payment = payment_method_upper in ['GCASH', 'ONLINE', 'E-PAYMENT', 'EPAYMENT', 'MAYA']
+    
+    invoice_url = None
+    if is_online_payment:
+        if xendit_secret and xendit_secret not in ('add_your_xendit_secret_key_here', ''):
+            import base64
+            import requests
+            try:
+                # Build auth header
+                auth_str = base64.b64encode(f'{xendit_secret}:'.encode()).decode()
+                
+                # Build invoice items
+                inv_items = []
+                for item in order_items:
+                    m = menu_items_by_id.get(item.menu_item_id)
+                    inv_items.append({
+                        'name': m.name if m else f"Item #{item.menu_item_id}",
+                        'quantity': int(item.quantity),
+                        'price': float(item.price_at_time),
+                    })
+                
+                # Create Xendit Invoice via REST API
+                xendit_resp = http_requests.post(
+                    'https://api.xendit.co/v2/invoices',
+                    headers={
+                        'Authorization': f'Basic {auth_str}',
+                        'Content-Type': 'application/json'
+                    },
+                    json={
+                        'external_id': f'order_{new_order.id}',
+                        'amount': float(total),
+                        'payer_email': (User.query.with_entities(User.email).filter_by(id=user_id).scalar() or ''),
+                        'description': f'Order #{new_order.id} - Le Maison Yelo Lane',
+                        'invoice_duration': 86400,
+                        'currency': 'PHP',
+                        'items': inv_items
+                    },
+                    timeout=15
+                )
+                
+                if xendit_resp.status_code == 200:
+                    inv_data = xendit_resp.json()
+                    new_order.xendit_invoice_id = inv_data.get('id')
+                    new_order.xendit_invoice_url = inv_data.get('invoice_url')
+                    new_order.payment_method = 'ONLINE'
+                    db.session.commit()
+                    invoice_url = inv_data.get('invoice_url')
+                else:
+                    print(f'Xendit Error {xendit_resp.status_code}: {xendit_resp.text}')
+                    return jsonify({
+                        'success': True,
+                        'message': 'Order placed, but payment generation failed. Please pay at the counter.',
+                        'order_id': new_order.id,
+                        'payment_failed': True
+                    }), 201
+                
+                # If successfully reached here, we continue to notification
+                pass
+            except Exception as e:
+                print(f"Xendit API Error: {e}")
+                traceback.print_exc()
                 return jsonify({
-                    'success': True,
-                    'message': 'Order placed, but payment generation failed. Please pay at the counter.',
+                    'success': True, 
+                    'message': 'Order placed, but payment generation failed. Please pay at the counter.', 
                     'order_id': new_order.id,
                     'payment_failed': True
                 }), 201
-            
-        except Exception as e:
-            print(f'Xendit Error: {e}')
-            traceback.print_exc()
-            return jsonify({
-                'success': True, 
-                'message': 'Order placed, but payment generation failed. Please pay at the counter.', 
-                'order_id': new_order.id,
-                'payment_failed': True
-            }), 201
+        else:
+            # If it's an online payment but no key is configured
+            print("⚠️ Payment attempted but XENDIT_SECRET_KEY is not configured in .env")
 
     # Send notification to user
     _create_notification(user_id, 'Order Placed', f'Your order #{new_order.id} has been placed successfully! Total: ₱{total:.2f}', 'ORDER')
