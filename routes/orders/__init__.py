@@ -40,9 +40,10 @@ def add_to_cart(item_id):
     item_id_str = str(item_id)
     menu_item = MenuItem.query.get(item_id)
     
-    if not menu_item or menu_item.is_deleted:
+    if not menu_item or menu_item.is_deleted or not menu_item.is_available:
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return {"status": "error", "message": "Product is no longer available."}, 404
+            msg = "This item is currently sold out." if not menu_item.is_available else "Product is no longer available."
+            return {"status": "error", "message": msg}, 404
         flash("This product is no longer available.", "danger")
         return redirect(url_for('main.menu_page'))
 

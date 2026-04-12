@@ -1,0 +1,76 @@
+{% extends "layouts/staff_layout.html" %}
+
+{% block title %}Kitchen Pantry — Le Maison{% endblock %}
+
+{% block portal_sub %}Kitchen Portal{% endblock %}
+{% block portal_role %}Kitchen Staff{% endblock %}
+{% block logout_url %}{{ url_for('kitchen_portal.kitchen_logout') }}{% endblock %}
+
+{% block sidebar_nav %}
+    <div class="nav-section-label">Workspace</div>
+    <a class="nav-item" href="{{ url_for('kitchen_portal.kitchen_dashboard') }}">
+        <i class="fas fa-fire"></i> Order Board
+    </a>
+    <a class="nav-item active" href="{{ url_for('kitchen_portal.kitchen_pantry') }}">
+        <i class="fas fa-archive"></i> Kitchen Pantry
+    </a>
+    <div class="nav-section-label">Reference</div>
+    <a class="nav-item" href="{{ url_for('main.menu_page') }}">
+        <i class="fas fa-utensils"></i> Menu Items
+    </a>
+{% endblock %}
+
+{% block page_title %}Kitchen Pantry{% endblock %}
+{% block page_subtitle %}Monitor on-hand ingredients in the kitchen station{% endblock %}
+
+{% block extra_style %}
+    .category-section { margin-bottom:40px; }
+    .category-title { 
+        display:flex; align-items:center; gap:15px; margin-bottom:20px;
+        font-size:0.9rem; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:1px;
+    }
+    .category-line { flex:1; height:1px; background:rgba(93,64,55,0.1); }
+
+    .pantry-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:16px; }
+    .ing-card {
+        background:var(--card); border:1px solid var(--card-border); border-radius:16px;
+        padding:18px; transition:transform 0.2s;
+    }
+    .ing-card:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(62,39,35,0.08); }
+    .ing-card .name { font-weight:700; font-size:0.9rem; color:var(--text); margin-bottom:12px; height:2.4em; overflow:hidden; }
+    .ing-card .val-row { display:flex; align-items:baseline; gap:6px; }
+    .ing-card .qty { font-size:1.6rem; font-weight:800; color:var(--primary); }
+    .ing-card .unit { font-size:0.75rem; color:var(--muted); font-weight:600; }
+    
+    .low-stock-pill { background:rgba(198,40,40,0.1); color:var(--danger); font-size:0.6rem; padding:2px 8px; border-radius:50px; font-weight:800; }
+{% endblock %}
+
+{% block content %}
+    <div class="alert alert-info" style="background:rgba(93,64,55,0.05); border-radius:15px; padding:15px; margin-bottom:30px; display:flex; gap:15px; align-items:center;">
+        <i class="fas fa-info-circle" style="color:var(--primary);"></i>
+        <p style="font-size:0.85rem; color:var(--muted); margin:0;">These are ingredients currently in the kitchen. Stock is deducted when you start cooking an order.</p>
+    </div>
+
+    {% for category, items in grouped_ingredients.items() %}
+    <div class="category-section">
+        <div class="category-title">
+            <span>{{ category }}</span>
+            <div class="category-line"></div>
+        </div>
+        <div class="pantry-grid">
+            {% for ing in items %}
+            <div class="ing-card">
+                <div class="name">{{ ing.name }}</div>
+                <div class="val-row">
+                    <span class="qty">{{ "%.1f"|format(ing.kitchen_qty|float) }}</span>
+                    <span class="unit">{{ ing.unit }}</span>
+                    {% if ing.kitchen_qty|float <= (ing.reorder_level|float / 2) %}
+                        <span class="low-stock-pill">LOW</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+{% endblock %}

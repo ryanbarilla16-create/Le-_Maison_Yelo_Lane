@@ -527,30 +527,39 @@
                 {% endif %}
 
                 {% if current_user.role|upper in ['CASHIER', 'STAFF'] %}
-                <li><a href="{{ url_for('admin.billing') }}"
-                        class="{% if request.endpoint == 'admin.billing' %}active{% endif %}"><i
+                <li><a href="{{ url_for('cashier_portal.cashier_billing') }}"
+                        class="{% if 'billing' in request.path %}active{% endif %}"><i
                             class="fas fa-file-invoice-dollar"></i><span class="sidebar-label">Billing</span></a></li>
                 {% endif %}
 
                 {% if current_user.role|upper in ['CASHIER', 'STAFF'] %}
-                <li><a href="{{ url_for('admin.orders') }}"
-                        class="{% if request.endpoint == 'admin.orders' %}active{% endif %}"><i
+                <li><a href="{{ url_for('cashier_portal.cashier_dashboard') }}"
+                        class="{% if 'cashier' in request.path %}active{% endif %}"><i
                             class="fas fa-shopping-bag"></i><span class="sidebar-label">Orders</span></a></li>
-                <li><a href="{{ url_for('admin.walkin_order') }}"
-                        class="{% if request.endpoint == 'admin.walkin_order' %}active{% endif %}"><i
+                <li><a href="{{ url_for('cashier_portal.cashier_walkin_order') }}"
+                        class="{% if 'walkin' in request.path %}active{% endif %}"><i
                             class="fas fa-walking"></i><span class="sidebar-label">Walk-In Order</span></a></li>
-                <li><a href="{{ url_for('admin.chats') }}"
-                        class="{% if request.endpoint == 'admin.chats' %}active{% endif %}"><i
+                <li><a href="{{ url_for('cashier_portal.cashier_chats') }}"
+                        class="{% if 'chats' in request.path %}active{% endif %}"><i
                             class="fas fa-comments"></i><span class="sidebar-label">Customer Chat</span></a></li>
                 {% endif %}
 
                 {% if current_user.role|upper == 'KITCHEN' %}
-                <li><a href="{{ url_for('admin.kitchen_view') }}"
-                        class="{% if request.endpoint == 'admin.kitchen_view' %}active{% endif %}"><i
+                <li><a href="{{ url_for('kitchen_portal.kitchen_dashboard') }}"
+                        class="{% if 'kitchen' in request.path and 'pantry' not in request.path and 'request' not in request.path %}active{% endif %}"><i
                             class="fas fa-fire-burner"></i><span class="sidebar-label">Kitchen View</span></a></li>
-                <li><a href="{{ url_for('admin.stock_requests') }}"
-                        class="{% if request.endpoint == 'admin.stock_requests' %}active{% endif %}"><i
+                <li><a href="{{ url_for('kitchen_portal.kitchen_pantry') }}"
+                        class="{% if 'pantry' in request.path %}active{% endif %}"><i
+                            class="fas fa-box-open"></i><span class="sidebar-label">Kitchen Pantry (On-Hand)</span></a></li>
+                <li><a href="{{ url_for('kitchen_portal.kitchen_stock_requests') }}"
+                        class="{% if 'request' in request.path %}active{% endif %}"><i
                             class="fas fa-paper-plane"></i><span class="sidebar-label">Stock Requests</span></a></li>
+                {% endif %}
+
+                {% if current_user.role|upper == 'ADMIN' %}
+                <li><a href="{{ url_for('admin.kitchen_pantry') }}"
+                        class="{% if request.endpoint == 'admin.kitchen_pantry' %}active{% endif %}"><i
+                            class="fas fa-box-open"></i><span class="sidebar-label">Kitchen Pantry</span></a></li>
                 {% endif %}
 
                 {% if current_user.role|upper in ['CASHIER', 'STAFF', 'RIDER'] %}
@@ -560,22 +569,22 @@
                 {% endif %}
 
                 {% if current_user.role|upper in ['INVENTORY_STAFF', 'INVENTORY'] %}
-                <li><a href="{{ url_for('admin.inventory') }}"
-                        class="{% if request.endpoint == 'admin.inventory' %}active{% endif %}"><i
+                <li><a href="{{ url_for('inventory_portal.inventory_dashboard') }}"
+                        class="{% if 'inventory' in request.path and 'audit' not in request.path and 'batches' not in request.path and 'waste' not in request.path and 'request' not in request.path %}active{% endif %}"><i
                             class="fas fa-boxes-stacked"></i><span class="sidebar-label">Inventory Master</span></a>
                 </li>
-                <li><a href="{{ url_for('admin.ingredient_batches') }}"
-                        class="{% if request.endpoint == 'admin.ingredient_batches' %}active{% endif %}"><i
+                <li><a href="{{ url_for('inventory_portal.inventory_ingredient_batches') }}"
+                        class="{% if 'batches' in request.path %}active{% endif %}"><i
                             class="fas fa-box-open"></i><span class="sidebar-label">FIFO Batches</span></a></li>
-                <li><a href="{{ url_for('admin.waste_records') }}"
-                        class="{% if request.endpoint == 'admin.waste_records' %}active{% endif %}"><i
+                <li><a href="{{ url_for('inventory_portal.inventory_waste_records') }}"
+                        class="{% if 'waste' in request.path %}active{% endif %}"><i
                             class="fas fa-trash-alt"></i><span class="sidebar-label">Waste Mgmt</span></a></li>
-                <li><a href="{{ url_for('admin.stock_requests') }}"
-                        class="{% if request.endpoint == 'admin.stock_requests' %}active{% endif %}"><i
+                <li><a href="{{ url_for('inventory_portal.inventory_stock_requests') }}"
+                        class="{% if 'request' in request.path %}active{% endif %}"><i
                             class="fas fa-clipboard-check"></i><span class="sidebar-label">Stock Requests</span></a>
                 </li>
-                <li><a href="{{ url_for('admin.inventory_audit') }}"
-                        class="{% if request.endpoint == 'admin.inventory_audit' %}active{% endif %}"><i
+                <li><a href="{{ url_for('inventory_portal.inventory_audit') }}"
+                        class="{% if 'audit' in request.path %}active{% endif %}"><i
                             class="fas fa-history"></i><span class="sidebar-label">Audit History</span></a></li>
                 {% endif %}
 

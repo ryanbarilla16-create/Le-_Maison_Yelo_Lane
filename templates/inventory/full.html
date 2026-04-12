@@ -1,0 +1,74 @@
+{% extends "layouts/staff_layout.html" %}
+
+{% block title %}Warehouse Inventory — Le Maison{% endblock %}
+
+{% block portal_sub %}Inventory Portal{% endblock %}
+{% block portal_role %}Inventory Staff{% endblock %}
+{% block logout_url %}{{ url_for('inventory_portal.inventory_logout') }}{% endblock %}
+
+{% block sidebar_nav %}
+    <div class="nav-section-label">Workspace</div>
+    <a class="nav-item" href="{{ url_for('inventory_portal.inventory_dashboard') }}">
+        <i class="fas fa-boxes-stacked"></i> Stock Levels
+    </a>
+    <a class="nav-item active" href="{{ url_for('inventory_portal.inventory_full') }}">
+        <i class="fas fa-warehouse"></i> Full Inventory
+    </a>
+    <a class="nav-item" href="{{ url_for('inventory_portal.inventory_suppliers') }}">
+        <i class="fas fa-truck"></i> Suppliers
+    </a>
+    <a class="nav-item" href="{{ url_for('inventory_portal.inventory_waste_records') }}">
+        <i class="fas fa-trash-can"></i> Waste Log
+    </a>
+{% endblock %}
+
+{% block page_title %}Full Warehouse Inventory{% endblock %}
+{% block page_subtitle %}Comprehensive list of all tracked ingredients and supplies{% endblock %}
+
+{% block content %}
+<div class="section-card">
+    <div class="section-header">
+        <h2>Stock Records</h2>
+        <div style="font-size:0.8rem; color:var(--muted);">Total Items: {{ ingredients.total }}</div>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Ingredient</th>
+                <th>Category</th>
+                <th>In Stock</th>
+                <th>Unit</th>
+                <th>Reorder Level</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ing in ingredients.items %}
+            <tr>
+                <td style="font-weight:600;">{{ ing.name }}</td>
+                <td><span class="pill" style="background:rgba(93,64,55,0.06); color:var(--muted);">{{ ing.category or 'General' }}</span></td>
+                <td style="font-weight:700; color:var(--primary);">{{ ing.stock_qty|round(2) }}</td>
+                <td style="color:var(--muted);">{{ ing.unit }}</td>
+                <td>{{ ing.reorder_level }}</td>
+                <td>
+                    {% if ing.stock_qty <= ing.reorder_level %}
+                        <span class="pill" style="background:rgba(198,40,40,0.1); color:var(--danger);">CRITICAL</span>
+                    {% else %}
+                        <span class="pill" style="background:rgba(46,125,50,0.1); color:var(--success);">OPTIMAL</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div style="padding:20px; display:flex; justify-content:center; gap:10px;">
+        {% if ingredients.has_prev %}
+            <a href="{{ url_for('inventory_portal.inventory_full', page=ingredients.prev_num) }}" class="btn-staff">Previous</a>
+        {% endif %}
+        {% if ingredients.has_next %}
+            <a href="{{ url_for('inventory_portal.inventory_full', page=ingredients.next_num) }}" class="btn-staff">Next</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

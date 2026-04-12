@@ -31,23 +31,23 @@
 </div>
 
 <!-- FILTER TABS & TOGGLES -->
-<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
-    <div class="kds-filter-bar">
-        <a href="{{ url_for('admin.kitchen_view', status='ACTIVE') }}" class="kds-filter-tab {% if status_filter == 'ACTIVE' %}active{% endif %}">
-            <span class="kds-dot" style="background: #E67E22;"></span>Active
-            <span class="kds-count">{{ pending_count + preparing_count }}</span>
+<div class="kds-filters" style="display: flex; gap: 8px; flex-wrap: wrap;">
+    <div style="background: rgba(255,255,255,0.7); padding: 4px; border-radius: 50px; display: inline-flex; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); margin-right: 15px;">
+        <a href="{{ url_for(request.endpoint, status='ACTIVE') }}" class="kds-filter-tab {% if status_filter == 'ACTIVE' %}active{% endif %}">
+            <span class="status-dot dot-active" style="background:#5D4037;box-shadow:none;"></span>Active
+            <span class="badge rounded-pill bg-white text-dark ms-2 shadow-sm" style="font-size:0.7rem;">{{ pending_count + preparing_count }}</span>
         </a>
-        <a href="{{ url_for('admin.kitchen_view', status='PENDING') }}" class="kds-filter-tab {% if status_filter == 'PENDING' %}active{% endif %}">
-            <span class="kds-dot" style="background: #F39C12;"></span>Pending
-            <span class="kds-count">{{ pending_count }}</span>
+        <a href="{{ url_for(request.endpoint, status='PENDING') }}" class="kds-filter-tab {% if status_filter == 'PENDING' %}active{% endif %}">
+            <span class="status-dot dot-pending" style="box-shadow:none;"></span>Pending
+            <span class="badge rounded-pill bg-white text-dark ms-2 shadow-sm" style="font-size:0.7rem;">{{ pending_count }}</span>
         </a>
-        <a href="{{ url_for('admin.kitchen_view', status='PREPARING') }}" class="kds-filter-tab {% if status_filter == 'PREPARING' %}active{% endif %}">
-            <span class="kds-dot" style="background: #3498DB;"></span>Preparing
-            <span class="kds-count">{{ preparing_count }}</span>
+        <a href="{{ url_for(request.endpoint, status='PREPARING') }}" class="kds-filter-tab {% if status_filter == 'PREPARING' %}active{% endif %}">
+            <span class="status-dot dot-preparing" style="box-shadow:none;"></span>Preparing
+            <span class="badge rounded-pill bg-white text-dark ms-2 shadow-sm" style="font-size:0.7rem;">{{ preparing_count }}</span>
         </a>
-        <a href="{{ url_for('admin.kitchen_view', status='COMPLETED') }}" class="kds-filter-tab {% if status_filter == 'COMPLETED' %}active{% endif %}">
-            <span class="kds-dot" style="background: #27AE60;"></span>Done
-            <span class="kds-count">{{ completed_count }}</span>
+        <a href="{{ url_for(request.endpoint, status='COMPLETED') }}" class="kds-filter-tab {% if status_filter == 'COMPLETED' %}active{% endif %}">
+            <span class="status-dot dot-done" style="box-shadow:none;"></span>Done
+            <span class="badge rounded-pill bg-white text-dark ms-2 shadow-sm" style="font-size:0.7rem;">{{ completed_count }}</span>
         </a>
     </div>
     <div class="d-flex gap-2">

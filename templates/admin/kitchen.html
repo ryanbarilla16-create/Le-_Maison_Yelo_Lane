@@ -44,8 +44,9 @@
 
     /* ── PREP PANEL ── */
     .kds-prep-body { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
-    .kds-station { background: #ffffff; border-radius: 20px; padding: 20px; border: 1px solid rgba(139, 99, 75, 0.1); box-shadow: 0 4px 20px rgba(139, 99, 75, 0.03); }
-    .kds-station-label { font-size: 0.8rem; font-weight: 800; color: #8B634B; display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; margin-bottom: 12px; border-bottom: 1px solid #FAF7F5; }
+    .kds-station { background: #ffffff; border-radius: 20px; padding: 20px 10px 20px 20px; border: 1px solid rgba(139, 99, 75, 0.1); box-shadow: 0 4px 20px rgba(139, 99, 75, 0.03); display: flex; flex-direction: column; max-height: 480px; }
+    .kds-station-items { overflow-y: auto; overflow-x: hidden; padding-right: 10px; flex-grow: 1; }
+    .kds-station-label { font-size: 0.8rem; font-weight: 800; color: #8B634B; display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; margin-bottom: 12px; margin-right: 10px; border-bottom: 1px solid #FAF7F5; }
     .kds-prep-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; border-radius: 10px; cursor: pointer; transition: all 0.2s; }
     .kds-prep-item:hover { background: #FDFBFA; }
     .kds-prep-item.is-done { opacity: 0.4; }
@@ -62,14 +63,15 @@
     .kds-order-card[data-status="COMPLETED"] { border-top: 5px solid #27AE60; }
 
     .kds-order-header { padding: 18px 20px; border-bottom: 1px solid #fafafa; display: flex; justify-content: space-between; align-items: center; }
+    .kds-order-body { padding: 20px; display: flex; flex-direction: column; flex-grow: 1; }
     .kds-order-id { font-family: 'Georgia', serif; font-weight: 800; color: #2D1A12; }
     .kds-customer-name { font-weight: 800; color: #2D1A12; font-size: 0.95rem; }
     .kds-dine-badge { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; padding: 4px 10px; border-radius: 20px; }
     .kds-dine-badge.dine-in { background: #E8F5E9; color: #2E7D32; }
-    .kds-items-list { margin-top: 15px; }
+    .kds-items-list { margin-top: 15px; border-radius: 12px; max-height: 180px; overflow-y: auto; overflow-x: hidden; padding-right: 8px; flex-grow: 1; }
     .kds-item-row { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
     .kds-item-qty { font-weight: 800; color: #8B634B; }
-    .kds-timer { margin-top: 15px; font-size: 0.8rem; color: #999; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+    .kds-timer { margin-top: auto; padding-top: 15px; font-size: 0.8rem; color: #999; font-weight: 700; display: flex; align-items: center; gap: 6px; }
 
     .kds-btns-group { display: flex; gap: 8px; width: 100%; }
     .kds-order-footer { padding: 20px; border-top: 1px solid #f9f9f9; }
@@ -77,6 +79,16 @@
     .btn-kd-start { background: #2D1A12; color: #fff; width: 100%; }
     .btn-kd-complete { background: #27AE60; color: #fff; width: 100%; }
     .btn-kd-cancel { background: #F2F2F2; color: #999; }
+    
+    /* ── CUSTOM SCROLLBARS FOR KITCHEN CONTAINERS ── */
+    .kds-station-items::-webkit-scrollbar,
+    .kds-items-list::-webkit-scrollbar { width: 4px; }
+    .kds-station-items::-webkit-scrollbar-track,
+    .kds-items-list::-webkit-scrollbar-track { background: rgba(139, 99, 75, 0.04); border-radius: 10px; }
+    .kds-station-items::-webkit-scrollbar-thumb,
+    .kds-items-list::-webkit-scrollbar-thumb { background: rgba(139, 99, 75, 0.2); border-radius: 10px; }
+    .kds-station-items::-webkit-scrollbar-thumb:hover,
+    .kds-items-list::-webkit-scrollbar-thumb:hover { background: rgba(139, 99, 75, 0.4); }
 </style>
 {% endblock %}
 
@@ -101,7 +113,12 @@
         event.preventDefault();
         if (confirmCancel && !confirm('Are you sure?')) return;
         try {
-            await fetch(form.action || `/admin/orders/update/${orderId}`, { method: 'POST', body: new FormData(form) });
+            const res = await fetch(form.action || `/admin/orders/update/${orderId}`, { method: 'POST', body: new FormData(form) });
+            // If the server redirected (stock check failed → flash message), do a full reload
+            if (res.redirected) {
+                window.location.href = res.url;
+                return;
+            }
             loadKitchenPartial(window.location.href, false);
         } catch (e) { console.error('Update failed:', e); }
     }

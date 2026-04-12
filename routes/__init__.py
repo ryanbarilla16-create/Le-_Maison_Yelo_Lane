@@ -9,7 +9,8 @@ def restrict_admin_from_public():
     # Allow admins to access the login and static/API routes if necessary
     if current_user.is_authenticated and current_user.role not in ['USER', 'CUSTOMER']:
         allowed_endpoints = ['main.login', 'main.signup', 'main.profile', 'main.logout', 'admin.admin_login', 'admin.admin_logout']
-        if request.endpoint and request.endpoint not in allowed_endpoints and not request.endpoint.startswith('static') and not request.endpoint.startswith('admin.'):
+        portal_prefixes = ('static', 'admin.', 'cashier_portal.', 'kitchen_portal.', 'inventory_portal.', 'rider_portal.')
+        if request.endpoint and request.endpoint not in allowed_endpoints and not request.endpoint.startswith(portal_prefixes):
             return redirect(url_for('admin.admin_login'))
 
 # Import the routes from the decoupled files to register them with the blueprint

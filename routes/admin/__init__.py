@@ -10,6 +10,7 @@ from functools import wraps
 import traceback
 import time
 import threading
+from itertools import groupby
 from sqlalchemy import text as sql_text
 import random
 from utils import get_ph_time, create_notification, validate_name, validate_email, validate_username, validate_password, safe_elapsed
@@ -195,9 +196,21 @@ def admin_login():
     return render_template('admin/login.html')
 
 @admin_bp.route('/logout')
-@login_required
+@login_required # wait, do we really need this? Yes.
 def admin_logout():
+    from flask import session
+    portal = session.get('logged_in_portal')
     logout_user()
+    
+    if portal == 'kitchen':
+        return redirect(url_for('kitchen_portal.kitchen_login'))
+    elif portal == 'cashier':
+        return redirect(url_for('cashier_portal.cashier_login'))
+    elif portal == 'inventory':
+        return redirect(url_for('inventory_portal.inventory_login'))
+    elif portal == 'rider':
+        return redirect(url_for('rider_portal.rider_login'))
+        
     return redirect(url_for('admin.admin_login'))
 
 # ─── ADMIN FORGOT PASSWORD ──────────────────────────
@@ -974,7 +987,7 @@ def menu_add():
             price=price,
             category=category,
             image_url=image_url,
-            is_available=request.form.get('is_available') == 'on'
+            is_available=False  # Automatically false until ingredients are assigned
         )
         db.session.add(item)
         db.session.commit()
@@ -1018,7 +1031,7 @@ def menu_edit(item_id):
         item.price = price
         item.category = category
         item.image_url = image_url
-        item.is_available = request.form.get('is_available') == 'on'
+        # is_available is handled automatically by recipe sync logic now
         db.session.commit()
         log_audit('UPDATE', 'MenuItem', item.id, f'Updated menu item: {item.name}')
         flash("Menu item updated.", "success")
@@ -1327,19 +1340,62 @@ def inventory():
         Ingredient.expiration_date.between(today, seven_days_later)
     ).scalar()
     
-    # Paginated data
-    items_paginated = MenuItem.query.order_by(MenuItem.category, MenuItem.name).paginate(page=page_items, per_page=15)
-    ingredients_paginated = Ingredient.query.order_by(Ingredient.name).paginate(page=page_ingredients, per_page=20)
+    # Filters
+    q_ing = request.args.get('q_ing', '').strip()
+
+    # Fetch all ingredients
+    ingredients_query = Ingredient.query
+    if q_ing:
+        ingredients_query = ingredients_query.filter(Ingredient.name.ilike(f'%{q_ing}%'))
+
+    ingredients_query = ingredients_query.order_by(Ingredient.category, Ingredient.name)
+    all_ingredients = ingredients_query.all()
     
+    # Pre-calculate menu categories for each ingredient for local filtering
+    # We'll attach this as a temporary attribute to the ingredient objects
+    for ing in all_ingredients:
+        # Get unique menu categories this ingredient is part of
+        cats = db.session.query(MenuItem.category).join(MenuItemIngredient).filter(MenuItemIngredient.ingredient_id == ing.id).distinct().all()
+        ing.mapped_menu_categories = [c[0] for c in cats]
+
+    # Get unique menu categories for the dropdown
+    menu_categories = [r[0] for r in db.session.query(MenuItem.category).filter(MenuItem.is_deleted == False).distinct().order_by(MenuItem.category).all()]
+
+    # Fetch all Menu Items for grouping
+    all_menu_items = MenuItem.query.filter_by(is_deleted=False).order_by(MenuItem.category, MenuItem.name).all()
+    
+    # Group menu items by category (ensure sorted for groupby)
+    grouped_items = {}
+    for category, group in groupby(all_menu_items, lambda x: x.category or 'General'):
+        grouped_items[category] = list(group)
+    
+    # Group ingredients by category
+    grouped_ingredients = {}
+    for category, group in groupby(all_ingredients, lambda x: x.category or 'General'):
+        grouped_ingredients[category] = list(group)
+    
+    # Logic for ingredients pagination
+    ingredients_paginated = ingredients_query.paginate(page=page_ingredients, per_page=20)
+    
+    # Fetch suppliers and map their menu category specialties (optimized)
     all_suppliers = _get_suppliers_cached()
     all_ingredients_raw = _get_all_ingredients_raw_cached()
     
+    for sup in all_suppliers:
+        # A supplier specializes in a menu category if they supply an ingredient used in that category
+        cats = db.session.query(MenuItem.category).join(MenuItemIngredient).filter(MenuItemIngredient.ingredient_id.in_(
+            db.session.query(Ingredient.id).filter(Ingredient.supplier_id == sup.id)
+        )).distinct().all()
+        sup.supplied_menu_categories = [c[0] for c in cats if c[0]]
+
     return render_template('admin/inventory.html', 
-        items=items_paginated, 
+        grouped_items=grouped_items, 
         total_items=total_items, 
         out_of_stock=out_of_stock, 
-        ingredients=ingredients_paginated, 
+        ingredients=ingredients_paginated,
+        grouped_ingredients=grouped_ingredients,
         suppliers=all_suppliers, 
+        menu_categories=menu_categories,
         low_stock_count=low_stock_count,
         expiring_soon_count=expiring_soon_count,
         total_ingredients=total_ingredients,
@@ -1530,6 +1586,13 @@ def kitchen_view():
         else:
             hot_kitchen.append(station_item)
 
+    # 4. Get Kitchen-side Inventory for display
+    # Show ingredients that are low in kitchen OR are used in today's menu categories
+    kitchen_ingredients = Ingredient.query.filter(
+        (Ingredient.kitchen_qty < Ingredient.reorder_level / 2) | # Alert level
+        (Ingredient.kitchen_qty > 0)
+    ).order_by(Ingredient.kitchen_qty.asc()).limit(15).all()
+
     # Handle partial request (for soft refresh)
     if request.args.get('partial'):
         return render_template('admin/kitchen_partial.html', 
@@ -1537,7 +1600,8 @@ def kitchen_view():
             bar_station=bar_station, item_count=len(item_data), status_filter=status_filter,
             pending_count=pending_count, preparing_count=preparing_count,
             completed_count=completed_count, cancelled_count=cancelled_count,
-            avg_prep_time=avg_prep_time, ph_now=ph_now
+            avg_prep_time=avg_prep_time, ph_now=ph_now,
+            kitchen_ingredients=kitchen_ingredients
         )
 
     return render_template('admin/kitchen.html', 
@@ -1552,8 +1616,45 @@ def kitchen_view():
         completed_count=completed_count,
         cancelled_count=cancelled_count,
         avg_prep_time=avg_prep_time,
-        ph_now=ph_now
+        ph_now=ph_now,
+        kitchen_ingredients=kitchen_ingredients
     )
+
+@admin_bp.route('/kitchen/pantry')
+@login_required
+@admin_required
+def kitchen_pantry():
+    """Independent view for kitchen staff to monitor all on-hand stocks and alerts."""
+    ingredients = Ingredient.query.order_by(Ingredient.category, Ingredient.name).all()
+    
+    # Group ingredients by category for the UI
+    grouped_ingredients = {}
+    
+    for category, group in groupby(ingredients, lambda x: x.category or 'General'):
+        grouped_ingredients[category] = list(group)
+        
+    return render_template('admin/kitchen_pantry.html', grouped_ingredients=grouped_ingredients, today=date.today())
+
+@admin_bp.route('/kitchen/pantry/update/<int:ing_id>', methods=['POST'])
+@login_required
+@admin_required
+def kitchen_pantry_update(ing_id):
+    """Temporary dev endpoint to instantly set kitchen stock & sync menu items."""
+    ingredient = Ingredient.query.get_or_404(ing_id)
+    try:
+        new_qty = float(request.form.get('kitchen_qty', 0))
+        ingredient.kitchen_qty = max(0, new_qty)
+        _sync_single_ingredient_availability(ingredient.id)
+        db.session.commit()
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': True, 'new_qty': new_qty})
+        flash(f'Kitchen stock for {ingredient.name} updated to {new_qty}.', 'success')
+    except ValueError:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': False, 'message': 'Invalid quantity.'})
+        flash('Invalid quantity.', 'danger')
+        
+    return redirect(url_for('admin.kitchen_pantry'))
 
 @admin_bp.route('/kitchen/api/orders')
 @login_required
@@ -1663,39 +1764,26 @@ def kitchen_update_order(order_id):
     order = Order.query.get_or_404(order_id)
     new_status = request.form.get('status')
     if new_status in ['PENDING', 'PREPARING', 'COMPLETED', 'CANCELLED']:
-        # Auto-deduct ingredients when order moves to PREPARING
+        # ── PRE-CHECK: Block "Start" if kitchen stock is insufficient ──
         if new_status == 'PREPARING' and order.status != 'PREPARING':
+            missing_items = _check_kitchen_stock_for_order(order)
+            if missing_items:
+                missing_text = ', '.join([f"{m['ingredient']} (need {m['needed']}, have {m['available']} {m['unit']})" for m in missing_items])
+                flash(f'Cannot start Order #{order.id}: Insufficient kitchen stock — {missing_text}. Please restock first!', 'danger')
+                return redirect(url_for('admin.kitchen_view'))
             order.prep_start_at = datetime.utcnow()
-            # Batch load recipes + ingredients to avoid N+1 queries
-            oi_by_menu_item_id = {}
-            menu_item_ids = []
-            for oi in order.items:
-                oi_by_menu_item_id.setdefault(oi.menu_item_id, []).append(oi)
-                menu_item_ids.append(oi.menu_item_id)
-
-            recipe_rows = MenuItemIngredient.query.filter(MenuItemIngredient.menu_item_id.in_(menu_item_ids)).all()
-            ingredient_ids = list({r.ingredient_id for r in recipe_rows})
-            ingredients = Ingredient.query.filter(Ingredient.id.in_(ingredient_ids)).all() if ingredient_ids else []
-            ingredients_by_id = {ing.id: ing for ing in ingredients}
-
-            for r in recipe_rows:
-                ingredient = ingredients_by_id.get(r.ingredient_id)
-                if not ingredient:
-                    continue
-                for oi in oi_by_menu_item_id.get(r.menu_item_id, []):
-                    prev = float(ingredient.stock_qty)
-                    deduction = float(r.quantity_needed) * oi.quantity
-                    log_inventory_change(ingredient.id, 'DEDUCT', deduction, prev, f"Used for Order #{order.id}")
-                    ingredient.stock_qty = max(0, prev - deduction)
-
-                if float(ingredient.stock_qty) <= 0:
-                    for mi_link in ingredient.menu_items:
-                        mi = MenuItem.query.get(mi_link.menu_item_id)
-                        if mi:
-                            mi.is_available = False
+            _deduct_order_ingredients_fifo(order.id)
         
         if new_status == 'COMPLETED':
             order.prep_end_at = datetime.utcnow()
+            # Safety: If it skipped PREPARING status, deduct now
+            if order.status not in ['PREPARING', 'COMPLETED']:
+                missing_items = _check_kitchen_stock_for_order(order)
+                if missing_items:
+                    missing_text = ', '.join([f"{m['ingredient']} (need {m['needed']}, have {m['available']} {m['unit']})" for m in missing_items])
+                    flash(f'Cannot complete Order #{order.id}: Insufficient kitchen stock — {missing_text}.', 'danger')
+                    return redirect(url_for('admin.kitchen_view'))
+                _deduct_order_ingredients_fifo(order.id)
             
         order.status = new_status
         db.session.commit()
@@ -1706,6 +1794,30 @@ def kitchen_update_order(order_id):
         
         log_audit('UPDATE', 'Order', order.id, f'Order #{order.id} status changed to {new_status}')
     return redirect(url_for('admin.kitchen_view'))
+
+
+def _check_kitchen_stock_for_order(order):
+    """
+    Pre-flight check: returns a list of missing ingredients for the order.
+    If the list is empty, the kitchen has enough stock to prepare.
+    """
+    missing = []
+    for oi in order.items:
+        recipe = MenuItemIngredient.query.filter_by(menu_item_id=oi.menu_item_id).all()
+        for r in recipe:
+            total_needed = float(r.quantity_needed) * oi.quantity
+            ingredient = Ingredient.query.get(r.ingredient_id)
+            if not ingredient:
+                continue
+            available = float(ingredient.kitchen_qty or 0)
+            if available < total_needed:
+                missing.append({
+                    'ingredient': ingredient.name,
+                    'needed': round(total_needed, 2),
+                    'available': round(available, 2),
+                    'unit': ingredient.unit
+                })
+    return missing
 
 # ─── WALK-IN ORDERS ──────────────────────────────────
 @admin_bp.route('/walkin-order', methods=['GET'])
@@ -2546,6 +2658,42 @@ def web_user_mark_all_read():
     return jsonify({'success': True})
 
 
+def _deduct_order_ingredients_fifo(order_id):
+    """
+    Deducts ingredients for an order from the KITCHEN-SIDE inventory (kitchen_qty).
+    Main inventory is not touched here; it was touched when stock was requested.
+    """
+    order = Order.query.get(order_id)
+    if not order: return
+
+    for oi in order.items:
+        recipe = MenuItemIngredient.query.filter_by(menu_item_id=oi.menu_item_id).all()
+        for r in recipe:
+            total_to_deduct = float(r.quantity_needed) * oi.quantity
+            ingredient = Ingredient.query.get(r.ingredient_id)
+            if not ingredient: continue
+
+            # 1. Update KITCHEN-SIDE stock
+            prev_kitchen = float(ingredient.kitchen_qty or 0)
+            ingredient.kitchen_qty = max(0, prev_kitchen - total_to_deduct)
+            
+            # Use action 'DEDUCT' but log that it was for kitchen use
+            log_inventory_change(ingredient.id, 'DEDUCT', total_to_deduct, prev_kitchen, f"Kitchen Use (Order #{order_id})")
+
+            # 2. Sync Availability (Auto-Disable/Enable)
+            _sync_single_ingredient_availability(ingredient.id)
+
+    db.session.commit()
+
+def _sync_supplier_catalog(supplier_id):
+    """Automatically update the catalog_items text field based on linked ingredients."""
+    if not supplier_id: return
+    sup = Supplier.query.get(supplier_id)
+    if sup:
+        names = [i.name for i in sup.ingredients]
+        sup.catalog_items = ", ".join(sorted(names)) if names else ""
+        db.session.commit()
+
 # ─── INGREDIENT MANAGEMENT ──────────────────────────
 @admin_bp.route('/ingredients/add', methods=['POST'])
 @login_required
@@ -2568,9 +2716,12 @@ def add_ingredient():
         flash('Ingredient name and unit are required.', 'danger')
         return redirect(url_for('admin.inventory', tab='ingredients'))
     
+    category = request.form.get('category', 'General').strip()
+    
     ing = Ingredient(
         name=name, unit=unit, stock_qty=stock_qty, 
         reorder_level=reorder_level, cost_per_unit=cost_per_unit, 
+        category=category,
         supplier_id=supplier_id if supplier_id else None,
         expiration_date=expiration_date
     )
@@ -2581,6 +2732,11 @@ def add_ingredient():
         log_inventory_change(ing.id, 'ADD', stock_qty, 0, "Initial stock on creation")
     
     db.session.commit()
+    
+    # Sync supplier catalog
+    if supplier_id:
+        _sync_supplier_catalog(supplier_id)
+        
     flash(f'Ingredient "{name}" added successfully!', 'success')
     return redirect(url_for('admin.inventory', tab='ingredients'))
 
@@ -2589,14 +2745,45 @@ def add_ingredient():
 @admin_required
 def update_ingredient(ing_id):
     ing = Ingredient.query.get_or_404(ing_id)
+    old_supplier_id = ing.supplier_id
     ing.name = request.form.get('name', ing.name).strip()
     ing.unit = request.form.get('unit', ing.unit).strip()
     ing.stock_qty = request.form.get('stock_qty', float(ing.stock_qty), type=float)
     ing.reorder_level = request.form.get('reorder_level', float(ing.reorder_level), type=float)
     ing.cost_per_unit = request.form.get('cost_per_unit', float(ing.cost_per_unit), type=float)
+    ing.category = request.form.get('category', ing.category or 'General').strip()
+    exp_date_str = request.form.get('expiration_date', '').strip()
+    ing.expiration_date = date.fromisoformat(exp_date_str) if exp_date_str else None
     supplier_id = request.form.get('supplier_id', type=int)
     ing.supplier_id = supplier_id if supplier_id else None
     db.session.commit()
+
+    # Sync supplier catalogs (both old and new)
+    if supplier_id:
+        _sync_supplier_catalog(supplier_id)
+    if old_supplier_id and old_supplier_id != supplier_id:
+        _sync_supplier_catalog(old_supplier_id)
+
+    # If AJAX request, return JSON
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    if is_ajax:
+        supplier_name = ing.supplier.name if ing.supplier else None
+        return jsonify({
+            'success': True,
+            'message': f'Ingredient "{ing.name}" updated!',
+            'ingredient': {
+                'id': ing.id,
+                'name': ing.name,
+                'unit': ing.unit,
+                'stock_qty': float(ing.stock_qty),
+                'reorder_level': float(ing.reorder_level),
+                'cost_per_unit': float(ing.cost_per_unit),
+                'category': ing.category,
+                'supplier_name': supplier_name,
+                'expiration_date': ing.expiration_date.strftime('%b %d, %Y') if ing.expiration_date else None,
+            }
+        })
+
     flash(f'Ingredient "{ing.name}" updated!', 'success')
     return redirect(url_for('admin.inventory', tab='ingredients'))
 
@@ -2606,8 +2793,14 @@ def update_ingredient(ing_id):
 def delete_ingredient(ing_id):
     ing = Ingredient.query.get_or_404(ing_id)
     MenuItemIngredient.query.filter_by(ingredient_id=ing_id).delete()
+    sup_id = ing.supplier_id
     db.session.delete(ing)
     db.session.commit()
+    
+    # Sync supplier catalog after deletion
+    if sup_id:
+        _sync_supplier_catalog(sup_id)
+        
     flash(f'Ingredient "{ing.name}" deleted.', 'success')
     return redirect(url_for('admin.inventory', tab='ingredients'))
 
@@ -2617,9 +2810,18 @@ def delete_ingredient(ing_id):
 def bulk_delete_ingredients():
     item_ids = request.form.getlist('item_ids[]')
     if item_ids:
+        # Collect affected supplier IDs
+        affected_suppliers = db.session.query(Ingredient.supplier_id).filter(Ingredient.id.in_(item_ids)).distinct().all()
+        supplier_ids = [s[0] for s in affected_suppliers if s[0]]
+        
         Ingredient.query.filter(Ingredient.id.in_(item_ids)).delete(synchronize_session=False)
         MenuItemIngredient.query.filter(MenuItemIngredient.ingredient_id.in_(item_ids)).delete(synchronize_session=False)
         db.session.commit()
+        
+        # Sync all affected catalogs
+        for sid in supplier_ids:
+            _sync_supplier_catalog(sid)
+            
         flash(f'Deleted {len(item_ids)} ingredients.', 'success')
     return redirect(url_for('admin.inventory', tab='ingredients'))
 
@@ -2640,7 +2842,7 @@ def restock_ingredient(ing_id):
         menu_items_using_ing = MenuItemIngredient.query.filter_by(ingredient_id=ing.id).all()
         for mi_ing in menu_items_using_ing:
             mi = MenuItem.query.get(mi_ing.menu_item_id)
-            if mi and not mi.is_available:
+            if mi and not mi.is_available and mi.ingredients:
                 can_enable = True
                 for other in mi.ingredients:
                     if float(other.ingredient.stock_qty) < float(other.quantity_needed):
@@ -2650,6 +2852,19 @@ def restock_ingredient(ing_id):
                     mi.is_available = True
                     db.session.commit()
 
+        # AJAX return
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            status = 'In Stock'
+            if float(ing.stock_qty) <= 0: status = 'Out of Stock'
+            elif float(ing.stock_qty) <= float(ing.reorder_level): status = 'Low Stock'
+            
+            return jsonify({
+                'success': True,
+                'message': f'Restocked {add_qty} {ing.unit} of "{ing.name}".',
+                'new_stock': float(ing.stock_qty),
+                'status': status
+            })
+
         flash(f'Restocked {add_qty} {ing.unit} of "{ing.name}".', 'success')
     return redirect(url_for('admin.inventory', tab='ingredients'))
 
@@ -2658,7 +2873,7 @@ def restock_ingredient(ing_id):
 @admin_required
 def waste_ingredient(ing_id):
     ing = Ingredient.query.get_or_404(ing_id)
-    qty = request.form.get('qty', 0, type=float)
+    qty = request.form.get('waste_qty', 0, type=float)
     action = request.form.get('action', 'SPOILED') # SPOILED or EXPIRED
     reason = request.form.get('reason', 'Inventory adjustment')
     
@@ -2677,8 +2892,22 @@ def waste_ingredient(ing_id):
                     mi.is_available = False
                     db.session.commit()
 
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            status = 'In Stock'
+            if float(ing.stock_qty) <= 0: status = 'Out of Stock'
+            elif float(ing.stock_qty) <= float(ing.reorder_level): status = 'Low Stock'
+            
+            return jsonify({
+                'success': True,
+                'message': f'Recorded {qty} {ing.unit} as waste.',
+                'new_stock': float(ing.stock_qty),
+                'status': status
+            })
+
         flash(f'Recorded {qty} {ing.unit} as {action}.', 'warning')
     else:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': False, 'message': 'Invalid quantity. Cannot exceed current stock.'})
         flash('Invalid quantity.', 'danger')
     return redirect(url_for('admin.inventory', tab='ingredients'))
 
@@ -2734,6 +2963,10 @@ def add_recipe_ingredient(item_id):
         link = MenuItemIngredient(menu_item_id=item_id, ingredient_id=ingredient_id, quantity_needed=quantity_needed)
         db.session.add(link)
     db.session.commit()
+    
+    # Re-check availability after recipe change
+    _sync_single_item_availability(item_id)
+    
     flash('Recipe updated!', 'success')
     return redirect(url_for('admin.inventory'))
 
@@ -2742,10 +2975,67 @@ def add_recipe_ingredient(item_id):
 @admin_required
 def remove_recipe_ingredient(link_id):
     link = MenuItemIngredient.query.get_or_404(link_id)
+    menu_item_id = link.menu_item_id
     db.session.delete(link)
     db.session.commit()
+    
+    # Re-check availability after recipe change
+    _sync_single_item_availability(menu_item_id)
+    
     flash('Ingredient removed from recipe.', 'success')
     return redirect(url_for('admin.inventory'))
+
+# ─── AVAILABILITY SYNC HELPERS ───────────────────────
+def _sync_single_item_availability(item_id):
+    """Re-check and update is_available for a single menu item.
+    Rules: No recipe = unavailable. Any ingredient below required qty = unavailable."""
+    item = MenuItem.query.get(item_id)
+    if not item:
+        return
+    recipe = MenuItemIngredient.query.filter_by(menu_item_id=item_id).all()
+    if not recipe:
+        # No recipe defined = cannot prepare = unavailable
+        item.is_available = False
+    else:
+        can_make = True
+        ingredient_ids = [r.ingredient_id for r in recipe]
+        ingredients = Ingredient.query.filter(Ingredient.id.in_(ingredient_ids)).all()
+        ing_by_id = {i.id: i for i in ingredients}
+        for r in recipe:
+            ing = ing_by_id.get(r.ingredient_id)
+            if not ing or float(ing.stock_qty) < float(r.quantity_needed):
+                can_make = False
+                break
+        item.is_available = can_make
+    db.session.commit()
+
+@admin_bp.route('/sync-availability', methods=['POST'])
+@login_required
+@admin_required
+def sync_all_availability():
+    """Bulk-sync is_available for ALL menu items based on recipe & stock."""
+    items = MenuItem.query.filter_by(is_deleted=False).all()
+    updated = 0
+    for item in items:
+        recipe = MenuItemIngredient.query.filter_by(menu_item_id=item.id).all()
+        if not recipe:
+            new_avail = False
+        else:
+            new_avail = True
+            ingredient_ids = [r.ingredient_id for r in recipe]
+            ingredients = Ingredient.query.filter(Ingredient.id.in_(ingredient_ids)).all()
+            ing_by_id = {i.id: i for i in ingredients}
+            for r in recipe:
+                ing = ing_by_id.get(r.ingredient_id)
+                if not ing or float(ing.stock_qty) < float(r.quantity_needed):
+                    new_avail = False
+                    break
+        if item.is_available != new_avail:
+            item.is_available = new_avail
+            updated += 1
+    db.session.commit()
+    flash(f'Availability synced! {updated} item(s) updated.', 'success')
+    return redirect(url_for('admin.inventory', tab='menu-items'))
 
 # ─── SUPPLIER MANAGEMENT ────────────────────────────
 @admin_bp.route('/suppliers/add', methods=['POST'])
@@ -2862,11 +3152,33 @@ def ingredient_batches():
     today = date.today()
     batches = (
         IngredientBatch.query.filter_by(is_exhausted=False)
+        .join(Ingredient)
+        .options(selectinload(IngredientBatch.ingredient))
         .order_by(IngredientBatch.purchase_date.asc())
         .limit(300)
         .all()
     )
-    return render_template('admin/batches.html', batches=batches, ingredients=ingredients, today=today)
+
+    # Get all menu categories for the dropdown
+    menu_categories = [r[0] for r in db.session.query(MenuItem.category)
+                       .filter(MenuItem.is_deleted == False)
+                       .distinct().order_by(MenuItem.category).all()]
+
+    # Pre-compute which menu categories each ingredient belongs to
+    # so the frontend can filter without a page reload
+    ing_menu_cats = {}
+    for ing in ingredients:
+        cats = db.session.query(MenuItem.category).join(MenuItemIngredient).filter(
+            MenuItemIngredient.ingredient_id == ing.id
+        ).distinct().all()
+        ing_menu_cats[ing.id] = [c[0] for c in cats]
+
+    return render_template('admin/batches.html',
+        batches=batches,
+        ingredients=ingredients,
+        today=today,
+        menu_categories=menu_categories,
+        ing_menu_cats=ing_menu_cats)
 
 @admin_bp.route('/inventory/batches/add', methods=['POST'])
 @login_required
@@ -2959,13 +3271,18 @@ def create_stock_request():
     )
     db.session.add(req)
     db.session.commit()
-    flash('Stock request submitted! Waiting for inventory staff approval.', 'info')
-    
     # Notify inventory staff
     inv_staff = User.query.filter(User.role.in_(['INVENTORY_STAFF', 'INVENTORY', 'ADMIN'])).all()
     for s in inv_staff:
-        _create_web_notification(s.id, 'New Stock Request', f'Kitchen requested {qty} units of ingredient ID {ing_id}', 'SYSTEM')
+        _create_web_notification(s.id, 'New Stock Request', f'Kitchen requested {qty} units of {req.ingredient.name}', 'SYSTEM')
 
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({
+            'success': True,
+            'message': 'Stock request submitted! Waiting for inventory staff approval.'
+        })
+
+    flash('Stock request submitted!', 'info')
     return redirect(url_for('admin.stock_requests'))
 
 @admin_bp.route('/stock-requests/<int:req_id>/fulfill', methods=['POST'])
@@ -2985,19 +3302,79 @@ def fulfill_stock_request(req_id):
     elif action == 'fulfill' and qty_fulfilled:
         ing = Ingredient.query.get(req.ingredient_id)
         if ing:
-            prev_qty = float(ing.stock_qty)
-            ing.stock_qty = max(0, prev_qty - qty_fulfilled)
-            log_inventory_change(ing.id, 'DEDUCT', qty_fulfilled, prev_qty,
-                                 f'Fulfilled kitchen stock request #{req_id}')
-            
+            # Validate against main stock
+            if float(ing.stock_qty) < qty_fulfilled:
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({'success': False, 'message': f'Insufficient warehouse stock. Current: {ing.stock_qty} {ing.unit}'})
+                flash(f'Insufficient warehouse stock. Only {ing.stock_qty} {ing.unit} available.', 'danger')
+                return redirect(url_for('admin.stock_requests'))
+
+            # 1. Deduct from Main Inventory (FIFO)
+            prev_main = float(ing.stock_qty)
+            ing.stock_qty = max(0, prev_main - qty_fulfilled)
+            log_inventory_change(ing.id, 'DEDUCT', qty_fulfilled, prev_main, f"Transfer to Kitchen (Req #{req_id})")
+
+            # 2. Add to Kitchen Side
+            prev_kitchen = float(ing.kitchen_qty or 0)
+            ing.kitchen_qty = prev_kitchen + qty_fulfilled
+            log_inventory_change(ing.id, 'ADD', qty_fulfilled, prev_kitchen, f"Received from Bodega (Req #{req_id})")
+
+            # 3. Handle FIFO Batches (Exhaust from Warehouse)
+            remaining_needed = qty_fulfilled
+            batches = IngredientBatch.query.filter_by(ingredient_id=ing.id, is_exhausted=False)\
+                                           .order_by(IngredientBatch.purchase_date.asc(), IngredientBatch.id.asc()).all()
+            for batch in batches:
+                if remaining_needed <= 0: break
+                batch_avail = float(batch.remaining_qty)
+                if batch_avail <= remaining_needed:
+                    remaining_needed -= batch_avail
+                    batch.remaining_qty = 0
+                    batch.is_exhausted = True
+                else:
+                    batch.remaining_qty = batch_avail - remaining_needed
+                    remaining_needed = 0
+
+            # 4. Mandatory Sync: Auto-update is_available for all menus using this ingredient
+            _sync_single_ingredient_availability(ing.id)
+
         req.quantity_fulfilled = qty_fulfilled
         req.fulfilled_by_id = current_user.id
         req.status = 'FULFILLED'
         db.session.commit()
         
-        _create_web_notification(req.requested_by_id, 'Stock Request Fulfilled', f'{qty_fulfilled} {ing.unit} of {ing.name} is ready.', 'SYSTEM')
-        flash(f'Stock request #{req_id} fulfilled! {qty_fulfilled} units sent to kitchen.', 'success')
-    return redirect(url_for('admin.stock_requests'))
+        _create_web_notification(req.requested_by_id, 'Stock Request Fulfilled', f'{qty_fulfilled} {ing.unit} of {ing.name} is ready for Kitchen.', 'SYSTEM')
+        
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({
+                'success': True,
+                'message': f'Stock request #{req_id} fulfilled! {qty_fulfilled} units transferred to kitchen.'
+            })
+
+        flash(f'Stock request #{req_id} fulfilled! {qty_fulfilled} units transferred to kitchen.', 'success')
+        return redirect(url_for('admin.stock_requests'))
+
+def _sync_single_ingredient_availability(ing_id):
+    """Checks kitchen stock and toggles is_available for any menu item using this ingredient."""
+    links = MenuItemIngredient.query.filter_by(ingredient_id=ing_id).all()
+    for link in links:
+        mi = MenuItem.query.get(link.menu_item_id)
+        if not mi: continue
+        
+        # Check all ingredients for this menu item to see if it can still be prepared
+        can_make = True
+        for recipe_item in mi.ingredients:
+            qty_in_kitchen = float(recipe_item.ingredient.kitchen_qty or 0)
+            qty_needed_per_serving = float(recipe_item.quantity_needed or 0)
+            
+            # If we don't even have enough for 1 single serving, it's Sold Out
+            if qty_in_kitchen < qty_needed_per_serving:
+                can_make = False
+                break
+        
+        # Update the status
+        mi.is_available = can_make
+    
+    db.session.commit()
 
 # ─── CUSTOMER CHAT MANAGEMENT ──────────────────────
 @admin_bp.route('/chats')

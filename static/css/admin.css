@@ -268,10 +268,16 @@ body.sidebar-collapsed .admin-main {
 /* ─── TABLES ─────────────────────────────────── */
 .admin-table-wrap {
     background: #ffffff;
-    border: 1px solid var(--admin-border);
-    border-radius: 14px;
+    border: 1px solid rgba(139, 99, 75, 0.1);
+    border-radius: 16px;
     overflow: hidden;
-    margin-bottom: 1.75rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 12px 35px rgba(139, 99, 75, 0.05);
+    transition: box-shadow 0.3s ease;
+}
+
+.admin-table-wrap:hover {
+    box-shadow: 0 15px 45px rgba(139, 99, 75, 0.08);
 }
 
 .admin-table-header {
@@ -295,16 +301,16 @@ body.sidebar-collapsed .admin-main {
 }
 
 .admin-table thead th {
-    padding: 0.75rem 1.35rem;
+    padding: 1rem 1.35rem;
     text-align: left;
-    font-size: 0.72rem;
-    font-weight: 600;
+    font-size: 0.75rem;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    color: #bcaaa4;
-    border-bottom: 1px solid var(--admin-border);
+    letter-spacing: 1.2px;
+    color: #a48c7e;
+    border-bottom: 2px solid rgba(139, 99, 75, 0.08);
     white-space: nowrap;
-    background: #faf6f1;
+    background: #fdfaf7;
     position: sticky;
     top: 0;
     z-index: 10;
@@ -322,8 +328,32 @@ body.sidebar-collapsed .admin-main {
     border-bottom: none;
 }
 
+.admin-table tbody tr {
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
 .admin-table tbody tr:hover {
-    background: var(--admin-surface-hover);
+    background: rgba(139, 99, 75, 0.02);
+}
+
+/* Custom Scrollbars for Admin Panels */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(139, 99, 75, 0.03);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(139, 99, 75, 0.2);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(139, 99, 75, 0.4);
 }
 
 /* ─── BADGES ─────────────────────────────────── */

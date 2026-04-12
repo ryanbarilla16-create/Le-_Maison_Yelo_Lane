@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Code | Le Maison {{ portal }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --portal-color: {{ portal_color }}; --text-muted: #6c757d; }
+        body { font-family: 'Inter', sans-serif; min-height: 100vh; display: flex; flex-direction: column; margin: 0; }
+        .auth-bg { background: url('https://i.postimg.cc/PqLbFYhr/9.webp') no-repeat center center/cover; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: -1; filter: blur(8px); transform: scale(1.1); }
+        .auth-bg::after { content: ''; position: absolute; inset: 0; background: rgba(255, 255, 255, 0.4); }
+        .admin-navbar { background: rgba(93, 64, 55, 0.98); padding: 1.2rem 2rem; color: #fff; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2); z-index: 100; }
+        .navBrand { font-family: 'Playfair Display', serif; font-weight: 800; font-size: 1.2rem; letter-spacing: 2px; text-transform: uppercase; color: #fff; text-decoration: none; display: flex; align-items: center; gap: 12px; }
+        .form-wrapper { max-width: 450px; margin: auto; padding: 3rem 2.5rem; background: #fff; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.1); position: relative; z-index: 10; }
+        .stepper { display: flex; justify-content: space-between; margin-bottom: 3rem; position: relative; }
+        .stepper::before { content: ''; position: absolute; top: 20px; left: 0; right: 0; height: 2px; background: #eee; z-index: 1; }
+        .step { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; flex: 1; }
+        .step-icon { width: 40px; height: 40px; border-radius: 50%; background: #fff; border: 2px solid #eee; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #999; margin-bottom: 8px; }
+        .step.active .step-icon, .step.completed .step-icon { background: var(--portal-color); border-color: var(--portal-color); color: #fff; }
+        .step-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #999; }
+        .step.active .step-label { color: var(--portal-color); }
+        .otp-input { width: 100%; padding: 1rem; border-radius: 12px; border: 1.5px solid #eee; font-size: 1.5rem; letter-spacing: 0.5rem; text-align: center; font-weight: bold; color: var(--portal-color); margin-bottom: 1rem; }
+        .otp-input:focus { border-color: var(--portal-color); box-shadow: 0 0 0 4px rgba(0,0,0,0.05); outline: none; }
+        .btn-portal { background: var(--portal-color); border: none; padding: 1rem; border-radius: 50px; color: #fff; font-weight: 700; width: 100%; transition: 0.3s; }
+        .btn-portal:hover { filter: brightness(0.85); transform: translateY(-2px); color: #fff; }
+        .resend-btn { background: transparent; color: var(--portal-color); border: 1.5px solid var(--portal-color); font-size: 0.85rem; padding: 0.5rem 1.5rem; border-radius: 50px; cursor: pointer; font-weight: 600; margin-top: 1rem; }
+        .resend-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .back-login { display: block; text-align: center; margin-top: 2rem; color: var(--portal-color); font-weight: 700; text-decoration: none; }
+        .alert { border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="auth-bg"></div>
+    <nav class="admin-navbar"><a class="navBrand" href="#"><i class="fas fa-coffee"></i><span>Le Maison Yelo Lane</span></a></nav>
+    <div class="container d-flex flex-grow-1">
+        <div class="form-wrapper">
+            <div class="stepper">
+                <div class="step completed"><div class="step-icon"><i class="fas fa-check"></i></div><div class="step-label">Email</div></div>
+                <div class="step active"><div class="step-icon">2</div><div class="step-label">OTP</div></div>
+                <div class="step"><div class="step-icon">3</div><div class="step-label">New Pass</div></div>
+            </div>
+            <div class="text-center mb-4">
+                <div style="background: rgba(0,0,0,0.05); width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+                    <i class="fas fa-envelope-open-text fa-2x" style="color: var(--portal-color);"></i>
+                </div>
+                <h2 style="font-family: 'Playfair Display', serif; font-weight: 800; color: #5D4037; font-size: 2rem;">Verify Your Email</h2>
+                <p style="color: var(--text-muted); font-size: 0.95rem;">An OTP was sent to <strong>{{ user.email }}</strong>.</p>
+            </div>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for category, message in messages %}
+            <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }}">{{ message }}</div>
+            {% endfor %}{% endif %}{% endwith %}
+            <form method="POST" action="{{ verify_action }}">
+                <div class="text-start mb-4">
+                    <label class="fw-bold mb-2 small text-muted">Enter 6-digit OTP</label>
+                    <input type="text" name="otp" required maxlength="6" placeholder="123456" class="otp-input">
+                    <div style="text-align: center;"><small class="text-muted">Check your email inbox for the reset code.</small></div>
+                </div>
+                <button type="submit" class="btn btn-portal">Verify Code</button>
+            </form>
+            <div class="text-center mt-4">
+                <p class="small text-muted mb-2">Didn't receive the code?</p>
+                <form action="{{ resend_action }}" method="POST">
+                    <button type="submit" id="resendBtn" class="resend-btn" {% if cooldown_remaining > 0 %}disabled{% endif %}>
+                        <i class="fas fa-redo me-1"></i>
+                        <span id="resendText">{% if cooldown_remaining > 0 %}Resend in <span id="cooldown">{{ cooldown_remaining }}</span>s{% else %}Resend Code{% endif %}</span>
+                    </button>
+                </form>
+                <a href="{{ login_url }}" class="back-login">Back to Login</a>
+            </div>
+        </div>
+    </div>
+    <script>
+        const cd = document.getElementById('cooldown');
+        const btn = document.getElementById('resendBtn');
+        const txt = document.getElementById('resendText');
+        if (cd) {
+            let remain = parseInt(cd.innerText);
+            const timer = setInterval(() => {
+                remain--;
+                cd.innerText = remain;
+                if (remain <= 0) { clearInterval(timer); btn.disabled = false; txt.innerHTML = 'Resend Code'; }
+            }, 1000);
+        }
+    </script>
+</body>
+</html>

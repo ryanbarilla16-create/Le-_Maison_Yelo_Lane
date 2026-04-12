@@ -64,12 +64,14 @@ class MenuItem(db.Model):
     
     @property
     def is_out_of_stock(self):
-        """Checks if ingredients for this menu item are sufficient"""
+        """Checks if ingredients for this menu item are sufficient.
+        Items with NO recipe defined are considered out of stock
+        because the kitchen cannot prepare them without a recipe."""
         if not self.ingredients:
-            # If no recipe is defined, we assume it's in stock unless manually disabled
-            return False
+            # No recipe = cannot be prepared = out of stock
+            return True
         for mi_ingredient in self.ingredients:
-            if mi_ingredient.ingredient.stock_qty < mi_ingredient.quantity_needed:
+            if float(mi_ingredient.ingredient.stock_qty) < float(mi_ingredient.quantity_needed):
                 return True
         return False
 
@@ -154,9 +156,11 @@ class Ingredient(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(150), nullable=False)
     unit = db.Column(db.String(30), nullable=False)  # e.g. grams, pieces, liters, kg
-    stock_qty = db.Column(db.Numeric(10, 2), default=0)
+    stock_qty = db.Column(db.Numeric(10, 2), default=0) # Main Warehouse/Bodega
+    kitchen_qty = db.Column(db.Numeric(10, 2), default=0) # On-hand at Kitchen
     reorder_level = db.Column(db.Numeric(10, 2), default=10)  # low-stock threshold
     cost_per_unit = db.Column(db.Numeric(10, 2), default=0)
+    category = db.Column(db.String(50), nullable=True, default='General') # e.g. Protein, Dairy, Pantry
     expiration_date = db.Column(db.Date, nullable=True)
     supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=get_ph_time)

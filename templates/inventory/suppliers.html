@@ -1,0 +1,75 @@
+{% extends "layouts/staff_layout.html" %}
+
+{% block title %}Supplier Directory — Le Maison{% endblock %}
+
+{% block portal_sub %}Inventory Portal{% endblock %}
+{% block portal_role %}Inventory Staff{% endblock %}
+{% block logout_url %}{{ url_for('inventory_portal.inventory_logout') }}{% endblock %}
+
+{% block sidebar_nav %}
+    <div class="nav-section-label">Workspace</div>
+    <a class="nav-item" href="{{ url_for('inventory_portal.inventory_dashboard') }}">
+        <i class="fas fa-boxes-stacked"></i> Stock Levels
+    </a>
+    <a class="nav-item" href="{{ url_for('inventory_portal.inventory_full') }}">
+        <i class="fas fa-warehouse"></i> Full Inventory
+    </a>
+    <a class="nav-item active" href="{{ url_for('inventory_portal.inventory_suppliers') }}">
+        <i class="fas fa-truck"></i> Suppliers
+    </a>
+    <a class="nav-item" href="{{ url_for('inventory_portal.inventory_waste_records') }}">
+        <i class="fas fa-trash-can"></i> Waste Log
+    </a>
+{% endblock %}
+
+{% block page_title %}Supplier Directory{% endblock %}
+{% block page_subtitle %}Manage and contact verified ingredient providers{% endblock %}
+
+{% block extra_style %}
+    .supplier-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:24px; }
+    .supplier-card {
+        background:var(--card); border:1px solid var(--card-border); border-radius:22px;
+        padding:28px; position:relative; overflow:hidden;
+    }
+    .supplier-card::before {
+        content:''; position:absolute; top:0; left:0; width:6px; height:100%;
+        background:var(--primary); opacity:0.6;
+    }
+    .sup-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+    .sup-name { font-size:1.25rem; font-weight:700; color:var(--primary); }
+    .sup-initial { width:40px; height:40px; background:rgba(93,64,55,0.1); color:var(--primary); border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:800; }
+    
+    .sup-info { margin-bottom:12px; display:flex; align-items:center; gap:12px; font-size:0.9rem; color:var(--text); }
+    .sup-info i { width:16px; color:var(--muted); font-size:0.85rem; }
+    
+    .sup-cat { display:inline-block; margin-top:15px; background:var(--bg); color:var(--primary); padding:4px 12px; border-radius:50px; font-size:0.75rem; font-weight:700; border:1px solid rgba(93,64,55,0.08); }
+{% endblock %}
+
+{% block content %}
+<div class="supplier-grid">
+    {% for sup in suppliers %}
+    <div class="supplier-card">
+        <div class="sup-header">
+            <div class="sup-name">{{ sup.name }}</div>
+            <div class="sup-initial">{{ sup.name[:1] }}</div>
+        </div>
+        <div class="sup-info">
+            <i class="fas fa-user"></i> {{ sup.contact_person or 'No Contact Person' }}
+        </div>
+        <div class="sup-info">
+            <i class="fas fa-phone"></i> {{ sup.phone or 'N/A' }}
+        </div>
+        <div class="sup-info">
+            <i class="fas fa-envelope"></i> {{ sup.email or 'N/A' }}
+        </div>
+        <div class="sup-info" style="align-items:flex-start;">
+            <i class="fas fa-location-dot" style="margin-top:4px;"></i> 
+            <span style="font-size:0.8rem; line-height:1.4;">{{ sup.address or 'No address provided' }}</span>
+        </div>
+        {% if sup.category %}
+        <span class="sup-cat">{{ sup.category }}</span>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

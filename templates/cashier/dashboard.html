@@ -1,321 +1,142 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cashier Dashboard — Le Maison</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #5D4037;
-            --primary-light: #795548;
-            --primary-dark: #3E2723;
-            --accent: #FFCC80;
-            --sidebar-w: 260px;
-            --bg: #F5EFE8;
-            --card: rgba(255,255,255,0.72);
-            --card-border: rgba(255,255,255,0.9);
-            --text: #3E2723;
-            --muted: #8D6E63;
-            --success: #2e7d32;
-            --warning: #e65100;
-            --danger: #c62828;
-        }
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text); display:flex; min-height:100vh; }
+{% extends "layouts/staff_layout.html" %}
 
-        /* ── Sidebar ── */
-        .sidebar {
-            width: var(--sidebar-w);
-            background: linear-gradient(160deg, #3E2723 0%, #5D4037 60%, #6D4C41 100%);
-            position: fixed; top:0; left:0; height:100vh;
-            display:flex; flex-direction:column;
-            box-shadow: 4px 0 24px rgba(62,39,35,0.25);
-            z-index: 100;
-        }
-        .sidebar-brand {
-            padding: 28px 24px 22px;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-        }
-        .sidebar-brand .brand-name {
-            font-family:'Playfair Display',serif;
-            font-size:1.25rem; color:#fff; margin-bottom:4px;
-        }
-        .sidebar-brand .brand-sub {
-            font-size:0.72rem; color:rgba(255,255,255,0.5);
-            letter-spacing:1.5px; text-transform:uppercase;
-        }
+{% block title %}Cashier Dashboard — Le Maison{% endblock %}
 
-        .sidebar-user {
-            margin:20px 16px;
-            padding:14px 16px;
-            background:rgba(255,255,255,0.07);
-            border-radius:14px;
-            display:flex; align-items:center; gap:12px;
-        }
-        .avatar {
-            width:38px; height:38px; border-radius:50%;
-            background:linear-gradient(135deg, var(--accent), #e5a040);
-            display:flex; align-items:center; justify-content:center;
-            font-weight:700; font-size:0.9rem; color:#3E2723; flex-shrink:0;
-        }
-        .sidebar-user .user-info .name { font-size:0.88rem; font-weight:600; color:#fff; }
-        .sidebar-user .user-info .role  { font-size:0.7rem; color:rgba(255,255,255,0.45); letter-spacing:1px; text-transform:uppercase; }
+{% block portal_sub %}Cashier Portal{% endblock %}
+{% block portal_role %}Cashier{% endblock %}
+{% block logout_url %}{{ url_for('cashier_portal.cashier_logout') }}{% endblock %}
 
-        .sidebar-nav { flex:1; padding:8px 12px; overflow-y:auto; }
-        .nav-section-label {
-            font-size:0.65rem; font-weight:600; color:rgba(255,255,255,0.3);
-            letter-spacing:1.8px; text-transform:uppercase;
-            padding:16px 12px 8px;
-        }
-        .nav-item {
-            display:flex; align-items:center; gap:12px;
-            padding:12px 14px; border-radius:12px;
-            color:rgba(255,255,255,0.65); font-size:0.88rem; font-weight:500;
-            text-decoration:none; transition:all 0.25s; margin-bottom:2px;
-            cursor:pointer;
-        }
-        .nav-item i { width:18px; text-align:center; font-size:0.85rem; }
-        .nav-item:hover { background:rgba(255,255,255,0.1); color:#fff; }
-        .nav-item.active {
-            background:rgba(255,204,128,0.18);
-            color:var(--accent); font-weight:600;
-        }
-        .nav-item.active i { color:var(--accent); }
+{% block sidebar_nav %}
+    <div class="nav-section-label">Workspace</div>
+    <a class="nav-item active" href="{{ url_for('cashier_portal.cashier_dashboard') }}">
+        <i class="fas fa-cash-register"></i> Active Orders
+    </a>
+    <a class="nav-item" href="{{ url_for('cashier_portal.cashier_orders_history') }}">
+        <i class="fas fa-history"></i> Order History
+    </a>
+    <div class="nav-section-label">Quick</div>
+    <a class="nav-item" href="{{ url_for('main.menu_page') }}">
+        <i class="fas fa-utensils"></i> Menu
+    </a>
+{% endblock %}
 
-        .sidebar-footer {
-            padding: 16px 12px;
-            border-top:1px solid rgba(255,255,255,0.06);
-        }
-        .btn-logout {
-            display:flex; align-items:center; gap:10px;
-            width:100%; padding:11px 14px;
-            background:rgba(198,40,40,0.15); border:1px solid rgba(198,40,40,0.2);
-            border-radius:12px; color:rgba(255,130,120,0.9);
-            font-size:0.85rem; font-weight:600; cursor:pointer; transition:all 0.25s;
-            text-decoration:none;
-        }
-        .btn-logout:hover { background:rgba(198,40,40,0.28); color:#ff8a80; }
+{% block page_title %}Cashier Dashboard{% endblock %}
+{% block page_subtitle %}Manage and process customer orders in real time{% endblock %}
 
-        /* ── Main ── */
-        .main { margin-left:var(--sidebar-w); flex:1; padding:32px 36px; min-height:100vh; }
+{% block extra_style %}
+    .stats-row { display:grid; grid-template-columns:repeat(3, 1fr); gap:24px; margin-bottom:32px; }
+    .stat-card {
+        background:var(--card); backdrop-filter:blur(18px);
+        border:1px solid var(--card-border); border-radius:24px;
+        padding:28px 24px; box-shadow:0 8px 32px rgba(93,64,55,0.06);
+        position:relative; overflow:hidden; transition:all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        display:flex; flex-direction:column; align-items:center; text-align:center;
+    }
+    .stat-card:hover { transform:translateY(-5px); box-shadow:0 15px 45px rgba(93,64,55,0.1); }
+    
+    .stat-card .icon-wrap {
+        width:54px; height:54px; border-radius:18px;
+        display:flex; align-items:center; justify-content:center;
+        font-size:1.4rem; margin-bottom:18px;
+        transition:transform 0.4s;
+    }
+    .stat-card:hover .icon-wrap { transform:scale(1.1) rotate(5deg); }
+    
+    .stat-card .stat-value { font-size:2.2rem; font-weight:700; color:var(--text); line-height:1; margin-bottom:6px; }
+    .stat-card .stat-label { font-size:0.75rem; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:1px; }
+    
+    .stat-card .icon-wrap.brown { background:rgba(93,64,55,0.08); color:var(--primary); }
+    .stat-card .icon-wrap.green { background:rgba(46,125,50,0.08); color:var(--success); }
+    .stat-card .icon-wrap.orange { background:rgba(230,81,0,0.08); color:var(--warning); }
+    
+    .glow-line { position:absolute; top:0; left:0; right:0; height:4px; opacity:0.6; }
+    .glow-brown { background:linear-gradient(90deg, var(--primary), var(--accent)); }
+    .glow-green { background:linear-gradient(90deg, #2e7d32, #81c784); }
+    .glow-orange { background:linear-gradient(90deg, #e65100, #ffcc00); }
 
-        .topbar {
-            display:flex; align-items:center; justify-content:space-between;
-            margin-bottom:32px;
-        }
-        .topbar-title h1 { font-size:1.5rem; font-weight:700; color:var(--text); }
-        .topbar-title p { font-size:0.85rem; color:var(--muted); margin-top:2px; }
-        .topbar-right { display:flex; align-items:center; gap:12px; }
-        .clock { font-size:1.5rem; font-weight:700; color:var(--primary); font-family:'Playfair Display',serif; }
-        .date-badge { background:var(--card); border:1px solid var(--card-border); border-radius:10px; padding:6px 14px; font-size:0.8rem; color:var(--muted); backdrop-filter:blur(10px); }
+    .section-header .badge {
+        background:rgba(93,64,55,0.08); color:var(--primary);
+        border-radius:50px; padding:4px 14px;
+        font-size:0.72rem; font-weight:700;
+    }
+    
+    .order-id { font-weight:700; color:var(--primary); font-family:'Courier New', monospace; letter-spacing:1px; }
+    .order-amount { font-weight:700; color:var(--primary); }
 
-        /* ── Stat cards ── */
-        .stats-row { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; margin-bottom:28px; }
-        .stat-card {
-            background:var(--card);
-            backdrop-filter:blur(16px);
-            border:1px solid var(--card-border);
-            border-radius:20px;
-            padding:24px 22px;
-            box-shadow:0 6px 24px rgba(93,64,55,0.07);
-            position:relative; overflow:hidden;
-            transition:transform 0.3s, box-shadow 0.3s;
-        }
-        .stat-card:hover { transform:translateY(-3px); box-shadow:0 12px 32px rgba(93,64,55,0.12); }
-        .stat-card .icon-wrap {
-            width:48px; height:48px; border-radius:14px;
-            display:flex; align-items:center; justify-content:center;
-            font-size:1.2rem; margin-bottom:16px;
-        }
-        .stat-card .stat-value { font-size:2rem; font-weight:700; line-height:1; margin-bottom:4px; }
-        .stat-card .stat-label { font-size:0.8rem; color:var(--muted); font-weight:500; }
-        .stat-card .icon-wrap.brown { background:rgba(93,64,55,0.1); color:var(--primary); }
-        .stat-card .icon-wrap.green { background:rgba(46,125,50,0.1); color:var(--success); }
-        .stat-card .icon-wrap.orange { background:rgba(230,81,0,0.1); color:var(--warning); }
-        .glow-line { position:absolute; bottom:0; left:0; right:0; height:3px; border-radius:0 0 20px 20px; }
-        .glow-brown { background:linear-gradient(90deg, var(--primary), var(--accent)); }
-        .glow-green  { background:linear-gradient(90deg, #2e7d32, #81c784); }
-        .glow-orange { background:linear-gradient(90deg, #e65100, #ffcc02); }
+    .pill.pending   { background:rgba(230,81,0,0.08);  color:#e65100; border:1px solid rgba(230,81,0,0.1); }
+    .pill.preparing { background:rgba(25,118,210,0.08); color:#1976d2; border:1px solid rgba(25,118,210,0.1); }
+    .pill.ready     { background:rgba(46,125,50,0.08);  color:#2e7d32; border:1px solid rgba(46,125,50,0.1); }
+    .pill.completed { background:rgba(93,64,55,0.08);  color:var(--primary); border:1px solid rgba(93,64,55,0.1); }
+    .pill.unpaid    { background:rgba(198,40,40,0.08);  color:var(--danger); border:1px solid rgba(198,40,40,0.1); }
+    .pill.paid      { background:rgba(46,125,50,0.08);  color:var(--success); border:1px solid rgba(46,125,50,0.1); }
+    
+    .empty-state { text-align:center; padding:80px 20px; color:var(--muted); }
+    .empty-state i { font-size:3rem; opacity:0.15; margin-bottom:20px; display:block; animation: breathe 3s ease-in-out infinite; }
+    @keyframes breathe { 0%, 100% { transform: scale(1); opacity:0.1; } 50% { transform: scale(1.1); opacity:0.25; } }
+{% endblock %}
 
-        /* ── Orders table ── */
-        .section-card {
-            background:var(--card); backdrop-filter:blur(16px);
-            border:1px solid var(--card-border); border-radius:20px;
-            box-shadow:0 6px 24px rgba(93,64,55,0.07);
-            overflow:hidden;
-        }
-        .section-header {
-            padding:20px 24px;
-            border-bottom:1px solid rgba(93,64,55,0.06);
-            display:flex; align-items:center; justify-content:space-between;
-        }
-        .section-header h2 { font-size:1rem; font-weight:700; }
-        .section-header .badge {
-            background:rgba(93,64,55,0.08); color:var(--primary);
-            border-radius:50px; padding:4px 12px;
-            font-size:0.75rem; font-weight:600;
-        }
-
-        table { width:100%; border-collapse:collapse; }
-        thead th {
-            padding:12px 20px;
-            font-size:0.73rem; font-weight:600; color:var(--muted);
-            letter-spacing:0.8px; text-transform:uppercase;
-            text-align:left; background:rgba(245,239,232,0.6);
-            border-bottom:1px solid rgba(93,64,55,0.06);
-        }
-        tbody tr { transition:background 0.2s; }
-        tbody tr:hover { background:rgba(245,239,232,0.5); }
-        tbody td { padding:14px 20px; font-size:0.88rem; border-bottom:1px solid rgba(93,64,55,0.04); }
-
-        .order-id { font-weight:700; color:var(--primary); font-size:0.82rem; }
-        .order-name { font-weight:500; }
-        .order-amount { font-weight:700; color:var(--primary); }
-
-        .pill {
-            display:inline-flex; align-items:center; gap:5px;
-            padding:4px 12px; border-radius:50px;
-            font-size:0.72rem; font-weight:600; letter-spacing:0.3px;
-        }
-        .pill.pending  { background:rgba(230,81,0,0.1);  color:#e65100; }
-        .pill.preparing{ background:rgba(25,118,210,0.1); color:#1976d2; }
-        .pill.ready    { background:rgba(46,125,50,0.1);  color:#2e7d32; }
-        .pill.completed{ background:rgba(93,64,55,0.09);  color:var(--primary); }
-        .pill.unpaid   { background:rgba(198,40,40,0.1);  color:var(--danger); }
-        .pill.paid     { background:rgba(46,125,50,0.1);  color:var(--success); }
-
-        .pill-dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
-
-        .empty-state {
-            text-align:center; padding:60px 20px;
-            color:var(--muted);
-        }
-        .empty-state i { font-size:2.5rem; opacity:0.25; margin-bottom:12px; display:block; }
-        .empty-state p { font-size:0.9rem; }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar { width:5px; }
-        ::-webkit-scrollbar-thumb { background:rgba(93,64,55,0.2); border-radius:4px; }
-    </style>
-</head>
-<body>
-
-<!-- ── Sidebar ── -->
-<aside class="sidebar">
-    <div class="sidebar-brand">
-        <div class="brand-name">Le Maison</div>
-        <div class="brand-sub">Cashier Portal</div>
-    </div>
-
-    <div class="sidebar-user">
-        <div class="avatar">{{ portal_name[:1] if portal_name else 'C' }}</div>
-        <div class="user-info">
-            <div class="name">{{ portal_name }}</div>
-            <div class="role">Cashier</div>
-        </div>
-    </div>
-
-    <nav class="sidebar-nav">
-        <div class="nav-section-label">Workspace</div>
-        <a class="nav-item active" href="{{ url_for('cashier_portal.cashier_dashboard') }}">
-            <i class="fas fa-cash-register"></i> Active Orders
-        </a>
-        <a class="nav-item" href="/admin/orders">
-            <i class="fas fa-history"></i> Order History
-        </a>
-        <div class="nav-section-label">Quick</div>
-        <a class="nav-item" href="/menu">
-            <i class="fas fa-utensils"></i> Menu
-        </a>
-    </nav>
-
-    <div class="sidebar-footer">
-        <a class="btn-logout" href="{{ url_for('cashier_portal.cashier_logout') }}">
-            <i class="fas fa-sign-out-alt"></i> Sign Out
-        </a>
-    </div>
-</aside>
-
-<!-- ── Main ── -->
-<main class="main">
-    <div class="topbar">
-        <div class="topbar-title">
-            <h1>Cashier Dashboard</h1>
-            <p>Manage and process customer orders in real time</p>
-        </div>
-        <div class="topbar-right">
-            <div class="date-badge" id="date-display"></div>
-            <div class="clock" id="clock-display">--:--</div>
-        </div>
-    </div>
-
-    <!-- Stats -->
+{% block content %}
     <div class="stats-row">
         <div class="stat-card">
-            <div class="icon-wrap brown"><i class="fas fa-fire-flame-curved"></i></div>
-            <div class="stat-value" style="color:var(--primary);">{{ active_orders }}</div>
-            <div class="stat-label">Active Orders</div>
             <div class="glow-line glow-brown"></div>
+            <div class="icon-wrap brown"><i class="fas fa-fire-flame-curved"></i></div>
+            <div class="stat-value">{{ active_orders }}</div>
+            <div class="stat-label">Active Orders</div>
         </div>
         <div class="stat-card">
-            <div class="icon-wrap green"><i class="fas fa-check-circle"></i></div>
-            <div class="stat-value" style="color:var(--success);">{{ completed_today }}</div>
-            <div class="stat-label">Completed Today</div>
             <div class="glow-line glow-green"></div>
+            <div class="icon-wrap green"><i class="fas fa-check-circle"></i></div>
+            <div class="stat-value">{{ completed_today }}</div>
+            <div class="stat-label">Completed Today</div>
         </div>
         <div class="stat-card">
-            <div class="icon-wrap orange"><i class="fas fa-money-bill-wave"></i></div>
-            <div class="stat-value" style="color:var(--warning);">{{ unpaid_orders }}</div>
-            <div class="stat-label">Awaiting Payment</div>
             <div class="glow-line glow-orange"></div>
+            <div class="icon-wrap orange"><i class="fas fa-money-bill-wave"></i></div>
+            <div class="stat-value">{{ unpaid_orders }}</div>
+            <div class="stat-label">Unpaid Billings</div>
         </div>
     </div>
 
-    <!-- Orders table -->
     <div class="section-card">
         <div class="section-header">
-            <h2><i class="fas fa-list-check" style="color:var(--primary);margin-right:8px;"></i>Live Order Queue</h2>
-            <span class="badge">{{ orders|length }} order{{ 's' if orders|length != 1 else '' }}</span>
+            <h2><i class="fas fa-layer-group" style="color:var(--primary);margin-right:10px;opacity:0.7;"></i>Live Order Queue</h2>
+            <span class="badge">{{ orders|length }} Active Job{{ 's' if orders|length != 1 else '' }}</span>
         </div>
 
         {% if orders %}
         <table>
             <thead>
                 <tr>
-                    <th>Order ID</th>
-                    <th>Customer</th>
-                    <th>Total</th>
-                    <th>Dining Option</th>
-                    <th>Status</th>
+                    <th>Ref ID</th>
+                    <th>Customer Name</th>
+                    <th>Order Total</th>
+                    <th>Service</th>
+                    <th>Order Status</th>
                     <th>Payment</th>
-                    <th>Time</th>
+                    <th>Created</th>
                 </tr>
             </thead>
             <tbody>
                 {% for order in orders %}
                 <tr>
                     <td><span class="order-id">#{{ '%04d' % order.id }}</span></td>
-                    <td class="order-name">
+                    <td style="font-weight:500;">
                         {% if order.user %}
-                            {{ order.user.first_name }} {{ order.user.last_name }}
+                            <i class="fas fa-user-circle" style="opacity:0.3; margin-right:6px;"></i> {{ order.user.first_name }} {{ order.user.last_name }}
                         {% elif order.customer_name %}
-                            {{ order.customer_name }}
+                            <i class="fas fa-user-tag" style="opacity:0.3; margin-right:6px;"></i> {{ order.customer_name }}
                         {% else %}
-                            Walk-in
+                            <i class="fas fa-walking" style="opacity:0.3; margin-right:6px;"></i> Walk-in Guest
                         {% endif %}
                     </td>
                     <td class="order-amount">₱{{ "%.2f"|format(order.total_amount|float) }}</td>
                     <td>
-                        <span class="pill" style="background:rgba(93,64,55,0.07); color:var(--muted);">
-                            <i class="fas fa-{% if order.dining_option == 'DINE_IN' %}utensils{% elif order.dining_option == 'TAKE_OUT' %}bag-shopping{% else %}truck{% endif %}" style="font-size:0.65rem;"></i>
+                        <span class="pill" style="background:rgba(93,64,55,0.04); color:var(--muted); font-size:0.68rem;">
                             {{ order.dining_option.replace('_', ' ').title() }}
                         </span>
                     </td>
                     <td>
                         <span class="pill {{ order.status.lower() }}">
-                            <span class="pill-dot"></span>
                             {{ order.status.title() }}
                         </span>
                     </td>
@@ -324,8 +145,8 @@
                             {{ order.payment_status.title() }}
                         </span>
                     </td>
-                    <td style="color:var(--muted); font-size:0.8rem;">
-                        {{ order.created_at.strftime('%I:%M %p') if order.created_at else '—' }}
+                    <td style="color:var(--muted); font-size:0.8rem; font-weight:500;">
+                        {{ order.created_at.strftime('%I:%M %p') if order.created_at else 'N/A' }}
                     </td>
                 </tr>
                 {% endfor %}
@@ -333,25 +154,19 @@
         </table>
         {% else %}
         <div class="empty-state">
-            <i class="fas fa-mug-hot"></i>
-            <p>No active orders right now. Enjoy the calm!</p>
+            <i class="fas fa-cloud"></i>
+            <p style="font-size:1.1rem; font-weight:300;">Queue is empty.</p>
+            <p style="font-size:0.85rem; margin-top:5px; opacity:0.8;">Everything is caught up. Time for a coffee break?</p>
         </div>
         {% endif %}
     </div>
-</main>
+{% endblock %}
 
+{% block extra_script %}
 <script>
-    function tick() {
-        const now = new Date();
-        document.getElementById('clock-display').textContent =
-            now.toLocaleTimeString('en-PH', { hour:'2-digit', minute:'2-digit' });
-        document.getElementById('date-display').textContent =
-            now.toLocaleDateString('en-PH', { weekday:'short', month:'short', day:'numeric' });
-    }
-    tick(); setInterval(tick, 1000);
-
-    // Auto-refresh every 30s
-    setTimeout(() => location.reload(), 30000);
+    // Soothing refresh logic - every 45 seconds to keep it relaxing
+    setTimeout(() => {
+        location.reload();
+    }, 45000);
 </script>
-</body>
-</html>
+{% endblock %}

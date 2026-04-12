@@ -1,175 +1,70 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kitchen Dashboard — Le Maison</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #BF360C;
-            --primary-light: #E64A19;
-            --accent: #FFCC80;
-            --sidebar-w: 260px;
-            --bg: #FBF0E9;
-            --card: rgba(255,255,255,0.72);
-            --card-border: rgba(255,255,255,0.9);
-            --text: #3E1F00;
-            --muted: #A1887F;
-            --success: #2e7d32;
-            --danger: #c62828;
-        }
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text); display:flex; min-height:100vh; }
+{% extends "layouts/staff_layout.html" %}
 
-        .sidebar {
-            width:var(--sidebar-w); background:linear-gradient(160deg, #3E1F00 0%, #BF360C 60%, #D84315 100%);
-            position:fixed; top:0; left:0; height:100vh; display:flex; flex-direction:column;
-            box-shadow:4px 0 24px rgba(62,31,0,0.3); z-index:100;
-        }
-        .sidebar-brand { padding:28px 24px 22px; border-bottom:1px solid rgba(255,255,255,0.08); }
-        .sidebar-brand .brand-name { font-family:'Playfair Display',serif; font-size:1.25rem; color:#fff; margin-bottom:4px; }
-        .sidebar-brand .brand-sub { font-size:0.72rem; color:rgba(255,255,255,0.5); letter-spacing:1.5px; text-transform:uppercase; }
-        .sidebar-user { margin:20px 16px; padding:14px 16px; background:rgba(255,255,255,0.07); border-radius:14px; display:flex; align-items:center; gap:12px; }
-        .avatar { width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg, var(--accent), #e5a040); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.9rem; color:#3E1F00; flex-shrink:0; }
-        .sidebar-user .user-info .name { font-size:0.88rem; font-weight:600; color:#fff; }
-        .sidebar-user .user-info .role  { font-size:0.7rem; color:rgba(255,255,255,0.45); letter-spacing:1px; text-transform:uppercase; }
-        .sidebar-nav { flex:1; padding:8px 12px; overflow-y:auto; }
-        .nav-section-label { font-size:0.65rem; font-weight:600; color:rgba(255,255,255,0.3); letter-spacing:1.8px; text-transform:uppercase; padding:16px 12px 8px; }
-        .nav-item { display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:12px; color:rgba(255,255,255,0.65); font-size:0.88rem; font-weight:500; text-decoration:none; transition:all 0.25s; margin-bottom:2px; }
-        .nav-item i { width:18px; text-align:center; font-size:0.85rem; }
-        .nav-item:hover { background:rgba(255,255,255,0.1); color:#fff; }
-        .nav-item.active { background:rgba(255,204,128,0.18); color:var(--accent); font-weight:600; }
-        .sidebar-footer { padding:16px 12px; border-top:1px solid rgba(255,255,255,0.06); }
-        .btn-logout { display:flex; align-items:center; gap:10px; width:100%; padding:11px 14px; background:rgba(198,40,40,0.15); border:1px solid rgba(198,40,40,0.2); border-radius:12px; color:rgba(255,130,120,0.9); font-size:0.85rem; font-weight:600; cursor:pointer; transition:all 0.25s; text-decoration:none; }
-        .btn-logout:hover { background:rgba(198,40,40,0.28); color:#ff8a80; }
+{% block title %}Kitchen Order Board — Le Maison{% endblock %}
 
-        .main { margin-left:var(--sidebar-w); flex:1; padding:32px 36px; }
-        .topbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:32px; }
-        .topbar-title h1 { font-size:1.5rem; font-weight:700; }
-        .topbar-title p { font-size:0.85rem; color:var(--muted); margin-top:2px; }
-        .clock { font-size:1.5rem; font-weight:700; color:var(--primary); font-family:'Playfair Display',serif; }
-        .date-badge { background:var(--card); border:1px solid var(--card-border); border-radius:10px; padding:6px 14px; font-size:0.8rem; color:var(--muted); backdrop-filter:blur(10px); }
+{% block portal_sub %}Kitchen Portal{% endblock %}
+{% block portal_role %}Kitchen Staff{% endblock %}
+{% block logout_url %}{{ url_for('kitchen_portal.kitchen_logout') }}{% endblock %}
 
-        /* Kanban columns */
-        .kanban { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
-        .col-header {
-            display:flex; align-items:center; gap:10px;
-            margin-bottom:16px;
-        }
-        .col-header .col-icon { width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:0.9rem; }
-        .col-header .col-title { font-weight:700; font-size:0.95rem; }
-        .col-header .col-count { margin-left:auto; background:var(--card); border:1px solid var(--card-border); border-radius:50px; padding:3px 12px; font-size:0.75rem; font-weight:600; }
+{% block sidebar_nav %}
+    <div class="nav-section-label">Workspace</div>
+    <a class="nav-item active" href="{{ url_for('kitchen_portal.kitchen_dashboard') }}">
+        <i class="fas fa-fire"></i> Order Board
+    </a>
+    <a class="nav-item" href="{{ url_for('kitchen_portal.kitchen_pantry') }}">
+        <i class="fas fa-archive"></i> Kitchen Pantry
+    </a>
+    <div class="nav-section-label">Reference</div>
+    <a class="nav-item" href="{{ url_for('main.menu_page') }}">
+        <i class="fas fa-utensils"></i> Menu Items
+    </a>
+{% endblock %}
 
-        .col-pending .col-icon   { background:rgba(230,81,0,0.12); color:#e65100; }
-        .col-preparing .col-icon { background:rgba(25,118,210,0.1); color:#1976d2; }
-        .col-ready .col-icon     { background:rgba(46,125,50,0.1);  color:#2e7d32; }
+{% block page_title %}Kitchen Dashboard{% endblock %}
+{% block page_subtitle %}Live preparation queue and production tracking{% endblock %}
 
-        .order-card {
-            background:var(--card); backdrop-filter:blur(12px);
-            border:1px solid var(--card-border); border-radius:16px;
-            padding:18px 18px 14px; margin-bottom:14px;
-            box-shadow:0 4px 16px rgba(191,54,12,0.06);
-            transition:transform 0.25s, box-shadow 0.25s;
-        }
-        .order-card:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(191,54,12,0.11); }
-        .order-card-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
-        .order-num { font-weight:700; font-size:0.9rem; color:var(--primary); }
-        .order-time { font-size:0.72rem; color:var(--muted); }
-        .order-customer { font-size:0.82rem; color:var(--muted); margin-bottom:10px; }
-        .order-customer i { font-size:0.75rem; margin-right:4px; }
-        .order-items { margin-bottom:12px; }
-        .order-item-row { font-size:0.82rem; color:var(--text); padding:3px 0; display:flex; justify-content:space-between; }
-        .order-item-row .qty { font-weight:700; color:var(--primary); }
-        .order-divider { border:none; border-top:1px solid rgba(191,54,12,0.08); margin:8px 0; }
-        .order-total { font-weight:700; font-size:0.9rem; color:var(--primary); text-align:right; }
-        .dining-tag { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:50px; font-size:0.7rem; font-weight:600; background:rgba(191,54,12,0.07); color:var(--primary); margin-bottom:10px; }
+{% block extra_style %}
+    .kanban-board { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; align-items:start; }
+    .kanban-col { background:rgba(255,255,255,0.4); border-radius:18px; padding:16px; min-height:70vh; border:1px solid var(--card-border); }
+    .col-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; padding:0 8px; }
+    .col-header h3 { font-size:0.9rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; }
+    .col-count { background:var(--primary); color:#fff; font-size:0.7rem; padding:2px 8px; border-radius:50px; }
 
-        .action-btns { display:flex; gap:8px; margin-top:10px; }
-        .btn-action {
-            flex:1; padding:9px; border-radius:10px; border:none;
-            font-family:'Outfit',sans-serif; font-size:0.8rem; font-weight:600;
-            cursor:pointer; transition:all 0.25s; display:flex; align-items:center; justify-content:center; gap:6px;
-        }
-        .btn-prepare { background:rgba(25,118,210,0.1); color:#1565c0; border:1px solid rgba(25,118,210,0.18); }
-        .btn-prepare:hover { background:rgba(25,118,210,0.18); }
-        .btn-ready   { background:rgba(46,125,50,0.1); color:#1b5e20; border:1px solid rgba(46,125,50,0.18); }
-        .btn-ready:hover { background:rgba(46,125,50,0.18); }
-        .btn-done    { background:rgba(93,64,55,0.08); color:#4e342e; border:1px solid rgba(93,64,55,0.15); }
-        .btn-done:hover { background:rgba(93,64,55,0.16); }
+    .order-card {
+        background:var(--card); border:1px solid var(--card-border); border-radius:14px;
+        padding:16px; margin-bottom:12px; box-shadow:0 4px 12px rgba(62,39,35,0.05);
+        transition:transform 0.2s;
+    }
+    .order-card:hover { transform:translateY(-2px); box-shadow:0 6px 16px rgba(62,39,35,0.1); }
+    .order-card .order-meta { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+    .order-card .order-id { font-weight:700; font-size:0.85rem; color:var(--primary); }
+    .order-card .time { font-size:0.75rem; color:var(--muted); }
 
-        .empty-col { text-align:center; padding:40px 20px; color:var(--muted); font-size:0.85rem; }
-        .empty-col i { font-size:2rem; opacity:0.2; display:block; margin-bottom:10px; }
+    .order-items { list-style:none; margin-bottom:14px; }
+    .order-items li { display:flex; align-items:center; gap:8px; padding:4px 0; font-size:0.9rem; font-weight:500; }
+    .order-items .qty { width:24px; font-weight:700; color:var(--primary); }
 
-        ::-webkit-scrollbar { width:5px; }
-        ::-webkit-scrollbar-thumb { background:rgba(191,54,12,0.2); border-radius:4px; }
-    </style>
-</head>
-<body>
+    .btn-action {
+        width:100%; padding:10px; border-radius:10px; border:none;
+        font-weight:700; font-size:0.85rem; cursor:pointer; transition:all 0.2s;
+        display:flex; align-items:center; justify-content:center; gap:8px;
+    }
+    .btn-start { background:rgba(93,64,55,0.1); color:var(--primary); }
+    .btn-start:hover { background:var(--primary); color:#fff; }
+    .btn-ready { background:rgba(46,125,50,0.1); color:#2e7d32; }
+    .btn-ready:hover { background:#2e7d32; color:#fff; }
+{% endblock %}
 
-<aside class="sidebar">
-    <div class="sidebar-brand">
-        <div class="brand-name">Le Maison</div>
-        <div class="brand-sub">Kitchen Portal</div>
-    </div>
-    <div class="sidebar-user">
-        <div class="avatar">{{ portal_name[:1] if portal_name else 'K' }}</div>
-        <div class="user-info">
-            <div class="name">{{ portal_name }}</div>
-            <div class="role">Kitchen Staff</div>
-        </div>
-    </div>
-    <nav class="sidebar-nav">
-        <div class="nav-section-label">Workspace</div>
-        <a class="nav-item active" href="{{ url_for('kitchen_portal.kitchen_dashboard') }}">
-            <i class="fas fa-fire"></i> Order Board
-        </a>
-        <div class="nav-section-label">Reference</div>
-        <a class="nav-item" href="/menu">
-            <i class="fas fa-utensils"></i> Menu Items
-        </a>
-    </nav>
-    <div class="sidebar-footer">
-        <a class="btn-logout" href="{{ url_for('kitchen_portal.kitchen_logout') }}">
-            <i class="fas fa-sign-out-alt"></i> Sign Out
-        </a>
-    </div>
-</aside>
-
-<main class="main">
-    <div class="topbar">
-        <div class="topbar-title">
-            <h1>Kitchen Order Board</h1>
-            <p>Real-time view of all in-progress orders</p>
-        </div>
-        <div style="display:flex;align-items:center;gap:12px;">
-            <div class="date-badge" id="date-display"></div>
-            <div class="clock" id="clock-display">--:--</div>
-        </div>
-    </div>
-
-    <div class="kanban">
-        <!-- PENDING -->
-        <div class="col-pending">
+{% block content %}
+    <div class="kanban-board">
+        <!-- Pending -->
+        <div class="kanban-col">
             <div class="col-header">
-                <div class="col-icon"><i class="fas fa-hourglass-start"></i></div>
-                <span class="col-title">Incoming</span>
+                <h3 style="color:var(--muted);"><i class="fas fa-clock me-2"></i>Pending</h3>
                 <span class="col-count">{{ pending_orders|length }}</span>
             </div>
             {% for order in pending_orders %}
             <div class="order-card">
-                <div class="order-card-top">
-                    <span class="order-num">#{{ '%04d' % order.id }}</span>
-                    <span class="order-time">{{ order.created_at.strftime('%I:%M %p') if order.created_at else '' }}</span>
-                </div>
-                <div class="order-customer">
-                    <i class="fas fa-user"></i>
-                    {% if order.user %}{{ order.user.first_name }}{% elif order.customer_name %}{{ order.customer_name }}{% else %}Walk-in{% endif %}
-                </div>
-                <span class="dining-tag">
-                    <i class="fas fa-{% if order.dining_option=='DINE_IN' %}utensils{% elif order.dining_option=='TAKE_OUT' %}bag-shopping{% else %}truck{% endif %}" style="font-size:0.65rem;"></i>
-                    {{ order.dining_option.replace('_',' ').title() }}
                 </span>
                 <div class="order-items">
                     {% for item in order.items[:5] %}
@@ -270,17 +165,11 @@
             {% endfor %}
         </div>
     </div>
-</main>
+{% endblock %}
 
+{% block extra_script %}
 <script>
-    function tick(){
-        const n=new Date();
-        document.getElementById('clock-display').textContent=n.toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'});
-        document.getElementById('date-display').textContent=n.toLocaleDateString('en-PH',{weekday:'short',month:'short',day:'numeric'});
-    }
-    tick(); setInterval(tick,1000);
-    // Auto-refresh every 20s
-    setTimeout(()=>location.reload(), 20000);
+    // Auto-refresh every 20s to keep kitchen updated
+    setTimeout(() => location.reload(), 20000);
 </script>
-</body>
-</html>
+{% endblock %}

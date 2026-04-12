@@ -85,7 +85,7 @@
                     {% if req.status == 'PENDING' %}
                     <div class="d-flex gap-2">
                         <button class="btn btn-sm btn-success"
-                            onclick="openFulfillModal({{ req.id }}, '{{ req.ingredient.name }}', {{ req.quantity_requested }}, '{{ req.ingredient.unit }}')">Fulfill</button>
+                            onclick="openFulfillModal({{ req.id }}, '{{ req.ingredient.name }}', {{ req.quantity_requested }}, '{{ req.ingredient.unit }}', {{ req.ingredient.stock_qty }})">Fulfill</button>
                         <form method="POST" action="{{ url_for('admin.fulfill_stock_request', req_id=req.id) }}">
                             <input type="hidden" name="action" value="reject">
                             <button type="submit" class="btn btn-sm btn-outline-danger"
@@ -117,14 +117,16 @@
             <span class="admin-close"
                 onclick="document.getElementById('createRequestModal').style.display='none'">&times;</span>
         </div>
-        <form method="POST" action="{{ url_for('admin.create_stock_request') }}">
+        <form id="createRequestForm" method="POST" action="{{ url_for('admin.create_stock_request') }}">
             <div class="mb-3">
                 <label class="form-label fw-bold">Select Ingredient</label>
                 <select name="ingredient_id" class="form-control admin-input" required>
                     <option value="">-- Choose Ingredient --</option>
                     {% for ing in ingredients %}
-                    <option value="{{ ing.id }}">{{ ing.name }} (Current System Stock: {{ ing.stock_qty }} {{ ing.unit
-                        }})</option>
+                    <option value="{{ ing.id }}" data-stock="{{ ing.stock_qty }}" {% if ing.stock_qty|float <= 0 %}disabled style="color: #999; background: #f8f9fa;"{% endif %}>
+                        {{ ing.name }} (Bodega: {{ ing.stock_qty }} {{ ing.unit }}) 
+                        {% if ing.stock_qty|float <= 0 %} [OUT OF STOCK]{% endif %}
+                    </option>
                     {% endfor %}
                 </select>
             </div>
@@ -142,8 +144,11 @@
                 <button type="button" class="btn-admin"
                     onclick="document.getElementById('createRequestModal').style.display='none'"
                     style="border: 1px solid var(--admin-border); background: var(--admin-surface);">Cancel</button>
-                <button type="submit" class="btn-admin btn-admin-primary" style="border-radius: 8px;">Send
-                    Request</button>
+                <button type="submit" id="btnSendRequest" class="btn-admin btn-admin-primary" style="border-radius: 8px;">
+                    <span class="btn-text">Send Request</span>
+                    <span class="btn-loading" style="display: none;"><i class="fas fa-spinner fa-spin me-1"></i> Sending...</span>
+                    <span class="btn-success-check" style="display: none;"><i class="fas fa-check-circle"></i> Sent!</span>
+                </button>
             </div>
         </form>
     </div>
@@ -167,27 +172,160 @@
                 <label class="form-label fw-bold">Quantity to Send (<span id="fm_unit"></span>)</label>
                 <input type="number" step="0.01" min="0.01" name="quantity_fulfilled" id="fm_qty"
                     class="form-control admin-input" required>
-                <div class="form-text mt-2"><i class="fas fa-info-circle me-1"></i> Note: Fullfilling this will deduct
-                    the quantity from the master inventory limits.</div>
+                <div id="fm_error" style="color: #dc3545; font-size: 0.8rem; margin-top: 5px; display: none; font-weight: 500;"></div>
+                <div class="form-text mt-2" id="fm_help_text"></div>
             </div>
             <div class="d-flex justify-content-end gap-2">
                 <button type="button" class="btn-admin"
                     onclick="document.getElementById('fulfillModal').style.display='none'"
                     style="border: 1px solid var(--admin-border); background: var(--admin-surface);">Cancel</button>
-                <button type="submit" class="btn-admin btn-admin-primary" style="border-radius: 8px;">Confirm & Send to
-                    Kitchen</button>
+                <button type="submit" id="btnConfirmFulfill" class="btn-admin btn-admin-primary" style="border-radius: 8px;">
+                    Confirm & Send to Kitchen
+                </button>
             </div>
         </form>
     </div>
 </div>
 
 <script>
-    function openFulfillModal(reqId, ingName, expectedQty, unit) {
+    let currentMainStock = 0;
+    let currentRequestedQty = 0;
+    function openFulfillModal(reqId, ingName, expectedQty, unit, mainStock) {
         document.getElementById('fulfillForm').action = "/admin/stock-requests/" + reqId + "/fulfill";
         document.getElementById('fm_ingredient').value = ingName;
         document.getElementById('fm_qty').value = expectedQty;
+        document.getElementById('fm_qty').max = mainStock; // Cannot send more than in store
         document.getElementById('fm_unit').innerText = unit;
+        document.getElementById('fm_help_text').innerHTML = `<i class="fas fa-info-circle me-1"></i> Requested: <b>${expectedQty}</b>. Bodega: <b>${mainStock}</b>.`;
+        
+        currentMainStock = parseFloat(mainStock);
+        currentRequestedQty = parseFloat(expectedQty);
         document.getElementById('fulfillModal').style.display = 'flex';
+    }
+
+    // High-speed AJAX fulfillment
+    const fulfillForm = document.getElementById('fulfillForm');
+    if (fulfillForm) {
+        fulfillForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            console.log("Submitting fulfill form...");
+            
+            const qtyToSend = parseFloat(document.getElementById('fm_qty').value);
+            const errEl = document.getElementById('fm_error');
+            errEl.style.display = 'none';
+            
+            if (qtyToSend > currentMainStock) {
+                errEl.textContent = `❌ Only ${currentMainStock} available in main stock.`;
+                errEl.style.display = 'block';
+                return;
+            }
+            if (qtyToSend > currentRequestedQty) {
+                errEl.textContent = `❌ Cannot exceed requested amount (${currentRequestedQty}).`;
+                errEl.style.display = 'block';
+                return;
+            }
+
+            const btn = document.getElementById('btnConfirmFulfill');
+            const originalText = btn.innerText;
+            btn.disabled = true;
+            btn.innerText = "Sending...";
+
+            const formData = new FormData(this);
+            const actionUrl = this.getAttribute('action');
+            console.log("Target URL:", actionUrl);
+
+            fetch(actionUrl, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: formData
+            })
+            .then(r => r.json())
+            .then(data => {
+                console.log("Response:", data);
+                if (data.success) {
+                    document.getElementById('fulfillModal').style.display = 'none';
+                    if (window.showToast) window.showToast('success', data.message);
+                    setTimeout(() => window.location.reload(), 300); 
+                } else {
+                    alert(data.message || 'Error fulfilling request');
+                    btn.disabled = false;
+                    btn.innerText = originalText;
+                }
+            })
+            .catch(err => {
+                console.error("Fetch Error:", err);
+                alert("Network error. Please try again.");
+                btn.disabled = false;
+                btn.innerText = originalText;
+            });
+        });
+    }
+
+    // AJAX submission for New Stock Request
+    const createForm = document.getElementById('createRequestForm');
+    if (createForm) {
+        createForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnSendRequest');
+            const btnText = btn.querySelector('.btn-text');
+            const btnLoading = btn.querySelector('.btn-loading');
+
+            btn.disabled = true;
+            btnText.style.display = 'none';
+            btnLoading.style.display = 'inline-block';
+
+            const formData = new FormData(this);
+            const ingSelect = this.querySelector('select[name="ingredient_id"]');
+            const selectedOpt = ingSelect.options[ingSelect.selectedIndex];
+            const stockAtBodega = parseFloat(selectedOpt.dataset.stock || 0);
+
+            if (stockAtBodega <= 0) {
+                alert('This item is out of stock in the bodega. You cannot request it right now.');
+                btn.disabled = false;
+                btnText.style.display = 'inline-block';
+                btnLoading.style.display = 'none';
+                return;
+            }
+
+            fetch(this.action, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: formData
+            })
+            .then(r => {
+                if (!r.ok) throw new Error('Network response was not ok');
+                return r.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    btnLoading.style.display = 'none';
+                    btn.querySelector('.btn-success-check').style.display = 'inline-block';
+                    btn.style.background = '#28a745';
+                    btn.style.borderColor = '#28a745';
+
+                    if (window.showToast) {
+                        window.showToast('success', data.message);
+                    }
+                    
+                    // Close modal and refresh after 1 second
+                    setTimeout(() => {
+                        document.getElementById('createRequestModal').style.display = 'none';
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    alert(data.message || 'Error submitting request');
+                    btn.disabled = false;
+                    btnText.style.display = 'inline-block';
+                    btnLoading.style.display = 'none';
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                btn.disabled = false;
+                btnText.style.display = 'inline-block';
+                btnLoading.style.display = 'none';
+            });
+        });
     }
 </script>
 {% endblock %}

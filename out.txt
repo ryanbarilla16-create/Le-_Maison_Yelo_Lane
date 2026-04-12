@@ -1,8 +1,0 @@
-ID: 13 | Status: COMPLETED | Rider: 13 | DelivStatus: DELIVERED
-ID: 15 | Status: COMPLETED | Rider: 13 | DelivStatus: DELIVERED
-ID: 18 | Status: PREPARING | Rider: None | DelivStatus: WAITING
-ID: 11 | Status: PREPARING | Rider: 13 | DelivStatus: DELIVERED
-ID: 29 | Status: COMPLETED | Rider: None | DelivStatus: WAITING
-ID: 12 | Status: PREPARING | Rider: 13 | DelivStatus: DELIVERED
-ID: 19 | Status: COMPLETED | Rider: 13 | DelivStatus: ON_THE_WAY
-ID: 20 | Status: COMPLETED | Rider: 13 | DelivStatus: ON_THE_WAY

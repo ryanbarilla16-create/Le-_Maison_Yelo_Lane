@@ -200,7 +200,6 @@ def validate_order(items_data, dining_option, payment_method, is_pos=False):
             name = menu_items_by_id.get(menu_item_id).name if menu_items_by_id.get(menu_item_id) else f"Item #{menu_item_id}"
             return False, f"Spam Detection: You can only order a maximum of 20 servings of '{name}' per transaction.", None
         
-        menu_item = MenuItem.query.get(menu_item_id)
         # Use batched menu items for speed
         menu_item = menu_items_by_id.get(menu_item_id)
         if not menu_item:
@@ -212,8 +211,8 @@ def validate_order(items_data, dining_option, payment_method, is_pos=False):
             if ingredient is None:
                 continue
             needed = float(r.quantity_needed) * quantity
-            if float(ingredient.stock_qty) < needed:
-                return False, f"Insufficient Stock: '{menu_item.name}' is temporarily unavailable due to lack of ingredients ({ingredient.name}).", None
+            if float(ingredient.kitchen_qty or 0) < needed:
+                return False, f"Insufficient Stock: '{menu_item.name}' is temporarily unavailable due to lack of ingredients in kitchen ({ingredient.name}).", None
 
         total_amount += Decimal(str(menu_item.price)) * quantity
         total_items += quantity

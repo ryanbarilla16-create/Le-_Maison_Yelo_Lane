@@ -7,19 +7,51 @@
     <p>Manage and track individual purchases of ingredients to ensure older stock is utilized first.</p>
 </div>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h3 class="m-0" style="color: var(--admin-text); font-weight: 600;">Active Inventory Batches</h3>
+<!-- Stats Row -->
+<div class="stat-cards mb-4" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem;">
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(139,99,75,0.12); color: var(--admin-accent);"><i class="fas fa-boxes"></i></div>
+        <div class="stat-label">Active Batches</div>
+        <div class="stat-value">{{ batches|length }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(239,68,68,0.12); color: #ef4444;"><i class="fas fa-exclamation-triangle"></i></div>
+        <div class="stat-label">Expiring / expired</div>
+        <div class="stat-value text-danger">{{ batches | selectattr('expiration_date') | selectattr('expiration_date', 'lt', today) | list | length }}</div>
+    </div>
+</div>
+
+<!-- Header: Filter + Button -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+        <h3 class="m-0" style="color: var(--admin-text); font-weight: 600;">Active Inventory Batches</h3>
+        <!-- Menu Category Filter -->
+        <div class="d-flex align-items-center gap-2">
+            <i class="fas fa-filter" style="color: var(--admin-accent); font-size: 0.85rem;"></i>
+            <select id="batchCategoryFilter" class="form-select form-select-sm"
+                style="min-width: 220px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.1); font-size: 0.82rem; height: 36px; cursor: pointer;"
+                onchange="applyBatchFilter()">
+                <option value="ALL">All Menu Sections</option>
+                {% for cat in menu_categories %}
+                <option value="{{ cat }}">{{ cat }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <span id="batchFilterStats" style="font-size: 0.75rem; color: #888;"></span>
+    </div>
     <button class="btn-admin btn-admin-primary" style="border-radius: 8px;"
         onclick="document.getElementById('addBatchModal').style.display='block'">
         <i class="fas fa-plus me-2"></i> Receive New Batch
     </button>
 </div>
 
+<!-- Batches Table -->
 <div class="admin-table-wrap">
-    <table class="admin-table">
+    <table class="admin-table" id="batchesTable">
         <thead>
             <tr>
                 <th>Ingredient</th>
+                <th>Menu Section</th>
                 <th>Received Date</th>
                 <th>Expiration Date</th>
                 <th>Qty Received</th>
@@ -30,59 +62,77 @@
         </thead>
         <tbody>
             {% for batch in batches %}
-            <tr>
+            <tr data-menu-cats="{{ ing_menu_cats.get(batch.ingredient_id, []) | join('|') }}">
                 <td style="font-weight: 600;">{{ batch.ingredient.name }}</td>
+                <td>
+                    {% set cats = ing_menu_cats.get(batch.ingredient_id, []) %}
+                    {% if cats %}
+                        {% for cat in cats %}
+                        <span class="badge-status badge-completed" style="font-size: 0.7rem; margin-right: 2px;">{{ cat }}</span>
+                        {% endfor %}
+                    {% else %}
+                        <span style="color: var(--admin-text-muted); font-size: 0.78rem;">—</span>
+                    {% endif %}
+                </td>
                 <td style="color: var(--admin-text-light);">{{ batch.purchase_date.strftime('%b %d, %Y') }}</td>
                 <td>
                     {% if batch.expiration_date %}
-                    {% if batch.expiration_date < today %} <span
-                        class="badge border border-danger text-danger bg-transparent"><i
-                            class="fas fa-exclamation-circle me-1"></i> EXPIRED</span>
-                        <div style="font-size: 0.8rem; color: #ef4444; margin-top: 4px;">{{
-                            batch.expiration_date.strftime('%b %d, %Y') }}</div>
+                        {% if batch.expiration_date < today %}
+                        <span class="badge border border-danger text-danger bg-transparent"><i class="fas fa-exclamation-circle me-1"></i>EXPIRED</span>
+                        <div style="font-size: 0.8rem; color: #ef4444; margin-top: 4px;">{{ batch.expiration_date.strftime('%b %d, %Y') }}</div>
                         {% else %}
                         {{ batch.expiration_date.strftime('%b %d, %Y') }}
                         {% endif %}
-                        {% else %}
+                    {% else %}
                         <span style="color: var(--admin-text-light);">No Expiry</span>
-                        {% endif %}
+                    {% endif %}
                 </td>
                 <td>{{ batch.batch_qty }} {{ batch.ingredient.unit }}</td>
-                <td style="font-weight: 600; color: var(--admin-green);">{{ batch.remaining_qty }} {{
-                    batch.ingredient.unit }}</td>
+                <td style="font-weight: 600; color: var(--admin-green);">{{ batch.remaining_qty }} {{ batch.ingredient.unit }}</td>
                 <td>₱{{ '{:,.2f}'.format(batch.cost_per_unit) }}</td>
                 <td>
-                    {% if batch.expiration_date and batch.expiration_date < today %} <span class="badge bg-danger">
-                        Critical</span>
-                        {% else %}
-                        <span class="badge bg-success">Active</span>
-                        {% endif %}
+                    {% if batch.expiration_date and batch.expiration_date < today %}
+                    <span class="badge bg-danger">Expired</span>
+                    {% else %}
+                    <span class="badge bg-success">Active</span>
+                    {% endif %}
                 </td>
             </tr>
             {% else %}
-            <tr>
-                <td colspan="7" style="text-align: center; padding: 2rem; color: var(--admin-text-light);">No active
-                    batches found. Receive a new batch to track.</td>
+            <tr id="emptyRow">
+                <td colspan="8" style="text-align: center; padding: 2rem; color: var(--admin-text-light);">
+                    <i class="fas fa-box-open mb-2" style="font-size: 2rem; opacity: 0.3; display: block;"></i>
+                    No active batches found. Click "Receive New Batch" to add one.
+                </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    <div id="noResultsMsg" style="display:none; text-align:center; padding: 2rem; color: var(--admin-text-light);">
+        <i class="fas fa-search mb-2" style="font-size: 1.5rem; opacity: 0.4; display:block;"></i>
+        No batches found for the selected category.
+    </div>
 </div>
 
-<!-- ADD BATCH SECTION (LANDSCAPE) -->
+<!-- ADD BATCH FORM -->
 <div id="addBatchModal" class="mt-4 w-100" style="display: none; animation: fadeIn 0.4s ease;">
-    <div class="admin-card w-100" style="border-left: 5px solid #8b634b; border-top: none; border-radius: 12px; box-shadow: 0 4px 20px rgba(139, 99, 75,0.08); padding: 1.5rem 2rem;">
+    <div class="admin-card w-100" style="border-left: 5px solid #8b634b; border-radius: 12px; box-shadow: 0 4px 20px rgba(139,99,75,0.08); padding: 1.5rem 2rem;">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h4 class="m-0" style="color: #6d4c41; font-weight: 700; letter-spacing: 0.5px;"><i class="fas fa-box-open me-2"></i>Receive New Batch</h4>
-            <span onclick="document.getElementById('addBatchModal').style.display='none'" style="font-size: 1.8rem; cursor: pointer; color: #bcaaa4; line-height: 1; transition: 0.2s;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#bcaaa4'">&times;</span>
+            <h4 class="m-0" style="color: #6d4c41; font-weight: 700;">
+                <i class="fas fa-box-open me-2"></i>Receive New Batch
+            </h4>
+            <span onclick="document.getElementById('addBatchModal').style.display='none'"
+                style="font-size: 1.8rem; cursor: pointer; color: #bcaaa4; line-height: 1; transition: 0.2s;"
+                onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#bcaaa4'">&times;</span>
         </div>
-        
+
         <form method="POST" action="{{ url_for('admin.add_ingredient_batch') }}">
             <div class="row g-3 align-items-end mb-2">
                 <div class="col-md-3">
                     <label class="form-label fw-bold" style="color: #6d4c41; font-size: 0.85rem;">Select Ingredient</label>
-                    <select name="ingredient_id" class="form-control" required style="width: 100%; border: 1px solid #d7ccc8; padding: 0.6rem; border-radius: 8px; background: #fafafa;">
-                        <option value="">-- Choose --</option>
+                    <select name="ingredient_id" class="form-control" required
+                        style="width:100%; border:1px solid #d7ccc8; padding:0.6rem; border-radius:8px; background:#fafafa;">
+                        <option value="">-- Select Ingredient --</option>
                         {% for ing in ingredients %}
                         <option value="{{ ing.id }}">{{ ing.name }} ({{ ing.stock_qty }}{{ ing.unit }})</option>
                         {% endfor %}
@@ -90,21 +140,23 @@
                 </div>
                 <div class="col-md-2">
                     <label class="form-label fw-bold" style="color: #6d4c41; font-size: 0.85rem;">Quantity</label>
-                    <input type="number" step="0.01" min="0.01" name="batch_qty" class="form-control" required style="width: 100%; border: 1px solid #d7ccc8; padding: 0.6rem; border-radius: 8px; background: #fafafa;">
+                    <input type="number" step="0.01" min="0.01" name="batch_qty" class="form-control" required
+                        style="width:100%; border:1px solid #d7ccc8; padding:0.6rem; border-radius:8px; background:#fafafa;">
                 </div>
                 <div class="col-md-2">
                     <label class="form-label fw-bold" style="color: #6d4c41; font-size: 0.85rem;">Cost (₱)</label>
-                    <input type="number" step="0.01" min="0" name="cost_per_unit" class="form-control" value="0.00" style="width: 100%; border: 1px solid #d7ccc8; padding: 0.6rem; border-radius: 8px; background: #fafafa;">
+                    <input type="number" step="0.01" min="0" name="cost_per_unit" class="form-control" value="0.00"
+                        style="width:100%; border:1px solid #d7ccc8; padding:0.6rem; border-radius:8px; background:#fafafa;">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label fw-bold" style="color: #6d4c41; font-size: 0.85rem;">Expiry Date</label>
-                    <input type="date" name="expiration_date" class="form-control" style="width: 100%; border: 1px solid #d7ccc8; padding: 0.6rem; border-radius: 8px; background: #fafafa;">
+                    <input type="date" name="expiration_date" class="form-control"
+                        style="width:100%; border:1px solid #d7ccc8; padding:0.6rem; border-radius:8px; background:#fafafa;">
                 </div>
-                
                 <input type="hidden" name="purchase_date" value="{{ today.strftime('%Y-%m-%d') }}">
-
                 <div class="col-md-2 d-flex gap-2">
-                    <button type="submit" class="btn fw-bold w-100 text-white" style="border-radius: 8px; padding: 0.6rem; background: linear-gradient(135deg, #8b634b 0%, #5c3a21 100%); border: none; box-shadow: 0 4px 10px rgba(139, 99, 75, 0.2);">
+                    <button type="submit" class="btn fw-bold w-100 text-white"
+                        style="border-radius:8px; padding:0.6rem; background:linear-gradient(135deg,#8b634b 0%,#5c3a21 100%); border:none; box-shadow:0 4px 10px rgba(139,99,75,0.2);">
                         <i class="fas fa-plus me-1"></i> Add
                     </button>
                 </div>
@@ -116,10 +168,35 @@
 <style>
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
+        to   { opacity: 1; transform: translateY(0); }
     }
 </style>
+
+{% block scripts %}
+<script>
+    function applyBatchFilter() {
+        const selectedCat = document.getElementById('batchCategoryFilter').value;
+        const rows = document.querySelectorAll('#batchesTable tbody tr[data-menu-cats]');
+        let visible = 0;
+
+        rows.forEach(row => {
+            const rowCats = (row.dataset.menuCats || '').split('|');
+            const matches = selectedCat === 'ALL' || rowCats.includes(selectedCat);
+            row.style.display = matches ? '' : 'none';
+            if (matches) visible++;
+        });
+
+        const stats = document.getElementById('batchFilterStats');
+        stats.textContent = selectedCat === 'ALL'
+            ? `All: ${visible} batch${visible !== 1 ? 'es' : ''}`
+            : `${visible} batch${visible !== 1 ? 'es' : ''} in "${selectedCat}"`;
+
+        const noMsg = document.getElementById('noResultsMsg');
+        if (noMsg) noMsg.style.display = visible === 0 && rows.length > 0 ? 'block' : 'none';
+    }
+
+    // Run filter on page load to show stats
+    applyBatchFilter();
+</script>
 {% endblock %}
-
-
-
+{% endblock %}

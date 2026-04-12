@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Staff Portal — Le Maison{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #5D4037;
+            --primary-light: #795548;
+            --primary-dark: #3E2723;
+            --accent: #D7CCC8;
+            --accent-dark: #A1887F;
+            --sidebar-w: 260px;
+            --bg: #F5EFE8;
+            --card: rgba(255,255,255,0.72);
+            --card-border: rgba(255,255,255,0.9);
+            --text: #3E2723;
+            --muted: #8D6E63;
+            --success: #2e7d32;
+            --warning: #e65100;
+            --danger: #c62828;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text); display:flex; min-height:100vh; }
+
+        /* ── Sidebar ── */
+        .sidebar {
+            width: var(--sidebar-w);
+            background: linear-gradient(160deg, #3E2723 0%, #5D4037 60%, #6D4C41 100%);
+            position: fixed; top:0; left:0; height:100vh;
+            display:flex; flex-direction:column;
+            box-shadow: 4px 0 24px rgba(62,39,35,0.25);
+            z-index: 1000;
+        }
+        .sidebar-brand {
+            padding: 28px 24px 22px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .sidebar-brand .brand-name {
+            font-family:'Playfair Display',serif;
+            font-size:1.25rem; color:#fff; margin-bottom:4px;
+        }
+        .sidebar-brand .brand-sub {
+            font-size:0.72rem; color:rgba(255,255,255,0.5);
+            letter-spacing:1.5px; text-transform:uppercase;
+        }
+
+        .sidebar-user {
+            margin:20px 16px;
+            padding:14px 16px;
+            background:rgba(255,255,255,0.07);
+            border-radius:14px;
+            display:flex; align-items:center; gap:12px;
+        }
+        .avatar {
+            width:38px; height:38px; border-radius:50%;
+            background:linear-gradient(135deg, var(--accent), #BCAAA4);
+            display:flex; align-items:center; justify-content:center;
+            font-weight:700; font-size:0.9rem; color:#3E2723; flex-shrink:0;
+        }
+        .sidebar-user .user-info .name { font-size:0.88rem; font-weight:600; color:#fff; }
+        .sidebar-user .user-info .role  { font-size:0.7rem; color:rgba(255,255,255,0.45); letter-spacing:1px; text-transform:uppercase; }
+
+        .sidebar-nav { flex:1; padding:8px 12px; overflow-y:auto; }
+        .nav-section-label {
+            font-size:0.65rem; font-weight:600; color:rgba(255,255,255,0.3);
+            letter-spacing:1.8px; text-transform:uppercase;
+            padding:16px 12px 8px;
+        }
+        .nav-item {
+            display:flex; align-items:center; gap:12px;
+            padding:12px 14px; border-radius:12px;
+            color:rgba(255,255,255,0.65); font-size:0.88rem; font-weight:500;
+            text-decoration:none; transition:all 0.25s; margin-bottom:2px;
+        }
+        .nav-item i { width:18px; text-align:center; font-size:0.85rem; }
+        .nav-item:hover, .nav-item.active { background:rgba(255,255,255,0.1); color:#fff; }
+        .nav-item.active {
+            background:rgba(215, 204, 200, 0.18);
+            color:var(--accent); font-weight:600;
+        }
+
+        .sidebar-footer {
+            padding: 16px 12px;
+            border-top:1px solid rgba(255,255,255,0.06);
+        }
+        .btn-logout {
+            display:flex; align-items:center; gap:10px;
+            width:100%; padding:11px 14px;
+            background:rgba(198,40,40,0.15); border:1px solid rgba(198,40,40,0.2);
+            border-radius:12px; color:rgba(255,130,120,0.9);
+            font-size:0.85rem; font-weight:600; cursor:pointer; transition:all 0.25s;
+            text-decoration:none;
+        }
+        .btn-logout:hover { background:rgba(198,40,40,0.28); color:#ff8a80; }
+
+        /* ── Main ── */
+        .main { margin-left:var(--sidebar-w); flex:1; padding:32px 36px; min-height:100vh; }
+
+        .topbar {
+            display:flex; align-items:center; justify-content:space-between;
+            margin-bottom:32px;
+        }
+        .topbar-title h1 { font-size:1.5rem; font-weight:700; color:var(--text); }
+        .topbar-title p { font-size:0.85rem; color:var(--muted); margin-top:2px; }
+        .topbar-right { display:flex; align-items:center; gap:12px; }
+        .clock { font-size:1.5rem; font-weight:700; color:var(--primary); font-family:'Playfair Display',serif; }
+        .date-badge { background:var(--card); border:1px solid var(--card-border); border-radius:10px; padding:6px 14px; font-size:0.8rem; color:var(--muted); backdrop-filter:blur(10px); }
+
+        .section-card {
+            background:var(--card); backdrop-filter:blur(16px);
+            border:1px solid var(--card-border); border-radius:20px;
+            box-shadow:0 6px 24px rgba(93,64,55,0.07);
+            overflow:hidden;
+            margin-bottom: 24px;
+        }
+        .section-header {
+            padding:20px 24px;
+            border-bottom:1px solid rgba(93,64,55,0.06);
+            display:flex; align-items:center; justify-content:space-between;
+        }
+        .section-header h2 { font-size:1rem; font-weight:700; }
+        
+        /* Forms & Inputs */
+        .btn-staff {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: none;
+            background: var(--primary);
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        .btn-staff:hover { background: var(--primary-dark); transform: translateY(-1px); }
+
+        table { width:100%; border-collapse:collapse; }
+        thead th {
+            padding:12px 20px;
+            font-size:0.73rem; font-weight:600; color:var(--muted);
+            letter-spacing:0.8px; text-transform:uppercase;
+            text-align:left; background:rgba(245,239,232,0.6);
+            border-bottom:1px solid rgba(93,64,55,0.06);
+        }
+        tbody tr { transition:background 0.2s; }
+        tbody tr:hover { background:rgba(245,239,232,0.5); }
+        tbody td { padding:14px 20px; font-size:0.88rem; border-bottom:1px solid rgba(93,64,55,0.04); }
+
+        .pill {
+            display:inline-flex; align-items:center; gap:5px;
+            padding:4px 12px; border-radius:50px;
+            font-size:0.72rem; font-weight:600;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width:5px; }
+        ::-webkit-scrollbar-thumb { background:rgba(93,64,55,0.2); border-radius:4px; }
+
+        {% block extra_style %}{% endblock %}
+    </style>
+</head>
+<body>
+
+<aside class="sidebar">
+    <div class="sidebar-brand">
+        <div class="brand-name">Le Maison</div>
+        <div class="brand-sub">{% block portal_sub %}Staff Portal{% endblock %}</div>
+    </div>
+
+    <div class="sidebar-user">
+        <div class="avatar">{{ current_user.first_name[:1] }}</div>
+        <div class="user-info">
+            <div class="name">{{ current_user.first_name }} {{ current_user.last_name }}</div>
+            <div class="role">{% block portal_role %}Staff{% endblock %}</div>
+        </div>
+    </div>
+
+    <nav class="sidebar-nav">
+        {% block sidebar_nav %}{% endblock %}
+    </nav>
+
+    <div class="sidebar-footer">
+        <a class="btn-logout" href="{% block logout_url %}/{% endblock %}">
+            <i class="fas fa-sign-out-alt"></i> Sign Out
+        </a>
+    </div>
+</aside>
+
+<main class="main">
+    <div class="topbar">
+        <div class="topbar-title">
+            <h1>{% block page_title %}Dashboard{% endblock %}</h1>
+            <p>{% block page_subtitle %}Manage your workspace tasks{% endblock %}</p>
+        </div>
+        <div class="topbar-right">
+            <div class="date-badge" id="date-display"></div>
+            <div class="clock" id="clock-display">--:--</div>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div style="padding: 12px 20px; border-radius: 12px; margin-bottom: 24px; background: {% if category=='success' %}#e8f5e9; color: #2e7d32;{% else %}#ffebee; color: #c62828;{% endif %}; font-size: 0.9rem; font-weight: 500;">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+</main>
+
+<script>
+    function tick() {
+        const now = new Date();
+        const cd = document.getElementById('clock-display');
+        const dd = document.getElementById('date-display');
+        if(cd) cd.textContent = now.toLocaleTimeString('en-PH', { hour:'2-digit', minute:'2-digit' });
+        if(dd) dd.textContent = now.toLocaleDateString('en-PH', { weekday:'short', month:'short', day:'numeric' });
+    }
+    tick(); setInterval(tick, 1000);
+</script>
+{% block extra_script %}{% endblock %}
+</body>
+</html>

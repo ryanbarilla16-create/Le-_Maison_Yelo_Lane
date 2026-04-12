@@ -85,6 +85,9 @@ app.register_blueprint(kitchen_bp)
 app.register_blueprint(inventory_bp)
 app.register_blueprint(rider_bp)
 
+from routes.debug import debug_bp
+app.register_blueprint(debug_bp)
+
 # Ensure database tables exist (Crucial for Render production)
 with app.app_context():
     try:

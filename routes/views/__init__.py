@@ -9,18 +9,8 @@ from sqlalchemy.orm import load_only
 import time
 import random
 
-_MENU_PAGE_CACHE = {"loaded_at": 0.0, "items": None}
-_FEATURED_CACHE = {"loaded_at": 0.0, "items": None}
-
 def _get_menu_items_for_menu_page():
-    # Small TTL cache to speed up navigation between tabs.
-    ttl_seconds = 10
-    now = time.monotonic()
-    cached = _MENU_PAGE_CACHE["items"]
-    if cached is not None and (now - _MENU_PAGE_CACHE["loaded_at"]) < ttl_seconds:
-        return cached
-
-    items = (
+    return (
         MenuItem.query.options(
             load_only(MenuItem.id, MenuItem.name, MenuItem.price, MenuItem.category, MenuItem.image_url, MenuItem.is_available)
         )
@@ -28,23 +18,13 @@ def _get_menu_items_for_menu_page():
         .order_by(MenuItem.category, MenuItem.name)
         .all()
     )
-    _MENU_PAGE_CACHE["items"] = items
-    _MENU_PAGE_CACHE["loaded_at"] = now
-    return items
 
 def _get_featured_items_cached():
-    ttl_seconds = 60
-    now = time.monotonic()
-    if _FEATURED_CACHE["items"] is not None and (now - _FEATURED_CACHE["loaded_at"]) < ttl_seconds:
-        return _FEATURED_CACHE["items"]
-
     total_available = MenuItem.query.filter_by(is_available=True, is_deleted=False).count()
     if total_available <= 0:
-        _FEATURED_CACHE["items"] = []
-        _FEATURED_CACHE["loaded_at"] = now
-        return _FEATURED_CACHE["items"]
+        return []
 
-    # Avoid `ORDER BY RANDOM()` (slow on large tables). We cache and pick an indexed slice by offset.
+    # Avoid `ORDER BY RANDOM()` (slow on large tables). We pick an indexed slice by offset.
     offset = 0
     if total_available > 6:
         offset = random.randint(0, total_available - 6)
@@ -56,9 +36,6 @@ def _get_featured_items_cached():
         .limit(6)
         .all()
     )
-
-    _FEATURED_CACHE["items"] = items
-    _FEATURED_CACHE["loaded_at"] = now
     return items
 
 @main_bp.route('/')
