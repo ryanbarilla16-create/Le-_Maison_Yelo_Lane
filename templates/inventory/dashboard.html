@@ -1,83 +1,66 @@
-        .glow-green  { background:linear-gradient(90deg, var(--primary), var(--accent)); }
-        .glow-red    { background:linear-gradient(90deg, var(--danger), #ef9a9a); }
-        .glow-orange { background:linear-gradient(90deg, var(--warning-col), #ffcc02); }
+{% extends "layouts/staff_layout.html" %}
 
-        .section-card { background:var(--card); backdrop-filter:blur(16px); border:1px solid var(--card-border); border-radius:20px; box-shadow:0 6px 24px rgba(27,94,32,0.07); overflow:hidden; }
-        .section-header { padding:20px 24px; border-bottom:1px solid rgba(27,94,32,0.06); display:flex; align-items:center; justify-content:space-between; }
-        .section-header h2 { font-size:1rem; font-weight:700; }
-        .section-header .badge { background:rgba(27,94,32,0.08); color:var(--primary); border-radius:50px; padding:4px 12px; font-size:0.75rem; font-weight:600; }
+{% block title %}Stock Levels — Le Maison{% endblock %}
 
-        table { width:100%; border-collapse:collapse; }
-        thead th { padding:12px 20px; font-size:0.73rem; font-weight:600; color:var(--muted); letter-spacing:0.8px; text-transform:uppercase; text-align:left; background:rgba(237,245,238,0.6); border-bottom:1px solid rgba(27,94,32,0.06); }
-        tbody tr { transition:background 0.2s; }
-        tbody tr:hover { background:rgba(237,245,238,0.5); }
-        tbody td { padding:14px 20px; font-size:0.88rem; border-bottom:1px solid rgba(27,94,32,0.04); }
+{% block portal_sub %}Inventory Portal{% endblock %}
+{% block portal_role %}Inventory Staff{% endblock %}
+{% block logout_url %}{{ url_for('inventory_portal.inventory_logout') }}{% endblock %}
 
-        .ingredient-name { font-weight:600; }
-        .stock-bar-wrap { display:flex; align-items:center; gap:10px; }
-        .stock-bar { flex:1; height:6px; border-radius:3px; background:rgba(27,94,32,0.1); overflow:hidden; }
-        .stock-bar-fill { height:100%; border-radius:3px; transition:width 0.5s ease; }
-        .stock-qty { font-weight:700; font-size:0.85rem; min-width:60px; text-align:right; }
+{% block sidebar_nav %}
+    <div class="nav-section-label">Workspace</div>
+    <a class="nav-item active" href="{{ url_for('inventory_portal.inventory_dashboard') }}">
+        <i class="fas fa-boxes-stacked"></i> Stock Levels
+    </a>
+    <a class="nav-item" href="{{ url_for('inventory_portal.inventory_full') }}">
+        <i class="fas fa-warehouse"></i> Full Inventory
+    </a>
+    <a class="nav-item" href="{{ url_for('inventory_portal.inventory_suppliers') }}">
+        <i class="fas fa-truck"></i> Suppliers
+    </a>
+    <a class="nav-item" href="{{ url_for('inventory_portal.inventory_waste_records') }}">
+        <i class="fas fa-trash-can"></i> Waste Log
+    </a>
+{% endblock %}
 
-        .tag-unit { background:rgba(27,94,32,0.07); color:var(--primary); border-radius:6px; padding:2px 8px; font-size:0.72rem; font-weight:600; }
+{% block page_title %}Inventory Dashboard{% endblock %}
+{% block page_subtitle %}Monitor stock levels and supplier health{% endblock %}
 
-        .alert-low { background:rgba(198,40,40,0.07); color:var(--danger); border-radius:6px; padding:3px 10px; font-size:0.73rem; font-weight:600; display:inline-flex; align-items:center; gap:4px; }
-        .alert-ok  { background:rgba(27,94,32,0.07); color:var(--primary); border-radius:6px; padding:3px 10px; font-size:0.73rem; font-weight:600; display:inline-flex; align-items:center; gap:4px; }
+{% block extra_style %}
+    .glow-green  { background:linear-gradient(90deg, #2e7d32, #81c784); }
+    .glow-red    { background:linear-gradient(90deg, #c62828, #ef9a9a); }
+    .glow-orange { background:linear-gradient(90deg, #e65100, #ffb74d); }
 
-        .empty-state { text-align:center; padding:60px 20px; color:var(--muted); }
-        .empty-state i { font-size:2.5rem; opacity:0.25; margin-bottom:12px; display:block; }
-        ::-webkit-scrollbar { width:5px; }
-        ::-webkit-scrollbar-thumb { background:rgba(27,94,32,0.2); border-radius:4px; }
-    </style>
-</head>
-<body>
+    .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 32px; }
+    .stat-card {
+        background: var(--card); backdrop-filter: blur(16px);
+        border: 1px solid var(--card-border); border-radius: 20px;
+        padding: 24px; position: relative; overflow: hidden;
+        box-shadow: 0 4px 15px rgba(93,64,55,0.05);
+    }
+    .icon-wrap { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; margin-bottom: 16px; }
+    .icon-green { background: rgba(46,125,50,0.1); color: #2e7d32; }
+    .icon-red { background: rgba(198,40,40,0.1); color: #c62828; }
+    .icon-orange { background: rgba(230,81,0,0.1); color: #e65100; }
+    
+    .stat-value { font-size: 2rem; font-weight: 700; margin-bottom: 4px; }
+    .stat-label { font-size: 0.85rem; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+    .glow-line { position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; }
 
-<aside class="sidebar">
-    <div class="sidebar-brand">
-        <div class="brand-name">Le Maison</div>
-        <div class="brand-sub">Inventory Portal</div>
-    </div>
-    <div class="sidebar-user">
-        <div class="avatar">{{ portal_name[:1] if portal_name else 'I' }}</div>
-        <div class="user-info">
-            <div class="name">{{ portal_name }}</div>
-            <div class="role">Inventory Staff</div>
-        </div>
-    </div>
-    <nav class="sidebar-nav">
-        <div class="nav-section-label">Workspace</div>
-        <a class="nav-item active" href="{{ url_for('inventory_portal.inventory_dashboard') }}">
-            <i class="fas fa-boxes-stacked"></i> Stock Levels
-        </a>
-        <a class="nav-item" href="{{ url_for('inventory_portal.inventory_full') }}">
-            <i class="fas fa-warehouse"></i> Full Inventory
-        </a>
-        <a class="nav-item" href="{{ url_for('inventory_portal.inventory_suppliers') }}">
-            <i class="fas fa-truck"></i> Suppliers
-        </a>
-        <a class="nav-item" href="{{ url_for('inventory_portal.inventory_waste_records') }}">
-            <i class="fas fa-trash-can"></i> Waste Log
-        </a>
-    </nav>
-    <div class="sidebar-footer">
-        <a class="btn-logout" href="{{ url_for('inventory_portal.inventory_logout') }}">
-            <i class="fas fa-sign-out-alt"></i> Sign Out
-        </a>
-    </div>
-</aside>
+    .ingredient-name { font-weight: 600; }
+    .stock-bar-wrap { display:flex; align-items:center; gap:10px; }
+    .stock-bar { flex:1; height:6px; border-radius:3px; background:rgba(93,64,55,0.1); overflow:hidden; }
+    .stock-bar-fill { height:100%; border-radius:3px; transition:width 0.5s ease; }
+    .stock-qty { font-weight:700; font-size:0.85rem; min-width:60px; text-align:right; }
 
-<main class="main">
-    <div class="topbar">
-        <div class="topbar-title">
-            <h1>Inventory Dashboard</h1>
-            <p>Monitor stock levels and supplier health</p>
-        </div>
-        <div style="display:flex;align-items:center;gap:12px;">
-            <div class="date-badge" id="date-display"></div>
-            <div class="clock" id="clock-display">--:--</div>
-        </div>
-    </div>
+    .tag-unit { background:rgba(93,64,55,0.07); color:var(--primary); border-radius:6px; padding:2px 8px; font-size:0.72rem; font-weight:600; }
+    .alert-low { background:rgba(198,40,40,0.07); color:var(--danger); border-radius:6px; padding:3px 10px; font-size:0.73rem; font-weight:600; display:inline-flex; align-items:center; gap:4px; }
+    .alert-ok  { background:rgba(46,125,50,0.07); color:var(--success); border-radius:6px; padding:3px 10px; font-size:0.73rem; font-weight:600; display:inline-flex; align-items:center; gap:4px; }
+    
+    .empty-state { text-align:center; padding:60px 20px; color:var(--muted); }
+    .empty-state i { font-size:2.5rem; opacity:0.25; margin-bottom:12px; display:block; }
+{% endblock %}
 
+{% block content %}
     <div class="stats-row">
         <div class="stat-card">
             <div class="icon-wrap icon-green"><i class="fas fa-boxes-stacked"></i></div>
@@ -93,7 +76,7 @@
         </div>
         <div class="stat-card">
             <div class="icon-wrap icon-orange"><i class="fas fa-chart-line"></i></div>
-            <div class="stat-value" style="color:var(--warning-col);">{{ ((total_items - low_stock) / total_items * 100)|int if total_items > 0 else 0 }}%</div>
+            <div class="stat-value" style="color:var(--warning);">{{ ((total_items - low_stock) / total_items * 100)|int if total_items > 0 else 0 }}%</div>
             <div class="stat-label">Stock Health</div>
             <div class="glow-line glow-orange"></div>
         </div>
@@ -102,7 +85,7 @@
     <div class="section-card">
         <div class="section-header">
             <h2><i class="fas fa-list" style="color:var(--primary);margin-right:8px;"></i>Ingredient Stock Levels</h2>
-            <span class="badge">{{ ingredients|length }} items shown</span>
+            <span class="pill" style="background:rgba(93,64,55,0.08); color:var(--primary);">{{ ingredients|length }} items shown</span>
         </div>
 
         {% if ingredients %}
@@ -151,7 +134,7 @@
         {% else %}
         <div class="empty-state">
             <i class="fas fa-boxes-stacked"></i>
-            <p>No ingredients found. Add items from the full inventory panel.</p>
+            <p>No ingredients found. Stock request or add items to see them here.</p>
         </div>
         {% endif %}
     </div>
