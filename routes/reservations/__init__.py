@@ -433,7 +433,8 @@ def reserve_confirm():
             )
 
         # 4. Create Xendit invoice
-        xendit_secret_key = os.environ.get('XENDIT_SECRET_KEY')
+        from flask import current_app
+        xendit_secret_key = current_app.config.get('XENDIT_SECRET_KEY')
         if xendit_secret_key and xendit_secret_key not in ('add_your_xendit_secret_key_here', ''):
             api_key_b64 = base64.b64encode(f"{xendit_secret_key}:".encode('utf-8')).decode('utf-8')
             headers = {

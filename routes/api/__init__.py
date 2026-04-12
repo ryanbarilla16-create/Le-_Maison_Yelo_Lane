@@ -932,8 +932,8 @@ def api_checkout():
     
     # ═══ HANDLE ONLINE PAYMENT (XENDIT) ═══
     payment_method_upper = payment_method.upper()
-    xendit_secret = os.environ.get('XENDIT_SECRET_KEY')
-    is_online_payment = payment_method_upper in ['GCASH', 'ONLINE', 'E-PAYMENT', 'EPAYMENT', 'MAYA']
+    xendit_secret = current_app.config.get('XENDIT_SECRET_KEY')
+    is_online_payment = payment_method_upper in ['GCASH', 'ONLINE', 'E-PAYMENT', 'EPAYMENT', 'MAYA', 'PAYMAYA']
     
     invoice_url = None
     if is_online_payment:

@@ -9,6 +9,7 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY')
     FACEBOOK_APP_ID = os.environ.get('FACEBOOK_APP_ID')
     GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
+    XENDIT_SECRET_KEY = os.environ.get('XENDIT_SECRET_KEY')
     
     
     # Neon PostgreSQL (Primary Database)
