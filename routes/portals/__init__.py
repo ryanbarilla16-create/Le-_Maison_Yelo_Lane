@@ -366,13 +366,14 @@ def kitchen_update_order(order_id):
     
     # Statuses allowed by kitchen: PREPARING, READY, COMPLETED
     if new_status in ['PREPARING', 'READY', 'COMPLETED']:
-        # Auto-deduct ingredients when order moves to PREPARING
+        # ═══ STOCK VALIDATION & AUTO-DEDUCTION ═══
         if new_status == 'PREPARING' and order.status != 'PREPARING':
             from collections import defaultdict
             order_items = list(order.items)
             menu_item_ids = list({oi.menu_item_id for oi in order_items if oi.menu_item_id})
             
             if menu_item_ids:
+                # 1. Fetch recipes and identify required ingredients
                 recipe_rows = MenuItemIngredient.query.filter(MenuItemIngredient.menu_item_id.in_(menu_item_ids)).all()
                 recipes_by_menu_item_id = defaultdict(list)
                 ingredient_ids = set()
@@ -380,14 +381,29 @@ def kitchen_update_order(order_id):
                     recipes_by_menu_item_id[rr.menu_item_id].append(rr)
                     ingredient_ids.add(rr.ingredient_id)
 
+                # 2. Calculate total quantities needed for THIS order
                 deduction_by_ingredient_id = defaultdict(float)
                 for oi in order_items:
                     for rr in recipes_by_menu_item_id.get(oi.menu_item_id, []):
                         deduction_by_ingredient_id[rr.ingredient_id] += float(rr.quantity_needed) * oi.quantity
 
+                # 3. Validation: Check if we have enough stock
                 ingredients = Ingredient.query.filter(Ingredient.id.in_(ingredient_ids)).all()
                 ingredients_by_id = {ing.id: ing for ing in ingredients}
+                insufficient_pantry_items = []
 
+                for ing_id, deduction in deduction_by_ingredient_id.items():
+                    ing = ingredients_by_id.get(ing_id)
+                    if not ing or float(ing.stock_qty) < float(deduction):
+                        item_name = ing.name if ing else "Unknown Ingredient"
+                        insufficient_pantry_items.append(f"{item_name} (Need: {deduction}, Have: {ing.stock_qty if ing else 0})")
+
+                # 4. If any ingredient is missing, BLOCK the start
+                if insufficient_pantry_items:
+                    flash(f"Cannot start Order #{order.id}: Insufficient pantry stocks for: {', '.join(insufficient_pantry_items)}", "error")
+                    return redirect(url_for('kitchen_portal.kitchen_dashboard'))
+
+                # 5. Deduction Phase: If all good, deduct the stock
                 for ing_id, deduction in deduction_by_ingredient_id.items():
                     ing = ingredients_by_id.get(ing_id)
                     if ing:
