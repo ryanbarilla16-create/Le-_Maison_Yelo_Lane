@@ -20,10 +20,20 @@
     <a class="nav-item" href="{{ url_for('inventory_portal.inventory_waste_records') }}">
         <i class="fas fa-trash-can"></i> Waste Log
     </a>
+    <a class="nav-item" href="{{ url_for('inventory_portal.inventory_stock_requests') }}">
+        <i class="fas fa-file-invoice"></i> Stock Requests
+    </a>
 {% endblock %}
 
 {% block page_title %}Supplier Directory{% endblock %}
-{% block page_subtitle %}Manage and contact verified ingredient providers{% endblock %}
+{% block page_subtitle %}
+    <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+        <span>Manage and contact verified ingredient providers</span>
+        <button class="btn-primary" onclick="openModal('addSupplierModal')" style="padding: 8px 16px; font-size: 0.85rem;">
+            <i class="fas fa-plus me-1"></i> Add Supplier
+        </button>
+    </div>
+{% endblock %}
 
 {% block extra_style %}
     .supplier-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:24px; }
@@ -43,6 +53,36 @@
     .sup-info i { width:16px; color:var(--muted); font-size:0.85rem; }
     
     .sup-cat { display:inline-block; margin-top:15px; background:var(--bg); color:var(--primary); padding:4px 12px; border-radius:50px; font-size:0.75rem; font-weight:700; border:1px solid rgba(93,64,55,0.08); }
+
+    /* MODAL STYLES (Match Dashboard) */
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
+        display: none; align-items: center; justify-content: center; z-index: 2000;
+    }
+    .modal-content-custom {
+        background: white; border-radius: 20px; width: 100%; max-width: 500px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.2); overflow: hidden;
+    }
+    .modal-header-custom {
+        padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;
+        color: white; background: var(--primary);
+    }
+    .modal-header-custom h3 { margin: 0; font-size: 1.1rem; }
+    .close-modal { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; opacity: 0.7; }
+    .modal-body-custom { padding: 24px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+    .form-group label { font-size: 0.75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+    .form-group input, .form-group textarea {
+        padding: 10px 14px; border: 1px solid var(--card-border); border-radius: 10px;
+        font-size: 0.9rem;
+    }
+    .modal-footer-custom {
+        padding: 20px 24px; background: #fdfaf8; border-top: 1px solid var(--card-border);
+        display: flex; justify-content: flex-end; gap: 12px;
+    }
+    .btn-secondary { background: #e0d6cf; color: #5d4037; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 600; }
+    .btn-primary { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 600; }
 {% endblock %}
 
 {% block content %}
@@ -72,4 +112,63 @@
     </div>
     {% endfor %}
 </div>
+
+<!-- Add Supplier Modal -->
+<div id="addSupplierModal" class="modal-overlay">
+    <div class="modal-content-custom">
+        <div class="modal-header-custom">
+            <h3><i class="fas fa-plus"></i> Add New Supplier</h3>
+            <button class="close-modal" onclick="closeModal('addSupplierModal')">&times;</button>
+        </div>
+        <form action="{{ url_for('inventory_portal.inventory_add_supplier') }}" method="POST" class="modal-body-custom">
+            <div class="form-group">
+                <label>Company Name *</label>
+                <input type="text" name="name" required placeholder="e.g. Fresh Farm Produce">
+            </div>
+            <div class="form-group">
+                <label>Contact Person</label>
+                <input type="text" name="contact_person" placeholder="e.g. Juan Dela Cruz">
+            </div>
+            <div class="form-group">
+                <label>Phone</label>
+                <input type="text" name="phone" placeholder="e.g. 0912 345 6789">
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" name="email" placeholder="e.g. contact@supplier.com">
+            </div>
+            <div class="form-group">
+                <label>Address</label>
+                <textarea name="address" rows="2" placeholder="Office address..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Ingredients Supplied</label>
+                <input type="text" name="new_ingredients" placeholder="e.g. Pork, Chicken, Beef">
+                <small style="font-size:0.7rem; color:var(--muted);">Separate items with commas</small>
+            </div>
+            <div class="modal-footer-custom">
+                <button type="button" class="btn-secondary" onclick="closeModal('addSupplierModal')">Cancel</button>
+                <button type="submit" class="btn-primary">Add Supplier</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_script %}
+<script>
+    function openModal(id) {
+        document.getElementById(id).style.display = 'flex';
+    }
+    function closeModal(id) {
+        document.getElementById(id).style.display = 'none';
+    }
+    // Close on click outside
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal-overlay')) {
+            event.target.style.display = 'none';
+        }
+    }
+</script>
 {% endblock %}

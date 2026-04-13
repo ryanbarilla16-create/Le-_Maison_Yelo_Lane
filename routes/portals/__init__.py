@@ -1,11 +1,12 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app
 from flask_login import login_user, current_user, login_required
 from flask_mail import Message
-from models import db, User, Order, OrderItem, Ingredient, MenuItemIngredient, Supplier, WasteRecord
+from models import db, User, Order, OrderItem, Ingredient, MenuItemIngredient, Supplier, WasteRecord, MenuItem
 from utils import get_ph_time, validate_password, safe_elapsed
 import random
 import threading
 import traceback
+from collections import defaultdict
 
 # Blueprints WITHOUT prefix because we specify full paths in decorators to match user's custom URL mix
 cashier_bp = Blueprint('cashier_portal', __name__)
@@ -427,6 +428,36 @@ def kitchen_pantry():
                            grouped_ingredients=grouped_ingredients,
                            portal_name=f"{current_user.first_name} {current_user.last_name}")
 
+@kitchen_bp.route('/staff/kitchen/pantry/update', methods=['POST'])
+def kitchen_update_pantry():
+    if not current_user.is_authenticated or current_user.role not in KITCHEN_ROLES:
+        return redirect(url_for('kitchen_portal.kitchen_login'))
+    
+    ing_id = request.form.get('ingredient_id', type=int)
+    new_qty = request.form.get('kitchen_qty', type=float)
+    
+    if ing_id is not None and new_qty is not None:
+        ing = Ingredient.query.get(ing_id)
+        if ing:
+            ing.kitchen_qty = new_qty
+            db.session.commit()
+            flash(f"Updated {ing.name} kitchen stock to {new_qty} {ing.unit}.", "success")
+            
+    return redirect(url_for('kitchen_portal.kitchen_pantry'))
+
+@kitchen_bp.route('/staff/kitchen/pantry/emergency-fill', methods=['POST'])
+def kitchen_emergency_fill():
+    if not current_user.is_authenticated or current_user.role not in KITCHEN_ROLES:
+        return redirect(url_for('kitchen_portal.kitchen_login'))
+        
+    all_ings = Ingredient.query.all()
+    for ing in all_ings:
+        ing.kitchen_qty = 100.0 # Emergency baseline to allow testing
+        
+    db.session.commit()
+    flash("Emergency fill completed! All ingredients set to 100.0 for testing.", "warning")
+    return redirect(url_for('kitchen_portal.kitchen_pantry'))
+
 @kitchen_bp.route('/staff/kitchen/stock-requests')
 def kitchen_stock_requests():
     from routes.admin import stock_requests
@@ -505,11 +536,14 @@ def inventory_dashboard():
     total_items = len(all_ingredients)
     low_stock_count = Ingredient.query.filter(Ingredient.stock_qty <= Ingredient.reorder_level).count()
     
+    suppliers = Supplier.query.order_by(Supplier.name).all()
+    
     return render_template('inventory/dashboard.html',
                            portal_name=f"{current_user.first_name} {current_user.last_name}",
                            total_items=total_items,
                            low_stock=low_stock_count,
-                           ingredients=all_ingredients)
+                           ingredients=all_ingredients,
+                           suppliers=suppliers)
 
 @inventory_bp.route('/staff/inventory/batches')
 def inventory_ingredient_batches():
@@ -521,12 +555,14 @@ def inventory_full():
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
         return redirect(url_for('inventory_portal.inventory_login'))
     
-    from collections import defaultdict
     page = request.args.get('page', 1, type=int)
     ingredients_pg = Ingredient.query.order_by(Ingredient.category, Ingredient.name).paginate(page=page, per_page=50)
     
+    suppliers = Supplier.query.order_by(Supplier.name).all()
+    
     return render_template('inventory/full.html', 
                            ingredients=ingredients_pg,
+                           suppliers=suppliers,
                            portal_name=f"{current_user.first_name} {current_user.last_name}")
 
 @inventory_bp.route('/staff/inventory/suppliers')
@@ -534,10 +570,138 @@ def inventory_suppliers():
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
         return redirect(url_for('inventory_portal.inventory_login'))
     
+    from collections import defaultdict
     suppliers_list = Supplier.query.order_by(Supplier.name).all()
+    
+    # Enrich suppliers with category metadata (matching admin logic to satisfy template)
+    sup_ids = [s.id for s in suppliers_list]
+    if sup_ids:
+        sup_mappings = (
+            db.session.query(Ingredient.supplier_id, MenuItem.category)
+            .join(MenuItemIngredient, MenuItemIngredient.ingredient_id == Ingredient.id)
+            .join(MenuItem, MenuItem.id == MenuItemIngredient.menu_item_id)
+            .filter(Ingredient.supplier_id.in_(sup_ids))
+            .distinct()
+            .all()
+        )
+        cats_by_sup = defaultdict(list)
+        for s_id, cat in sup_mappings:
+            cats_by_sup[s_id].append(cat)
+            
+        for sup in suppliers_list:
+            # The template uses sup.category, so we pick the first one if available
+            mapped_cats = cats_by_sup.get(sup.id, [])
+            sup.category = mapped_cats[0] if mapped_cats else "General"
+    
     return render_template('inventory/suppliers.html', 
                            suppliers=suppliers_list,
                            portal_name=f"{current_user.first_name} {current_user.last_name}")
+
+@inventory_bp.route('/staff/inventory/ingredients/add', methods=['POST'])
+def inventory_add_ingredient():
+    if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        return redirect(url_for('inventory_portal.inventory_login'))
+    
+    name = request.form.get('name', '').strip()
+    unit = request.form.get('unit', 'grams')
+    category = request.form.get('category', 'General')
+    stock_qty = request.form.get('stock_qty', 0, type=float)
+    reorder_level = request.form.get('reorder_level', 0, type=float)
+    cost_per_unit = request.form.get('cost_per_unit', 0, type=float)
+    supplier_id = request.form.get('supplier_id', type=int)
+    expiration_date_str = request.form.get('expiration_date')
+    
+    expiration_date = None
+    if expiration_date_str:
+        try:
+            from datetime import datetime
+            expiration_date = datetime.strptime(expiration_date_str, '%Y-%m-%d')
+        except:
+            pass
+            
+    if not name:
+        flash('Ingredient name is required.', 'danger')
+        return redirect(url_for('inventory_portal.inventory_dashboard'))
+        
+    ing = Ingredient(
+        name=name, unit=unit, category=category, 
+        stock_qty=stock_qty, reorder_level=reorder_level,
+        cost_per_unit=cost_per_unit, supplier_id=supplier_id,
+        expiration_date=expiration_date
+    )
+    db.session.add(ing)
+    db.session.commit()
+    flash(f'Ingredient "{name}" added successfully!', 'success')
+    return redirect(url_for('inventory_portal.inventory_dashboard'))
+
+@inventory_bp.route('/staff/inventory/suppliers/add', methods=['POST'])
+def inventory_add_supplier():
+    if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        return redirect(url_for('inventory_portal.inventory_login'))
+        
+    name = request.form.get('name', '').strip()
+    contact_person = request.form.get('contact_person', '').strip()
+    phone = request.form.get('phone', '').strip()
+    email = request.form.get('email', '').strip()
+    address = request.form.get('address', '').strip()
+    
+    if not name:
+        flash('Supplier name is required.', 'danger')
+        return redirect(url_for('inventory_portal.inventory_suppliers'))
+        
+    sup = Supplier(name=name, contact_person=contact_person, phone=phone, email=email, address=address)
+    db.session.add(sup)
+    db.session.commit()
+    
+    new_ingredients_str = request.form.get('new_ingredients', '').strip()
+    if new_ingredients_str:
+        sup.catalog_items = new_ingredients_str
+        db.session.commit()
+        
+    flash(f'Supplier "{name}" added successfully!', 'success')
+    return redirect(url_for('inventory_portal.inventory_suppliers'))
+
+@inventory_bp.route('/staff/inventory/ingredients/restock/<int:ing_id>', methods=['POST'])
+def inventory_restock(ing_id):
+    if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        return redirect(url_for('inventory_portal.inventory_login'))
+    
+    ing = Ingredient.query.get_or_404(ing_id)
+    add_qty = request.form.get('add_qty', 0, type=float)
+    if add_qty > 0:
+        ing.stock_qty += add_qty
+        db.session.commit()
+        flash(f'Restocked {add_qty} {ing.unit} to {ing.name}.', 'success')
+    return redirect(url_for('inventory_portal.inventory_dashboard'))
+
+@inventory_bp.route('/staff/inventory/ingredients/waste/add', methods=['POST'])
+def inventory_add_waste():
+    if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        return redirect(url_for('inventory_portal.inventory_login'))
+        
+    ing_id = request.form.get('ingredient_id', type=int)
+    qty = request.form.get('quantity_wasted', type=float)
+    reason = request.form.get('reason', 'Other')
+    notes = request.form.get('notes', '').strip()
+    
+    ing = Ingredient.query.get_or_404(ing_id)
+    cost_lost = qty * float(ing.cost_per_unit or 0)
+    ing.stock_qty = max(0, float(ing.stock_qty) - qty)
+    
+    waste = WasteRecord(
+        ingredient_id=ing_id,
+        quantity_wasted=qty,
+        reason=reason,
+        notes=notes,
+        cost_lost=cost_lost,
+        recorded_by=current_user.id
+    )
+    db.session.add(waste)
+    db.session.commit()
+    
+    flash(f'Recorded waste for {ing.name}.', 'warning')
+    return redirect(url_for('inventory_portal.inventory_dashboard'))
+
 
 @inventory_bp.route('/staff/inventory/waste')
 def inventory_waste_records():

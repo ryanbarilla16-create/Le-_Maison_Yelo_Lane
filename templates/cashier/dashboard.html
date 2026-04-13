@@ -1,36 +1,25 @@
-{% extends "layouts/staff_layout.html" %}
+{% extends "admin/base.html" %}
 
 {% block title %}Cashier Dashboard — Le Maison{% endblock %}
 
-{% block portal_sub %}Cashier Portal{% endblock %}
-{% block portal_role %}Cashier{% endblock %}
-{% block logout_url %}{{ url_for('cashier_portal.cashier_logout') }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 style="font-family: 'Georgia', serif; color: var(--text-main); font-size: 2rem; font-weight: bold; margin: 0;">
+            <i class="fas fa-shopping-bag me-2"></i>Cashier Dashboard
+        </h1>
+        <p class="text-muted" style="font-size: 0.95rem; margin-top: 5px;">Manage and process customer orders in real time</p>
+    </div>
+</div>
 
-{% block sidebar_nav %}
-    <div class="nav-section-label">Workspace</div>
-    <a class="nav-item active" href="{{ url_for('cashier_portal.cashier_dashboard') }}">
-        <i class="fas fa-cash-register"></i> Active Orders
-    </a>
-    <a class="nav-item" href="{{ url_for('cashier_portal.cashier_orders_history') }}">
-        <i class="fas fa-history"></i> Order History
-    </a>
-    <div class="nav-section-label">Quick</div>
-    <a class="nav-item" href="{{ url_for('main.menu_page') }}">
-        <i class="fas fa-utensils"></i> Menu
-    </a>
-{% endblock %}
-
-{% block page_title %}Cashier Dashboard{% endblock %}
-{% block page_subtitle %}Manage and process customer orders in real time{% endblock %}
-
-{% block extra_style %}
+<style>
     .stats-row { display:grid; grid-template-columns:repeat(3, 1fr); gap:24px; margin-bottom:32px; }
     .stat-card {
-        background:var(--card); backdrop-filter:blur(18px);
-        border:1px solid var(--card-border); border-radius:24px;
+        background:#fff; border-radius:16px;
         padding:28px 24px; box-shadow:0 8px 32px rgba(93,64,55,0.06);
         position:relative; overflow:hidden; transition:all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
         display:flex; flex-direction:column; align-items:center; text-align:center;
+        border: 1px solid rgba(139, 99, 75, 0.1);
     }
     .stat-card:hover { transform:translateY(-5px); box-shadow:0 15px 45px rgba(93,64,55,0.1); }
     
@@ -42,40 +31,40 @@
     }
     .stat-card:hover .icon-wrap { transform:scale(1.1) rotate(5deg); }
     
-    .stat-card .stat-value { font-size:2.2rem; font-weight:700; color:var(--text); line-height:1; margin-bottom:6px; }
-    .stat-card .stat-label { font-size:0.75rem; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:1px; }
+    .stat-card .stat-value { font-size:2.2rem; font-weight:700; color:var(--text-main); line-height:1; margin-bottom:6px; }
+    .stat-card .stat-label { font-size:0.75rem; color:#8b634b; font-weight:600; text-transform:uppercase; letter-spacing:1px; }
     
-    .stat-card .icon-wrap.brown { background:rgba(93,64,55,0.08); color:var(--primary); }
-    .stat-card .icon-wrap.green { background:rgba(46,125,50,0.08); color:var(--success); }
-    .stat-card .icon-wrap.orange { background:rgba(230,81,0,0.08); color:var(--warning); }
+    .stat-card .icon-wrap.brown { background:rgba(139, 99, 75, 0.1); color:#8b634b; }
+    .stat-card .icon-wrap.green { background:rgba(46,125,50,0.08); color:var(--success, #28a745); }
+    .stat-card .icon-wrap.orange { background:rgba(230,81,0,0.08); color:var(--warning, #ffc107); }
     
-    .glow-line { position:absolute; top:0; left:0; right:0; height:4px; opacity:0.6; }
-    .glow-brown { background:linear-gradient(90deg, var(--primary), var(--accent)); }
+    .glow-line { position:absolute; top:0; left:0; right:0; height:4px; opacity:0.8; }
+    .glow-brown { background:linear-gradient(90deg, #8b634b, #d4a373); }
     .glow-green { background:linear-gradient(90deg, #2e7d32, #81c784); }
     .glow-orange { background:linear-gradient(90deg, #e65100, #ffcc00); }
 
     .section-header .badge {
-        background:rgba(93,64,55,0.08); color:var(--primary);
+        background:rgba(139, 99, 75, 0.1); color:#8b634b;
         border-radius:50px; padding:4px 14px;
-        font-size:0.72rem; font-weight:700;
+        font-size:0.75rem; font-weight:700;
     }
     
-    .order-id { font-weight:700; color:var(--primary); font-family:'Courier New', monospace; letter-spacing:1px; }
-    .order-amount { font-weight:700; color:var(--primary); }
+    .order-id { font-weight:700; color:#8b634b; font-family:'Courier New', monospace; letter-spacing:1px; }
+    .order-amount { font-weight:700; color:#8b634b; }
 
+    .pill { padding: 4px 12px; border-radius: 50px; font-size: 0.75rem; font-weight: 700; display: inline-block; }
     .pill.pending   { background:rgba(230,81,0,0.08);  color:#e65100; border:1px solid rgba(230,81,0,0.1); }
     .pill.preparing { background:rgba(25,118,210,0.08); color:#1976d2; border:1px solid rgba(25,118,210,0.1); }
     .pill.ready     { background:rgba(46,125,50,0.08);  color:#2e7d32; border:1px solid rgba(46,125,50,0.1); }
-    .pill.completed { background:rgba(93,64,55,0.08);  color:var(--primary); border:1px solid rgba(93,64,55,0.1); }
-    .pill.unpaid    { background:rgba(198,40,40,0.08);  color:var(--danger); border:1px solid rgba(198,40,40,0.1); }
-    .pill.paid      { background:rgba(46,125,50,0.08);  color:var(--success); border:1px solid rgba(46,125,50,0.1); }
+    .pill.completed { background:rgba(139,99,75,0.08); color:#8b634b; border:1px solid rgba(139,99,75,0.1); }
+    .pill.unpaid    { background:rgba(198,40,40,0.08); color:#dc3545; border:1px solid rgba(198,40,40,0.1); }
+    .pill.paid      { background:rgba(46,125,50,0.08); color:#28a745; border:1px solid rgba(46,125,50,0.1); }
     
-    .empty-state { text-align:center; padding:80px 20px; color:var(--muted); }
+    .empty-state { text-align:center; padding:80px 20px; color:#6c757d; }
     .empty-state i { font-size:3rem; opacity:0.15; margin-bottom:20px; display:block; animation: breathe 3s ease-in-out infinite; }
     @keyframes breathe { 0%, 100% { transform: scale(1); opacity:0.1; } 50% { transform: scale(1.1); opacity:0.25; } }
-{% endblock %}
+</style>
 
-{% block content %}
     <div class="stats-row">
         <div class="stat-card">
             <div class="glow-line glow-brown"></div>
@@ -97,23 +86,24 @@
         </div>
     </div>
 
-    <div class="section-card">
-        <div class="section-header">
-            <h2><i class="fas fa-layer-group" style="color:var(--primary);margin-right:10px;opacity:0.7;"></i>Live Order Queue</h2>
+    <div class="card shadow-sm border-0" style="border-radius: 16px;">
+        <div class="card-header bg-white border-bottom p-3 d-flex justify-content-between align-items-center" style="border-radius: 16px 16px 0 0;">
+            <h5 class="mb-0 fw-bold" style="color: var(--text-main);"><i class="fas fa-layer-group me-2" style="color:#8b634b; opacity:0.7;"></i>Live Order Queue</h5>
             <span class="badge">{{ orders|length }} Active Job{{ 's' if orders|length != 1 else '' }}</span>
         </div>
 
         {% if orders %}
-        <table>
-            <thead>
+        <div class="card-body p-0 table-responsive">
+            <table class="table table-hover align-middle mb-0 text-center" style="font-size: 0.9rem;">
+                <thead style="border-bottom: 2px solid rgba(139, 99, 75, 0.1);">
                 <tr>
-                    <th>Ref ID</th>
-                    <th>Customer Name</th>
-                    <th>Order Total</th>
-                    <th>Service</th>
-                    <th>Order Status</th>
-                    <th>Payment</th>
-                    <th>Created</th>
+                    <th style="color: var(--text-main);">Ref ID</th>
+                    <th style="color: var(--text-main); text-align: left;">Customer Name</th>
+                    <th style="color: var(--text-main);">Order Total</th>
+                    <th style="color: var(--text-main);">Service</th>
+                    <th style="color: var(--text-main);">Order Status</th>
+                    <th style="color: var(--text-main);">Payment</th>
+                    <th style="color: var(--text-main);">Created</th>
                 </tr>
             </thead>
             <tbody>
@@ -152,17 +142,18 @@
                 {% endfor %}
             </tbody>
         </table>
+        </div>
         {% else %}
-        <div class="empty-state">
-            <i class="fas fa-cloud"></i>
-            <p style="font-size:1.1rem; font-weight:300;">Queue is empty.</p>
-            <p style="font-size:0.85rem; margin-top:5px; opacity:0.8;">Everything is caught up. Time for a coffee break?</p>
+        <div class="card-body">
+            <div class="empty-state">
+                <i class="fas fa-cloud"></i>
+                <p style="font-size:1.1rem; font-weight:300; margin-bottom: 5px;">Queue is empty.</p>
+                <p style="font-size:0.85rem; margin-top:0; opacity:0.8;">Everything is caught up. Time for a coffee break?</p>
+            </div>
         </div>
         {% endif %}
     </div>
-{% endblock %}
 
-{% block extra_script %}
 <script>
     // Soothing refresh logic - every 45 seconds to keep it relaxing
     setTimeout(() => {

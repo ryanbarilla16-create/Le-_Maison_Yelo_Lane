@@ -3283,18 +3283,66 @@ def create_stock_request():
     ing_id = request.form.get('ingredient_id', type=int)
     qty = request.form.get('quantity_requested', type=float)
     notes = request.form.get('notes', '').strip()
+    
+    ing = Ingredient.query.get(ing_id)
+    if not ing:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': False, 'message': 'Ingredient not found.'})
+        flash('Ingredient not found.', 'danger')
+        return redirect(url_for('admin.stock_requests'))
+        
+    # Validation: Do not allow request if main inventory cannot fulfill it
+    if float(ing.stock_qty) < qty:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': False, 'message': f'Insufficient warehouse stock. Only {ing.stock_qty} {ing.unit} available. Cannot fulfill this request.'})
+        flash(f'Insufficient warehouse stock. Only {ing.stock_qty} {ing.unit} available.', 'danger')
+        return redirect(url_for('admin.stock_requests'))
+        
     req = StockRequest(
         ingredient_id=ing_id,
         requested_by_id=current_user.id,
         quantity_requested=qty,
+        quantity_fulfilled=qty,
+        status='FULFILLED',
+        fulfilled_by_id=current_user.id,
         notes=notes
     )
     db.session.add(req)
+    
+    # 1. Deduct from Main Inventory (FIFO)
+    prev_main = float(ing.stock_qty)
+    ing.stock_qty = max(0, prev_main - qty)
+    log_inventory_change(ing.id, 'DEDUCT', qty, prev_main, f"Direct Pull to Kitchen")
+
+    # 2. Add to Kitchen Side
+    prev_kitchen = float(ing.kitchen_qty or 0)
+    ing.kitchen_qty = prev_kitchen + qty
+    log_inventory_change(ing.id, 'ADD', qty, prev_kitchen, f"Received from Bodega")
+
+    # 3. Handle FIFO Batches (Exhaust from Warehouse)
+    remaining_needed = qty
+    batches = IngredientBatch.query.filter_by(ingredient_id=ing.id, is_exhausted=False)\
+                                   .order_by(IngredientBatch.purchase_date.asc(), IngredientBatch.id.asc()).all()
+    for batch in batches:
+        if remaining_needed <= 0: break
+        batch_avail = float(batch.remaining_qty)
+        if batch_avail <= remaining_needed:
+            remaining_needed -= batch_avail
+            batch.remaining_qty = 0
+            batch.is_exhausted = True
+        else:
+            batch.remaining_qty = batch_avail - remaining_needed
+            remaining_needed = 0
+
+    # 4. Mandatory Sync: Auto-update is_available for all menus using this ingredient
+    _sync_single_ingredient_availability(ing.id)
+
     db.session.commit()
-    # Notify inventory staff
+    
+    # Notify inventory staff about the instant pull
     inv_staff = User.query.filter(User.role.in_(['INVENTORY_STAFF', 'INVENTORY', 'ADMIN'])).all()
     for s in inv_staff:
-        _create_web_notification(s.id, 'New Stock Request', f'Kitchen requested {qty} units of {req.ingredient.name}', 'SYSTEM')
+        _create_web_notification(s.id, 'Kitchen Stock Pulled', f'Kitchen automatically pulled {qty} units of {req.ingredient.name}', 'SYSTEM')
 
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return jsonify({

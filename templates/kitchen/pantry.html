@@ -18,10 +18,22 @@
     <a class="nav-item" href="{{ url_for('main.menu_page') }}">
         <i class="fas fa-utensils"></i> Menu Items
     </a>
+    <a class="nav-item" href="{{ url_for('kitchen_portal.kitchen_stock_requests') }}">
+        <i class="fas fa-file-invoice"></i> Stock Requests
+    </a>
 {% endblock %}
 
 {% block page_title %}Kitchen Pantry{% endblock %}
-{% block page_subtitle %}Monitor on-hand ingredients in the kitchen station{% endblock %}
+{% block page_subtitle %}
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span>Monitor on-hand ingredients in the kitchen station</span>
+        <button class="btn-primary" style="background:#5D4037; border:1px solid rgba(255,255,255,0.1); padding:6px 14px; font-size:0.75rem;" 
+                onclick="confirmEmergency()">
+            <i class="fas fa-bolt me-1"></i> Emergency Fill (All to 100)
+        </button>
+        <form id="emergencyForm" action="{{ url_for('kitchen_portal.kitchen_emergency_fill') }}" method="POST" style="display:none;"></form>
+    </div>
+{% endblock %}
 
 {% block extra_style %}
     .category-section { margin-bottom:40px; }
@@ -43,6 +55,24 @@
     .ing-card .unit { font-size:0.75rem; color:var(--muted); font-weight:600; }
     
     .low-stock-pill { background:rgba(198,40,40,0.1); color:var(--danger); font-size:0.6rem; padding:2px 8px; border-radius:50px; font-weight:800; }
+    
+    .edit-btn { 
+        position:absolute; top:8px; right:8px; opacity:0;
+        width:24px; height:24px; border-radius:6px; border:none;
+        background:rgba(93,64,55,0.06); color:var(--primary); cursor:pointer;
+        display:flex; align-items:center; justify-content:center;
+        transition:all 0.2s; font-size:0.75rem;
+    }
+    .ing-card:hover .edit-btn { opacity:1; }
+    .edit-btn:hover { background:var(--primary); color:white; }
+    
+    .ing-card { position:relative; }
+    
+    .edit-form { margin-top:10px; display:none; flex-direction:column; gap:8px; padding-top:10px; border-top:1px dashed rgba(93,64,55,0.15); }
+    .edit-form input { padding:6px 10px; border-radius:8px; border:1px solid rgba(93,64,55,0.2); font-size:0.85rem; }
+    .edit-form .btn-sm { padding:4px 8px; font-size:0.75rem; font-weight:700; cursor:pointer; border:none; border-radius:6px; }
+    .btn-save { background:var(--primary); color:white; }
+    .btn-cancel { background:#eee; color:#666; }
 {% endblock %}
 
 {% block content %}
@@ -59,18 +89,51 @@
         </div>
         <div class="pantry-grid">
             {% for ing in items %}
-            <div class="ing-card">
+            <div class="ing-card" id="card-{{ ing.id }}">
+                <button class="edit-btn" onclick="toggleEdit({{ ing.id }})"><i class="fas fa-pencil"></i></button>
                 <div class="name">{{ ing.name }}</div>
                 <div class="val-row">
-                    <span class="qty">{{ "%.1f"|format(ing.kitchen_qty|float) }}</span>
+                    <span class="qty" id="qty-{{ ing.id }}">{{ "%.1f"|format(ing.kitchen_qty|float) }}</span>
                     <span class="unit">{{ ing.unit }}</span>
                     {% if ing.kitchen_qty|float <= (ing.reorder_level|float / 2) %}
                         <span class="low-stock-pill">LOW</span>
                     {% endif %}
                 </div>
+                
+                <form class="edit-form" id="form-{{ ing.id }}" action="{{ url_for('kitchen_portal.kitchen_update_pantry') }}" method="POST">
+                    <input type="hidden" name="ingredient_id" value="{{ ing.id }}">
+                    <label style="font-size:0.65rem; font-weight:800; color:var(--muted); text-transform:uppercase;">Update Stock:</label>
+                    <input type="number" name="kitchen_qty" step="0.1" value="{{ ing.kitchen_qty|float }}" required>
+                    <div style="display:flex; gap:5px;">
+                        <button type="submit" class="btn-sm btn-save">Save</button>
+                        <button type="button" class="btn-sm btn-cancel" onclick="toggleEdit({{ ing.id }})">Cancel</button>
+                    </div>
+                </form>
             </div>
             {% endfor %}
         </div>
     </div>
     {% endfor %}
+{% endblock %}
+
+{% block extra_script %}
+<script>
+    function toggleEdit(id) {
+        const form = document.getElementById('form-' + id);
+        const valRow = document.querySelector('#card-' + id + ' .val-row');
+        if (form.style.display === 'flex') {
+            form.style.display = 'none';
+            valRow.style.display = 'flex';
+        } else {
+            form.style.display = 'flex';
+            valRow.style.display = 'none';
+        }
+    }
+    
+    function confirmEmergency() {
+        if (confirm("Are you sure you want to set ALL ingredients to 100.0? Use only for testing.")) {
+            document.getElementById('emergencyForm').submit();
+        }
+    }
+</script>
 {% endblock %}

@@ -20,16 +20,58 @@
     <a class="nav-item" href="{{ url_for('inventory_portal.inventory_waste_records') }}">
         <i class="fas fa-trash-can"></i> Waste Log
     </a>
+    <a class="nav-item" href="{{ url_for('inventory_portal.inventory_stock_requests') }}">
+        <i class="fas fa-file-invoice"></i> Stock Requests
+    </a>
 {% endblock %}
 
 {% block page_title %}Full Warehouse Inventory{% endblock %}
 {% block page_subtitle %}Comprehensive list of all tracked ingredients and supplies{% endblock %}
 
+{% block extra_style %}
+    /* MODAL STYLES (Match Dashboard) */
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
+        display: none; align-items: center; justify-content: center; z-index: 2000;
+    }
+    .modal-content-custom {
+        background: white; border-radius: 20px; width: 100%; max-width: 500px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.2); overflow: hidden;
+    }
+    .modal-header-custom {
+        padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;
+        color: white; background: var(--primary);
+    }
+    .modal-header-custom h3 { margin: 0; font-size: 1.1rem; }
+    .close-modal { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; opacity: 0.7; }
+    .modal-body-custom { padding: 24px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .full-width { grid-column: span 2; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label { font-size: 0.75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+    .form-group input, .form-group select, .form-group textarea {
+        padding: 10px 14px; border: 1px solid var(--card-border); border-radius: 10px;
+        font-size: 0.9rem;
+    }
+    .modal-footer-custom {
+        padding: 20px 24px; background: #fdfaf8; border-top: 1px solid var(--card-border);
+        display: flex; justify-content: flex-end; gap: 12px;
+    }
+    .btn-secondary { background: #e0d6cf; color: #5d4037; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 600; }
+    .btn-primary { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 600; }
+{% endblock %}
+
 {% block content %}
 <div class="section-card">
     <div class="section-header">
         <h2>Stock Records</h2>
-        <div style="font-size:0.8rem; color:var(--muted);">Total Items: {{ ingredients.total }}</div>
+        <div style="display:flex; gap:12px; align-items:center;">
+            <button class="btn-primary" onclick="openModal('addIngredientModal')" style="padding: 8px 16px; font-size: 0.85rem;">
+                <i class="fas fa-plus me-1"></i> Add Ingredient
+            </button>
+            <div style="font-size:0.8rem; color:var(--muted);">Total Items: {{ ingredients.total }}</div>
+        </div>
     </div>
     <table>
         <thead>
@@ -71,4 +113,91 @@
         {% endif %}
     </div>
 </div>
+</div>
+
+<!-- Add Ingredient Modal -->
+<div id="addIngredientModal" class="modal-overlay">
+    <div class="modal-content-custom">
+        <div class="modal-header-custom">
+            <h3><i class="fas fa-plus"></i> Add New Ingredient</h3>
+            <button class="close-modal" onclick="closeModal('addIngredientModal')">&times;</button>
+        </div>
+        <form action="{{ url_for('inventory_portal.inventory_add_ingredient') }}" method="POST" class="modal-body-custom">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Ingredient Name *</label>
+                    <input type="text" name="name" required placeholder="e.g. Flour">
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <select name="category">
+                        <option value="General">General</option>
+                        <option value="Meat">Meat</option>
+                        <option value="Seafood">Seafood</option>
+                        <option value="Poultry">Poultry</option>
+                        <option value="Dairy">Dairy & Eggs</option>
+                        <option value="Pantry">Pantry & Spices</option>
+                        <option value="Vegetables">Fruits & Vegetables</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Unit</label>
+                    <select name="unit">
+                        <option value="grams">grams</option>
+                        <option value="kg">kg</option>
+                        <option value="pieces">pieces</option>
+                        <option value="liters">liters</option>
+                        <option value="ml">ml</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Initial Stock</label>
+                    <input type="number" name="stock_qty" step="0.01" value="0">
+                </div>
+                <div class="form-group">
+                    <label>Reorder Level</label>
+                    <input type="number" name="reorder_level" step="0.01" value="10">
+                </div>
+                <div class="form-group">
+                    <label>Cost per Unit (₱)</label>
+                    <input type="number" name="cost_per_unit" step="0.01" value="0">
+                </div>
+                <div class="form-group full-width">
+                    <label>Supplier</label>
+                    <select name="supplier_id">
+                        <option value="">-- No Supplier --</option>
+                        {% for sup in suppliers %}
+                        <option value="{{ sup.id }}">{{ sup.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group full-width">
+                    <label>Expiration Date</label>
+                    <input type="date" name="expiration_date">
+                </div>
+            </div>
+            <div class="modal-footer-custom">
+                <button type="button" class="btn-secondary" onclick="closeModal('addIngredientModal')">Cancel</button>
+                <button type="submit" class="btn-primary">Add Ingredient</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_script %}
+<script>
+    function openModal(id) {
+        document.getElementById(id).style.display = 'flex';
+    }
+    function closeModal(id) {
+        document.getElementById(id).style.display = 'none';
+    }
+    // Close on click outside
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal-overlay')) {
+            event.target.style.display = 'none';
+        }
+    }
+</script>
 {% endblock %}

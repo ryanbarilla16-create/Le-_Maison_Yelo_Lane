@@ -20,6 +20,9 @@
     <a class="nav-item" href="{{ url_for('inventory_portal.inventory_waste_records') }}">
         <i class="fas fa-trash-can"></i> Waste Log
     </a>
+    <a class="nav-item" href="{{ url_for('inventory_portal.inventory_stock_requests') }}">
+        <i class="fas fa-file-invoice"></i> Stock Requests
+    </a>
 {% endblock %}
 
 {% block page_title %}Inventory Dashboard{% endblock %}
@@ -58,6 +61,63 @@
     
     .empty-state { text-align:center; padding:60px 20px; color:var(--muted); }
     .empty-state i { font-size:2.5rem; opacity:0.25; margin-bottom:12px; display:block; }
+
+    /* ACTION BUTTONS */
+    .btn-action {
+        width: 32px; height: 32px; border-radius: 8px; border: none;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; transition: all 0.2s; font-size: 0.9rem;
+    }
+    .btn-restock { background: rgba(46,125,50,0.1); color: #2e7d32; }
+    .btn-restock:hover { background: #2e7d32; color: white; transform: scale(1.1); }
+    .btn-waste { background: rgba(198,40,40,0.1); color: #c62828; }
+    .btn-waste:hover { background: #c62828; color: white; transform: scale(1.1); }
+
+    /* MODAL STYLES */
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
+        display: none; align-items: center; justify-content: center; z-index: 2000;
+    }
+    .modal-content-custom {
+        background: white; border-radius: 20px; width: 100%; max-width: 500px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.2); overflow: hidden;
+        animation: modalSlide 0.3s ease-out;
+    }
+    .modal-sm { max-width: 400px; }
+    @keyframes modalSlide { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+    .modal-header-custom {
+        padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;
+        color: white;
+    }
+    .mod-primary { background: var(--primary); }
+    .mod-success { background: #2e7d32; }
+    .mod-danger { background: #c62828; }
+    
+    .modal-header-custom h3 { margin: 0; font-size: 1.1rem; }
+    .close-modal { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; opacity: 0.7; }
+    .close-modal:hover { opacity: 1; }
+
+    .modal-body-custom { padding: 24px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .full-width { grid-column: span 2; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label { font-size: 0.75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+    .form-group input, .form-group select, .form-group textarea {
+        padding: 10px 14px; border: 1px solid var(--card-border); border-radius: 10px;
+        font-size: 0.9rem; transition: border-color 0.2s;
+    }
+    .form-group input:focus { border-color: var(--primary); outline: none; }
+
+    .modal-footer-custom {
+        padding: 20px 24px; background: #fdfaf8; border-top: 1px solid var(--card-border);
+        display: flex; justify-content: flex-end; gap: 12px;
+    }
+    .btn-secondary { background: #e0d6cf; color: #5d4037; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 600; }
+    .btn-primary { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 600; }
+    .btn-success { background: #2e7d32; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 600; }
+    .btn-danger { background: #c62828; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 600; }
 {% endblock %}
 
 {% block content %}
@@ -85,7 +145,12 @@
     <div class="section-card">
         <div class="section-header">
             <h2><i class="fas fa-list" style="color:var(--primary);margin-right:8px;"></i>Ingredient Stock Levels</h2>
-            <span class="pill" style="background:rgba(93,64,55,0.08); color:var(--primary);">{{ ingredients|length }} items shown</span>
+            <div style="display:flex; gap:12px; align-items:center;">
+                <button class="btn-primary" style="padding: 8px 16px; font-size: 0.85rem;" onclick="openModal('addIngredientModal')">
+                    <i class="fas fa-plus me-1"></i> Add Ingredient
+                </button>
+                <span class="pill" style="background:rgba(93,64,55,0.08); color:var(--primary);">{{ ingredients|length }} items shown</span>
+            </div>
         </div>
 
         {% if ingredients %}
@@ -98,6 +163,7 @@
                     <th>Qty</th>
                     <th>Reorder At</th>
                     <th>Status</th>
+                    <th style="width:120px; text-align:center;">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -127,6 +193,18 @@
                         <span class="alert-ok"><i class="fas fa-check" style="font-size:0.65rem;"></i> OK</span>
                         {% endif %}
                     </td>
+                    <td style="text-align:center;">
+                        <div style="display:flex; gap:8px; justify-content:center;">
+                            <button class="btn-action btn-restock" title="Restock" 
+                                    onclick="openRestockModal({{ ing.id }}, '{{ ing.name|e }}', '{{ ing.unit }}')">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button class="btn-action btn-waste" title="Record Waste"
+                                    onclick="openWasteModal({{ ing.id }}, '{{ ing.name|e }}', '{{ ing.unit }}', {{ ing.stock_qty }})">
+                                <i class="fas fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -138,11 +216,174 @@
         </div>
         {% endif %}
     </div>
+
+
+    <!-- MODALS -->
+    <!-- Add Ingredient Modal -->
+    <div id="addIngredientModal" class="modal-overlay">
+        <div class="modal-content-custom">
+            <div class="modal-header-custom mod-primary">
+                <h3><i class="fas fa-plus"></i> Add New Ingredient</h3>
+                <button class="close-modal" onclick="closeModal('addIngredientModal')">&times;</button>
+            </div>
+            <form action="{{ url_for('inventory_portal.inventory_add_ingredient') }}" method="POST" class="modal-body-custom">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Ingredient Name *</label>
+                        <input type="text" name="name" required placeholder="e.g. Flour">
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select name="category">
+                            <option value="General">General</option>
+                            <option value="Meat">Meat</option>
+                            <option value="Seafood">Seafood</option>
+                            <option value="Poultry">Poultry</option>
+                            <option value="Dairy">Dairy & Eggs</option>
+                            <option value="Pantry">Pantry & Spices</option>
+                            <option value="Vegetables">Fruits & Vegetables</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Unit</label>
+                        <select name="unit">
+                            <option value="grams">grams</option>
+                            <option value="kg">kg</option>
+                            <option value="pieces">pieces</option>
+                            <option value="liters">liters</option>
+                            <option value="ml">ml</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Initial Stock</label>
+                        <input type="number" name="stock_qty" step="0.01" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Reorder Level</label>
+                        <input type="number" name="reorder_level" step="0.01" value="10">
+                    </div>
+                    <div class="form-group">
+                        <label>Cost per Unit (₱)</label>
+                        <input type="number" name="cost_per_unit" step="0.01" value="0">
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Supplier</label>
+                        <select name="supplier_id">
+                            <option value="">-- No Supplier --</option>
+                            {% for sup in suppliers %}
+                            <option value="{{ sup.id }}">{{ sup.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Expiration Date</label>
+                        <input type="date" name="expiration_date">
+                    </div>
+                </div>
+                <div class="modal-footer-custom">
+                    <button type="button" class="btn-secondary" onclick="closeModal('addIngredientModal')">Cancel</button>
+                    <button type="submit" class="btn-primary">Add Ingredient</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Restock Modal -->
+    <div id="restockModal" class="modal-overlay">
+        <div class="modal-content-custom modal-sm">
+            <div class="modal-header-custom mod-success">
+                <h3><i class="fas fa-plus"></i> Restock</h3>
+                <button class="close-modal" onclick="closeModal('restockModal')">&times;</button>
+            </div>
+            <form id="restockForm" method="POST" class="modal-body-custom">
+                <p>Add stock for <strong id="restockName"></strong></p>
+                <div class="form-group">
+                    <label>Quantity to Add (<span id="restockUnit"></span>)</label>
+                    <input type="number" name="add_qty" step="0.01" required autofocus>
+                </div>
+                <div class="modal-footer-custom">
+                    <button type="button" class="btn-secondary" onclick="closeModal('restockModal')">Cancel</button>
+                    <button type="submit" class="btn-success">Confirm</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Waste Modal -->
+    <div id="wasteModal" class="modal-overlay">
+        <div class="modal-content-custom modal-sm">
+            <div class="modal-header-custom mod-danger">
+                <h3><i class="fas fa-trash-can"></i> Record Waste</h3>
+                <button class="close-modal" onclick="closeModal('wasteModal')">&times;</button>
+            </div>
+            <form id="wasteForm" action="{{ url_for('inventory_portal.inventory_add_waste') }}" method="POST" class="modal-body-custom">
+                <input type="hidden" name="ingredient_id" id="wasteId">
+                <p>Recording waste for <strong id="wasteName"></strong></p>
+                <p style="font-size:0.8rem; color:var(--muted); margin-bottom:12px;">Current: <span id="wasteCurrent"></span> <span class="waste-unit"></span></p>
+                
+                <div class="form-group">
+                    <label>Quantity Wasted (<span class="waste-unit"></span>)</label>
+                    <input type="number" name="quantity_wasted" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label>Reason</label>
+                    <select name="reason">
+                        <option value="Expired">Expired</option>
+                        <option value="Damaged">Damaged</option>
+                        <option value="Spilled">Spilled</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea name="notes" rows="2" placeholder="Optional notes..."></textarea>
+                </div>
+                <div class="modal-footer-custom">
+                    <button type="button" class="btn-secondary" onclick="closeModal('wasteModal')">Cancel</button>
+                    <button type="submit" class="btn-danger">Record Waste</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 {% endblock %}
 
 {% block extra_script %}
 <script>
-    // Refresh inventory every minute
-    setTimeout(() => location.reload(), 60000);
+    function openModal(id) {
+        document.getElementById(id).style.display = 'flex';
+    }
+    function closeModal(id) {
+        document.getElementById(id).style.display = 'none';
+    }
+
+    function openRestockModal(id, name, unit) {
+        document.getElementById('restockName').innerText = name;
+        document.getElementById('restockUnit').innerText = unit;
+        document.getElementById('restockForm').action = "/staff/inventory/ingredients/restock/" + id;
+        openModal('restockModal');
+    }
+
+    function openWasteModal(id, name, unit, current) {
+        document.getElementById('wasteId').value = id;
+        document.getElementById('wasteName').innerText = name;
+        document.querySelectorAll('.waste-unit').forEach(el => el.innerText = unit);
+        document.getElementById('wasteCurrent').innerText = current;
+        openModal('wasteModal');
+    }
+
+    // Refresh inventory every 5 mins instead of 1 to allow form entry
+    setTimeout(() => {
+        if (!document.querySelector('.modal-overlay[style*="flex"]')) {
+            location.reload();
+        }
+    }, 300000);
+
+    // Close on click outside
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal-overlay')) {
+            event.target.style.display = 'none';
+        }
+    }
 </script>
 {% endblock %}
