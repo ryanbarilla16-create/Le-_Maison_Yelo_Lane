@@ -207,6 +207,7 @@ def _portal_reset_password(portal_name, login_url_name):
 CASHIER_ROLES = ['CASHIER', 'STAFF', 'ADMIN']
 
 @cashier_bp.route('/cashier/login', methods=['GET', 'POST'])
+@cashier_bp.route('/staff/cashier/login', methods=['GET', 'POST'])
 def cashier_login():
     if current_user.is_authenticated and current_user.role in CASHIER_ROLES:
         return redirect(url_for('cashier_portal.cashier_dashboard'))
@@ -278,6 +279,7 @@ def cashier_logout():
     return redirect(url_for('admin.admin_logout'))
 
 @cashier_bp.route('/cashier/forgot-password', methods=['GET', 'POST'])
+@cashier_bp.route('/staff/cashier/forgot-password', methods=['GET', 'POST'])
 def cashier_forgot_password():
     result = _portal_forgot_password('Cashier', CASHIER_ROLES, 'cashier_portal.cashier_login', 'cashier_portal.cashier_verify_otp')
     if result:
@@ -287,6 +289,7 @@ def cashier_forgot_password():
                            login_url=url_for('cashier_portal.cashier_login'))
 
 @cashier_bp.route('/cashier/verify-otp/<int:user_id>', methods=['GET', 'POST'])
+@cashier_bp.route('/staff/cashier/verify-otp/<int:user_id>', methods=['GET', 'POST'])
 def cashier_verify_otp(user_id):
     result = _portal_verify_otp('Cashier', user_id, 'cashier_portal.cashier_forgot_password', 'cashier_portal.cashier_reset_password', 'cashier_portal.cashier_login')
     if isinstance(result, dict):
@@ -318,6 +321,7 @@ def cashier_reset_password():
 KITCHEN_ROLES = ['KITCHEN', 'ADMIN', 'CASHIER']
 
 @kitchen_bp.route('/kitchen/login', methods=['GET', 'POST'])
+@kitchen_bp.route('/staff/kitchen/login', methods=['GET', 'POST'])
 def kitchen_login():
     if current_user.is_authenticated and current_user.role in KITCHEN_ROLES:
         return redirect(url_for('kitchen_portal.kitchen_dashboard'))
@@ -433,6 +437,7 @@ def kitchen_logout():
     return redirect(url_for('admin.admin_logout'))
 
 @kitchen_bp.route('/kitchen/forgot-password', methods=['GET', 'POST'])
+@kitchen_bp.route('/staff/kitchen/forgot-password', methods=['GET', 'POST'])
 def kitchen_forgot_password():
     result = _portal_forgot_password('Kitchen', KITCHEN_ROLES, 'kitchen_portal.kitchen_login', 'kitchen_portal.kitchen_verify_otp')
     if result:
@@ -442,6 +447,7 @@ def kitchen_forgot_password():
                            login_url=url_for('kitchen_portal.kitchen_login'))
 
 @kitchen_bp.route('/kitchen/verify-otp/<int:user_id>', methods=['GET', 'POST'])
+@kitchen_bp.route('/staff/kitchen/verify-otp/<int:user_id>', methods=['GET', 'POST'])
 def kitchen_verify_otp(user_id):
     result = _portal_verify_otp('Kitchen', user_id, 'kitchen_portal.kitchen_forgot_password', 'kitchen_portal.kitchen_reset_password', 'kitchen_portal.kitchen_login')
     if isinstance(result, dict):
@@ -473,6 +479,7 @@ def kitchen_reset_password():
 INVENTORY_ROLES = ['INVENTORY_STAFF', 'INVENTORY', 'ADMIN']
 
 @inventory_bp.route('/inventory/login', methods=['GET', 'POST'])
+@inventory_bp.route('/staff/inventory/login', methods=['GET', 'POST'])
 def inventory_login():
     if current_user.is_authenticated and current_user.role in INVENTORY_ROLES:
         return redirect(url_for('inventory_portal.inventory_dashboard'))
@@ -559,6 +566,7 @@ def inventory_logout():
     return redirect(url_for('admin.admin_logout'))
 
 @inventory_bp.route('/inventory/forgot-password', methods=['GET', 'POST'])
+@inventory_bp.route('/staff/inventory/forgot-password', methods=['GET', 'POST'])
 def inventory_forgot_password():
     result = _portal_forgot_password('Inventory', INVENTORY_ROLES, 'inventory_portal.inventory_login', 'inventory_portal.inventory_verify_otp')
     if result:
@@ -568,6 +576,7 @@ def inventory_forgot_password():
                            login_url=url_for('inventory_portal.inventory_login'))
 
 @inventory_bp.route('/inventory/verify-otp/<int:user_id>', methods=['GET', 'POST'])
+@inventory_bp.route('/staff/inventory/verify-otp/<int:user_id>', methods=['GET', 'POST'])
 def inventory_verify_otp(user_id):
     result = _portal_verify_otp('Inventory', user_id, 'inventory_portal.inventory_forgot_password', 'inventory_portal.inventory_reset_password', 'inventory_portal.inventory_login')
     if isinstance(result, dict):
@@ -599,6 +608,7 @@ def inventory_reset_password():
 RIDER_ROLES = ['RIDER', 'ADMIN', 'CASHIER', 'STAFF']
 
 @rider_bp.route('/rider/login', methods=['GET', 'POST'])
+@rider_bp.route('/staff/rider/login', methods=['GET', 'POST'])
 def rider_login():
     if current_user.is_authenticated and current_user.role in RIDER_ROLES:
         return redirect(url_for('rider_portal.rider_dashboard'))
@@ -624,6 +634,7 @@ def rider_logout():
     return redirect(url_for('admin.admin_logout'))
 
 @rider_bp.route('/rider/forgot-password', methods=['GET', 'POST'])
+@rider_bp.route('/staff/rider/forgot-password', methods=['GET', 'POST'])
 def rider_forgot_password():
     result = _portal_forgot_password('Rider', RIDER_ROLES, 'rider_portal.rider_login', 'rider_portal.rider_verify_otp')
     if result:
@@ -633,6 +644,7 @@ def rider_forgot_password():
                            login_url=url_for('rider_portal.rider_login'))
 
 @rider_bp.route('/rider/verify-otp/<int:user_id>', methods=['GET', 'POST'])
+@rider_bp.route('/staff/rider/verify-otp/<int:user_id>', methods=['GET', 'POST'])
 def rider_verify_otp(user_id):
     result = _portal_verify_otp('Rider', user_id, 'rider_portal.rider_forgot_password', 'rider_portal.rider_reset_password', 'rider_portal.rider_login')
     if isinstance(result, dict):
