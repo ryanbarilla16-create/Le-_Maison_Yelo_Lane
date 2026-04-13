@@ -366,14 +366,13 @@ def kitchen_update_order(order_id):
     
     # Statuses allowed by kitchen: PREPARING, READY, COMPLETED
     if new_status in ['PREPARING', 'READY', 'COMPLETED']:
-        # ═══ STOCK VALIDATION & AUTO-DEDUCTION ═══
+        # Auto-deduct ingredients when order moves to PREPARING
         if new_status == 'PREPARING' and order.status != 'PREPARING':
             from collections import defaultdict
             order_items = list(order.items)
             menu_item_ids = list({oi.menu_item_id for oi in order_items if oi.menu_item_id})
             
             if menu_item_ids:
-                # 1. Fetch recipes and identify required ingredients
                 recipe_rows = MenuItemIngredient.query.filter(MenuItemIngredient.menu_item_id.in_(menu_item_ids)).all()
                 recipes_by_menu_item_id = defaultdict(list)
                 ingredient_ids = set()
@@ -381,29 +380,14 @@ def kitchen_update_order(order_id):
                     recipes_by_menu_item_id[rr.menu_item_id].append(rr)
                     ingredient_ids.add(rr.ingredient_id)
 
-                # 2. Calculate total quantities needed for THIS order
                 deduction_by_ingredient_id = defaultdict(float)
                 for oi in order_items:
                     for rr in recipes_by_menu_item_id.get(oi.menu_item_id, []):
                         deduction_by_ingredient_id[rr.ingredient_id] += float(rr.quantity_needed) * oi.quantity
 
-                # 3. Validation: Check if we have enough stock
                 ingredients = Ingredient.query.filter(Ingredient.id.in_(ingredient_ids)).all()
                 ingredients_by_id = {ing.id: ing for ing in ingredients}
-                insufficient_pantry_items = []
 
-                for ing_id, deduction in deduction_by_ingredient_id.items():
-                    ing = ingredients_by_id.get(ing_id)
-                    if not ing or float(ing.stock_qty) < float(deduction):
-                        item_name = ing.name if ing else "Unknown Ingredient"
-                        insufficient_pantry_items.append(f"{item_name} (Need: {deduction}, Have: {ing.stock_qty if ing else 0})")
-
-                # 4. If any ingredient is missing, BLOCK the start
-                if insufficient_pantry_items:
-                    flash(f"Cannot start Order #{order.id}: Insufficient pantry stocks for: {', '.join(insufficient_pantry_items)}", "error")
-                    return redirect(url_for('kitchen_portal.kitchen_dashboard'))
-
-                # 5. Deduction Phase: If all good, deduct the stock
                 for ing_id, deduction in deduction_by_ingredient_id.items():
                     ing = ingredients_by_id.get(ing_id)
                     if ing:
@@ -543,82 +527,7 @@ def inventory_full():
     
     return render_template('inventory/full.html', 
                            ingredients=ingredients_pg,
-                           suppliers=Supplier.query.order_by(Supplier.name).all(),
-                           categories=db.session.query(Ingredient.category).distinct().all(),
                            portal_name=f"{current_user.first_name} {current_user.last_name}")
-
-@inventory_bp.route('/staff/inventory/create', methods=['POST'])
-@login_required
-def inventory_create_ingredient():
-    if current_user.role not in INVENTORY_ROLES:
-        flash("Unauthorized", "error")
-        return redirect(url_for('main.index'))
-        
-    name = request.form.get('name')
-    category = request.form.get('category')
-    unit = request.form.get('unit')
-    initial_stock = request.form.get('stock_qty', 0, type=float)
-    reorder_level = request.form.get('reorder_level', 0, type=float)
-    
-    new_ing = Ingredient(
-        name=name,
-        category=category,
-        unit=unit,
-        stock_qty=initial_stock,
-        reorder_level=reorder_level
-    )
-    db.session.add(new_ing)
-    db.session.commit()
-    
-    flash(f"Ingredient '{name}' created successfully.", "success")
-    return redirect(url_for('inventory_portal.inventory_full'))
-
-@inventory_bp.route('/staff/inventory/adjust/<int:id>', methods=['POST'])
-@login_required
-def inventory_adjust_stock(id):
-    if current_user.role not in INVENTORY_ROLES:
-        return redirect(url_for('main.index'))
-        
-    ing = Ingredient.query.get_or_404(id)
-    new_qty = request.form.get('new_qty', type=float)
-    reason = request.form.get('reason', 'Manual Adjustment')
-    
-    old_qty = ing.stock_qty
-    ing.stock_qty = new_qty
-    db.session.commit()
-    
-    flash(f"Stock for '{ing.name}' adjusted from {old_qty} to {new_qty}.", "success")
-    return redirect(url_for('inventory_portal.inventory_full', page=request.args.get('page', 1)))
-
-@inventory_bp.route('/staff/inventory/record-waste/<int:id>', methods=['POST'])
-@login_required
-def inventory_record_waste(id):
-    if current_user.role not in INVENTORY_ROLES:
-        return redirect(url_for('main.index'))
-        
-    ing = Ingredient.query.get_or_404(id)
-    waste_qty = request.form.get('waste_qty', type=float)
-    reason = request.form.get('reason', 'Damaged / Expired')
-    
-    if waste_qty > ing.stock_qty:
-        flash("Waste quantity cannot exceed current stock.", "error")
-        return redirect(url_for('inventory_portal.inventory_full'))
-        
-    ing.stock_qty -= waste_qty
-    
-    # Record in WasteRecord model if exists
-    from models import WasteRecord
-    new_waste = WasteRecord(
-        ingredient_id=ing.id,
-        quantity_wasted=waste_qty,
-        reason=reason,
-        recorded_by_id=current_user.id
-    )
-    db.session.add(new_waste)
-    db.session.commit()
-    
-    flash(f"Recorded {waste_qty} {ing.unit} of '{ing.name}' as waste.", "success")
-    return redirect(url_for('inventory_portal.inventory_full', page=request.args.get('page', 1)))
 
 @inventory_bp.route('/staff/inventory/suppliers')
 def inventory_suppliers():
@@ -629,26 +538,6 @@ def inventory_suppliers():
     return render_template('inventory/suppliers.html', 
                            suppliers=suppliers_list,
                            portal_name=f"{current_user.first_name} {current_user.last_name}")
-
-@inventory_bp.route('/staff/inventory/suppliers/create', methods=['POST'])
-@login_required
-def inventory_create_supplier():
-    if current_user.role not in INVENTORY_ROLES:
-        return redirect(url_for('main.index'))
-        
-    new_sup = Supplier(
-        name=request.form.get('name'),
-        contact_person=request.form.get('contact'),
-        phone=request.form.get('phone'),
-        email=request.form.get('email'),
-        address=request.form.get('address'),
-        category=request.form.get('category')
-    )
-    db.session.add(new_sup)
-    db.session.commit()
-    
-    flash(f"Supplier '{new_sup.name}' added to directory.", "success")
-    return redirect(url_for('inventory_portal.inventory_suppliers'))
 
 @inventory_bp.route('/staff/inventory/waste')
 def inventory_waste_records():

@@ -46,13 +46,6 @@
 {% endblock %}
 
 {% block content %}
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
-    <div style="font-size:0.9rem; color:var(--muted);">Total Verified Suppliers: {{ suppliers|length }}</div>
-    <button class="btn-staff" onclick="document.getElementById('addSupplierModal').style.display='flex'">
-        <i class="fas fa-plus"></i> Add New Supplier
-    </button>
-</div>
-
 <div class="supplier-grid">
     {% for sup in suppliers %}
     <div class="supplier-card">
@@ -77,75 +70,6 @@
         <span class="sup-cat">{{ sup.category }}</span>
         {% endif %}
     </div>
-    {% else %}
-    <div style="grid-column:1/-1; text-align:center; padding:80px; background:var(--card); border-radius:20px; border:1px solid var(--card-border);">
-        <i class="fas fa-truck-ramp-box" style="font-size:4rem; color:var(--accent); margin-bottom:20px; display:block;"></i>
-        <h4 style="color:var(--primary);">No Suppliers Found</h4>
-        <p style="color:var(--muted);">Start building your supply network by adding your first provider.</p>
-    </div>
     {% endfor %}
-</div>
-
-<!-- Add Supplier Modal -->
-<style>
-    .modal-overlay {
-        position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
-        z-index: 2000; display: none; align-items: center; justify-content: center; padding: 20px;
-    }
-    .modal-card {
-        background: #fff; border-radius: 20px; width: 100%; max-width: 500px;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.2); overflow: hidden;
-    }
-    .modal-header { padding: 20px 24px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-    .modal-body { padding: 24px; }
-    .modal-footer { padding: 16px 24px; background: #f9f9f9; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 12px; }
-    .form-group { margin-bottom: 16px; }
-    .form-group label { display: block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
-    .form-control { width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid #ddd; outline: none; font-family: 'Outfit', sans-serif; font-size: 0.9rem; }
-</style>
-
-<div id="addSupplierModal" class="modal-overlay">
-    <div class="modal-card">
-        <form action="{{ url_for('inventory_portal.inventory_create_supplier') }}" method="POST">
-            <div class="modal-header">
-                <h3>Add New Supplier</h3>
-                <i class="fas fa-times" style="cursor:pointer;" onclick="document.getElementById('addSupplierModal').style.display='none'"></i>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label>Company / Supplier Name</label>
-                    <input type="text" name="name" class="form-control" required placeholder="e.g. Pagsanjan Dairy Farm">
-                </div>
-                <div class="row" style="display:flex; gap:12px;">
-                    <div class="form-group" style="flex:1;">
-                        <label>Contact Person</label>
-                        <input type="text" name="contact" class="form-control" placeholder="Full Name">
-                    </div>
-                    <div class="form-group" style="flex:1;">
-                        <label>Category</label>
-                        <input type="text" name="category" class="form-control" placeholder="e.g. Dairy, Meat">
-                    </div>
-                </div>
-                <div class="row" style="display:flex; gap:12px;">
-                    <div class="form-group" style="flex:1;">
-                        <label>Phone Number</label>
-                        <input type="text" name="phone" class="form-control">
-                    </div>
-                    <div class="form-group" style="flex:1;">
-                        <label>Email Address</label>
-                        <input type="email" name="email" class="form-control">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Business Address</label>
-                    <input type="text" name="address" class="form-control">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-staff" style="background:#eee; color:#666;" onclick="document.getElementById('addSupplierModal').style.display='none'">Cancel</button>
-                <button type="submit" class="btn-staff">Add Supplier</button>
-            </div>
-        </form>
-    </div>
 </div>
 {% endblock %}

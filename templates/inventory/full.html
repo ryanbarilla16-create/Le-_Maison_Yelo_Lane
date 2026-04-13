@@ -22,71 +22,16 @@
     </a>
 {% endblock %}
 
-{% block page_title %}Warehouse Inventory{% endblock %}
-{% block page_subtitle %}Comprehensive management of all tracked ingredients and supplies{% endblock %}
-
-{% block extra_style %}
-    .action-btn {
-        width: 32px; height: 32px; border-radius: 8px;
-        display: inline-flex; align-items: center; justify-content: center;
-        border: 1px solid rgba(93,64,55,0.1); background: #fff;
-        color: var(--primary); cursor: pointer; transition: all 0.2s;
-        text-decoration: none; font-size: 0.8rem;
-    }
-    .action-btn:hover { background: var(--primary); color: #fff; border-color: var(--primary); transform: translateY(-2px); }
-    .action-btn.waste:hover { background: var(--danger); border-color: var(--danger); }
-    
-    .search-bar {
-        background: var(--card); border: 1px solid var(--card-border);
-        border-radius: 12px; padding: 10px 16px; display: flex; align-items: center; gap: 10px;
-        width: 300px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-    }
-    .search-bar input { border: none; background: transparent; outline: none; font-size: 0.85rem; width: 100%; }
-
-    /* Modal Styles */
-    .modal-overlay {
-        position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
-        z-index: 2000; display: none; align-items: center; justify-content: center; padding: 20px;
-    }
-    .modal-card {
-        background: #fff; border-radius: 20px; width: 100%; max-width: 500px;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.2); overflow: hidden;
-    }
-    .modal-header { padding: 20px 24px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-    .modal-body { padding: 24px; }
-    .modal-footer { padding: 16px 24px; background: #f9f9f9; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 12px; }
-    
-    .form-group { margin-bottom: 16px; }
-    .form-group label { display: block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
-    .form-control { width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid #ddd; outline: none; font-family: 'Outfit', sans-serif; font-size: 0.9rem; }
-    .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(93,64,55,0.1); }
-{% endblock %}
+{% block page_title %}Full Warehouse Inventory{% endblock %}
+{% block page_subtitle %}Comprehensive list of all tracked ingredients and supplies{% endblock %}
 
 {% block content %}
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
-    <div style="display:flex; gap:16px;">
-        <div class="search-bar">
-            <i class="fas fa-search" style="color:var(--muted); font-size:0.8rem;"></i>
-            <input type="text" id="inventorySearch" placeholder="Search ingredients..." onkeyup="filterTable()">
-        </div>
-        <select class="form-control" style="width:180px; height:42px; border:1px solid var(--card-border);" id="categoryFilter" onchange="filterTable()">
-            <option value="">All Categories</option>
-            {% for cat in categories %}
-                <option value="{{ cat[0] }}">{{ cat[0] }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    <button class="btn-staff" onclick="openModal('addIngredientModal')">
-        <i class="fas fa-plus"></i> Add New Ingredient
-    </button>
-</div>
-
 <div class="section-card">
     <div class="section-header">
         <h2>Stock Records</h2>
         <div style="font-size:0.8rem; color:var(--muted);">Total Items: {{ ingredients.total }}</div>
     </div>
-    <table id="inventoryTable">
+    <table>
         <thead>
             <tr>
                 <th>Ingredient</th>
@@ -95,12 +40,11 @@
                 <th>Unit</th>
                 <th>Reorder Level</th>
                 <th>Status</th>
-                <th style="text-align:right;">Actions</th>
             </tr>
         </thead>
         <tbody>
             {% for ing in ingredients.items %}
-            <tr data-category="{{ ing.category or '' }}">
+            <tr>
                 <td style="font-weight:600;">{{ ing.name }}</td>
                 <td><span class="pill" style="background:rgba(93,64,55,0.06); color:var(--muted);">{{ ing.category or 'General' }}</span></td>
                 <td style="font-weight:700; color:var(--primary);">{{ ing.stock_qty|round(2) }}</td>
@@ -112,14 +56,6 @@
                     {% else %}
                         <span class="pill" style="background:rgba(46,125,50,0.1); color:var(--success);">OPTIMAL</span>
                     {% endif %}
-                </td>
-                <td style="text-align:right;">
-                    <button class="action-btn" title="Adjust Stock" onclick="openAdjustModal('{{ ing.id }}', '{{ ing.name }}', '{{ ing.stock_qty }}', '{{ ing.unit }}')">
-                        <i class="fas fa-sliders"></i>
-                    </button>
-                    <button class="action-btn waste" title="Record Waste" onclick="openWasteModal('{{ ing.id }}', '{{ ing.name }}', '{{ ing.unit }}')">
-                        <i class="fas fa-trash-can"></i>
-                    </button>
                 </td>
             </tr>
             {% endfor %}
@@ -135,144 +71,4 @@
         {% endif %}
     </div>
 </div>
-
-<!-- Add Ingredient Modal -->
-<div id="addIngredientModal" class="modal-overlay">
-    <div class="modal-card">
-        <form action="{{ url_for('inventory_portal.inventory_create_ingredient') }}" method="POST">
-            <div class="modal-header">
-                <h3>Create New Ingredient</h3>
-                <i class="fas fa-times" style="cursor:pointer;" onclick="closeModal('addIngredientModal')"></i>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label>Ingredient Name</label>
-                    <input type="text" name="name" class="form-control" required placeholder="e.g. Fresh Milk">
-                </div>
-                <div class="row" style="display:flex; gap:12px;">
-                    <div class="form-group" style="flex:1;">
-                        <label>Category</label>
-                        <input type="text" name="category" class="form-control" placeholder="e.g. Dairy">
-                    </div>
-                    <div class="form-group" style="flex:1;">
-                        <label>Unit</label>
-                        <input type="text" name="unit" class="form-control" placeholder="e.g. liters">
-                    </div>
-                </div>
-                <div class="row" style="display:flex; gap:12px;">
-                    <div class="form-group" style="flex:1;">
-                        <label>Initial Stock</label>
-                        <input type="number" step="0.01" name="stock_qty" class="form-control" value="0">
-                    </div>
-                    <div class="form-group" style="flex:1;">
-                        <label>Reorder Level</label>
-                        <input type="number" step="0.01" name="reorder_level" class="form-control" value="10">
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-staff" style="background:#eee; color:#666;" onclick="closeModal('addIngredientModal')">Cancel</button>
-                <button type="submit" class="btn-staff">Create Ingredient</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- Adjust Stock Modal -->
-<div id="adjustModal" class="modal-overlay">
-    <div class="modal-card">
-        <form id="adjustForm" action="" method="POST">
-            <div class="modal-header">
-                <h3 id="adjustTitle">Adjust Stock</h3>
-                <i class="fas fa-times" style="cursor:pointer;" onclick="closeModal('adjustModal')"></i>
-            </div>
-            <div class="modal-body">
-                <p id="adjustSub" style="font-size:0.8rem; color:var(--muted); margin-bottom:20px;"></p>
-                <div class="form-group">
-                    <label>Correct Stock Level</label>
-                    <input type="number" step="0.01" name="new_qty" id="adjustInput" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label>Reason for Adjustment</label>
-                    <select name="reason" class="form-control">
-                        <option value="Manual Correction">Manual Correction</option>
-                        <option value="Stock Audit">Stock Audit</option>
-                        <option value="Delivery Variance">Delivery Variance</option>
-                    </select>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-staff" style="background:#eee; color:#666;" onclick="closeModal('adjustModal')">Cancel</button>
-                <button type="submit" class="btn-staff">Update Level</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- Waste Modal -->
-<div id="wasteModal" class="modal-overlay">
-    <div class="modal-card">
-        <form id="wasteForm" action="" method="POST">
-            <div class="modal-header">
-                <h3 id="wasteTitle">Record Waste</h3>
-                <i class="fas fa-times" style="cursor:pointer;" onclick="closeModal('wasteModal')"></i>
-            </div>
-            <div class="modal-body">
-                <p id="wasteSub" style="font-size:0.8rem; color:var(--muted); margin-bottom:20px;"></p>
-                <div class="form-group">
-                    <label>Quantity Wasted</label>
-                    <input type="number" step="0.01" name="waste_qty" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label>Reason / Remarks</label>
-                    <input type="text" name="reason" class="form-control" placeholder="e.g. Expired on Apr 12">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-staff" style="background:#eee; color:#666;" onclick="closeModal('wasteModal')">Cancel</button>
-                <button type="submit" class="btn-staff" style="background:var(--danger);">Report Waste</button>
-            </div>
-        </form>
-    </div>
-</div>
-{% endblock %}
-
-{% block extra_script %}
-<script>
-    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-    
-    function openAdjustModal(id, name, qty, unit) {
-        document.getElementById('adjustTitle').innerText = `Adjust ${name}`;
-        document.getElementById('adjustSub').innerText = `Current level: ${qty} ${unit}`;
-        document.getElementById('adjustInput').value = qty;
-        document.getElementById('adjustForm').action = `/staff/inventory/adjust/${id}`;
-        openModal('adjustModal');
-    }
-    
-    function openWasteModal(id, name, unit) {
-        document.getElementById('wasteTitle').innerText = `Waste Report: ${name}`;
-        document.getElementById('wasteSub').innerText = `Subtracting from stocks (${unit})`;
-        document.getElementById('wasteForm').action = `/staff/inventory/record-waste/${id}`;
-        openModal('wasteModal');
-    }
-
-    function filterTable() {
-        const input = document.getElementById('inventorySearch');
-        const filter = input.value.toLowerCase();
-        const catFilter = document.getElementById('categoryFilter').value.toLowerCase();
-        const table = document.getElementById('inventoryTable');
-        const tr = table.getElementsByTagName('tr');
-
-        for (let i = 1; i < tr.length; i++) {
-            const name = tr[i].getElementsByTagName('td')[0].innerText.toLowerCase();
-            const cat = tr[i].getAttribute('data-category').toLowerCase();
-            
-            const matchesSearch = name.includes(filter);
-            const matchesCategory = !catFilter || cat === catFilter;
-            
-            tr[i].style.display = (matchesSearch && matchesCategory) ? "" : "none";
-        }
-    }
-</script>
 {% endblock %}
