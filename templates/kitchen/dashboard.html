@@ -40,22 +40,73 @@
 
 {% block extra_style %}
     .kitchen-board { 
-        display: grid; 
-        grid-template-columns: repeat(3, 1fr); 
-        gap: 24px; 
-        align-items: start; 
+        display: block; 
         min-height: 80vh;
+        max-width: 1400px;
+        margin: 0 auto;
     }
 
-    /* Column Styles */
-    .board-col { 
-        background: rgba(93, 64, 55, 0.03); 
-        border-radius: 20px; 
-        padding: 18px; 
-        border: 1px solid rgba(93, 64, 55, 0.08); 
-        min-height: 75vh;
+    /* Tab Styles */
+    .kitchen-tabs {
         display: flex;
-        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 24px;
+        background: rgba(93, 64, 55, 0.05);
+        padding: 6px;
+        border-radius: 16px;
+        max-width: 600px;
+    }
+    .tab-btn {
+        flex: 1;
+        padding: 12px 20px;
+        border: none;
+        background: transparent;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: var(--muted);
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .tab-btn i { font-size: 1rem; opacity: 0.6; }
+    .tab-btn.active {
+        background: #fff;
+        color: var(--primary);
+        box-shadow: 0 4px 12px rgba(93,64,55,0.1);
+    }
+    .tab-btn .tab-count {
+        background: rgba(93,64,55,0.1);
+        color: var(--primary);
+        padding: 2px 8px;
+        border-radius: 50px;
+        font-size: 0.7rem;
+    }
+    .tab-btn.active .tab-count {
+        background: var(--primary);
+        color: #fff;
+    }
+
+    /* Column Styles - Adjusted for Tabs */
+    .board-col { 
+        display: none; /* Hidden by default */
+        background: rgba(255, 255, 255, 0.4); 
+        border-radius: 24px; 
+        padding: 24px; 
+        border: 1px solid rgba(93, 64, 55, 0.06); 
+        min-height: 70vh;
+        animation: fadeIn 0.4s ease-out;
+    }
+    .board-col.active { display: flex; flex-direction: column; }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
     }
     .col-header { 
         display: flex; 
@@ -183,15 +234,36 @@
     /* Special Status Colors */
     .card-preparing { border-left: 4px solid var(--primary); }
     .card-ready { border-left: 4px solid var(--success); }
+
+    /* AJAX Loading State */
+    .order-card.updating {
+        opacity: 0.5;
+        pointer-events: none;
+        transform: scale(0.98);
+    }
 {% endblock %}
 
 {% block content %}
+    <div class="kitchen-tabs">
+        <button class="tab-btn active" onclick="switchTab('PENDING', this)">
+            <i class="fas fa-list-check"></i> To Cook
+            <span class="tab-count">{{ pending_orders|length }}</span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('PREPARING', this)">
+            <i class="fas fa-fire-burner"></i> Cooking
+            <span class="tab-count">{{ preparing_orders|length }}</span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('READY', this)">
+            <i class="fas fa-circle-check"></i> For Pickup
+            <span class="tab-count">{{ ready_orders|length }}</span>
+        </button>
+    </div>
+
     <div class="kitchen-board">
         <!-- TO COOK -->
-        <div class="board-col">
+        <div class="board-col active" id="col-PENDING">
             <div class="col-header">
-                <h3><i class="fas fa-list-check me-2" style="opacity:0.5;"></i> To Cook</h3>
-                <span class="col-count">{{ pending_orders|length }}</span>
+                <h3><i class="fas fa-list-check me-2" style="opacity:0.5;"></i> Orders Waiting to Prepare</h3>
             </div>
             {% for order in pending_orders %}
             <div class="order-card">
@@ -215,12 +287,11 @@
                     </div>
                     {% endfor %}
                 </div>
-                <form method="POST" action="{{ url_for('kitchen_portal.kitchen_update_order', order_id=order.id) }}">
-                    <input type="hidden" name="status" value="PREPARING">
-                    <button class="action-btn btn-start" type="submit">
-                        <i class="fas fa-fire-flame-curved"></i> Start
+                <div class="order-actions">
+                    <button class="action-btn btn-start" onclick="updateOrderStatus({{ order.id }}, 'PREPARING', this)">
+                        <i class="fas fa-fire-flame-curved"></i> Start Cooking
                     </button>
-                </form>
+                </div>
             </div>
             {% else %}
             <div class="empty-state">
@@ -231,10 +302,9 @@
         </div>
 
         <!-- COOKING NOW -->
-        <div class="board-col">
+        <div class="board-col" id="col-PREPARING">
             <div class="col-header">
-                <h3><i class="fas fa-fire-burner me-2" style="opacity:0.5;"></i> Cooking Now</h3>
-                <span class="col-count">{{ preparing_orders|length }}</span>
+                <h3><i class="fas fa-fire-burner me-2" style="opacity:0.5;"></i> Orders Currently Cooking</h3>
             </div>
             {% for order in preparing_orders %}
             <div class="order-card card-preparing">
@@ -258,12 +328,11 @@
                     </div>
                     {% endfor %}
                 </div>
-                <form method="POST" action="{{ url_for('kitchen_portal.kitchen_update_order', order_id=order.id) }}">
-                    <input type="hidden" name="status" value="READY">
-                    <button class="action-btn btn-ready" type="submit">
-                        <i class="fas fa-check"></i> Ready
+                <div class="order-actions">
+                    <button class="action-btn btn-ready" onclick="updateOrderStatus({{ order.id }}, 'READY', this)">
+                        <i class="fas fa-check-double"></i> Ready for Pickup
                     </button>
-                </form>
+                </div>
             </div>
             {% else %}
             <div class="empty-state">
@@ -274,10 +343,9 @@
         </div>
 
         <!-- FOR PICKUP -->
-        <div class="board-col">
+        <div class="board-col" id="col-READY">
             <div class="col-header">
-                <h3><i class="fas fa-circle-check me-2" style="opacity:0.5;"></i> For Pickup</h3>
-                <span class="col-count">{{ ready_orders|length }}</span>
+                <h3><i class="fas fa-circle-check me-2" style="opacity:0.5;"></i> Orders Ready for Pickup</h3>
             </div>
             {% for order in ready_orders %}
             <div class="order-card card-ready">
@@ -316,7 +384,95 @@
 
 {% block extra_script %}
 <script>
-    // Live update every 15 seconds for intensive kitchen monitoring
-    setTimeout(() => location.reload(), 15000);
+    function switchTab(status, btn) {
+        // Update Buttons
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        // Update Columns
+        document.querySelectorAll('.board-col').forEach(c => c.classList.remove('active'));
+        document.getElementById('col-' + status).classList.add('active');
+        
+        // Save current tab preference
+        localStorage.setItem('kitchen_active_tab', status);
+    }
+
+    async function updateOrderStatus(orderId, newStatus, btn) {
+        const card = btn.closest('.order-card');
+        card.classList.add('updating');
+        
+        const formData = new FormData();
+        formData.append('status', newStatus);
+
+        try {
+            const response = await fetch(`/staff/kitchen/update/${orderId}`, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+
+            if (response.ok) {
+                // Determine target column based on result
+                const targetStatus = (newStatus === 'PREPARING') ? 'PREPARING' : 'READY';
+                
+                const html = await fetch(location.href).then(r => r.text());
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // Update all columns and counts
+                updateDashboardContent(doc);
+                
+                if (window.showToast) window.showToast('success', `Order #${orderId} matches status ${newStatus}`);
+            } else {
+                alert('Failed to update order status');
+                card.classList.remove('updating');
+            }
+        } catch (error) {
+            console.error('Error updating order:', error);
+            card.classList.remove('updating');
+        }
+    }
+
+    function updateDashboardContent(doc) {
+        const ids = ['PENDING', 'PREPARING', 'READY'];
+        ids.forEach(status => {
+            const oldCol = document.getElementById('col-' + status);
+            const newCol = doc.getElementById('col-' + status);
+            if (oldCol && newCol) {
+                // Preserving the 'active' class
+                const isActive = oldCol.classList.contains('active');
+                oldCol.innerHTML = newCol.innerHTML;
+                if(isActive) oldCol.classList.add('active');
+            }
+        });
+        
+        // Update counts in buttons
+        const newTabs = doc.querySelectorAll('.tab-btn');
+        const oldTabs = document.querySelectorAll('.tab-btn');
+        oldTabs.forEach((tab, idx) => {
+            const newCount = newTabs[idx].querySelector('.tab-count').innerText;
+            tab.querySelector('.tab-count').innerText = newCount;
+        });
+    }
+
+    // Initialize Active Tab from localStorage
+    document.addEventListener('DOMContentLoaded', () => {
+        const activeTab = localStorage.getItem('kitchen_active_tab');
+        if (activeTab) {
+            const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.onclick.toString().includes(activeTab));
+            if (btn) switchTab(activeTab, btn);
+        }
+    });
+
+    // Refresh columns every 30 seconds silently
+    setInterval(async () => {
+        const html = await fetch(location.href).then(r => r.text());
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        // Only update if no one is currently clicking a button
+        if (!document.querySelector('.updating')) {
+            updateDashboardContent(doc);
+        }
+    }, 30000);
 </script>
 {% endblock %}
