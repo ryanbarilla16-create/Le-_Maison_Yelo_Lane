@@ -5,24 +5,43 @@
 {% block portal_sub %}Inventory Portal{% endblock %}
 {% block portal_role %}Inventory Staff{% endblock %}
 {% block logout_url %}{{ url_for('inventory_portal.inventory_logout') }}{% endblock %}
+{% block profile_url %}{{ url_for('inventory_portal.inventory_profile') }}{% endblock %}
 
 {% block sidebar_nav %}
-    <div class="nav-section-label">Workspace</div>
-    <a class="nav-item" href="{{ url_for('inventory_portal.inventory_dashboard') }}">
-        <i class="fas fa-boxes-stacked"></i> Stock Levels
-    </a>
-    <a class="nav-item" href="{{ url_for('inventory_portal.inventory_full') }}">
-        <i class="fas fa-warehouse"></i> Full Inventory
-    </a>
-    <a class="nav-item active" href="{{ url_for('inventory_portal.inventory_suppliers') }}">
-        <i class="fas fa-truck"></i> Suppliers
-    </a>
-    <a class="nav-item" href="{{ url_for('inventory_portal.inventory_waste_records') }}">
-        <i class="fas fa-trash-can"></i> Waste Log
-    </a>
-    <a class="nav-item" href="{{ url_for('inventory_portal.inventory_stock_requests') }}">
-        <i class="fas fa-file-invoice"></i> Stock Requests
-    </a>
+    <div class="nav-section-label" onclick="toggleNavGroup(this, 'group-workspace')">
+        <span>Workspace</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+    </div>
+    <div id="group-workspace" class="nav-group">
+        <a class="nav-item" href="{{ url_for('inventory_portal.inventory_dashboard') }}">
+            <i class="fas fa-boxes-stacked"></i> Stock Levels
+        </a>
+        <a class="nav-item" href="{{ url_for('inventory_portal.inventory_full') }}">
+            <i class="fas fa-warehouse"></i> Full Inventory
+        </a>
+        <a class="nav-item active" href="{{ url_for('inventory_portal.inventory_suppliers') }}">
+            <i class="fas fa-truck"></i> Suppliers
+        </a>
+        <a class="nav-item" href="{{ url_for('inventory_portal.inventory_waste_records') }}">
+            <i class="fas fa-trash-can"></i> Waste Log
+        </a>
+        <a class="nav-item" href="{{ url_for('inventory_portal.inventory_stock_requests') }}">
+            <i class="fas fa-file-invoice"></i> Stock Requests
+        </a>
+        <a class="nav-item {% if 'batches' in request.path %}active{% endif %}" href="{{ url_for('inventory_portal.inventory_ingredient_batches') }}">
+            <i class="fas fa-layer-group"></i> FIFO Batches
+        </a>
+    </div>
+
+    <div class="nav-section-label" onclick="toggleNavGroup(this, 'group-reference')">
+        <span>Reference</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+    </div>
+    <div id="group-reference" class="nav-group">
+        <a class="nav-item" href="{{ url_for('inventory_portal.inventory_recipes') }}">
+            <i class="fas fa-utensils"></i> Menu Recipes
+        </a>
+    </div>
 {% endblock %}
 
 {% block page_title %}Supplier Directory{% endblock %}
@@ -40,37 +59,57 @@
     .supplier-card {
         background:var(--card); border:1px solid var(--card-border); border-radius:22px;
         padding:28px; position:relative; overflow:hidden;
+        cursor: pointer; transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+    }
+    .supplier-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 32px rgba(93, 64, 55, 0.12);
+        border-color: var(--primary);
     }
     .supplier-card::before {
         content:''; position:absolute; top:0; left:0; width:6px; height:100%;
-        background:var(--primary); opacity:0.6;
+        background:var(--primary); opacity:0.6; transition: opacity 0.3s;
     }
+    .supplier-card:hover::before { opacity: 1; }
     .sup-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
-    .sup-name { font-size:1.25rem; font-weight:700; color:var(--primary); }
+    .sup-name { font-size:1.15rem; font-weight:700; color:var(--primary); }
     .sup-initial { width:40px; height:40px; background:rgba(93,64,55,0.1); color:var(--primary); border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:800; }
     
     .sup-info { margin-bottom:12px; display:flex; align-items:center; gap:12px; font-size:0.9rem; color:var(--text); }
     .sup-info i { width:16px; color:var(--muted); font-size:0.85rem; }
     
     .sup-cat { display:inline-block; margin-top:15px; background:var(--bg); color:var(--primary); padding:4px 12px; border-radius:50px; font-size:0.75rem; font-weight:700; border:1px solid rgba(93,64,55,0.08); }
+    
+    .sup-action-hint {
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+        margin-top: 18px; padding: 10px; border-radius: 12px;
+        background: rgba(93,64,55,0.04); color: var(--primary);
+        font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+        transition: all 0.3s;
+    }
+    .supplier-card:hover .sup-action-hint {
+        background: var(--primary); color: white;
+    }
 
-    /* MODAL STYLES (Match Dashboard) */
+    /* MODAL STYLES */
     .modal-overlay {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
+        background: rgba(0,0,0,0.5); backdrop-filter: blur(5px);
         display: none; align-items: center; justify-content: center; z-index: 2000;
     }
     .modal-content-custom {
-        background: white; border-radius: 20px; width: 100%; max-width: 500px;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.2); overflow: hidden;
+        background: white; border-radius: 20px; width: 100%; max-width: 600px;
+        box-shadow: 0 25px 60px rgba(0,0,0,0.25); overflow: hidden;
+        max-height: 90vh; display: flex; flex-direction: column;
     }
     .modal-header-custom {
         padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;
-        color: white; background: var(--primary);
+        color: white; background: var(--primary); flex-shrink: 0;
     }
     .modal-header-custom h3 { margin: 0; font-size: 1.1rem; }
     .close-modal { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; opacity: 0.7; }
-    .modal-body-custom { padding: 24px; }
+    .close-modal:hover { opacity: 1; }
+    .modal-body-custom { padding: 24px; overflow-y: auto; flex: 1; }
     .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
     .form-group label { font-size: 0.75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; }
     .form-group input, .form-group textarea {
@@ -79,16 +118,76 @@
     }
     .modal-footer-custom {
         padding: 20px 24px; background: #fdfaf8; border-top: 1px solid var(--card-border);
-        display: flex; justify-content: flex-end; gap: 12px;
+        display: flex; justify-content: flex-end; gap: 12px; flex-shrink: 0;
     }
     .btn-secondary { background: #e0d6cf; color: #5d4037; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 600; }
     .btn-primary { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 600; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Receive Supply Item Row */
+    .receive-item {
+        display: flex; align-items: center; gap: 14px;
+        padding: 16px; margin-bottom: 10px;
+        background: #fdfaf8; border: 1px solid rgba(93,64,55,0.06); border-radius: 16px;
+        transition: all 0.2s;
+    }
+    .receive-item:hover { border-color: rgba(93,64,55,0.15); }
+    .receive-item-info { flex: 1; }
+    .receive-item-name { font-weight: 700; color: var(--text); font-size: 0.92rem; }
+    .receive-item-meta { font-size: 0.75rem; color: var(--muted); margin-top: 3px; }
+    .receive-item-meta span { margin-right: 12px; }
+    .receive-qty-wrap {
+        display: flex; align-items: center; gap: 8px;
+        flex-shrink: 0;
+    }
+    .receive-qty-input {
+        width: 100px; padding: 12px 10px; 
+        border: 2.5px solid #2e7d32; border-radius: 12px;
+        font-size: 1.05rem; font-weight: 700; text-align: center;
+        background: #f1f8e9; color: #2e7d32;
+        transition: all 0.2s;
+    }
+    .receive-qty-input::placeholder { color: #a5d6a7; font-weight: 600; }
+    .receive-qty-input:focus {
+        border-color: #1b5e20; outline: none;
+        box-shadow: 0 0 0 4px rgba(46,125,50,0.15);
+        background: #e8f5e9;
+    }
+    .receive-qty-unit {
+        font-size: 0.8rem; font-weight: 700; color: var(--primary);
+        min-width: 50px;
+    }
+    .receive-empty {
+        text-align: center; padding: 40px 20px; color: var(--muted);
+    }
+    .receive-empty i { font-size: 2rem; margin-bottom: 12px; display: block; opacity: 0.3; }
+
+    /* Success animation */
+    .receive-success {
+        text-align: center; padding: 30px 20px;
+    }
+    .receive-success i { font-size: 3rem; color: var(--success); margin-bottom: 12px; }
+    .receive-success h4 { color: var(--success); margin: 0 0 8px 0; }
+    .receive-success .detail-list { text-align: left; margin-top: 16px; }
+    .receive-success .detail-item { padding: 8px 12px; font-size: 0.85rem; color: var(--text); border-bottom: 1px dashed rgba(0,0,0,0.06); }
+
+    .steps-guide {
+        background: linear-gradient(135deg, rgba(93,64,55,0.06), rgba(93,64,55,0.02));
+        padding: 18px 20px; border-radius: 16px; margin-bottom: 20px;
+        border: 1px solid rgba(93,64,55,0.08);
+    }
+    .steps-guide h4 { margin: 0 0 10px 0; font-size: 0.85rem; color: var(--primary); }
+    .step-item { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-size: 0.8rem; color: var(--text); }
+    .step-num {
+        width: 22px; height: 22px; border-radius: 50%; background: var(--primary); color: white;
+        display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 800; flex-shrink: 0;
+    }
 {% endblock %}
 
 {% block content %}
 <div class="supplier-grid">
     {% for sup in suppliers %}
-    <div class="supplier-card">
+    <div class="supplier-card" onclick="openReceiveModal({{ sup.id }}, '{{ sup.name|e }}')">
         <div class="sup-header">
             <div class="sup-name">{{ sup.name }}</div>
             <div class="sup-initial">{{ sup.name[:1] }}</div>
@@ -109,11 +208,37 @@
         {% if sup.category %}
         <span class="sup-cat">{{ sup.category }}</span>
         {% endif %}
+        <div class="sup-action-hint">
+            <i class="fas fa-box-open"></i> View Supplied Items & Receive Delivery
+        </div>
     </div>
     {% endfor %}
 </div>
 
-<!-- Add Supplier Modal -->
+<!-- ═══════════ RECEIVE SUPPLY MODAL ═══════════ -->
+<div id="receiveModal" class="modal-overlay">
+    <div class="modal-content-custom">
+        <div class="modal-header-custom">
+            <h3><i class="fas fa-truck-ramp-box me-2"></i> <span id="rm_title">Receive Supply</span></h3>
+            <button class="close-modal" onclick="closeModal('receiveModal')">&times;</button>
+        </div>
+        <div class="modal-body-custom" id="rm_body">
+            <!-- Populated by JS -->
+            <div style="text-align:center; padding: 40px;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 1.5rem; color: var(--muted);"></i>
+                <p style="margin-top: 12px; color: var(--muted);">Loading ingredients...</p>
+            </div>
+        </div>
+        <div class="modal-footer-custom" id="rm_footer">
+            <button type="button" class="btn-secondary" onclick="closeModal('receiveModal')">Cancel</button>
+            <button type="button" class="btn-primary" id="btnAcceptSupply" onclick="submitReceive()" disabled>
+                <i class="fas fa-check-circle me-1"></i> Accept & Add to Inventory
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════ ADD SUPPLIER MODAL ═══════════ -->
 <div id="addSupplierModal" class="modal-overlay">
     <div class="modal-content-custom">
         <div class="modal-header-custom">
@@ -158,6 +283,8 @@
 
 {% block extra_script %}
 <script>
+    let currentSupId = null;
+
     function openModal(id) {
         document.getElementById(id).style.display = 'flex';
     }
@@ -169,6 +296,170 @@
         if (event.target.classList.contains('modal-overlay')) {
             event.target.style.display = 'none';
         }
+    }
+
+    function openReceiveModal(supId, supName) {
+        currentSupId = supId;
+        document.getElementById('rm_title').textContent = supName + ' — Supply Delivery';
+        
+        // Restore standard footer buttons in case they were replaced by "Done" in a previous success
+        document.getElementById('rm_footer').innerHTML = `
+            <button type="button" class="btn-secondary" onclick="closeModal('receiveModal')">Cancel</button>
+            <button type="button" class="btn-primary" id="btnAcceptSupply" onclick="submitReceive()" disabled>
+                <i class="fas fa-check-circle me-1"></i> Accept & Add to Inventory
+            </button>
+        `;
+        document.getElementById('rm_footer').style.display = 'flex';
+
+        // Show loading
+        const body = document.getElementById('rm_body');
+        body.innerHTML = `
+            <div style="text-align:center; padding: 40px;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 1.5rem; color: var(--muted);"></i>
+                <p style="margin-top: 12px; color: var(--muted);">Loading ingredients...</p>
+            </div>
+        `;
+        openModal('receiveModal');
+
+        // Fetch ingredients from API
+        fetch(`/staff/inventory/suppliers/${supId}/ingredients`)
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success || data.ingredients.length === 0) {
+                    body.innerHTML = `
+                        <div class="receive-empty">
+                            <i class="fas fa-box-open"></i>
+                            <p style="font-weight: 600;">No ingredients linked to this supplier.</p>
+                            <p style="font-size: 0.8rem;">Link ingredients to this supplier first via Full Inventory.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Build the receive checklist
+                let html = `
+                    <div class="steps-guide">
+                        <h4><i class="fas fa-clipboard-list me-1"></i> Paano gamitin:</h4>
+                        <div class="step-item"><span class="step-num">1</span> I-type ang dami ng na-receive sa <b style="color:#2e7d32;">berdeng input box</b></div>
+                        <div class="step-item"><span class="step-num">2</span> Lagyan lang ang mga item na kasama sa delivery</div>
+                        <div class="step-item"><span class="step-num">3</span> Pindutin ang <b>"Accept & Add to Inventory"</b> button sa baba</div>
+                    </div>
+                `;
+
+                data.ingredients.forEach(ing => {
+                    html += `
+                        <div class="receive-item">
+                            <div class="receive-item-info">
+                                <div class="receive-item-name">${ing.name}</div>
+                                <div class="receive-item-meta">
+                                    <span><i class="fas fa-tag me-1"></i>${ing.category}</span>
+                                    <span><i class="fas fa-box me-1"></i>Stock: ${ing.stock_qty.toFixed(1)} ${ing.unit}</span>
+                                </div>
+                            </div>
+                            <div class="receive-qty-wrap">
+                                <input type="number" class="receive-qty-input" 
+                                       data-ing-id="${ing.id}" 
+                                       step="0.01" min="0" value="" 
+                                       placeholder="0"
+                                       oninput="checkReceiveInputs()">
+                                <span class="receive-qty-unit">${ing.unit}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                body.innerHTML = html;
+                document.getElementById('btnAcceptSupply').disabled = true;
+            })
+            .catch(err => {
+                body.innerHTML = `
+                    <div class="receive-empty">
+                        <i class="fas fa-exclamation-triangle" style="color: var(--danger);"></i>
+                        <p style="font-weight: 600; color: var(--danger);">Error loading data.</p>
+                        <p style="font-size: 0.8rem;">${err.message}</p>
+                    </div>
+                `;
+            });
+    }
+
+    function checkReceiveInputs() {
+        const inputs = document.querySelectorAll('.receive-qty-input');
+        let hasValue = false;
+        inputs.forEach(inp => {
+            if (parseFloat(inp.value) > 0) hasValue = true;
+        });
+        document.getElementById('btnAcceptSupply').disabled = !hasValue;
+    }
+
+    function submitReceive() {
+        const btn = document.getElementById('btnAcceptSupply');
+        const originalHTML = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Processing...';
+
+        // Gather quantities
+        const inputs = document.querySelectorAll('.receive-qty-input');
+        const items = [];
+        inputs.forEach(inp => {
+            const qty = parseFloat(inp.value);
+            if (qty > 0) {
+                items.push({
+                    ingredient_id: parseInt(inp.dataset.ingId),
+                    qty_received: qty
+                });
+            }
+        });
+
+        if (items.length === 0) {
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+            return;
+        }
+
+        fetch(`/staff/inventory/suppliers/${currentSupId}/receive`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ items: items })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                // Show success inside modal
+                const body = document.getElementById('rm_body');
+                let detailsHtml = '';
+                if (data.details && data.details.length > 0) {
+                    detailsHtml = '<div class="detail-list">';
+                    data.details.forEach(d => {
+                        detailsHtml += `<div class="detail-item"><i class="fas fa-check" style="color:var(--success); margin-right:8px;"></i>${d}</div>`;
+                    });
+                    detailsHtml += '</div>';
+                }
+
+                body.innerHTML = `
+                    <div class="receive-success">
+                        <i class="fas fa-check-circle"></i>
+                        <h4>${data.message}</h4>
+                        <p style="color: var(--muted); font-size: 0.85rem;">Warehouse inventory has been updated automatically.</p>
+                        ${detailsHtml}
+                    </div>
+                `;
+                // Hide footer buttons, show close only
+                document.getElementById('rm_footer').innerHTML = `
+                    <button type="button" class="btn-primary" onclick="closeModal('receiveModal')" style="width: 100%;">
+                        <i class="fas fa-check me-1"></i> Done
+                    </button>
+                `;
+            } else {
+                alert(data.message || 'Error processing delivery.');
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+            }
+        })
+        .catch(err => {
+            alert('Network error. Please try again.');
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+        });
     }
 </script>
 {% endblock %}

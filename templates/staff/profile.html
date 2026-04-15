@@ -1,0 +1,380 @@
+{% extends "layouts/staff_layout.html" %}
+
+{% block title %}My Profile — Le Maison{% endblock %}
+
+{% block portal_sub %}{{ portal_label }} Portal{% endblock %}
+{% block portal_role %}{{ role_label }}{% endblock %}
+{% block logout_url %}{{ logout_url }}{% endblock %}
+{% block profile_active %}active{% endblock %}
+{% block profile_url %}{{ profile_action }}{% endblock %}
+
+{% block sidebar_nav %}
+    <div class="nav-section-label">Workspace</div>
+    {% for item in sidebar_items %}
+        <a class="nav-item" href="{{ item.url }}">
+            <i class="fas fa-{{ item.icon }}"></i> {{ item.label }}
+        </a>
+    {% endfor %}
+    {% if ref_items %}
+    <div class="nav-section-label">Reference</div>
+    {% for item in ref_items %}
+        <a class="nav-item" href="{{ item.url }}">
+            <i class="fas fa-{{ item.icon }}"></i> {{ item.label }}
+        </a>
+    {% endfor %}
+    {% endif %}
+{% endblock %}
+
+{% block page_title %}My Profile{% endblock %}
+{% block page_subtitle %}Update your personal information and security settings{% endblock %}
+
+{% block extra_style %}
+    .profile-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 28px;
+    }
+    .profile-card {
+        background: white;
+        border-radius: 24px;
+        border: 1px solid rgba(93,64,55,0.06);
+        box-shadow: 0 8px 30px rgba(93,64,55,0.05);
+        overflow: hidden;
+    }
+    .card-header-bar {
+        padding: 22px 28px;
+        border-bottom: 1px solid rgba(93,64,55,0.06);
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+    .card-header-bar h3 {
+        font-size: 1rem;
+        font-weight: 700;
+        margin: 0;
+    }
+    .card-header-bar .header-icon {
+        width: 40px; height: 40px;
+        border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1rem;
+    }
+    .card-body-inner { padding: 28px; }
+
+    .form-group { margin-bottom: 20px; }
+    .form-group label {
+        display: block;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--muted);
+        margin-bottom: 8px;
+    }
+    .form-input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1.5px solid rgba(93,64,55,0.12);
+        border-radius: 14px;
+        font-size: 0.92rem;
+        font-family: 'Outfit', sans-serif;
+        background: #fdfbf9;
+        color: var(--text);
+        transition: all 0.25s;
+        outline: none;
+    }
+    .form-input:focus {
+        border-color: var(--primary);
+        background: #fff;
+        box-shadow: 0 0 0 4px rgba(93,64,55,0.08);
+    }
+    .form-input:disabled {
+        background: rgba(93,64,55,0.04);
+        color: var(--muted);
+        cursor: not-allowed;
+    }
+
+    .avatar-large {
+        width: 80px; height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        display: flex; align-items: center; justify-content: center;
+        font-size: 2rem; font-weight: 800; color: #fff;
+        margin: 0 auto 20px;
+        box-shadow: 0 8px 24px rgba(93,64,55,0.2);
+    }
+    .profile-meta {
+        text-align: center;
+        margin-bottom: 28px;
+        padding-bottom: 24px;
+        border-bottom: 1px dashed rgba(93,64,55,0.1);
+    }
+    .profile-meta h2 {
+        font-size: 1.25rem; font-weight: 700; margin: 0 0 4px;
+    }
+    .profile-meta .role-pill {
+        display: inline-block;
+        padding: 4px 14px;
+        border-radius: 50px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        background: rgba(93,64,55,0.08);
+        color: var(--primary);
+    }
+
+    .btn-save {
+        padding: 12px 28px;
+        border-radius: 14px;
+        border: none;
+        background: var(--primary);
+        color: #fff;
+        font-weight: 700;
+        font-size: 0.88rem;
+        cursor: pointer;
+        transition: all 0.25s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        justify-content: center;
+    }
+    .btn-save:hover {
+        background: var(--primary-dark);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(93,64,55,0.2);
+    }
+    .btn-save-password {
+        background: var(--success);
+    }
+    .btn-save-password:hover {
+        background: #1b5e20;
+    }
+
+    .info-row {
+        display: flex; justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(93,64,55,0.04);
+        font-size: 0.88rem;
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-label { color: var(--muted); font-weight: 500; }
+    .info-value { font-weight: 600; color: var(--text); }
+
+    .password-toggle {
+        position: relative;
+    }
+    .password-toggle .toggle-eye {
+        position: absolute;
+        right: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 0.9rem;
+        padding: 4px;
+    }
+    .password-toggle .toggle-eye:hover { color: var(--primary); }
+
+    .strength-bar {
+        height: 4px;
+        border-radius: 4px;
+        background: rgba(93,64,55,0.08);
+        margin-top: 8px;
+        overflow: hidden;
+    }
+    .strength-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.3s, background 0.3s;
+        width: 0%;
+    }
+
+    @media (max-width: 900px) {
+        .profile-grid { grid-template-columns: 1fr; }
+    }
+{% endblock %}
+
+{% block content %}
+<div class="profile-grid">
+    <!-- LEFT: Personal Information -->
+    <div class="profile-card">
+        <div class="card-header-bar">
+            <div class="header-icon" style="background:rgba(93,64,55,0.08); color:var(--primary);">
+                <i class="fas fa-user"></i>
+            </div>
+            <h3>Personal Information</h3>
+        </div>
+        <div class="card-body-inner">
+            <div class="profile-meta">
+                <div class="avatar-large">{{ current_user.first_name[:1] }}</div>
+                <h2>{{ current_user.first_name }} {{ current_user.last_name }}</h2>
+                <div class="role-pill">{{ current_user.role }}</div>
+            </div>
+
+            <form method="POST" action="{{ profile_action }}">
+                <input type="hidden" name="form_type" value="profile">
+
+                <div class="form-group">
+                    <label>First Name</label>
+                    <input type="text" name="first_name" class="form-input" value="{{ current_user.first_name }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Last Name</label>
+                    <input type="text" name="last_name" class="form-input" value="{{ current_user.last_name }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Phone Number</label>
+                    <input type="text" name="phone_number" class="form-input" value="{{ current_user.phone_number or '' }}" placeholder="e.g. 09171234567">
+                </div>
+
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" class="form-input" value="{{ current_user.email }}" disabled>
+                    <small style="display:block; margin-top:6px; font-size:0.72rem; color:var(--muted);">
+                        <i class="fas fa-lock" style="font-size:0.6rem;"></i> Email cannot be changed. Contact admin.
+                    </small>
+                </div>
+
+                <button type="submit" class="btn-save">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- RIGHT: Security Settings -->
+    <div>
+        <!-- Change Password Card -->
+        <div class="profile-card" style="margin-bottom:28px;">
+            <div class="card-header-bar">
+                <div class="header-icon" style="background:rgba(46,125,50,0.08); color:var(--success);">
+                    <i class="fas fa-shield-halved"></i>
+                </div>
+                <h3>Change Password</h3>
+            </div>
+            <div class="card-body-inner">
+                <form method="POST" action="{{ profile_action }}">
+                    <input type="hidden" name="form_type" value="password">
+
+                    <div class="form-group">
+                        <label>Current Password</label>
+                        <div class="password-toggle">
+                            <input type="password" name="current_password" id="currentPass" class="form-input" required placeholder="Enter current password">
+                            <button type="button" class="toggle-eye" onclick="togglePass('currentPass', this)">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>New Password</label>
+                        <div class="password-toggle">
+                            <input type="password" name="new_password" id="newPass" class="form-input" required placeholder="Min 8 characters" oninput="checkStrength(this.value)">
+                            <button type="button" class="toggle-eye" onclick="togglePass('newPass', this)">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <div class="strength-bar">
+                            <div class="strength-fill" id="strengthFill"></div>
+                        </div>
+                        <small id="strengthText" style="font-size:0.7rem; color:var(--muted); margin-top:4px; display:block;"></small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Confirm New Password</label>
+                        <div class="password-toggle">
+                            <input type="password" name="confirm_password" id="confirmPass" class="form-input" required placeholder="Re-enter new password">
+                            <button type="button" class="toggle-eye" onclick="togglePass('confirmPass', this)">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-save btn-save-password">
+                        <i class="fas fa-key"></i> Update Password
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Account Info Card -->
+        <div class="profile-card">
+            <div class="card-header-bar">
+                <div class="header-icon" style="background:rgba(230,81,0,0.08); color:var(--warning);">
+                    <i class="fas fa-info-circle"></i>
+                </div>
+                <h3>Account Details</h3>
+            </div>
+            <div class="card-body-inner">
+                <div class="info-row">
+                    <span class="info-label">Username</span>
+                    <span class="info-value">{{ current_user.username }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Email</span>
+                    <span class="info-value">{{ current_user.email }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Role</span>
+                    <span class="info-value">{{ current_user.role }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Status</span>
+                    <span class="info-value" style="color:var(--success);">
+                        <i class="fas fa-check-circle" style="font-size:0.75rem;"></i> {{ current_user.status }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_script %}
+<script>
+    function togglePass(inputId, btn) {
+        const input = document.getElementById(inputId);
+        const icon = btn.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.replace('fa-eye', 'fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.replace('fa-eye-slash', 'fa-eye');
+        }
+    }
+
+    function checkStrength(password) {
+        const fill = document.getElementById('strengthFill');
+        const text = document.getElementById('strengthText');
+        let score = 0;
+
+        if (password.length >= 8) score++;
+        if (password.length >= 12) score++;
+        if (/[A-Z]/.test(password)) score++;
+        if (/[0-9]/.test(password)) score++;
+        if (/[^A-Za-z0-9]/.test(password)) score++;
+
+        const levels = [
+            { width: '0%', color: '#ddd', label: '' },
+            { width: '20%', color: '#c62828', label: 'Very Weak' },
+            { width: '40%', color: '#e65100', label: 'Weak' },
+            { width: '60%', color: '#f9a825', label: 'Fair' },
+            { width: '80%', color: '#2e7d32', label: 'Strong' },
+            { width: '100%', color: '#1b5e20', label: 'Very Strong' },
+        ];
+
+        const level = levels[score] || levels[0];
+        fill.style.width = level.width;
+        fill.style.background = level.color;
+        text.textContent = level.label;
+        text.style.color = level.color;
+    }
+</script>
+{% endblock %}

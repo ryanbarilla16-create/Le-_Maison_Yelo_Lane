@@ -5,24 +5,43 @@
 {% block portal_sub %}Inventory Portal{% endblock %}
 {% block portal_role %}Inventory Staff{% endblock %}
 {% block logout_url %}{{ url_for('inventory_portal.inventory_logout') }}{% endblock %}
+{% block profile_url %}{{ url_for('inventory_portal.inventory_profile') }}{% endblock %}
 
 {% block sidebar_nav %}
-    <div class="nav-section-label">Workspace</div>
-    <a class="nav-item" href="{{ url_for('inventory_portal.inventory_dashboard') }}">
-        <i class="fas fa-boxes-stacked"></i> Stock Levels
-    </a>
-    <a class="nav-item active" href="{{ url_for('inventory_portal.inventory_full') }}">
-        <i class="fas fa-warehouse"></i> Full Inventory
-    </a>
-    <a class="nav-item" href="{{ url_for('inventory_portal.inventory_suppliers') }}">
-        <i class="fas fa-truck"></i> Suppliers
-    </a>
-    <a class="nav-item" href="{{ url_for('inventory_portal.inventory_waste_records') }}">
-        <i class="fas fa-trash-can"></i> Waste Log
-    </a>
-    <a class="nav-item" href="{{ url_for('inventory_portal.inventory_stock_requests') }}">
-        <i class="fas fa-file-invoice"></i> Stock Requests
-    </a>
+    <div class="nav-section-label" onclick="toggleNavGroup(this, 'group-workspace')">
+        <span>Workspace</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+    </div>
+    <div id="group-workspace" class="nav-group">
+        <a class="nav-item" href="{{ url_for('inventory_portal.inventory_dashboard') }}">
+            <i class="fas fa-boxes-stacked"></i> Stock Levels
+        </a>
+        <a class="nav-item active" href="{{ url_for('inventory_portal.inventory_full') }}">
+            <i class="fas fa-warehouse"></i> Full Inventory
+        </a>
+        <a class="nav-item" href="{{ url_for('inventory_portal.inventory_suppliers') }}">
+            <i class="fas fa-truck"></i> Suppliers
+        </a>
+        <a class="nav-item" href="{{ url_for('inventory_portal.inventory_waste_records') }}">
+            <i class="fas fa-trash-can"></i> Waste Log
+        </a>
+        <a class="nav-item" href="{{ url_for('inventory_portal.inventory_stock_requests') }}">
+            <i class="fas fa-file-invoice"></i> Stock Requests
+        </a>
+        <a class="nav-item {% if 'batches' in request.path %}active{% endif %}" href="{{ url_for('inventory_portal.inventory_ingredient_batches') }}">
+            <i class="fas fa-layer-group"></i> FIFO Batches
+        </a>
+    </div>
+
+    <div class="nav-section-label" onclick="toggleNavGroup(this, 'group-reference')">
+        <span>Reference</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+    </div>
+    <div id="group-reference" class="nav-group">
+        <a class="nav-item" href="{{ url_for('inventory_portal.inventory_recipes') }}">
+            <i class="fas fa-utensils"></i> Menu Recipes
+        </a>
+    </div>
 {% endblock %}
 
 {% block page_title %}Full Warehouse Inventory{% endblock %}
@@ -60,43 +79,123 @@
     }
     .btn-secondary { background: #e0d6cf; color: #5d4037; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 600; }
     .btn-primary { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 600; }
+
+    .premium-dropdown {
+        position: relative;
+        width: 100%;
+        max-width: 300px;
+    }
+    .premium-select {
+        appearance: none;
+        width: 100%;
+        padding: 14px 20px;
+        padding-right: 45px;
+        background: #fff;
+        border: 1px solid rgba(93, 64, 55, 0.12);
+        border-radius: 16px;
+        color: var(--text);
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(93, 64, 55, 0.04);
+        outline: none;
+    }
+    .premium-select:hover {
+        border-color: var(--primary);
+        box-shadow: 0 6px 16px rgba(93, 64, 55, 0.08);
+    }
+    .premium-select:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(93, 64, 55, 0.1);
+    }
+    .dropdown-arrow {
+        position: absolute;
+        right: 18px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--primary);
+        pointer-events: none;
+        font-size: 0.8rem;
+    }
+    
+    /* Smooth Row Transitions */
+    tbody tr {
+        transition: all 0.2s ease;
+    }
+    tbody tr.hidden {
+        display: none;
+        opacity: 0;
+        transform: scale(0.98);
+    }
 {% endblock %}
 
 {% block content %}
+<div style="margin-bottom: 25px; background: white; padding: 24px; border-radius: 24px; border: 1px solid var(--card-border); box-shadow: 0 8px 32px rgba(93,64,55,0.04);">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 32px; height: 32px; background: rgba(93,64,55,0.06); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--primary);">
+                <i class="fas fa-filter" style="font-size: 0.85rem;"></i>
+            </div>
+            <span style="font-size: 0.7rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 2px;">Filter Inventory</span>
+        </div>
+        <div id="itemCount" style="font-size: 0.7rem; font-weight: 800; color: var(--primary); background: rgba(93,64,55,0.08); padding: 6px 16px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.5px;">
+            Showing {{ ingredients|length }} Items
+        </div>
+    </div>
+    
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div class="premium-dropdown">
+            <i class="fas fa-chevron-down dropdown-arrow"></i>
+            <select id="categorySelector" class="premium-select" onchange="filterTable(this.value)">
+                <option value="ALL">All Categories</option>
+                {% for cat in categories %}
+                <option value="{{ cat }}">{{ cat }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <p style="font-size: 0.75rem; color: var(--muted); margin: 0 8px; font-weight: 500;">
+            <i class="fas fa-info-circle me-1"></i> Select a category to filter inventory instantly.
+        </p>
+    </div>
+</div>
+
 <div class="section-card">
     <div class="section-header">
-        <h2>Stock Records</h2>
-        <div style="display:flex; gap:12px; align-items:center;">
-            <button class="btn-primary" onclick="openModal('addIngredientModal')" style="padding: 8px 16px; font-size: 0.85rem;">
-                <i class="fas fa-plus me-1"></i> Add Ingredient
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <i class="fas fa-boxes-stacked" style="color: var(--primary); opacity: 0.5;"></i>
+            <h2>Warehouse Stock</h2>
+        </div>
+        <div>
+            <button class="btn-primary" onclick="openModal('addIngredientModal')" style="padding: 10px 20px; font-size: 0.8rem; border-radius: 12px;">
+                <i class="fas fa-plus-circle me-2"></i> Add New Stock
             </button>
-            <div style="font-size:0.8rem; color:var(--muted);">Total Items: {{ ingredients.total }}</div>
         </div>
     </div>
     <table>
         <thead>
             <tr>
-                <th>Ingredient</th>
+                <th>Ingredient Name</th>
                 <th>Category</th>
-                <th>In Stock</th>
+                <th>Current Stock</th>
                 <th>Unit</th>
                 <th>Reorder Level</th>
                 <th>Status</th>
             </tr>
         </thead>
         <tbody>
-            {% for ing in ingredients.items %}
-            <tr>
-                <td style="font-weight:600;">{{ ing.name }}</td>
-                <td><span class="pill" style="background:rgba(93,64,55,0.06); color:var(--muted);">{{ ing.category or 'General' }}</span></td>
-                <td style="font-weight:700; color:var(--primary);">{{ ing.stock_qty|round(2) }}</td>
-                <td style="color:var(--muted);">{{ ing.unit }}</td>
-                <td>{{ ing.reorder_level }}</td>
+            {% for ing in ingredients %}
+            <tr data-category="{{ ing.category or 'General' }}">
+                <td style="font-weight:700; color: var(--text);">{{ ing.name }}</td>
+                <td><span class="pill" style="background:rgba(93,64,55,0.05); color:var(--muted); font-weight: 700;">{{ ing.category or 'General' }}</span></td>
+                <td style="font-weight:800; color:var(--primary); font-size: 1.1rem;">{{ "%.2f"|format(ing.stock_qty|float) }}</td>
+                <td style="color:var(--muted); font-weight: 600;">{{ ing.unit }}</td>
+                <td style="font-weight: 600;">{{ ing.reorder_level }}</td>
                 <td>
-                    {% if ing.stock_qty <= ing.reorder_level %}
-                        <span class="pill" style="background:rgba(198,40,40,0.1); color:var(--danger);">CRITICAL</span>
+                    {% if ing.stock_qty|float <= ing.reorder_level|float %}
+                        <span class="pill" style="background:rgba(198,40,40,0.1); color:var(--danger); border: 1px solid rgba(198,40,40,0.1);">CRITICAL</span>
                     {% else %}
-                        <span class="pill" style="background:rgba(46,125,50,0.1); color:var(--success);">OPTIMAL</span>
+                        <span class="pill" style="background:rgba(46,125,50,0.1); color:var(--success); border: 1px solid rgba(46,125,50,0.1);">OPTIMAL</span>
                     {% endif %}
                 </td>
             </tr>
@@ -104,15 +203,7 @@
         </tbody>
     </table>
 
-    <div style="padding:20px; display:flex; justify-content:center; gap:10px;">
-        {% if ingredients.has_prev %}
-            <a href="{{ url_for('inventory_portal.inventory_full', page=ingredients.prev_num) }}" class="btn-staff">Previous</a>
-        {% endif %}
-        {% if ingredients.has_next %}
-            <a href="{{ url_for('inventory_portal.inventory_full', page=ingredients.next_num) }}" class="btn-staff">Next</a>
-        {% endif %}
     </div>
-</div>
 </div>
 
 <!-- Add Ingredient Modal -->
@@ -198,6 +289,24 @@
         if (event.target.classList.contains('modal-overlay')) {
             event.target.style.display = 'none';
         }
+    }
+    function filterTable(category) {
+        // Filter Rows
+        let rows = document.querySelectorAll('tbody tr');
+        let visibleCount = 0;
+        
+        rows.forEach(row => {
+            let cat = row.dataset.category;
+            if (category === 'ALL' || cat === category) {
+                row.classList.remove('hidden');
+                visibleCount++;
+            } else {
+                row.classList.add('hidden');
+            }
+        });
+        
+        // Update counter
+        document.getElementById('itemCount').textContent = `Showing ${visibleCount} Items`;
     }
 </script>
 {% endblock %}

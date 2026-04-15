@@ -139,7 +139,7 @@
     }
 </style>
 
-<nav class="navbar main-nav fixed-top navbar-expand-md {{ 'navbar-transparent' if (request.endpoint == 'main.index' or request.path == '/') else 'nav-scrolled' }}">
+<nav class="navbar main-nav fixed-top navbar-expand-md {{ 'navbar-transparent' if (request.endpoint == 'main.index' or request.path == '/') else 'nav-scrolled nav-always-solid' if (request.endpoint == 'main.login' or request.endpoint == 'main.signup' or '/login' in request.path or '/signup' in request.path) else 'nav-scrolled' }}">
     <div class="container-fluid px-md-5">
         <a class="navBrand" href="{{ url_for('main.index') }}">
             <i class="fas fa-coffee" style="color: #8B634B;"></i> 
@@ -414,6 +414,13 @@
         
         if (mainNav) {
             const handleScroll = () => {
+                // FORCE SOLID state if on login/signup or has nav-always-solid
+                if (mainNav.classList.contains('nav-always-solid')) {
+                    mainNav.classList.add('nav-scrolled');
+                    mainNav.classList.remove('navbar-transparent');
+                    return;
+                }
+
                 if (window.scrollY > 30) {
                     mainNav.classList.add('nav-scrolled');
                     mainNav.classList.remove('navbar-transparent');

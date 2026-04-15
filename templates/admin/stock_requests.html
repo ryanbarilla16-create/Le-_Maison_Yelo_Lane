@@ -1,332 +1,445 @@
-{% extends "admin/base.html" %}
-{% block title %}Kitchen Stock Requests{% endblock %}
+{% extends "layouts/staff_layout.html" %}
+
+{% block title %}Stock Requests — Le Maison{% endblock %}
+
+{% set is_kitchen = current_user.role|upper == 'KITCHEN' %}
+{% set is_inventory = current_user.role|upper in ['INVENTORY_STAFF', 'INVENTORY', 'ADMIN'] %}
+
+{% block portal_sub %}
+    {% if is_kitchen %}Kitchen Portal{% else %}Inventory Portal{% endif %}
+{% endblock %}
+
+{% block portal_role %}
+    {% if is_kitchen %}Kitchen Staff{% else %}Inventory Staff{% endif %}
+{% endblock %}
+
+{% block logout_url %}
+    {% if is_kitchen %}{{ url_for('kitchen_portal.kitchen_logout') }}{% else %}{{ url_for('inventory_portal.inventory_logout') }}{% endif %}
+{% endblock %}
+
+{% block profile_url %}
+    {% if is_kitchen %}{{ url_for('kitchen_portal.kitchen_profile') }}{% else %}{{ url_for('inventory_portal.inventory_profile') }}{% endif %}
+{% endblock %}
+
+{% block sidebar_nav %}
+    <div class="nav-section-label" onclick="toggleNavGroup(this, 'group-workspace')">
+        <span>Workspace</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+    </div>
+    <div id="group-workspace" class="nav-group">
+    {% if is_kitchen %}
+        <a class="nav-item" href="{{ url_for('kitchen_portal.kitchen_dashboard') }}">
+            <i class="fas fa-fire"></i> Order Board
+        </a>
+        <a class="nav-item" href="{{ url_for('kitchen_portal.kitchen_pantry') }}">
+            <i class="fas fa-archive"></i> Kitchen Pantry
+        </a>
+    {% else %}
+        <a class="nav-item" href="{{ url_for('inventory_portal.inventory_dashboard') }}">
+            <i class="fas fa-boxes-stacked"></i> Stock Levels
+        </a>
+        <a class="nav-item" href="{{ url_for('inventory_portal.inventory_full') }}">
+            <i class="fas fa-warehouse"></i> Full Inventory
+        </a>
+        <a class="nav-item" href="{{ url_for('inventory_portal.inventory_suppliers') }}">
+            <i class="fas fa-truck"></i> Suppliers
+        </a>
+        <a class="nav-item" href="{{ url_for('inventory_portal.inventory_waste_records') }}">
+            <i class="fas fa-trash-can"></i> Waste Log
+        </a>
+    {% endif %}
+    </div>
+
+    <div class="nav-section-label" onclick="toggleNavGroup(this, 'group-reference')">
+        <span>Reference</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+    </div>
+    <div id="group-reference" class="nav-group">
+    {% if is_kitchen %}
+        <a class="nav-item" href="{{ url_for('kitchen_portal.kitchen_recipes') }}">
+            <i class="fas fa-utensils"></i> Menu Recipes
+        </a>
+        <a class="nav-item active" href="{{ url_for('kitchen_portal.kitchen_stock_requests') }}">
+            <i class="fas fa-file-invoice"></i> Stock Requests
+        </a>
+    {% else %}
+        <a class="nav-item" href="{{ url_for('inventory_portal.inventory_recipes') }}">
+            <i class="fas fa-utensils"></i> Menu Recipes
+        </a>
+        <a class="nav-item active" href="{{ url_for('inventory_portal.inventory_stock_requests') }}">
+            <i class="fas fa-file-invoice"></i> Stock Requests
+        </a>
+        <a class="nav-item" href="{{ url_for('inventory_portal.inventory_ingredient_batches') }}">
+            <i class="fas fa-layer-group"></i> FIFO Batches
+        </a>
+    {% endif %}
+    </div>
+{% endblock %}
+
+{% block page_title %}Stock Requests{% endblock %}
+{% block page_subtitle %}Manage and fulfill ingredient requests sent directly from the Kitchen.{% endblock %}
+
+{% block extra_style %}
+<style>
+    /* Tab System */
+    .tab-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 28px;
+        border-bottom: 2px solid rgba(0,0,0,0.05);
+        padding-bottom: 0;
+    }
+    .tab-nav { display: flex; gap: 32px; }
+    .tab-btn {
+        padding: 12px 0;
+        cursor: pointer;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--muted);
+        position: relative;
+        transition: all 0.2s;
+        background: none;
+        border: none;
+        outline: none;
+    }
+    .tab-btn.active { color: var(--primary); }
+    .tab-btn.active::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        background: var(--primary);
+        border-radius: 10px;
+    }
+    .badge-count {
+        background: #efebe9; color: var(--primary);
+        font-size: 0.7rem; padding: 2px 8px; border-radius: 10px;
+        margin-left: 8px; font-weight: 800;
+    }
+
+    /* Grid Layout */
+    .request-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 24px; }
+    
+    /* Request Cards */
+    .req-card {
+        background: var(--card);
+        border: 1px solid var(--card-border);
+        border-radius: 24px;
+        padding: 24px;
+        position: relative;
+        transition: transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1), box-shadow 0.3s ease;
+    }
+    .req-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(93, 64, 55, 0.1);
+    }
+    .req-card.is-pending {
+        border-left: 6px solid var(--primary-light);
+    }
+
+    .req-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; }
+    .req-id-box {
+        background: rgba(93, 64, 55, 0.08); color: var(--primary);
+        font-size: 0.75rem; font-weight: 800; padding: 4px 10px; border-radius: 8px;
+    }
+    .req-time { font-size: 0.72rem; color: var(--muted); font-weight: 500; }
+
+    .staff-row { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .staff-avatar {
+        width: 40px; height: 40px; border-radius: 50%;
+        background: #D7CCC8;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 800; color: #3E2723; font-size: 0.9rem;
+    }
+    .staff-name { font-size: 0.9rem; font-weight: 700; color: var(--text); }
+    .staff-label { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .item-box {
+        background: rgba(93, 64, 55, 0.03);
+        border: 1px solid rgba(93, 64, 55, 0.06);
+        border-radius: 20px;
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 18px;
+    }
+    .item-icon {
+        width: 50px; height: 50px; background: white; border-radius: 14px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.4rem; color: var(--primary); box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    }
+    .item-details { flex: 1; }
+    .item-name { font-size: 1.1rem; font-weight: 800; color: var(--primary); font-family: 'Playfair Display', serif; }
+    .item-qty { font-size: 1.5rem; font-weight: 900; color: var(--text); }
+    .item-unit { font-size: 0.85rem; color: var(--muted); font-weight: 600; margin-left: 4px; }
+
+    .note-bubble {
+        background: white; border: 1px dashed rgba(93, 64, 55, 0.15);
+        padding: 12px; border-radius: 12px; margin-bottom: 20px;
+        font-size: 0.78rem; color: var(--muted); font-style: italic;
+    }
+
+    .card-actions-row { display: flex; gap: 12px; border-top: 1px solid rgba(93,64,55,0.06); padding-top: 20px; }
+    .btn-fulfill { flex: 1; background: var(--primary); color: white; border: none; padding: 10px; border-radius: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
+    .btn-fulfill:hover { background: var(--primary-dark); transform: scale(1.02); }
+    .btn-reject-circle { width: 44px; height: 44px; background: #efebe9; color: #5d4037; border: 1px solid #d7ccc8; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+    .btn-reject-circle:hover { background: #d7ccc8; color: #3e2723; }
+
+    /* History Table */
+    .history-card { background: var(--card); border: 1px solid var(--card-border); border-radius: 24px; overflow: hidden; }
+    .h-table { width: 100%; border-collapse: collapse; }
+    .h-table th { padding: 16px 24px; background: rgba(93, 64, 55, 0.03); text-align: left; font-size: 0.75rem; text-transform: uppercase; color: var(--muted); letter-spacing: 1px; font-weight: 800; }
+    .h-table td { padding: 18px 24px; border-bottom: 1px solid rgba(0,0,0,0.03); font-size: 0.9rem; }
+    .status-pill-v2 { padding: 6px 14px; border-radius: 50px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
+    .sp-fulfilled { background: #e8f5e9; color: #2e7d32; }
+    .sp-rejected { background: #efebe9; color: #5d4037; }
+
+    /* Modals */
+    .modal-v2 { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(10px); display: none; align-items: center; justify-content: center; z-index: 2500; }
+    .modal-v2-box { background: white; border-radius: 30px; width: 100%; max-width: 460px; overflow: hidden; box-shadow: 0 40px 100px rgba(0,0,0,0.3); }
+    .m-hdr { background: var(--primary); padding: 24px 30px; color: white; display: flex; justify-content: space-between; align-items: center; }
+    .m-bdy { padding: 30px; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="page-header d-flex justify-content-between align-items-end">
-    <div>
-        <h1>Kitchen Stock Requests</h1>
-        <p>Manage and fulfill ingredient requests sent directly from the Kitchen.</p>
+
+{% set pending_list = [] %}
+{% set history_list = [] %}
+{% for r in requests %}
+    {% if r.status == 'PENDING' %}{% set _ = pending_list.append(r) %}{% else %}{% set _ = history_list.append(r) %}{% endif %}
+{% endfor %}
+
+<div class="tab-header">
+    <div class="tab-nav">
+        <button class="tab-btn active" id="btn-pending" onclick="switchTabV2('pending')">
+            Awaiting Action <span class="badge-count">{{ pending_list|length }}</span>
+        </button>
+        <button class="tab-btn" id="btn-history" onclick="switchTabV2('history')">
+            Request History
+        </button>
     </div>
-    {% if current_user.role|upper == 'KITCHEN' or current_user.role|upper == 'ADMIN' %}
-    <button class="btn-admin btn-admin-primary" style="border-radius: 8px;"
-        onclick="document.getElementById('createRequestModal').style.display='flex'">
-        <i class="fas fa-paper-plane me-2"></i> Create Stock Request
+    {% if is_kitchen or current_user.role|upper == 'ADMIN' %}
+    <button class="btn-staff" onclick="document.getElementById('createRequestModal').style.display='flex'">
+        <i class="fas fa-plus-circle me-1"></i> New Request
     </button>
     {% endif %}
 </div>
 
-{% if pending_count > 0 and current_user.role|upper in ['INVENTORY_STAFF', 'INVENTORY', 'ADMIN'] %}
-<div class="alert alert-warning mb-4"
-    style="border-left: 4px solid #f59e0b; background: rgba(245, 158, 11, 0.1); color: #b45309; border-radius: 8px;">
-    <div class="d-flex align-items-center">
-        <i class="fas fa-bell fs-4 me-3"></i>
-        <div>
-            <strong>You have {{ pending_count }} pending stock request(s)</strong> waiting to be fulfilled.
+<div id="view-pending">
+    {% if pending_list %}
+    <div class="request-grid">
+        {% for req in pending_list %}
+        <div class="req-card is-pending">
+            <div class="req-top">
+                <span class="req-id-box">#{{ req.id }}</span>
+                <span class="req-time">{{ req.created_at.strftime('%I:%M %p') }} — {{ req.created_at.strftime('%b %d') }}</span>
+            </div>
+            
+            <div class="staff-row">
+                <div class="staff-avatar">{{ req.requested_by.first_name[:1] }}</div>
+                <div>
+                    <div class="staff-name">{{ req.requested_by.first_name }} {{ req.requested_by.last_name }}</div>
+                    <div class="staff-label">Kitchen Request</div>
+                </div>
+            </div>
+            
+            <div class="item-box">
+                <div class="item-icon"><i class="fas fa-carrot"></i></div>
+                <div class="item-details">
+                    <div class="item-name">{{ req.ingredient.name }}</div>
+                    <div><span class="item-qty">{{ req.quantity_requested }}</span><span class="item-unit">{{ req.ingredient.unit }}</span></div>
+                </div>
+            </div>
+
+
+
+            {% if is_inventory %}
+            <div class="card-actions-row">
+                <button class="btn-fulfill" onclick="openFulfillModal({{ req.id }}, '{{ req.ingredient.name }}', {{ req.quantity_requested }}, '{{ req.ingredient.unit }}', {{ req.ingredient.stock_qty }})">
+                    <i class="fas fa-check-double"></i> Fulfill Request
+                </button>
+                <form method="POST" action="{{ url_for('admin.fulfill_stock_request', req_id=req.id) }}" style="margin:0;">
+                    <input type="hidden" name="action" value="reject">
+                    <button type="submit" class="btn-reject-circle" onclick="return confirm('Reject this request?')">
+                        <i class="fas fa-trash-can"></i>
+                    </button>
+                </form>
+            </div>
+            {% else %}
+            <div style="text-align:center; background:#fffbeb; color:#92400e; padding:12px; border-radius:12px; font-size:0.8rem; font-weight:700;">
+                <i class="fas fa-hourglass-start me-1"></i> Under Review by Inventory
+            </div>
+            {% endif %}
         </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center; padding:80px; color:var(--muted); background:white; border-radius:24px; border:1px dashed rgba(0,0,0,0.1);">
+        <i class="fas fa-clipboard-check" style="font-size:3rem; opacity:0.1; margin-bottom:20px; display:block;"></i>
+        <h4 style="font-weight:700;">No Pending Requests</h4>
+        <p style="font-size:0.9rem;">You are all up to date with the kitchen!</p>
+    </div>
+    {% endif %}
+</div>
+
+<div id="view-history" style="display: none;">
+    <div class="history-card">
+        <table class="h-table">
+            <thead>
+                <tr>
+                    <th>REQ ID</th>
+                    <th>Ingredient</th>
+                    <th>Qty Requested</th>
+                    <th>Ordered By</th>
+                    <th>Final Status</th>
+                    <th>Processed By</th>
+                    <th>Finished On</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for req in history_list %}
+                <tr>
+                    <td style="font-weight: 800; color: var(--muted); opacity:0.6;">#{{ req.id }}</td>
+                    <td><div style="font-weight: 800; color: var(--primary);">{{ req.ingredient.name }}</div></td>
+                    <td>
+                        <div style="font-weight: 800;">{{ req.quantity_requested }} {{ req.ingredient.unit }}</div>
+                        {% if req.quantity_fulfilled and req.quantity_fulfilled != req.quantity_requested %}
+                        <div style="font-size: 0.7rem; color: #16a34a;">Released: {{ req.quantity_fulfilled }}</div>
+                        {% endif %}
+                    </td>
+                    <td><span style="font-weight:600;">{{ req.requested_by.first_name }}</span></td>
+                    <td>
+                        {% if req.status == 'FULFILLED' %}
+                            <span class="status-pill-v2 sp-fulfilled">Fulfilled</span>
+                        {% else %}
+                            <span class="status-pill-v2 sp-rejected">Rejected</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ req.fulfilled_by.first_name if req.fulfilled_by else '--' }}</td>
+                    <td style="font-size: 0.8rem; color: var(--muted);">{{ req.created_at.strftime('%b %d, %Y') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
-{% endif %}
 
-<div class="admin-table-wrap">
-    <table class="admin-table">
-        <thead>
-            <tr>
-                <th>Req #</th>
-                <th>Requested By</th>
-                <th>Ingredient</th>
-                <th>Requested Qty</th>
-                <th>Notes</th>
-                <th>Status</th>
-                <th>Fulfilled By</th>
-                {% if current_user.role|upper in ['INVENTORY_STAFF', 'INVENTORY', 'ADMIN'] %}
-                <th>Actions</th>
-                {% endif %}
-            </tr>
-        </thead>
-        <tbody>
-            {% for req in requests %}
-            <tr>
-                <td style="font-weight: bold; color: var(--admin-text-light);">#{{ req.id }}</td>
-                <td>
-                    <div style="font-weight: 500;">{{ req.requested_by.first_name }} {{ req.requested_by.last_name }}
-                    </div>
-                    <div style="font-size: 0.8rem; color: var(--admin-text-light);">{{ req.created_at.strftime('%m/%d/%Y
-                        %I:%M %p') }}</div>
-                </td>
-                <td style="font-weight: 600;">{{ req.ingredient.name }}</td>
-                <td style="font-size: 1.1rem; font-weight: bold;">
-                    {{ req.quantity_requested }} <span
-                        style="font-size: 0.8rem; font-weight: normal; color: var(--admin-text-light);">{{
-                        req.ingredient.unit }}</span>
-                </td>
-                <td style="color: var(--admin-text-light); max-width: 200px; white-space: normal;">{{ req.notes or '--'
-                    }}</td>
-                <td>
-                    {% if req.status == 'PENDING' %}
-                    <span class="badge" style="background: #f59e0b; color: white;">Pending Fulfillment</span>
-                    {% elif req.status == 'FULFILLED' %}
-                    <span class="badge bg-success">Fulfilled <i class="fas fa-check ms-1"></i></span>
-                    <div style="font-size: 0.75rem; margin-top: 4px; color: var(--admin-text-light);">Sent: {{
-                        req.quantity_fulfilled }} {{ req.ingredient.unit }}</div>
-                    {% elif req.status == 'REJECTED' %}
-                    <span class="badge bg-danger">Rejected</span>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if req.fulfilled_by %}
-                    {{ req.fulfilled_by.first_name }} {{ req.fulfilled_by.last_name }}
-                    {% else %}
-                    <span style="color: var(--admin-text-light);">--</span>
-                    {% endif %}
-                </td>
-
-                {% if current_user.role|upper in ['INVENTORY_STAFF', 'INVENTORY', 'ADMIN'] %}
-                <td>
-                    {% if req.status == 'PENDING' %}
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-sm btn-success"
-                            onclick="openFulfillModal({{ req.id }}, '{{ req.ingredient.name }}', {{ req.quantity_requested }}, '{{ req.ingredient.unit }}', {{ req.ingredient.stock_qty }})">Fulfill</button>
-                        <form method="POST" action="{{ url_for('admin.fulfill_stock_request', req_id=req.id) }}">
-                            <input type="hidden" name="action" value="reject">
-                            <button type="submit" class="btn btn-sm btn-outline-danger"
-                                onclick="return confirm('Are you sure you want to reject this request?')">Reject</button>
-                        </form>
-                    </div>
-                    {% else %}
-                    <span style="color: var(--admin-text-light);"><i class="fas fa-lock me-1"></i> Locked</span>
-                    {% endif %}
-                </td>
-                {% endif %}
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="8" style="text-align: center; padding: 2rem; color: var(--admin-text-light);">No stock
-                    requests found.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-
-<!-- CREATE REQUEST MODAL -->
-<div id="createRequestModal" class="admin-modal" style="display: none;">
-    <div class="admin-modal-content" style="max-width: 500px;">
-        <div class="admin-modal-header border-bottom pb-3 mb-3">
-            <h3 class="m-0" style="color: var(--admin-text);"><i class="fas fa-paper-plane me-2"></i>New Stock Request
-            </h3>
-            <span class="admin-close"
-                onclick="document.getElementById('createRequestModal').style.display='none'">&times;</span>
+<!-- All existing modals kept but with updated classes if needed -->
+<div id="createRequestModal" class="modal-v2">
+    <div class="modal-v2-box">
+        <div class="m-hdr">
+            <h3 style="margin:0;">Request Stock</h3>
+            <button onclick="document.getElementById('createRequestModal').style.display='none'" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">&times;</button>
         </div>
-        <form id="createRequestForm" method="POST" action="{{ url_for('admin.create_stock_request') }}">
-            <div class="mb-3">
-                <label class="form-label fw-bold">Select Ingredient</label>
-                <select name="ingredient_id" class="form-control admin-input" required>
-                    <option value="">-- Choose Ingredient --</option>
-                    {% for ing in ingredients %}
-                    <option value="{{ ing.id }}" data-stock="{{ ing.stock_qty }}" {% if ing.stock_qty|float <= 0 %}disabled style="color: #999; background: #f8f9fa;"{% endif %}>
-                        {{ ing.name }} (Bodega: {{ ing.stock_qty }} {{ ing.unit }}) 
-                        {% if ing.stock_qty|float <= 0 %} [OUT OF STOCK]{% endif %}
-                    </option>
+        <form action="{{ url_for('admin.create_stock_request') }}" method="POST" class="m-bdy">
+            <div style="margin-bottom:15px;">
+                <label style="display:block; font-size:0.75rem; font-weight:800; color:var(--muted); margin-bottom:8px;">1. ITEM CATEGORY</label>
+                <select id="ingredientCategory" style="width:100%; padding:12px; border-radius:12px; border:1px solid #ddd;" onchange="updateIngredientList()">
+                    <option value="">Choose category...</option>
+                    {% for cat in grouped_ingredients.keys()|sort %}
+                    <option value="{{ cat }}">{{ cat }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="mb-3">
-                <label class="form-label fw-bold">Quantity Needed</label>
-                <input type="number" step="0.01" min="0.01" name="quantity_requested" class="form-control admin-input"
-                    required placeholder="Enter amount...">
+            <div style="margin-bottom:15px;">
+                <label style="display:block; font-size:0.75rem; font-weight:800; color:var(--muted); margin-bottom:8px;">2. CHOOSE INGREDIENT</label>
+                <select name="ingredient_id" id="ingredientSelect" style="width:100%; padding:12px; border-radius:12px; border:1px solid #ddd;" required disabled onchange="updateUnitLabel()">
+                    <option value="">Select ingredient...</option>
+                </select>
             </div>
-            <div class="mb-4">
-                <label class="form-label fw-bold">Urgency / Notes</label>
-                <textarea name="notes" class="form-control admin-input" rows="3"
-                    placeholder="e.g. Critical for today's orders!"></textarea>
+            <div style="margin-bottom:20px;">
+                <label style="display:block; font-size:0.75rem; font-weight:800; color:var(--muted); margin-bottom:8px;">3. QUANTITY</label>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <input type="number" name="quantity_requested" step="0.01" min="0.01" required style="flex:1; padding:12px; border-radius:12px; border:1px solid #ddd;" placeholder="0.00">
+                    <span id="unitLabel" style="font-weight:800; color:var(--primary);">--</span>
+                </div>
             </div>
-            <div class="d-flex justify-content-end gap-2">
-                <button type="button" class="btn-admin"
-                    onclick="document.getElementById('createRequestModal').style.display='none'"
-                    style="border: 1px solid var(--admin-border); background: var(--admin-surface);">Cancel</button>
-                <button type="submit" id="btnSendRequest" class="btn-admin btn-admin-primary" style="border-radius: 8px;">
-                    <span class="btn-text">Send Request</span>
-                    <span class="btn-loading" style="display: none;"><i class="fas fa-spinner fa-spin me-1"></i> Sending...</span>
-                    <span class="btn-success-check" style="display: none;"><i class="fas fa-check-circle"></i> Sent!</span>
-                </button>
-            </div>
+
+            <button type="submit" class="btn-staff" style="width:100%;">Submit Request</button>
         </form>
     </div>
 </div>
 
-<!-- FULFILL MODAL -->
-<div id="fulfillModal" class="admin-modal" style="display: none;">
-    <div class="admin-modal-content" style="max-width: 400px;">
-        <div class="admin-modal-header border-bottom pb-3 mb-3">
-            <h3 class="m-0" style="color: var(--admin-green);"><i class="fas fa-box-open me-2"></i>Fulfill Request</h3>
-            <span class="admin-close"
-                onclick="document.getElementById('fulfillModal').style.display='none'">&times;</span>
+<div id="fulfillModal" class="modal-v2">
+    <div class="modal-v2-box">
+        <div class="m-hdr" style="background: #166534;">
+            <h3 style="margin:0;">Release Stock</h3>
+            <button onclick="document.getElementById('fulfillModal').style.display='none'" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">&times;</button>
         </div>
-        <form method="POST" id="fulfillForm" action="">
+        <form id="fulfillForm" method="POST" class="m-bdy">
             <input type="hidden" name="action" value="fulfill">
-            <div class="mb-3">
-                <label class="form-label fw-bold">Ingredient</label>
-                <input type="text" id="fm_ingredient" class="form-control admin-input" disabled>
+            <div style="text-align:center; margin-bottom:20px;">
+                <div id="fulfill_ing_name" style="font-size:1.4rem; font-weight:800; color:var(--primary);">Ingredient</div>
+                <div style="background:#f0fdf4; color:#166534; padding:15px; border-radius:16px; margin-top:15px;">
+                    <div style="font-size:0.7rem; font-weight:800; opacity:0.7;">BODEGA STOCK</div>
+                    <div style="font-size:1.3rem; font-weight:900;"><span id="fulfill_warehouse_stock">0.00</span> <small id="fulfill_unit_bodega">pts</small></div>
+                </div>
             </div>
-            <div class="mb-4">
-                <label class="form-label fw-bold">Quantity to Send (<span id="fm_unit"></span>)</label>
-                <input type="number" step="0.01" min="0.01" name="quantity_fulfilled" id="fm_qty"
-                    class="form-control admin-input" required>
-                <div id="fm_error" style="color: #dc3545; font-size: 0.8rem; margin-top: 5px; display: none; font-weight: 500;"></div>
-                <div class="form-text mt-2" id="fm_help_text"></div>
+            <div style="margin-bottom:25px;">
+                <label style="display:block; font-size:0.75rem; font-weight:800; color:var(--muted); margin-bottom:8px;">AMOUNT TO RELEASE</label>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <input type="number" name="quantity_fulfilled" id="fulfill_input_qty" step="0.01" min="0.01" required 
+                           style="flex:1; padding:14px; border-radius:14px; border:2px solid #166534; font-size:1.2rem; font-weight:800;">
+                    <span class="fulfill_unit_label" style="font-weight:900; color:#166534;">pts</span>
+                </div>
             </div>
-            <div class="d-flex justify-content-end gap-2">
-                <button type="button" class="btn-admin"
-                    onclick="document.getElementById('fulfillModal').style.display='none'"
-                    style="border: 1px solid var(--admin-border); background: var(--admin-surface);">Cancel</button>
-                <button type="submit" id="btnConfirmFulfill" class="btn-admin btn-admin-primary" style="border-radius: 8px;">
-                    Confirm & Send to Kitchen
-                </button>
-            </div>
+            <button type="submit" class="btn-staff" style="width:100%; background:#166534;">Process Release</button>
         </form>
     </div>
 </div>
 
 <script>
-    let currentMainStock = 0;
-    let currentRequestedQty = 0;
-    function openFulfillModal(reqId, ingName, expectedQty, unit, mainStock) {
-        document.getElementById('fulfillForm').action = "/admin/stock-requests/" + reqId + "/fulfill";
-        document.getElementById('fm_ingredient').value = ingName;
-        document.getElementById('fm_qty').value = expectedQty;
-        document.getElementById('fm_qty').max = mainStock; // Cannot send more than in store
-        document.getElementById('fm_unit').innerText = unit;
-        document.getElementById('fm_help_text').innerHTML = `<i class="fas fa-info-circle me-1"></i> Requested: <b>${expectedQty}</b>. Bodega: <b>${mainStock}</b>.`;
+    const grouped_ingredients = {{ grouped_ingredients|tojson }};
+    
+    function switchTabV2(id) {
+        document.getElementById('view-pending').style.display = id === 'pending' ? 'block' : 'none';
+        document.getElementById('view-history').style.display = id === 'history' ? 'block' : 'none';
         
-        currentMainStock = parseFloat(mainStock);
-        currentRequestedQty = parseFloat(expectedQty);
+        document.getElementById('btn-pending').classList.toggle('active', id === 'pending');
+        document.getElementById('btn-history').classList.toggle('active', id === 'history');
+    }
+
+    function updateIngredientList() {
+        const cat = document.getElementById('ingredientCategory').value;
+        const select = document.getElementById('ingredientSelect');
+        const unitLabel = document.getElementById('unitLabel');
+        select.innerHTML = '<option value="">Select ingredient...</option>';
+        unitLabel.textContent = '--';
+        if (cat && grouped_ingredients[cat]) {
+            select.disabled = false;
+            grouped_ingredients[cat].forEach(ing => {
+                const opt = document.createElement('option');
+                opt.value = ing.id; opt.textContent = ing.name; opt.dataset.unit = ing.unit;
+                select.appendChild(opt);
+            });
+        } else { select.disabled = true; }
+    }
+    
+    function updateUnitLabel() {
+        const select = document.getElementById('ingredientSelect');
+        const unitLabel = document.getElementById('unitLabel');
+        const selectedOpt = select.options[select.selectedIndex];
+        unitLabel.textContent = (selectedOpt && selectedOpt.dataset.unit) ? selectedOpt.dataset.unit : '--';
+    }
+
+    function openFulfillModal(reqId, ingName, reqQty, unit, warehouseStock) {
+        document.getElementById('fulfillForm').action = "/admin/stock-requests/" + reqId + "/fulfill";
+        document.getElementById('fulfill_ing_name').textContent = ingName;
+        document.getElementById('fulfill_warehouse_stock').textContent = warehouseStock;
+        document.getElementById('fulfill_input_qty').value = reqQty;
+        document.getElementById('fulfill_input_qty').max = warehouseStock;
+        document.querySelectorAll('.fulfill_unit_label').forEach(l => l.textContent = unit);
+        document.getElementById('fulfill_unit_bodega').textContent = unit;
         document.getElementById('fulfillModal').style.display = 'flex';
     }
 
-    // High-speed AJAX fulfillment
-    const fulfillForm = document.getElementById('fulfillForm');
-    if (fulfillForm) {
-        fulfillForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            console.log("Submitting fulfill form...");
-            
-            const qtyToSend = parseFloat(document.getElementById('fm_qty').value);
-            const errEl = document.getElementById('fm_error');
-            errEl.style.display = 'none';
-            
-            if (qtyToSend > currentMainStock) {
-                errEl.textContent = `❌ Only ${currentMainStock} available in main stock.`;
-                errEl.style.display = 'block';
-                return;
-            }
-            if (qtyToSend > currentRequestedQty) {
-                errEl.textContent = `❌ Cannot exceed requested amount (${currentRequestedQty}).`;
-                errEl.style.display = 'block';
-                return;
-            }
-
-            const btn = document.getElementById('btnConfirmFulfill');
-            const originalText = btn.innerText;
-            btn.disabled = true;
-            btn.innerText = "Sending...";
-
-            const formData = new FormData(this);
-            const actionUrl = this.getAttribute('action');
-            console.log("Target URL:", actionUrl);
-
-            fetch(actionUrl, {
-                method: 'POST',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                body: formData
-            })
-            .then(r => r.json())
-            .then(data => {
-                console.log("Response:", data);
-                if (data.success) {
-                    document.getElementById('fulfillModal').style.display = 'none';
-                    if (window.showToast) window.showToast('success', data.message);
-                    setTimeout(() => window.location.reload(), 300); 
-                } else {
-                    alert(data.message || 'Error fulfilling request');
-                    btn.disabled = false;
-                    btn.innerText = originalText;
-                }
-            })
-            .catch(err => {
-                console.error("Fetch Error:", err);
-                alert("Network error. Please try again.");
-                btn.disabled = false;
-                btn.innerText = originalText;
-            });
-        });
-    }
-
-    // AJAX submission for New Stock Request
-    const createForm = document.getElementById('createRequestForm');
-    if (createForm) {
-        createForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const btn = document.getElementById('btnSendRequest');
-            const btnText = btn.querySelector('.btn-text');
-            const btnLoading = btn.querySelector('.btn-loading');
-
-            btn.disabled = true;
-            btnText.style.display = 'none';
-            btnLoading.style.display = 'inline-block';
-
-            const formData = new FormData(this);
-            const ingSelect = this.querySelector('select[name="ingredient_id"]');
-            const selectedOpt = ingSelect.options[ingSelect.selectedIndex];
-            const stockAtBodega = parseFloat(selectedOpt.dataset.stock || 0);
-
-            if (stockAtBodega <= 0) {
-                alert('This item is out of stock in the bodega. You cannot request it right now.');
-                btn.disabled = false;
-                btnText.style.display = 'inline-block';
-                btnLoading.style.display = 'none';
-                return;
-            }
-
-            fetch(this.action, {
-                method: 'POST',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                body: formData
-            })
-            .then(r => {
-                if (!r.ok) throw new Error('Network response was not ok');
-                return r.json();
-            })
-            .then(data => {
-                if (data.success) {
-                    btnLoading.style.display = 'none';
-                    btn.querySelector('.btn-success-check').style.display = 'inline-block';
-                    btn.style.background = '#28a745';
-                    btn.style.borderColor = '#28a745';
-
-                    if (window.showToast) {
-                        window.showToast('success', data.message);
-                    }
-                    
-                    // Close modal and refresh after 1 second
-                    setTimeout(() => {
-                        document.getElementById('createRequestModal').style.display = 'none';
-                        window.location.reload();
-                    }, 1000);
-                } else {
-                    alert(data.message || 'Error submitting request');
-                    btn.disabled = false;
-                    btnText.style.display = 'inline-block';
-                    btnLoading.style.display = 'none';
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                btn.disabled = false;
-                btnText.style.display = 'inline-block';
-                btnLoading.style.display = 'none';
-            });
-        });
+    window.onclick = function(e) {
+        if(e.target.classList.contains('modal-v2')) e.target.style.display = 'none';
     }
 </script>
 {% endblock %}
-

@@ -1,7 +1,7 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app, jsonify
 from flask_login import login_user, current_user, login_required
 from flask_mail import Message
-from models import db, User, Order, OrderItem, Ingredient, MenuItemIngredient, Supplier, WasteRecord, MenuItem
+from models import db, User, Order, OrderItem, Ingredient, MenuItemIngredient, Supplier, WasteRecord, MenuItem, IngredientBatch
 from utils import get_ph_time, validate_password, safe_elapsed
 import random
 import threading
@@ -341,19 +341,23 @@ def kitchen_dashboard():
     if not current_user.is_authenticated or current_user.role not in KITCHEN_ROLES:
         return redirect(url_for('kitchen_portal.kitchen_login'))
         
-    # Required by templates/kitchen/dashboard.html:
-    # pending_orders, preparing_orders, ready_orders
-    
-    from sqlalchemy.orm import selectinload
-    pending_orders = Order.query.options(selectinload(Order.items).selectinload(OrderItem.menu_item)).filter_by(status='PENDING').order_by(Order.created_at.asc()).all()
-    preparing_orders = Order.query.options(selectinload(Order.items).selectinload(OrderItem.menu_item)).filter_by(status='PREPARING').order_by(Order.created_at.asc()).all()
-    ready_orders = Order.query.options(selectinload(Order.items).selectinload(OrderItem.menu_item)).filter_by(status='READY').order_by(Order.created_at.desc()).limit(20).all()
-    
-    return render_template('kitchen/dashboard.html',
-                           portal_name=f"{current_user.first_name} {current_user.last_name}",
-                           pending_orders=pending_orders,
-                           preparing_orders=preparing_orders,
-                           ready_orders=ready_orders)
+    try:
+        from sqlalchemy.orm import selectinload
+        pending_orders = Order.query.options(selectinload(Order.items)).filter_by(status='PENDING').order_by(Order.created_at.asc()).all()
+        preparing_orders = Order.query.options(selectinload(Order.items)).filter_by(status='PREPARING').order_by(Order.created_at.asc()).all()
+        # For ready orders, we want to see the last 20
+        ready_orders = Order.query.options(selectinload(Order.items)).filter_by(status='READY').order_by(Order.created_at.desc()).limit(20).all()
+        
+        return render_template('kitchen/dashboard.html',
+                               portal_name=f"{current_user.first_name} {current_user.last_name}",
+                               pending_orders=pending_orders,
+                               preparing_orders=preparing_orders,
+                               ready_orders=ready_orders)
+    except Exception as e:
+        import traceback
+        print("ERROR IN KITCHEN DASHBOARD:")
+        traceback.print_exc()
+        return f"Internal Error: {str(e)}", 500
 
 @kitchen_bp.route('/staff/kitchen/update/<int:order_id>', methods=['POST'])
 @login_required
@@ -392,7 +396,23 @@ def kitchen_update_order(order_id):
                 for ing_id, deduction in deduction_by_ingredient_id.items():
                     ing = ingredients_by_id.get(ing_id)
                     if ing:
-                        ing.stock_qty = max(0.0, float(ing.stock_qty) - float(deduction))
+                        # Deduct from KITCHEN stock, not warehouse stock
+                        ing.kitchen_qty = max(0.0, float(ing.kitchen_qty or 0) - float(deduction))
+                        
+                        # Sync availability for this ingredient (checks kitchen stock)
+                        # We do this logic inline here as the helper isn't exported
+                        links = MenuItemIngredient.query.filter_by(ingredient_id=ing.id).all()
+                        for link in links:
+                            mi = MenuItem.query.get(link.menu_item_id)
+                            if mi:
+                                can_make = True
+                                for recipe_item in mi.ingredients:
+                                    qty_in_kitchen = float(recipe_item.ingredient.kitchen_qty or 0)
+                                    qty_needed = float(recipe_item.quantity_needed or 0)
+                                    if qty_in_kitchen < qty_needed:
+                                        can_make = False
+                                        break
+                                mi.is_available = can_make
             
             order.prep_start_at = get_ph_time()
             
@@ -427,6 +447,24 @@ def kitchen_pantry():
     return render_template('kitchen/pantry.html', 
                            grouped_ingredients=grouped_ingredients,
                            portal_name=f"{current_user.first_name} {current_user.last_name}")
+
+@kitchen_bp.route('/staff/kitchen/recipes')
+def kitchen_recipes():
+    if not current_user.is_authenticated or current_user.role not in KITCHEN_ROLES:
+        return redirect(url_for('kitchen_portal.kitchen_login'))
+    
+    from itertools import groupby
+    all_menu_items = MenuItem.query.filter_by(is_deleted=False).order_by(MenuItem.category, MenuItem.name).all()
+    grouped_items = {}
+    for category, group in groupby(all_menu_items, lambda x: x.category or 'General'):
+        grouped_items[category] = list(group)
+        
+    menu_categories = [r[0] for r in db.session.query(MenuItem.category).filter(MenuItem.is_deleted == False).distinct().order_by(MenuItem.category).all()]
+    
+    return render_template('kitchen/recipes.html',
+                           portal_name=f"{current_user.first_name} {current_user.last_name}",
+                           grouped_items=grouped_items,
+                           menu_categories=menu_categories)
 
 @kitchen_bp.route('/staff/kitchen/pantry/update', methods=['POST'])
 def kitchen_update_pantry():
@@ -529,39 +567,131 @@ def inventory_dashboard():
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
         return redirect(url_for('inventory_portal.inventory_login'))
         
-    # Required by templates/inventory/dashboard.html:
-    # total_items, low_stock, ingredients
-    
-    all_ingredients = Ingredient.query.order_by(Ingredient.name).all()
+    all_ingredients = Ingredient.query.order_by(Ingredient.category, Ingredient.name).all()
     total_items = len(all_ingredients)
-    low_stock_count = Ingredient.query.filter(Ingredient.stock_qty <= Ingredient.reorder_level).count()
+    low_stock_count = db.session.query(db.func.count(Ingredient.id)).filter(Ingredient.stock_qty <= Ingredient.reorder_level).scalar()
     
     suppliers = Supplier.query.order_by(Supplier.name).all()
     
+    from itertools import groupby
+    
+    grouped_ingredients = {}
+    for category, group in groupby(all_ingredients, lambda x: x.category or 'General'):
+        grouped_ingredients[category] = list(group)
+        
     return render_template('inventory/dashboard.html',
                            portal_name=f"{current_user.first_name} {current_user.last_name}",
                            total_items=total_items,
                            low_stock=low_stock_count,
                            ingredients=all_ingredients,
+                           grouped_ingredients=grouped_ingredients,
                            suppliers=suppliers)
+
+@inventory_bp.route('/staff/inventory/recipes')
+def inventory_recipes():
+    if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        return redirect(url_for('inventory_portal.inventory_login'))
+    
+    from itertools import groupby
+    all_menu_items = MenuItem.query.filter_by(is_deleted=False).order_by(MenuItem.category, MenuItem.name).all()
+    grouped_items = {}
+    for category, group in groupby(all_menu_items, lambda x: x.category or 'General'):
+        grouped_items[category] = list(group)
+        
+    menu_categories = [r[0] for r in db.session.query(MenuItem.category).filter(MenuItem.is_deleted == False).distinct().order_by(MenuItem.category).all()]
+    
+    return render_template('inventory/recipes.html',
+                           portal_name=f"{current_user.first_name} {current_user.last_name}",
+                           grouped_items=grouped_items,
+                           menu_categories=menu_categories)
 
 @inventory_bp.route('/staff/inventory/batches')
 def inventory_ingredient_batches():
-    from routes.admin import ingredient_batches
-    return ingredient_batches()
+    if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        return redirect(url_for('inventory_portal.inventory_login'))
+    
+    from datetime import date
+    from sqlalchemy.orm import selectinload
+    
+    # Pre-fetch data for the staff FIFO dashboard
+    ingredients = Ingredient.query.order_by(Ingredient.name).all()
+    today = date.today()
+    batches = (
+        IngredientBatch.query.filter_by(is_exhausted=False)
+        .options(selectinload(IngredientBatch.ingredient))
+        .order_by(IngredientBatch.purchase_date.asc())
+        .all()
+    )
+
+    menu_categories = [r[0] for r in db.session.query(MenuItem.category)
+                       .filter(MenuItem.is_deleted == False)
+                       .distinct().order_by(MenuItem.category).all()]
+
+    # Mapping ingredients to their menu categories for client-side filtering
+    ing_menu_cats = {}
+    for ing in ingredients:
+        cats = db.session.query(MenuItem.category).join(MenuItemIngredient, MenuItem.id == MenuItemIngredient.menu_item_id).filter(
+            MenuItemIngredient.ingredient_id == ing.id
+        ).distinct().all()
+        ing_menu_cats[ing.id] = [c[0] for c in cats if c[0]]
+
+    return render_template('staff/batches.html',
+                           batches=batches,
+                           ingredients=ingredients,
+                           today=today,
+                           menu_categories=menu_categories,
+                           ing_menu_cats=ing_menu_cats)
+
+
+@inventory_bp.route('/staff/inventory/batches/add', methods=['POST'])
+def inventory_add_ingredient_batch():
+    if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        return redirect(url_for('inventory_portal.inventory_login'))
+        
+    ing_id = request.form.get('ingredient_id', type=int)
+    batch_qty = request.form.get('batch_qty', type=float)
+    cost = request.form.get('cost_per_unit', type=float, default=0.0)
+    exp_date_str = request.form.get('expiration_date')
+    
+    from datetime import datetime
+    exp_date = None
+    if exp_date_str:
+        try:
+            exp_date = datetime.strptime(exp_date_str, '%Y-%m-%d').date()
+        except: pass
+        
+    from routes.admin import process_fifo_transaction, log_inventory_change
+    
+    ing = Ingredient.query.get_or_404(ing_id)
+    prev_stock = float(ing.stock_qty)
+    ing.stock_qty = prev_stock + batch_qty
+    
+    # 1. Log overall inventory
+    log_inventory_change(ing.id, 'ADD', batch_qty, prev_stock, "Manual Batch Receipt (Portal)")
+    
+    # 2. Process FIFO logic (Creates the individual batch record)
+    process_fifo_transaction(ing.id, 'ADD', batch_qty, cost_per_unit=cost, expiration_date=exp_date)
+    
+    db.session.commit()
+    flash(f"Inventory record updated. {batch_qty} {ing.unit} added to FIFO queue.", "success")
+    return redirect(url_for('inventory_portal.inventory_ingredient_batches'))
 
 @inventory_bp.route('/staff/inventory/full')
 def inventory_full():
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
         return redirect(url_for('inventory_portal.inventory_login'))
     
-    page = request.args.get('page', 1, type=int)
-    ingredients_pg = Ingredient.query.order_by(Ingredient.category, Ingredient.name).paginate(page=page, per_page=50)
+    # We fetch all ingredients to allow for instant client-side filtering as requested
+    all_ingredients = Ingredient.query.order_by(Ingredient.category, Ingredient.name).all()
+    
+    # Get all unique categories for the filter buttons
+    categories = [r[0] for r in db.session.query(Ingredient.category).distinct().all() if r[0]]
     
     suppliers = Supplier.query.order_by(Supplier.name).all()
     
     return render_template('inventory/full.html', 
-                           ingredients=ingredients_pg,
+                           ingredients=all_ingredients,
+                           categories=categories,
                            suppliers=suppliers,
                            portal_name=f"{current_user.first_name} {current_user.last_name}")
 
@@ -684,9 +814,16 @@ def inventory_add_waste():
     reason = request.form.get('reason', 'Other')
     notes = request.form.get('notes', '').strip()
     
+    from routes.admin import log_inventory_change, process_fifo_transaction
+    
     ing = Ingredient.query.get_or_404(ing_id)
+    prev_stock = float(ing.stock_qty)
     cost_lost = qty * float(ing.cost_per_unit or 0)
-    ing.stock_qty = max(0, float(ing.stock_qty) - qty)
+    ing.stock_qty = max(0, prev_stock - qty)
+    
+    # 1. Log change and update FIFO
+    log_inventory_change(ing.id, 'WASTE', qty, prev_stock, f"Waste Recorded: {reason}")
+    process_fifo_transaction(ing.id, 'WASTE', qty)
     
     waste = WasteRecord(
         ingredient_id=ing_id,
@@ -694,7 +831,7 @@ def inventory_add_waste():
         reason=reason,
         notes=notes,
         cost_lost=cost_lost,
-        recorded_by=current_user.id
+        recorded_by_id=current_user.id
     )
     db.session.add(waste)
     db.session.commit()
@@ -724,6 +861,76 @@ def inventory_stock_requests():
 def inventory_audit():
     from routes.admin import inventory_audit
     return inventory_audit()
+
+@inventory_bp.route('/staff/inventory/suppliers/<int:sup_id>/ingredients')
+def supplier_ingredients_api(sup_id):
+    """API: Return all ingredients linked to a supplier as JSON (for the receive modal)."""
+    if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    ingredients = Ingredient.query.filter_by(supplier_id=sup_id).order_by(Ingredient.category, Ingredient.name).all()
+    result = []
+    for ing in ingredients:
+        result.append({
+            'id': ing.id,
+            'name': ing.name,
+            'unit': ing.unit,
+            'category': ing.category or 'General',
+            'stock_qty': float(ing.stock_qty),
+            'cost_per_unit': float(ing.cost_per_unit or 0),
+        })
+    return jsonify({'success': True, 'ingredients': result})
+
+@inventory_bp.route('/staff/inventory/suppliers/<int:sup_id>/receive', methods=['POST'])
+def supplier_receive_delivery(sup_id):
+    """Process a supply delivery: add stock to warehouse inventory for each received ingredient."""
+    if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    from routes.admin import log_inventory_change, process_fifo_transaction
+    
+    supplier = Supplier.query.get_or_404(sup_id)
+    data = request.get_json()
+    
+    if not data or 'items' not in data:
+        return jsonify({'success': False, 'message': 'No items provided.'})
+    
+    received_items = data['items']  # list of {ingredient_id, qty_received}
+    total_received = 0
+    details = []
+    
+    for item in received_items:
+        ing_id = item.get('ingredient_id')
+        qty = float(item.get('qty_received', 0))
+        
+        if qty <= 0:
+            continue
+            
+        ing = Ingredient.query.get(ing_id)
+        if not ing or ing.supplier_id != sup_id:
+            continue
+        
+        # 1. Update overall stock
+        prev_stock = float(ing.stock_qty)
+        ing.stock_qty = prev_stock + qty
+        log_inventory_change(ing.id, 'ADD', qty, prev_stock, f'Supply Received from {supplier.name}')
+        
+        # 2. Create FIFO Batch
+        process_fifo_transaction(ing.id, 'ADD', qty)
+        
+        total_received += 1
+        details.append(f'+{qty} {ing.unit} {ing.name}')
+    
+    if total_received == 0:
+        return jsonify({'success': False, 'message': 'No valid items to receive. Please enter quantities.'})
+    
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'message': f'✅ Received {total_received} item(s) from {supplier.name}!',
+        'details': details
+    })
 
 @inventory_bp.route('/inventory/logout')
 def inventory_logout():
@@ -763,6 +970,137 @@ def inventory_reset_password():
     return render_template('portal_auth/reset_password.html', portal='Inventory', portal_color='#2E7D32',
                            form_action=url_for('inventory_portal.inventory_reset_password'),
                            login_url=url_for('inventory_portal.inventory_login'))
+
+
+# ══════════════════════════════════════════════════════════════════
+# ── Shared Staff Profile Handler ─────────────────────────────────
+# ══════════════════════════════════════════════════════════════════
+
+def _handle_profile_post(user):
+    """Shared handler for profile update and password change POST requests."""
+    form_type = request.form.get('form_type')
+    
+    if form_type == 'profile':
+        first_name = request.form.get('first_name', '').strip()
+        last_name = request.form.get('last_name', '').strip()
+        phone_number = request.form.get('phone_number', '').strip()
+        
+        if not first_name or not last_name:
+            flash('First name and last name are required.', 'danger')
+            return False
+        
+        user.first_name = first_name
+        user.last_name = last_name
+        user.phone_number = phone_number if phone_number else None
+        db.session.commit()
+        flash('Profile updated successfully!', 'success')
+        return True
+        
+    elif form_type == 'password':
+        current_password = request.form.get('current_password', '')
+        new_password = request.form.get('new_password', '')
+        confirm_password = request.form.get('confirm_password', '')
+        
+        if not user.check_password(current_password):
+            flash('Current password is incorrect.', 'danger')
+            return False
+        
+        err = validate_password(new_password, confirm_password)
+        if err:
+            flash(err, 'danger')
+            return False
+        
+        user.set_password(new_password)
+        db.session.commit()
+        flash('Password changed successfully!', 'success')
+        return True
+    
+    return False
+
+
+# ── Kitchen Profile ──
+@kitchen_bp.route('/staff/kitchen/profile', methods=['GET', 'POST'])
+def kitchen_profile():
+    if not current_user.is_authenticated or current_user.role not in KITCHEN_ROLES:
+        return redirect(url_for('kitchen_portal.kitchen_login'))
+    
+    if request.method == 'POST':
+        _handle_profile_post(current_user)
+        return redirect(url_for('kitchen_portal.kitchen_profile'))
+    
+    sidebar_items = [
+        {'url': url_for('kitchen_portal.kitchen_dashboard'), 'icon': 'fire', 'label': 'Order Board'},
+        {'url': url_for('kitchen_portal.kitchen_pantry'), 'icon': 'archive', 'label': 'Kitchen Pantry'},
+    ]
+    ref_items = [
+        {'url': url_for('kitchen_portal.kitchen_recipes'), 'icon': 'utensils', 'label': 'Menu Recipes'},
+        {'url': url_for('kitchen_portal.kitchen_stock_requests'), 'icon': 'file-invoice', 'label': 'Stock Requests'},
+    ]
+    
+    return render_template('staff/profile.html',
+                           portal_label='Kitchen',
+                           role_label='Kitchen Staff',
+                           logout_url=url_for('kitchen_portal.kitchen_logout'),
+                           profile_action=url_for('kitchen_portal.kitchen_profile'),
+                           sidebar_items=sidebar_items,
+                           ref_items=ref_items)
+
+
+# ── Inventory Profile ──
+@inventory_bp.route('/staff/inventory/profile', methods=['GET', 'POST'])
+def inventory_profile():
+    if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        return redirect(url_for('inventory_portal.inventory_login'))
+    
+    if request.method == 'POST':
+        _handle_profile_post(current_user)
+        return redirect(url_for('inventory_portal.inventory_profile'))
+    
+    sidebar_items = [
+        {'url': url_for('inventory_portal.inventory_dashboard'), 'icon': 'boxes-stacked', 'label': 'Stock Levels'},
+        {'url': url_for('inventory_portal.inventory_full'), 'icon': 'warehouse', 'label': 'Full Inventory'},
+        {'url': url_for('inventory_portal.inventory_suppliers'), 'icon': 'truck', 'label': 'Suppliers'},
+        {'url': url_for('inventory_portal.inventory_waste_records'), 'icon': 'trash-can', 'label': 'Waste Log'},
+        {'url': url_for('inventory_portal.inventory_stock_requests'), 'icon': 'file-invoice', 'label': 'Stock Requests'},
+    ]
+    ref_items = [
+        {'url': url_for('inventory_portal.inventory_recipes'), 'icon': 'utensils', 'label': 'Menu Recipes'},
+    ]
+    
+    return render_template('staff/profile.html',
+                           portal_label='Inventory',
+                           role_label='Inventory Staff',
+                           logout_url=url_for('inventory_portal.inventory_logout'),
+                           profile_action=url_for('inventory_portal.inventory_profile'),
+                           sidebar_items=sidebar_items,
+                           ref_items=ref_items)
+
+
+# ── Cashier Profile ──
+@cashier_bp.route('/staff/cashier/profile', methods=['GET', 'POST'])
+def cashier_profile():
+    if not current_user.is_authenticated or current_user.role not in CASHIER_ROLES:
+        return redirect(url_for('cashier_portal.cashier_login'))
+    
+    if request.method == 'POST':
+        _handle_profile_post(current_user)
+        return redirect(url_for('cashier_portal.cashier_profile'))
+    
+    sidebar_items = [
+        {'url': url_for('cashier_portal.cashier_dashboard'), 'icon': 'shopping-bag', 'label': 'Orders'},
+        {'url': url_for('cashier_portal.cashier_walkin_order'), 'icon': 'walking', 'label': 'Walk-In Order'},
+        {'url': url_for('cashier_portal.cashier_billing'), 'icon': 'file-invoice-dollar', 'label': 'Billing'},
+        {'url': url_for('cashier_portal.cashier_orders_history'), 'icon': 'clock-rotate-left', 'label': 'Order History'},
+        {'url': url_for('cashier_portal.cashier_chats'), 'icon': 'comments', 'label': 'Customer Chat'},
+    ]
+    
+    return render_template('staff/profile.html',
+                           portal_label='Cashier',
+                           role_label='Cashier Staff',
+                           logout_url=url_for('cashier_portal.cashier_logout'),
+                           profile_action=url_for('cashier_portal.cashier_profile'),
+                           sidebar_items=sidebar_items,
+                           ref_items=[])
 
 
 # ══════════════════════════════════════════════════════════════════

@@ -66,7 +66,7 @@ def log_inventory_change(ingredient_id, action, quantity, previous_stock, reason
     new_stock = previous_stock
     if action == 'ADD':
         new_stock = previous_stock + quantity
-    elif action in ['DEDUCT', 'EXPIRED', 'SPOILED']:
+    elif action in ['DEDUCT', 'EXPIRED', 'SPOILED', 'WASTE']:
         new_stock = previous_stock - quantity
     
     log = InventoryLog(
@@ -80,6 +80,47 @@ def log_inventory_change(ingredient_id, action, quantity, previous_stock, reason
     )
     db.session.add(log)
     return log
+
+def process_fifo_transaction(ingredient_id, action, quantity, cost_per_unit=None, expiration_date=None):
+    """
+    Centralized FIFO handler for ingredient batches.
+    - ADD: Creates a new batch with a purchase date of today.
+    - DEDUCT/WASTE: Consumes stock from the oldest available batches first (FIFO).
+    """
+    from models import IngredientBatch
+    from datetime import date
+    
+    quantity = float(quantity)
+    if quantity <= 0: return
+
+    if action == 'ADD':
+        # Create a new batch for the ingredient
+        batch = IngredientBatch(
+            ingredient_id=ingredient_id,
+            batch_qty=quantity,
+            remaining_qty=quantity,
+            cost_per_unit=cost_per_unit if cost_per_unit is not None else 0,
+            purchase_date=date.today(),
+            expiration_date=expiration_date
+        )
+        db.session.add(batch)
+    elif action in ['DEDUCT', 'SPOILED', 'EXPIRED', 'WASTE']:
+        # Consume from batches starting with the oldest
+        remaining_needed = quantity
+        batches = IngredientBatch.query.filter_by(ingredient_id=ingredient_id, is_exhausted=False)\
+                                       .order_by(IngredientBatch.purchase_date.asc(), IngredientBatch.id.asc()).all()
+        
+        for batch in batches:
+            if remaining_needed <= 0: break
+            batch_avail = float(batch.remaining_qty)
+            
+            if batch_avail <= remaining_needed:
+                remaining_needed -= batch_avail
+                batch.remaining_qty = 0
+                batch.is_exhausted = True
+            else:
+                batch.remaining_qty = batch_avail - remaining_needed
+                remaining_needed = 0
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -2175,60 +2216,7 @@ def update_order(order_id):
     
     # Auto-deduct ingredients when order moves to PREPARING
     if new_status == 'PREPARING' and order.status != 'PREPARING':
-        # Batch fetch all recipe rows for items in this order.
-        from collections import defaultdict
-
-        order_items = list(order.items)
-        menu_item_ids = list({oi.menu_item_id for oi in order_items if oi.menu_item_id})
-        if menu_item_ids:
-            recipe_rows = MenuItemIngredient.query.filter(MenuItemIngredient.menu_item_id.in_(menu_item_ids)).all()
-
-            recipes_by_menu_item_id = defaultdict(list)
-            ingredient_ids = set()
-            for rr in recipe_rows:
-                recipes_by_menu_item_id[rr.menu_item_id].append(rr)
-                ingredient_ids.add(rr.ingredient_id)
-
-            # Compute total deductions per ingredient across the whole order.
-            deduction_by_ingredient_id = defaultdict(float)
-            for oi in order_items:
-                for rr in recipes_by_menu_item_id.get(oi.menu_item_id, []):
-                    deduction_by_ingredient_id[rr.ingredient_id] += float(rr.quantity_needed) * oi.quantity
-
-            # Fetch ingredients once.
-            ingredients = (
-                Ingredient.query.filter(Ingredient.id.in_(ingredient_ids))
-                .all()
-            )
-            ingredients_by_id = {ing.id: ing for ing in ingredients}
-
-            new_stock_by_ingredient_id = {}
-            for ing_id, deduction in deduction_by_ingredient_id.items():
-                ing = ingredients_by_id.get(ing_id)
-                if not ing:
-                    continue
-                new_stock = max(0.0, float(ing.stock_qty) - float(deduction))
-                ing.stock_qty = new_stock
-                new_stock_by_ingredient_id[ing_id] = new_stock
-
-            # Disable menu items that now lack required ingredients (using final stock values).
-            if new_stock_by_ingredient_id:
-                links = MenuItemIngredient.query.filter(
-                    MenuItemIngredient.ingredient_id.in_(list(new_stock_by_ingredient_id.keys()))
-                ).all()
-                menu_item_ids_to_disable = set()
-                for link in links:
-                    new_stock = new_stock_by_ingredient_id.get(link.ingredient_id)
-                    if new_stock is None:
-                        continue
-                    if new_stock < float(link.quantity_needed):
-                        menu_item_ids_to_disable.add(link.menu_item_id)
-
-                if menu_item_ids_to_disable:
-                    MenuItem.query.filter(
-                        MenuItem.id.in_(menu_item_ids_to_disable),
-                        MenuItem.is_available == True,
-                    ).update({'is_available': False}, synchronize_session=False)
+        _deduct_order_ingredients_fifo(order.id)
     
     order.status = new_status
     db.session.commit()
@@ -3270,10 +3258,19 @@ def stock_requests():
             .all()
         )
         
-    ingredients = Ingredient.query.order_by(Ingredient.name).limit(500).all()
+    ingredients = Ingredient.query.order_by(Ingredient.category, Ingredient.name).limit(500).all()
+    from itertools import groupby
+    grouped_ingredients = {}
+    for category, group in groupby(ingredients, lambda x: x.category or 'General'):
+        # Convert objects to dicts for JSON serialization in template
+        grouped_ingredients[category] = [
+            {'id': ing.id, 'name': ing.name, 'unit': ing.unit} for ing in group
+        ]
+        
     pending_count = StockRequest.query.filter_by(status='PENDING').count()
     return render_template('admin/stock_requests.html',
-                           requests=requests_list, ingredients=ingredients,
+                           requests=requests_list, 
+                           grouped_ingredients=grouped_ingredients,
                            pending_count=pending_count)
 
 @admin_bp.route('/stock-requests/create', methods=['POST'])
@@ -3320,19 +3317,7 @@ def create_stock_request():
     log_inventory_change(ing.id, 'ADD', qty, prev_kitchen, f"Received from Bodega")
 
     # 3. Handle FIFO Batches (Exhaust from Warehouse)
-    remaining_needed = qty
-    batches = IngredientBatch.query.filter_by(ingredient_id=ing.id, is_exhausted=False)\
-                                   .order_by(IngredientBatch.purchase_date.asc(), IngredientBatch.id.asc()).all()
-    for batch in batches:
-        if remaining_needed <= 0: break
-        batch_avail = float(batch.remaining_qty)
-        if batch_avail <= remaining_needed:
-            remaining_needed -= batch_avail
-            batch.remaining_qty = 0
-            batch.is_exhausted = True
-        else:
-            batch.remaining_qty = batch_avail - remaining_needed
-            remaining_needed = 0
+    process_fifo_transaction(ing.id, 'DEDUCT', qty)
 
     # 4. Mandatory Sync: Auto-update is_available for all menus using this ingredient
     _sync_single_ingredient_availability(ing.id)

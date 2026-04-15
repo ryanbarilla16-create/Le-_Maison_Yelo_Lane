@@ -69,7 +69,27 @@
             font-size:0.65rem; font-weight:600; color:rgba(255,255,255,0.3);
             letter-spacing:1.8px; text-transform:uppercase;
             padding:16px 12px 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: color 0.2s;
+            user-select: none;
         }
+        .nav-section-label:hover { color: rgba(255,255,255,0.7); }
+        .nav-section-label i.toggle-icon {
+            font-size: 0.6rem;
+            transition: transform 0.3s;
+        }
+        .nav-section-label.collapsed i.toggle-icon { transform: rotate(-90deg); }
+        
+        .nav-group {
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            max-height: 1000px; /* Large enough to show all items */
+        }
+        .nav-group.collapsed { max-height: 0; }
+
         .nav-item {
             display:flex; align-items:center; gap:12px;
             padding:12px 14px; border-radius:12px;
@@ -187,6 +207,18 @@
         {% block sidebar_nav %}{% endblock %}
     </nav>
 
+    <div style="padding:8px 12px; border-top: 1px solid rgba(255,255,255,0.05); margin-top: auto;">
+        <div class="nav-section-label" onclick="toggleNavGroup(this, 'group-account')">
+            <span>Account</span>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+        </div>
+        <div id="group-account" class="nav-group">
+            <a class="nav-item {% block profile_active %}{% endblock %}" href="{% block profile_url %}#{% endblock %}">
+                <i class="fas fa-user-pen"></i> Edit Profile
+            </a>
+        </div>
+    </div>
+
     <div class="sidebar-footer">
         <a class="btn-logout" href="{% block logout_url %}/{% endblock %}">
             <i class="fas fa-sign-out-alt"></i> Sign Out
@@ -228,6 +260,31 @@
         if(dd) dd.textContent = now.toLocaleDateString('en-PH', { weekday:'short', month:'short', day:'numeric' });
     }
     tick(); setInterval(tick, 1000);
+
+    function toggleNavGroup(labelEl, groupId) {
+        const group = document.getElementById(groupId);
+        if (!group) return;
+        
+        const isCollapsed = group.classList.toggle('collapsed');
+        labelEl.classList.toggle('collapsed', isCollapsed);
+        
+        // Save state to localStorage
+        localStorage.setItem('sidebar-group-' + groupId, isCollapsed ? 'collapsed' : 'expanded');
+    }
+
+    // Initialize sidebar states
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.nav-group').forEach(group => {
+            const state = localStorage.getItem('sidebar-group-' + group.id);
+            if (state === 'collapsed') {
+                group.classList.add('collapsed');
+                const label = group.previousElementSibling;
+                if (label && label.classList.contains('nav-section-label')) {
+                    label.classList.add('collapsed');
+                }
+            }
+        });
+    });
 </script>
 {% block extra_script %}{% endblock %}
 </body>

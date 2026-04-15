@@ -5,22 +5,34 @@
 {% block portal_sub %}Kitchen Portal{% endblock %}
 {% block portal_role %}Kitchen Staff{% endblock %}
 {% block logout_url %}{{ url_for('kitchen_portal.kitchen_logout') }}{% endblock %}
+{% block profile_url %}{{ url_for('kitchen_portal.kitchen_profile') }}{% endblock %}
 
 {% block sidebar_nav %}
-    <div class="nav-section-label">Workspace</div>
-    <a class="nav-item active" href="{{ url_for('kitchen_portal.kitchen_dashboard') }}">
-        <i class="fas fa-fire"></i> Order Board
-    </a>
-    <a class="nav-item" href="{{ url_for('kitchen_portal.kitchen_pantry') }}">
-        <i class="fas fa-archive"></i> Kitchen Pantry
-    </a>
-    <div class="nav-section-label">Reference</div>
-    <a class="nav-item" href="{{ url_for('main.menu_page') }}">
-        <i class="fas fa-utensils"></i> Menu Items
-    </a>
-    <a class="nav-item" href="{{ url_for('kitchen_portal.kitchen_stock_requests') }}">
-        <i class="fas fa-file-invoice"></i> Stock Requests
-    </a>
+    <div class="nav-section-label" onclick="toggleNavGroup(this, 'group-workspace')">
+        <span>Workspace</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+    </div>
+    <div id="group-workspace" class="nav-group">
+        <a class="nav-item active" href="{{ url_for('kitchen_portal.kitchen_dashboard') }}">
+            <i class="fas fa-fire"></i> Order Board
+        </a>
+        <a class="nav-item" href="{{ url_for('kitchen_portal.kitchen_pantry') }}">
+            <i class="fas fa-archive"></i> Kitchen Pantry
+        </a>
+    </div>
+
+    <div class="nav-section-label" onclick="toggleNavGroup(this, 'group-reference')">
+        <span>Reference</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+    </div>
+    <div id="group-reference" class="nav-group">
+        <a class="nav-item" href="{{ url_for('kitchen_portal.kitchen_recipes') }}">
+            <i class="fas fa-utensils"></i> Menu Recipes
+        </a>
+        <a class="nav-item" href="{{ url_for('kitchen_portal.kitchen_stock_requests') }}">
+            <i class="fas fa-file-invoice"></i> Stock Requests
+        </a>
+    </div>
 {% endblock %}
 
 {% block page_title %}Kitchen Dashboard{% endblock %}
@@ -193,7 +205,7 @@
                 </div>
                 <div class="dining-tag">
                     <i class="fas fa-{% if order.dining_option=='DINE_IN' %}utensils{% elif order.dining_option=='TAKE_OUT' %}bag-shopping{% else %}truck{% endif %}"></i>
-                    {{ order.dining_option.replace('_',' ').title() }}
+                    {{ (order.dining_option or 'DINE_IN').replace('_',' ').title() }}
                 </div>
                 <div class="order-items">
                     {% for item in order.items %}
@@ -236,7 +248,7 @@
                 </div>
                 <div class="dining-tag">
                     <i class="fas fa-{% if order.dining_option=='DINE_IN' %}utensils{% elif order.dining_option=='TAKE_OUT' %}bag-shopping{% else %}truck{% endif %}"></i>
-                    {{ order.dining_option.replace('_',' ').title() }}
+                    {{ (order.dining_option or 'DINE_IN').replace('_',' ').title() }}
                 </div>
                 <div class="order-items">
                     {% for item in order.items %}

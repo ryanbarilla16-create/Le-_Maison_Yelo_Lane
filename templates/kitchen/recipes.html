@@ -1,0 +1,286 @@
+{% extends "layouts/staff_layout.html" %}
+
+{% block title %}Standard Recipes — Le Maison{% endblock %}
+
+{% block portal_sub %}Kitchen Portal{% endblock %}
+{% block portal_role %}Kitchen Staff{% endblock %}
+{% block logout_url %}{{ url_for('kitchen_portal.kitchen_logout') }}{% endblock %}
+{% block profile_url %}{{ url_for('kitchen_portal.kitchen_profile') }}{% endblock %}
+
+{% block sidebar_nav %}
+    <div class="nav-section-label" onclick="toggleNavGroup(this, 'group-workspace')">
+        <span>Workspace</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+    </div>
+    <div id="group-workspace" class="nav-group">
+        <a class="nav-item" href="{{ url_for('kitchen_portal.kitchen_dashboard') }}">
+            <i class="fas fa-fire"></i> Order Board
+        </a>
+        <a class="nav-item" href="{{ url_for('kitchen_portal.kitchen_pantry') }}">
+            <i class="fas fa-archive"></i> Kitchen Pantry
+        </a>
+    </div>
+
+    <div class="nav-section-label" onclick="toggleNavGroup(this, 'group-reference')">
+        <span>Reference</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+    </div>
+    <div id="group-reference" class="nav-group">
+        <a class="nav-item active" href="{{ url_for('kitchen_portal.kitchen_recipes') }}">
+            <i class="fas fa-utensils"></i> Menu Recipes
+        </a>
+        <a class="nav-item" href="{{ url_for('kitchen_portal.kitchen_stock_requests') }}">
+            <i class="fas fa-file-invoice"></i> Stock Requests
+        </a>
+    </div>
+{% endblock %}
+
+{% block page_title %}Standard Portioning & Recipes{% endblock %}
+{% block page_subtitle %}Quick reference for ingredient quantities per dish{% endblock %}
+
+{% block extra_style %}
+    .recipe-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 24px;
+        margin-top: 20px;
+    }
+    
+    .recipe-card {
+        background: white;
+        border: 1px solid var(--card-border);
+        border-radius: 24px;
+        padding: 28px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 4px 15px rgba(93,64,55,0.03);
+    }
+    
+    .recipe-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 30px rgba(93,64,55,0.08);
+        border-color: var(--primary);
+    }
+    
+    .recipe-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 20px;
+    }
+    
+    .recipe-title {
+        margin: 0;
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: var(--text);
+        line-height: 1.3;
+    }
+    
+    .recipe-badge {
+        font-weight: 700;
+        color: white;
+        font-size: 0.7rem;
+        background: var(--primary);
+        padding: 4px 10px;
+        border-radius: 50px;
+        text-transform: uppercase;
+    }
+    
+    .ingredient-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .ingredient-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 8px;
+        border-bottom: 1px dashed rgba(93,64,55,0.1);
+    }
+    
+    .ingredient-item:last-child {
+        border-bottom: none;
+    }
+    
+    .ing-name {
+        font-size: 0.95rem;
+        color: var(--text);
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .ing-qty {
+        font-weight: 800;
+        color: var(--primary);
+        font-size: 0.9rem;
+        padding: 3px 10px;
+        background: rgba(93,64,55,0.04);
+        border-radius: 8px;
+        font-family: 'Courier New', monospace;
+    }
+    
+    .category-header {
+        grid-column: 1 / -1;
+        margin-top: 40px;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .category-header h3 {
+        font-size: 0.9rem;
+        font-weight: 800;
+        color: var(--primary);
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin: 0;
+    }
+    
+    .category-line {
+        flex: 1;
+        height: 1px;
+        background: linear-gradient(90deg, rgba(93,64,55,0.2), transparent);
+    }
+    
+    .search-filter-row {
+        background: white;
+        padding: 20px 24px;
+        border-radius: 20px;
+        border: 1px solid var(--card-border);
+        margin-bottom: 30px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        align-items: center;
+        box-shadow: 0 4px 12px rgba(93,64,55,0.03);
+    }
+    
+    .custom-select {
+        padding: 10px 20px;
+        border-radius: 12px;
+        border: 1px solid rgba(93,64,55,0.15);
+        background: #fdfbf9;
+        font-size: 0.9rem;
+        color: var(--text);
+        font-weight: 600;
+        outline: none;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .search-input {
+        padding: 10px 20px;
+        border-radius: 12px;
+        border: 1px solid rgba(93,64,55,0.15);
+        background: #fdfbf9;
+        font-size: 0.9rem;
+        min-width: 250px;
+        outline: none;
+    }
+
+    .search-input:focus {
+        border-color: var(--primary);
+    }
+{% endblock %}
+
+{% block content %}
+    <div class="search-filter-row">
+        <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+            <i class="fas fa-search" style="color: var(--primary);"></i>
+            <input type="text" id="recipeSearch" class="search-input" placeholder="Search dish name..." onkeyup="filterRecipes()">
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <i class="fas fa-filter" style="color: var(--primary);"></i>
+            <select id="catSelect" class="custom-select" onchange="filterRecipes()">
+                <option value="ALL">All Sections</option>
+                {% for cat in menu_categories %}
+                <option value="{{ cat|replace(' ', '-')|lower }}">{{ cat }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <div class="recipe-grid" id="recipeGrid">
+        {% for category, items in grouped_items.items() %}
+        <div class="category-header" data-cat="{{ category|replace(' ', '-')|lower }}">
+            <h3>{{ category }}</h3>
+            <div class="category-line"></div>
+        </div>
+        
+        {% for item in items %}
+        <div class="recipe-card" data-cat="{{ category|replace(' ', '-')|lower }}" data-name="{{ item.name|lower }}">
+            <div class="recipe-header">
+                <h4 class="recipe-title">{{ item.name }}</h4>
+                <div class="recipe-badge">Recipe</div>
+            </div>
+            
+            <div style="margin-bottom: 12px; font-size: 0.65rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 1px;">Ingredients & Units</div>
+            
+            {% if item.ingredients|length > 0 %}
+            <div class="ingredient-list">
+                {% for recipe in item.ingredients %}
+                <div class="ingredient-item">
+                    <span class="ing-name">
+                        <i class="fas fa-leaf" style="font-size: 0.75rem; color: var(--success); opacity: 0.5;"></i>
+                        {{ recipe.ingredient.name }}
+                    </span>
+                    <span class="ing-qty">{{ "%.2f"|format(recipe.quantity_needed) }} <small style="font-size: 0.6rem; opacity: 0.7;">{{ recipe.ingredient.unit }}</small></span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div style="padding:20px; text-align:center; background:#f9f9f9; border-radius:15px; color:var(--muted); font-size:0.85rem; font-style:italic;">
+                No recipe tracked for this item.
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+        {% endfor %}
+    </div>
+{% endblock %}
+
+{% block extra_script %}
+<script>
+    function filterRecipes() {
+        const query = document.getElementById('recipeSearch').value.toLowerCase();
+        const category = document.getElementById('catSelect').value;
+        const cards = document.querySelectorAll('.recipe-card');
+        const headers = document.querySelectorAll('.category-header');
+        
+        // Track which categories have visible items
+        const visibleCats = new Set();
+
+        cards.forEach(card => {
+            const matchesQuery = card.dataset.name.includes(query);
+            const matchesCat = (category === 'ALL' || card.dataset.cat === category);
+            
+            if (matchesQuery && matchesCat) {
+                card.style.display = 'flex';
+                visibleCats.add(card.dataset.cat);
+            } else {
+                card.style.display = 'none';
+            }
+        });
+        
+        headers.forEach(header => {
+            if (visibleCats.has(header.dataset.cat)) {
+                header.style.display = 'flex';
+            } else {
+                header.style.display = 'none';
+            }
+        });
+    }
+</script>
+{% endblock %}

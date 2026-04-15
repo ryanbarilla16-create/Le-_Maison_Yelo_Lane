@@ -10,75 +10,100 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/admin.css') }}" rel="stylesheet">
-    
+
     <!-- PREMIUM ADMIN SIDEBAR OVERRIDES -->
     <style>
         .admin-sidebar {
-            background: #fdfaf8 !important; /* Soft Cream for luxury feel */
-            border-right: 1px solid rgba(139, 99, 75, 0.1) !important;
+            background: linear-gradient(160deg, #3E2723 0%, #5D4037 60%, #6D4C41 100%) !important;
+            border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
             padding-top: 25px !important;
+            box-shadow: 4px 0 24px rgba(62,39,35,0.25) !important;
+            height: 100vh !important;
+            overflow-y: auto !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            display: block !important;
+            /* Hide scrollbar for all browsers */
+            -ms-overflow-style: none !important;  /* IE and Edge */
+            scrollbar-width: none !important;  /* Firefox */
         }
         
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .admin-sidebar::-webkit-scrollbar {
+            display: none !important;
+        }
+
         .sidebar-brand {
-            padding: 0 1.5rem 2rem !important;
+            padding: 0 1.5rem 2.5rem !important;
             display: flex !important;
             align-items: center !important;
             gap: 15px !important;
-            color: #5D4037 !important;
+            color: #ffffff !important;
+            border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+            margin-bottom: 1.5rem !important;
         }
+
+        .sidebar-spacer { display: none !important; }
         
         .brand-text {
             font-family: 'Playfair Display', serif !important;
             font-weight: 800 !important;
-            font-size: 1.1rem !important;
+            font-size: 1.15rem !important;
             letter-spacing: 0.5px !important;
             text-transform: none !important;
+            color: #ffffff !important;
         }
 
         .sidebar-group-title {
-            color: #8B634B !important;
+            color: rgba(255, 255, 255, 0.35) !important;
             font-weight: 800 !important;
-            font-size: 0.72rem !important;
-            letter-spacing: 1.5px !important;
+            font-size: 0.7rem !important;
+            letter-spacing: 1.8px !important;
             text-transform: uppercase !important;
-            padding: 1.5rem 1.5rem 0.6rem !important;
-            opacity: 0.8 !important;
+            padding: 1.8rem 1.5rem 0.8rem !important;
         }
 
-        .sidebar-nav { padding: 0 1rem !important; }
+        .sidebar-nav { padding: 0 1rem !important; list-style: none !important; }
         
-        .sidebar-nav li { margin-bottom: 6px !important; }
+        .sidebar-nav li { margin-bottom: 4px !important; }
 
         .sidebar-nav a {
             display: flex !important;
             align-items: center !important;
-            gap: 10px !important;
-            padding: 0.6rem 1.1rem !important;
-            border-radius: 10px !important;
-            color: #5D4037 !important;
+            gap: 12px !important;
+            padding: 0.75rem 1.25rem !important;
+            border-radius: 12px !important;
+            color: rgba(255, 255, 255, 0.65) !important;
             font-weight: 600 !important;
-            font-size: 0.82rem !important;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            font-size: 0.85rem !important;
+            transition: all 0.25s ease !important;
             text-decoration: none !important;
         }
 
-        .sidebar-nav a.active {
-            background: linear-gradient(135deg, #5D4037, #795548) !important;
+        .sidebar-nav a:hover {
+            background: rgba(255, 255, 255, 0.08) !important;
             color: #ffffff !important;
-            box-shadow: 0 4px 12px rgba(93, 64, 55, 0.2) !important;
-            transform: translateY(-1px) !important;
+        }
+
+        .sidebar-nav a.active {
+            background: rgba(215, 204, 200, 0.18) !important;
+            color: #D7CCC8 !important;
+            box-shadow: none !important;
+            transform: none !important;
         }
 
         .sidebar-nav a i {
-            font-size: 0.95rem !important;
+            font-size: 0.9rem !important;
             width: 20px !important;
             text-align: center !important;
-            opacity: 0.8 !important;
+            opacity: 0.75 !important;
+            color: inherit !important;
         }
 
         .sidebar-nav a.active i {
             opacity: 1 !important;
-            color: #fff !important;
+            color: #D7CCC8 !important;
         }
 
         .sidebar-label { letter-spacing: 0.3px !important; }
@@ -95,12 +120,14 @@
             font-weight: 700 !important;
             font-size: 0.85rem !important;
             color: #5D4037 !important;
-            background: rgba(139, 99, 75, 0.05) !important;
+            background: #fff !important;
+            border: 1px solid rgba(139, 99, 75, 0.1) !important;
             padding: 0.5rem 1.1rem !important;
             border-radius: 50px !important;
             display: flex !important;
             align-items: center !important;
             gap: 10px !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03) !important;
         }
 
         .notif-btn {
@@ -113,21 +140,6 @@
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
-            transition: all 0.3s ease !important;
-        }
-
-        .notif-btn:hover {
-            background-color: #8B634B !important;
-            color: #fff !important;
-            transform: translateY(-2px) !important;
-            box-shadow: 0 4px 12px rgba(139, 99, 75, 0.2) !important;
-        }
-
-        .user-badge {
-            background: #fff !important;
-            border: 1px solid rgba(139, 99, 75, 0.15) !important;
-            border-radius: 50px !important;
-            padding: 4px 12px 4px 4px !important;
             transition: all 0.3s ease !important;
         }
 
@@ -356,18 +368,25 @@
             width: 320px;
             background: #ffffff;
             border-radius: 16px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.12);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
             display: flex;
             align-items: stretch;
             overflow: hidden;
-            border: 1px solid rgba(0,0,0,0.05);
+            border: 1px solid rgba(0, 0, 0, 0.05);
             animation: toastSlideIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
             transition: all 0.3s ease;
         }
 
         @keyframes toastSlideIn {
-            from { transform: translateX(120%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+            from {
+                transform: translateX(120%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
 
         .premium-toast.hiding {
@@ -416,20 +435,46 @@
             font-size: 0.8rem;
         }
 
-        .toast-close:hover { color: #888; }
+        .toast-close:hover {
+            color: #888;
+        }
 
         /* Severity Styles */
-        .toast-success .toast-accent { background: #27AE60; }
-        .toast-success .toast-icon { background: rgba(39, 174, 96, 0.1); color: #27AE60; }
-        
-        .toast-danger .toast-accent { background: #E74C3C; }
-        .toast-danger .toast-icon { background: rgba(231, 76, 60, 0.1); color: #E74C3C; }
+        .toast-success .toast-accent {
+            background: #27AE60;
+        }
 
-        .toast-warning .toast-accent { background: #F39C12; }
-        .toast-warning .toast-icon { background: rgba(243, 156, 18, 0.1); color: #F39C12; }
+        .toast-success .toast-icon {
+            background: rgba(39, 174, 96, 0.1);
+            color: #27AE60;
+        }
 
-        .toast-info .toast-accent { background: #3498DB; }
-        .toast-info .toast-icon { background: rgba(52, 152, 219, 0.1); color: #3498DB; }
+        .toast-danger .toast-accent {
+            background: #E74C3C;
+        }
+
+        .toast-danger .toast-icon {
+            background: rgba(231, 76, 60, 0.1);
+            color: #E74C3C;
+        }
+
+        .toast-warning .toast-accent {
+            background: #F39C12;
+        }
+
+        .toast-warning .toast-icon {
+            background: rgba(243, 156, 18, 0.1);
+            color: #F39C12;
+        }
+
+        .toast-info .toast-accent {
+            background: #3498DB;
+        }
+
+        .toast-info .toast-icon {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498DB;
+        }
     </style>
 
     <!-- Leaflet CSS & JS for Maps -->
@@ -444,16 +489,20 @@
             background: rgba(139, 99, 75, 0.08);
             border-radius: 10px;
         }
+
         .skeleton::after {
             content: "";
             position: absolute;
             inset: 0;
             transform: translateX(-100%);
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
             animation: skeletonShimmer 1.2s infinite;
         }
+
         @keyframes skeletonShimmer {
-            100% { transform: translateX(100%); }
+            100% {
+                transform: translateX(100%);
+            }
         }
     </style>
 </head>
@@ -537,20 +586,23 @@
                         class="{% if 'cashier' in request.path %}active{% endif %}"><i
                             class="fas fa-shopping-bag"></i><span class="sidebar-label">Orders</span></a></li>
                 <li><a href="{{ url_for('cashier_portal.cashier_walkin_order') }}"
-                        class="{% if 'walkin' in request.path %}active{% endif %}"><i
-                            class="fas fa-walking"></i><span class="sidebar-label">Walk-In Order</span></a></li>
+                        class="{% if 'walkin' in request.path %}active{% endif %}"><i class="fas fa-walking"></i><span
+                            class="sidebar-label">Walk-In Order</span></a></li>
                 <li><a href="{{ url_for('cashier_portal.cashier_chats') }}"
-                        class="{% if 'chats' in request.path %}active{% endif %}"><i
-                            class="fas fa-comments"></i><span class="sidebar-label">Customer Chat</span></a></li>
+                        class="{% if 'chats' in request.path %}active{% endif %}"><i class="fas fa-comments"></i><span
+                            class="sidebar-label">Customer Chat</span></a></li>
                 {% endif %}
 
                 {% if current_user.role|upper == 'KITCHEN' %}
                 <li><a href="{{ url_for('kitchen_portal.kitchen_dashboard') }}"
-                        class="{% if 'kitchen' in request.path and 'pantry' not in request.path and 'request' not in request.path %}active{% endif %}"><i
+                        class="{% if 'kitchen' in request.path and 'pantry' not in request.path and 'request' not in request.path and 'recipe' not in request.path %}active{% endif %}"><i
                             class="fas fa-fire-burner"></i><span class="sidebar-label">Kitchen View</span></a></li>
                 <li><a href="{{ url_for('kitchen_portal.kitchen_pantry') }}"
-                        class="{% if 'pantry' in request.path %}active{% endif %}"><i
-                            class="fas fa-box-open"></i><span class="sidebar-label">Kitchen Pantry (On-Hand)</span></a></li>
+                        class="{% if 'pantry' in request.path %}active{% endif %}"><i class="fas fa-box-open"></i><span
+                            class="sidebar-label">Kitchen Pantry (On-Hand)</span></a></li>
+                <li><a href="{{ url_for('kitchen_portal.kitchen_recipes') }}"
+                        class="{% if 'recipe' in request.path %}active{% endif %}"><i class="fas fa-utensils"></i><span
+                            class="sidebar-label">Menu Recipes</span></a></li>
                 <li><a href="{{ url_for('kitchen_portal.kitchen_stock_requests') }}"
                         class="{% if 'request' in request.path %}active{% endif %}"><i
                             class="fas fa-paper-plane"></i><span class="sidebar-label">Stock Requests</span></a></li>
@@ -570,22 +622,25 @@
 
                 {% if current_user.role|upper in ['INVENTORY_STAFF', 'INVENTORY'] %}
                 <li><a href="{{ url_for('inventory_portal.inventory_dashboard') }}"
-                        class="{% if 'inventory' in request.path and 'audit' not in request.path and 'batches' not in request.path and 'waste' not in request.path and 'request' not in request.path %}active{% endif %}"><i
+                        class="{% if 'inventory' in request.path and 'audit' not in request.path and 'batches' not in request.path and 'waste' not in request.path and 'request' not in request.path and 'recipe' not in request.path %}active{% endif %}"><i
                             class="fas fa-boxes-stacked"></i><span class="sidebar-label">Inventory Master</span></a>
                 </li>
+                <li><a href="{{ url_for('inventory_portal.inventory_recipes') }}"
+                        class="{% if 'recipe' in request.path %}active{% endif %}"><i class="fas fa-utensils"></i><span
+                            class="sidebar-label">Menu Recipes</span></a></li>
                 <li><a href="{{ url_for('inventory_portal.inventory_ingredient_batches') }}"
-                        class="{% if 'batches' in request.path %}active{% endif %}"><i
-                            class="fas fa-box-open"></i><span class="sidebar-label">FIFO Batches</span></a></li>
+                        class="{% if 'batches' in request.path %}active{% endif %}"><i class="fas fa-box-open"></i><span
+                            class="sidebar-label">FIFO Batches</span></a></li>
                 <li><a href="{{ url_for('inventory_portal.inventory_waste_records') }}"
-                        class="{% if 'waste' in request.path %}active{% endif %}"><i
-                            class="fas fa-trash-alt"></i><span class="sidebar-label">Waste Mgmt</span></a></li>
+                        class="{% if 'waste' in request.path %}active{% endif %}"><i class="fas fa-trash-alt"></i><span
+                            class="sidebar-label">Waste Mgmt</span></a></li>
                 <li><a href="{{ url_for('inventory_portal.inventory_stock_requests') }}"
                         class="{% if 'request' in request.path %}active{% endif %}"><i
                             class="fas fa-clipboard-check"></i><span class="sidebar-label">Stock Requests</span></a>
                 </li>
                 <li><a href="{{ url_for('inventory_portal.inventory_audit') }}"
-                        class="{% if 'audit' in request.path %}active{% endif %}"><i
-                            class="fas fa-history"></i><span class="sidebar-label">Audit History</span></a></li>
+                        class="{% if 'audit' in request.path %}active{% endif %}"><i class="fas fa-history"></i><span
+                            class="sidebar-label">Audit History</span></a></li>
                 {% endif %}
 
                 {% if current_user.role|upper == 'ADMIN' %}
@@ -597,7 +652,7 @@
         </div>
 
         <!-- SYSTEM -->
-        {% if '/inventory' not in request.path and '/billing' not in request.path and '/orders' not in request.path and '/walkin' not in request.path and '/chats' not in request.path and '/deliveries' not in request.path and '/approvals' not in request.path and '/kitchen' not in request.path and '/stock-requests' not in request.path %}
+        {% if current_user.role|upper == 'ADMIN' %}
         <div class="sidebar-spacer"></div>
         <div class="sidebar-group-title collapsible-trigger active" onclick="toggleSidebarGroup(this, 'systemGroup')"
             style="margin-top: 0.5rem;">
@@ -605,8 +660,7 @@
             <i class="fas fa-chevron-down ms-auto arrow-icon" style="opacity: 1.0;"></i>
         </div>
         <div id="systemGroup" class="collapsible-content">
-            <ul class="sidebar-nav" style="margin-bottom: 1.5rem;">
-                {% if current_user.role|upper == 'ADMIN' %}
+            <ul class="sidebar-nav" style="margin-bottom: 1rem;">
                 <li><a href="{{ url_for('admin.vouchers') }}"
                         class="{% if request.endpoint == 'admin.vouchers' %}active{% endif %}"><i
                             class="fas fa-ticket-alt"></i><span class="sidebar-label">Vouchers</span></a></li>
@@ -616,10 +670,10 @@
                 <li><a href="{{ url_for('admin.settings') }}"
                         class="{% if request.endpoint == 'admin.settings' %}active{% endif %}"><i
                             class="fas fa-cog"></i><span class="sidebar-label">Settings</span></a></li>
-                {% endif %}
             </ul>
         </div>
         {% endif %}
+
     </aside>
 
 
@@ -666,23 +720,35 @@
             </div>
 
             <div class="dropdown">
-                <div class="dropdown-toggle d-flex align-items-center gap-2" id="adminProfileMenu" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer; padding: 4px 8px; border-radius: 50px; background: rgba(139, 99, 75, 0.04); transition: transform 0.2s, background 0.2s;">
+                <div class="dropdown-toggle d-flex align-items-center gap-2" id="adminProfileMenu"
+                    data-bs-toggle="dropdown" aria-expanded="false"
+                    style="cursor: pointer; padding: 4px 8px; border-radius: 50px; background: rgba(139, 99, 75, 0.04); transition: transform 0.2s, background 0.2s;">
                     <div class="topbar-avatar" style="margin: 0;">
                         {{ current_user.first_name[0] if current_user.is_authenticated else 'A' }}
                     </div>
                     <i class="fas fa-chevron-down text-muted" style="font-size: 0.7rem; margin-right: 4px;"></i>
                 </div>
-                <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" aria-labelledby="adminProfileMenu" style="border-radius: 15px; padding: 10px; min-width: 220px; background: #fff;">
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" aria-labelledby="adminProfileMenu"
+                    style="border-radius: 15px; padding: 10px; min-width: 220px; background: #fff;">
                     <li class="px-3 py-2 border-bottom mb-2">
-                        <div style="font-weight: 700; color: var(--admin-text); font-size: 0.9rem;">{{ current_user.first_name }} {{ current_user.last_name }}</div>
+                        <div style="font-weight: 700; color: var(--admin-text); font-size: 0.9rem;">{{
+                            current_user.first_name }} {{ current_user.last_name }}</div>
                         <div style="font-size: 0.75rem; color: var(--admin-text-muted);">{{ current_user.email }}</div>
                     </li>
                     <li>
+                        {% if current_user.role|upper in ['CASHIER', 'STAFF'] %}
+                        <a class="dropdown-item py-2 rounded-3" href="{{ url_for('cashier_portal.cashier_profile') }}">
+                            <i class="fas fa-user-edit me-2 text-muted"></i> Edit Profile
+                        </a>
+                        {% else %}
                         <a class="dropdown-item py-2 rounded-3" href="javascript:void(0)" onclick="openProfileModal()">
                             <i class="fas fa-user-edit me-2 text-muted"></i> Edit Profile
                         </a>
+                        {% endif %}
                     </li>
-                    <li><hr class="dropdown-divider opacity-25"></li>
+                    <li>
+                        <hr class="dropdown-divider opacity-25">
+                    </li>
                     <li>
                         <a class="dropdown-item py-2 rounded-3 text-danger" href="{{ url_for('admin.admin_logout') }}">
                             <i class="fas fa-sign-out-alt me-2"></i> Logout
@@ -712,7 +778,8 @@
                         </div>
                         <div class="toast-message">{{ message }}</div>
                     </div>
-                    <button class="toast-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+                    <button class="toast-close" onclick="this.parentElement.remove()"><i
+                            class="fas fa-times"></i></button>
                     <script>
                         setTimeout(() => {
                             const t = document.currentScript.parentElement;
@@ -1057,34 +1124,42 @@
 
     <!-- GLOBAL EDIT PROFILE MODAL -->
     <div id="editProfileModal" class="admin-modal" style="display: none;">
-        <div class="admin-modal-content" style="max-width: 520px; padding: 0; border-radius: 20px; border: none; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);">
-            <div class="modal-header-custom" style="background: linear-gradient(135deg, #5D4037, #795548); padding: 25px; border-radius: 20px 20px 0 0; position: relative;">
-                <h3 style="color: #fff; margin: 0; font-family: 'Poppins', sans-serif; font-size: 1.25rem; font-weight: 600; display: flex; align-items: center; gap: 10px;">
+        <div class="admin-modal-content"
+            style="max-width: 520px; padding: 0; border-radius: 20px; border: none; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);">
+            <div class="modal-header-custom"
+                style="background: linear-gradient(135deg, #5D4037, #795548); padding: 25px; border-radius: 20px 20px 0 0; position: relative;">
+                <h3
+                    style="color: #fff; margin: 0; font-family: 'Poppins', sans-serif; font-size: 1.25rem; font-weight: 600; display: flex; align-items: center; gap: 10px;">
                     <i class="fas fa-user-circle"></i> Update Staff Profile
                 </h3>
-                <span class="admin-close" style="color: rgba(255,255,255,0.8); cursor: pointer; font-size: 1.5rem; position: absolute; top: 20px; right: 25px;"
+                <span class="admin-close"
+                    style="color: rgba(255,255,255,0.8); cursor: pointer; font-size: 1.5rem; position: absolute; top: 20px; right: 25px;"
                     onclick="document.getElementById('editProfileModal').style.display='none'">&times;</span>
             </div>
-            
-            <form method="POST" action="{{ url_for('admin.update_profile') }}" onsubmit="return validateAdminProfile()" style="padding: 30px;">
+
+            <form method="POST" action="{{ url_for('admin.update_profile') }}" onsubmit="return validateAdminProfile()"
+                style="padding: 30px;">
                 <div class="container-fluid p-0">
                     <div class="row g-4">
                         <div class="col-md-4">
                             <div class="form-group-custom">
                                 <label class="label-custom">First Name</label>
-                                <input type="text" name="admin_first_name" id="admin_first_name" class="input-custom" value="{{ current_user.first_name }}" placeholder="Enter first name" required>
+                                <input type="text" name="admin_first_name" id="admin_first_name" class="input-custom"
+                                    value="{{ current_user.first_name }}" placeholder="Enter first name" required>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-group-custom">
                                 <label class="label-custom">Middle Name</label>
-                                <input type="text" name="admin_middle_name" id="admin_middle_name" class="input-custom" value="{{ current_user.middle_name or '' }}" placeholder="Optional">
+                                <input type="text" name="admin_middle_name" id="admin_middle_name" class="input-custom"
+                                    value="{{ current_user.middle_name or '' }}" placeholder="Optional">
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-group-custom">
                                 <label class="label-custom">Last Name</label>
-                                <input type="text" name="admin_last_name" id="admin_last_name" class="input-custom" value="{{ current_user.last_name }}" placeholder="Enter last name" required>
+                                <input type="text" name="admin_last_name" id="admin_last_name" class="input-custom"
+                                    value="{{ current_user.last_name }}" placeholder="Enter last name" required>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -1092,7 +1167,8 @@
                                 <label class="label-custom">Username</label>
                                 <div class="input-with-icon">
                                     <i class="fas fa-at"></i>
-                                    <input type="text" name="admin_username" id="admin_username" class="input-custom" value="{{ current_user.username }}" required>
+                                    <input type="text" name="admin_username" id="admin_username" class="input-custom"
+                                        value="{{ current_user.username }}" required>
                                 </div>
                             </div>
                         </div>
@@ -1101,7 +1177,8 @@
                                 <label class="label-custom">Phone Number</label>
                                 <div class="input-with-icon">
                                     <i class="fas fa-phone"></i>
-                                    <input type="text" name="admin_phone_number" id="admin_phone_number" class="input-custom" value="{{ current_user.phone_number or '' }}" required>
+                                    <input type="text" name="admin_phone_number" id="admin_phone_number"
+                                        class="input-custom" value="{{ current_user.phone_number or '' }}" required>
                                 </div>
                             </div>
                         </div>
@@ -1110,34 +1187,43 @@
                                 <label class="label-custom">Email Address</label>
                                 <div class="input-with-icon">
                                     <i class="fas fa-envelope"></i>
-                                    <input type="email" name="admin_email" id="admin_email" class="input-custom" value="{{ current_user.email }}" required>
+                                    <input type="email" name="admin_email" id="admin_email" class="input-custom"
+                                        value="{{ current_user.email }}" required>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <div style="margin: 40px 0 20px; display: flex; align-items: center; gap: 15px;">
-                        <h6 style="color: var(--admin-text); font-weight: 700; margin: 0; white-space: nowrap;">Security Settings</h6>
+                        <h6 style="color: var(--admin-text); font-weight: 700; margin: 0; white-space: nowrap;">Security
+                            Settings</h6>
                         <hr style="width: 100%; margin: 0; opacity: 0.1;">
                     </div>
-                    
+
                     <div class="form-group-custom mb-4">
-                        <label class="label-custom">Current Password <span style="font-weight: 400; font-size: 0.75rem; color: var(--admin-red);">(Required to save any changes)</span></label>
+                        <label class="label-custom">Current Password <span
+                                style="font-weight: 400; font-size: 0.75rem; color: var(--admin-red);">(Required to save
+                                any changes)</span></label>
                         <div class="input-with-icon pass-toggle">
                             <i class="fas fa-lock"></i>
-                            <input type="password" name="admin_current_password" id="admin_current_password" class="input-custom" placeholder="Verify identity" required>
-                            <i class="fas fa-eye eye-trigger" onclick="toggleAdminPwd('admin_current_password', this)"></i>
+                            <input type="password" name="admin_current_password" id="admin_current_password"
+                                class="input-custom" placeholder="Verify identity" required>
+                            <i class="fas fa-eye eye-trigger"
+                                onclick="toggleAdminPwd('admin_current_password', this)"></i>
                         </div>
                     </div>
 
                     <div class="row g-4 mb-4">
                         <div class="col-md-6">
                             <div class="form-group-custom">
-                                <label class="label-custom">New Password <span style="font-weight: 400; font-size: 0.75rem;">(Optional)</span></label>
+                                <label class="label-custom">New Password <span
+                                        style="font-weight: 400; font-size: 0.75rem;">(Optional)</span></label>
                                 <div class="input-with-icon pass-toggle">
                                     <i class="fas fa-key"></i>
-                                    <input type="password" name="admin_new_password" id="admin_new_password" class="input-custom" oninput="checkAdminStrength()" placeholder="New password">
-                                    <i class="fas fa-eye eye-trigger" onclick="toggleAdminPwd('admin_new_password', this)"></i>
+                                    <input type="password" name="admin_new_password" id="admin_new_password"
+                                        class="input-custom" oninput="checkAdminStrength()" placeholder="New password">
+                                    <i class="fas fa-eye eye-trigger"
+                                        onclick="toggleAdminPwd('admin_new_password', this)"></i>
                                 </div>
                                 <div class="strength-meter-container">
                                     <div id="admin-strength-bar" class="strength-bar"></div>
@@ -1149,16 +1235,21 @@
                                 <label class="label-custom">Confirm Password</label>
                                 <div class="input-with-icon pass-toggle">
                                     <i class="fas fa-check-double"></i>
-                                    <input type="password" name="admin_confirm_password" id="admin_confirm_password" class="input-custom" placeholder="Match new password">
-                                    <i class="fas fa-eye eye-trigger" onclick="toggleAdminPwd('admin_confirm_password', this)"></i>
+                                    <input type="password" name="admin_confirm_password" id="admin_confirm_password"
+                                        class="input-custom" placeholder="Match new password">
+                                    <i class="fas fa-eye eye-trigger"
+                                        onclick="toggleAdminPwd('admin_confirm_password', this)"></i>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="modal-footer-custom" style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 30px;">
-                        <button type="button" class="btn btn-link text-muted text-decoration-none fw-bold" onclick="document.getElementById('editProfileModal').style.display='none'">Dismiss</button>
-                        <button type="submit" class="btn-modal-save">Save Changes <i class="fas fa-arrow-right ms-2"></i></button>
+                    <div class="modal-footer-custom"
+                        style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 30px;">
+                        <button type="button" class="btn btn-link text-muted text-decoration-none fw-bold"
+                            onclick="document.getElementById('editProfileModal').style.display='none'">Dismiss</button>
+                        <button type="submit" class="btn-modal-save">Save Changes <i
+                                class="fas fa-arrow-right ms-2"></i></button>
                     </div>
                 </div>
             </form>
@@ -1167,27 +1258,122 @@
 
     <!-- Additional Styles for Premium Modal -->
     <style>
-        .form-group-custom { margin-bottom: 5px; }
-        .label-custom { display: block; font-size: 0.75rem; font-weight: 700; color: var(--admin-text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
-        .input-custom { width: 100%; padding: 12px 16px; border-radius: 10px; border: 1px solid var(--admin-border); background: var(--admin-bg); color: var(--admin-text); font-size: 0.9rem; transition: all 0.3s; font-weight: 500; }
-        .input-custom:focus { border-color: var(--admin-accent); box-shadow: 0 0 0 4px rgba(139, 99, 75, 0.1); outline: none; background: #fff; }
-        
-        .input-with-icon { position: relative; }
-        .input-with-icon i:first-child { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--admin-text-muted); font-size: 0.9rem; }
-        .input-with-icon .input-custom { padding-left: 42px; }
-        
-        .pass-toggle .eye-trigger { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--admin-text-muted); padding: 5px; transition: color 0.2s; }
-        .pass-toggle .eye-trigger:hover { color: var(--admin-accent); }
-        
-        .strength-meter-container { height: 4px; background: rgba(0,0,0,0.05); border-radius: 10px; margin-top: 8px; overflow: hidden; }
-        .strength-bar { height: 100%; width: 0%; transition: width 0.3s ease, background 0.3s ease; }
-        
-        .btn-modal-cancel { padding: 10px 25px; border-radius: 10px; border: 1px solid var(--admin-border); background: transparent; color: var(--admin-text-muted); font-weight: 600; font-size: 0.9rem; transition: all 0.2s; }
-        .btn-modal-cancel:hover { background: var(--admin-bg); color: var(--admin-text); }
-        
-        .btn-modal-save { padding: 10px 25px; border-radius: 10px; border: none; background: var(--admin-accent); color: #fff; font-weight: 600; font-size: 0.9rem; transition: all 0.2s; box-shadow: 0 4px 15px rgba(139, 99, 75, 0.2); }
-        .btn-modal-save:hover { background: #6f360f; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(139, 99, 75, 0.3); }
-        .btn-modal-save:active { transform: translateY(0); }
+        .form-group-custom {
+            margin-bottom: 5px;
+        }
+
+        .label-custom {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--admin-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .input-custom {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 10px;
+            border: 1px solid var(--admin-border);
+            background: var(--admin-bg);
+            color: var(--admin-text);
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .input-custom:focus {
+            border-color: var(--admin-accent);
+            box-shadow: 0 0 0 4px rgba(139, 99, 75, 0.1);
+            outline: none;
+            background: #fff;
+        }
+
+        .input-with-icon {
+            position: relative;
+        }
+
+        .input-with-icon i:first-child {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--admin-text-muted);
+            font-size: 0.9rem;
+        }
+
+        .input-with-icon .input-custom {
+            padding-left: 42px;
+        }
+
+        .pass-toggle .eye-trigger {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: var(--admin-text-muted);
+            padding: 5px;
+            transition: color 0.2s;
+        }
+
+        .pass-toggle .eye-trigger:hover {
+            color: var(--admin-accent);
+        }
+
+        .strength-meter-container {
+            height: 4px;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 10px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .strength-bar {
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease, background 0.3s ease;
+        }
+
+        .btn-modal-cancel {
+            padding: 10px 25px;
+            border-radius: 10px;
+            border: 1px solid var(--admin-border);
+            background: transparent;
+            color: var(--admin-text-muted);
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .btn-modal-cancel:hover {
+            background: var(--admin-bg);
+            color: var(--admin-text);
+        }
+
+        .btn-modal-save {
+            padding: 10px 25px;
+            border-radius: 10px;
+            border: none;
+            background: var(--admin-accent);
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(139, 99, 75, 0.2);
+        }
+
+        .btn-modal-save:hover {
+            background: #6f360f;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 99, 75, 0.3);
+        }
+
+        .btn-modal-save:active {
+            transform: translateY(0);
+        }
     </style>
 
     <script>
@@ -1209,7 +1395,7 @@
         function checkAdminStrength() {
             const pwd = document.getElementById('admin_new_password').value;
             const bar = document.getElementById('admin-strength-bar');
-            
+
             if (!pwd) {
                 bar.style.width = '0%';
                 return;
@@ -1277,7 +1463,3 @@
 </body>
 
 </html>
-
-
-
-

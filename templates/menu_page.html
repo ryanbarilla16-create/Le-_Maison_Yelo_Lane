@@ -3,6 +3,18 @@
 {% block title %}Our Menu{% endblock %}
 
 {% block content %}
+    <!-- Build categories map early for use in filters -->
+    {% set categories_data = {} %}
+    {% for item in menu_items %}
+    {% if item.category not in categories_data %}
+    {% set _ = categories_data.update({item.category: {'image': item.image_url, 'count': 1}}) %}
+    {% else %}
+    {% set count = categories_data[item.category]['count'] + 1 %}
+    {% set _ = categories_data.update({item.category: {'image': categories_data[item.category]['image'], 'count':
+    count}}) %}
+    {% endif %}
+    {% endfor %}
+
 <!-- Hero Section -->
 <div class="position-relative w-100 shadow-lg"
     style="height: 400px; border-radius: 20px; overflow: hidden; margin-bottom: 4rem; margin-top: 90px;">
@@ -43,6 +55,28 @@
                 </div>
             </div>
 
+            <!-- Categories Section -->
+            <div class="filter-section">
+                <div class="filter-title-wrap" onclick="this.parentElement.classList.toggle('collapsed')">
+                    <h5 class="filter-title">Categories</h5>
+                    <i class="fas fa-chevron-down filter-arrow"></i>
+                </div>
+                <div class="filter-content">
+                    <div class="list-group list-group-flush">
+                        <button onclick="showCategoriesGrid(); toggleFilterDrawer();" class="list-group-item list-group-item-action border-0 px-0 d-flex justify-content-between align-items-center" style="font-size: 1rem; color: #555;">
+                            All Categories
+                            <i class="fas fa-chevron-right" style="font-size: 0.7rem; opacity: 0.5;"></i>
+                        </button>
+                        {% for cat_name in categories_data.keys() %}
+                        <button onclick="showCategory('{{ cat_name }}'); toggleFilterDrawer();" class="list-group-item list-group-item-action border-0 px-0 d-flex justify-content-between align-items-center" style="font-size: 1rem; color: #555;">
+                            {{ cat_name }}
+                            <i class="fas fa-chevron-right" style="font-size: 0.7rem; opacity: 0.5;"></i>
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
             <!-- Availability Section -->
             <div class="filter-section">
                 <div class="filter-title-wrap" onclick="this.parentElement.classList.toggle('collapsed')">
@@ -53,13 +87,15 @@
                     <label class="filter-checkbox-item">
                         <input type="checkbox" id="filterInStock" checked onchange="applyFilters()">
                         <span class="filter-label">In stock</span>
-                        <span class="filter-count">({{ menu_items|selectattr('is_available', 'equalto', true)|list|length
+                        <span class="filter-count">({{ menu_items|selectattr('is_available', 'equalto',
+                            true)|list|length
                             }})</span>
                     </label>
                     <label class="filter-checkbox-item">
                         <input type="checkbox" id="filterOutOfStock" checked onchange="applyFilters()">
                         <span class="filter-label">Out of stock</span>
-                        <span class="filter-count">({{ menu_items|selectattr('is_available', 'equalto', false)|list|length
+                        <span class="filter-count">({{ menu_items|selectattr('is_available', 'equalto',
+                            false)|list|length
                             }})</span>
                     </label>
                 </div>
@@ -91,17 +127,19 @@
         </div>
     </div>
 
-    <!-- Build categories map -->
-    {% set categories_data = {} %}
-    {% for item in menu_items %}
-    {% if item.category not in categories_data %}
-    {% set _ = categories_data.update({item.category: {'image': item.image_url, 'count': 1}}) %}
-    {% else %}
-    {% set count = categories_data[item.category]['count'] + 1 %}
-    {% set _ = categories_data.update({item.category: {'image': categories_data[item.category]['image'], 'count':
-    count}}) %}
-    {% endif %}
-    {% endfor %}
+
+    <!-- Global Menu Controls -->
+    <div class="menu-controls mb-5 px-3">
+        <button class="btn-outline-menu"
+            onclick="toggleFilterDrawer(); setTimeout(() => document.getElementById('menuSearch').focus(), 300);">
+            <i class="fas fa-search"></i> 
+            <span>Explore</span>
+        </button>
+        <button class="btn-outline-menu" onclick="toggleFilterDrawer()">
+            <i class="fas fa-sliders-h"></i> 
+            <span>Filter</span>
+        </button>
+    </div>
 
     <!-- 1. Categories Grid View -->
     <div id="categories-grid-view">
@@ -162,16 +200,6 @@
                 {{ cat_name }}
             </h2>
 
-            <!-- Explore & Filter Buttons (Inside category view only) -->
-            <div class="menu-controls" style="margin-bottom: 2.5rem;">
-                <button class="btn-outline-menu"
-                    onclick="toggleFilterDrawer(); setTimeout(() => document.getElementById('menuSearch').focus(), 300);">
-                    <i class="fas fa-search"></i> Explore
-                </button>
-                <button class="btn-outline-menu" onclick="toggleFilterDrawer()">
-                    <i class="fas fa-sliders-h"></i> Filter
-                </button>
-            </div>
 
             <div class="menu-items-grid">
                 {% for item in menu_items if item.category == cat_name %}
@@ -230,42 +258,46 @@
         {% endfor %}
     </div>
 
-    <!-- CSS -->
-    <!-- CSS -->
+    <!-- CSS Styles -->
     <style>
+
         /* ── Controls (Explore & Filter) ── */
         .menu-controls {
             display: flex;
-            gap: 1rem;
+            gap: 1.5rem;
             justify-content: center;
-            margin-bottom: 2.5rem;
+            max-width: 800px;
+            margin: 0 auto 4rem;
         }
 
         .btn-outline-menu {
             border: 1.5px solid #e0e0e0;
             background: #fff;
-            padding: 0.75rem 2.2rem;
-            border-radius: 8px;
+            padding: 1rem 2rem;
+            border-radius: 12px;
             display: flex;
             align-items: center;
-            gap: 0.8rem;
-            font-size: 1.25rem;
+            justify-content: center;
+            gap: 1rem;
+            font-size: 1.15rem;
             font-family: 'Inter', sans-serif;
-            color: #333;
+            color: #444;
             transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
             cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            flex: 1;
         }
 
         .btn-outline-menu:hover {
             border-color: #8B634B;
             color: #8B634B;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 25px rgba(139, 99, 75, 0.12);
         }
 
         .btn-outline-menu i {
-            font-size: 1.1rem;
-            opacity: 0.7;
+            font-size: 1.25rem;
+            color: #8B634B !important;
         }
 
         /* ── Filter Drawer ── */
@@ -614,13 +646,13 @@
             document.querySelectorAll('.menu-category-section').forEach(function (s) {
                 s.style.display = s.getAttribute('data-category') === categoryName ? 'block' : 'none';
             });
-            window.scrollTo({ top: document.getElementById('items-view').offsetTop - 20, behavior: 'smooth' });
+            window.scrollTo({ top: document.getElementById('items-view').offsetTop - 140, behavior: 'smooth' });
         }
 
         function showCategoriesGrid() {
             document.getElementById('items-view').style.display = 'none';
             document.getElementById('categories-grid-view').style.display = 'block';
-            window.scrollTo({ top: document.getElementById('categories-grid-view').offsetTop - 20, behavior: 'smooth' });
+            window.scrollTo({ top: document.getElementById('categories-grid-view').offsetTop - 140, behavior: 'smooth' });
         }
 
         /* Quick Add to Cart — + button (1 qty, no modal) */
