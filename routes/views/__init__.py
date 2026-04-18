@@ -80,7 +80,7 @@ def index():
         user_reviews = Review.query.filter_by(user_id=current_user.id).all()
         user_reviews_by_order = {r.order_id: r for r in user_reviews if r.order_id}
 
-        return render_template('user_home.html',
+        return render_template('customer/user_home.html',
             site=site, upcoming=upcoming, past=past, total_visits=total_visits,
             featured=featured, bestsellers=bestsellers, categories=categories,
             menu_items=menu_items, recent_orders=recent_orders,
@@ -92,7 +92,7 @@ def index():
     approved_reviews = Review.query.filter_by(status='APPROVED').order_by(Review.rating.desc(), Review.created_at.desc()).limit(30).all()
     bestsellers = MenuItem.query.filter_by(category='Best Sellers', is_available=True, is_deleted=False).limit(8).all()
 
-    return render_template('index.html', menu_items=menu_items, site=site, categories=categories, approved_reviews=approved_reviews, bestsellers=bestsellers)
+    return render_template('public/index.html', menu_items=menu_items, site=site, categories=categories, approved_reviews=approved_reviews, bestsellers=bestsellers)
 
 @main_bp.route('/my-orders')
 @login_required
@@ -121,7 +121,7 @@ def my_orders():
     user_reviews = Review.query.filter_by(user_id=current_user.id).all()
     user_reviews_by_order = {r.order_id: r for r in user_reviews if r.order_id}
 
-    return render_template('my_orders.html',
+    return render_template('customer/my_orders.html',
         all_orders=all_orders,
         pending_count=pending_count,
         preparing_count=preparing_count,
@@ -155,7 +155,7 @@ def my_reservations():
     completed_count = counts.get('COMPLETED', 0)
     cancelled_count = counts.get('REJECTED', 0)
 
-    return render_template('my_reservations.html',
+    return render_template('customer/my_reservations.html',
         all_res=all_res,
         pending_count=pending_count,
         confirmed_count=confirmed_count,
@@ -167,11 +167,11 @@ def my_reservations():
 def menu_page():
     # Show all items (even unavailable ones, which show as 'Sold Out')
     menu_items = _get_menu_items_for_menu_page()
-    return render_template('menu_page.html', menu_items=menu_items)
+    return render_template('shop/menu_page.html', menu_items=menu_items)
 
 @main_bp.route('/about')
 def about_page():
-    return render_template('about_page.html')
+    return render_template('public/about_page.html')
 
 @main_bp.route('/reviews')
 def reviews_page():
@@ -187,7 +187,7 @@ def reviews_page():
     approved_reviews = Review.query.filter_by(status='APPROVED').order_by(Review.rating.desc(), Review.created_at.desc()).all()
 
     bestsellers = MenuItem.query.filter_by(category='Best Sellers', is_available=True, is_deleted=False).limit(8).all()
-    return render_template('index.html', title="Reviews", site=site, menu_items=menu_items, categories=categories, approved_reviews=approved_reviews, bestsellers=bestsellers)
+    return render_template('public/index.html', title="Reviews", site=site, menu_items=menu_items, categories=categories, approved_reviews=approved_reviews, bestsellers=bestsellers)
 
 @main_bp.route('/pages/<page_name>')
 def static_page(page_name):
@@ -355,9 +355,9 @@ def static_page(page_name):
     # Provide a fallback generic text just in case
     content = content_map.get(title, f'<div style="text-align:center;"><p>Welcome to the {title} page. Full details will be available soon.</p></div>')
     
-    return render_template('generic_page.html', title=title, site=site, content=content)
+    return render_template('public/generic_page.html', title=title, site=site, content=content)
 
 @main_bp.route('/contact')
 def contact_page():
     site = load_site_settings()
-    return render_template('contact_page.html', site=site)
+    return render_template('public/contact_page.html', site=site)

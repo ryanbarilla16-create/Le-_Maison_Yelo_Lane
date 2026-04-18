@@ -24,7 +24,7 @@ def view_cart():
                 'quantity': quantity,
                 'subtotal': subtotal
             })
-    return render_template('cart.html', cart_items=cart_items, total=total)
+    return render_template('shop/cart.html', cart_items=cart_items, total=total)
 
 @main_bp.route('/cart/add/<int:item_id>', methods=['POST'])
 def add_to_cart(item_id):
@@ -367,4 +367,4 @@ def view_receipt(order_id):
         flash("Receipt is only available for paid orders.", "info")
         return redirect(url_for('main.my_orders'))
         
-    return render_template('receipt.html', order=order)
+    return render_template('shop/receipt.html', order=order)

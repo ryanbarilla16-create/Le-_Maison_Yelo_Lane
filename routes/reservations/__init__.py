@@ -186,7 +186,7 @@ def reserve():
 
         return redirect(url_for('main.reserve_menu'))
 
-    return render_template('reserve.html')
+    return render_template('reservations/reserve.html')
 
 
 # ─── STEP 2: Menu Selection ────────────────────────────────────────────
@@ -227,7 +227,7 @@ def reserve_menu():
         except:
             pass
 
-    return render_template('reserve_menu.html', 
+    return render_template('reservations/reserve_menu.html', 
         pending=pending, 
         categories=categories, 
         min_price=min_price,
@@ -309,7 +309,7 @@ def reserve_payment():
         if grand_total < min_price:
             grand_total = min_price
 
-    return render_template('reserve_payment.html',
+    return render_template('reservations/reserve_payment.html',
         pending=pending,
         order_items_data=order_items_data,
         food_total=food_total,
