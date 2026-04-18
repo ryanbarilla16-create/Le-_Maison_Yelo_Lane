@@ -25,7 +25,36 @@ This document contains the core system specifications, including the Test Plan, 
 
 ---
 
-## 2. Input-Process-Output (IPO) Model
+## 2. Cashier Page Test Plan
+
+| Case No. | Test Plan | Description |
+| :--- | :--- | :--- |
+| **1.0** | **View Live Orders** | Monitor real-time status of all PENDING, PREPARING, and READY orders. |
+| **2.0** | **Create Walk-in Orders** | Manually input and process orders for on-site customers. |
+| **3.0** | **Process Payments** | Update payment status from UNPAID to PAID and select payment methods. |
+| **4.0** | **Generate Receipts** | Produce and print itemized receipts for completed transactions. |
+| **5.0** | **View Order History** | Access paginated records of all past transactions and sales data. |
+| **6.0** | **Customer Messaging** | Access and respond to real-time customer inquiries via the chat portal. |
+
+---
+
+## 3. Kitchen Side Test Plan
+
+| Case No. | Test Plan | Description |
+| :--- | :--- | :--- |
+| **1.0** | **Staff Log In** | Securely access the kitchen portal using staff credentials (KITCHEN/STAFF/ADMIN roles). |
+| **2.0** | **Order Queue Dashboard** | View live incoming orders categorized by status: Pending, Preparing, and Ready for Pickup. |
+| **3.0** | **Update Order Status** | Transition orders through preparation stages (e.g., from PENDING to PREPARING or READY). |
+| **4.0** | **Ingredient Auto-Deduction** | Verify that moving an order to "Preparing" automatically deducts required ingredients from kitchen stock. |
+| **5.0** | **Kitchen Pantry Management** | View and manually adjust current kitchen stock levels for all ingredients. |
+| **6.0** | **Recipe Reference** | View itemized ingredient lists for all menu items to ensure preparation accuracy. |
+| **7.0** | **Stock Requests** | Submit and monitor requests to the warehouse for ingredient replenishment. |
+| **8.0** | **Real-time Notifications** | Receive instant socket alerts for new orders and status updates across the system. |
+| **9.0** | **Logout** | Securely terminate the session and return to the kitchen login screen. |
+
+---
+
+## 4. Input-Process-Output (IPO) Model
 
 | **INPUT** | **PROCESS** | **OUTPUT** |
 | :--- | :--- | :--- |
@@ -39,7 +68,7 @@ This document contains the core system specifications, including the Test Plan, 
 
 ---
 
-## 3. System Flowchart
+## 5. System Flowchart
 
 ```mermaid
 flowchart TD
