@@ -11,9 +11,17 @@
         border: none !important;
         box-shadow: 0 25px 80px rgba(139, 99, 75, 0.18) !important;
     }
-    .badge-active { background: #E8F5E9 !important; color: #2E7D32 !important; }
-    .badge-inactive { background: #F5F5F5 !important; color: #757575 !important; }
-    
+
+    .badge-active {
+        background: #E8F5E9 !important;
+        color: #2E7D32 !important;
+    }
+
+    .badge-inactive {
+        background: #F5F5F5 !important;
+        color: #757575 !important;
+    }
+
     .up-initials {
         width: 85px;
         height: 85px;
@@ -37,87 +45,280 @@
 </div>
 
 <div class="filter-tabs">
-    <a href="{{ url_for('admin.users', role='ALL') }}" class="filter-tab {{ 'active' if role_filter == 'ALL' }}">All
-        Users</a>
-    <a href="{{ url_for('admin.users', role='USER') }}"
-        class="filter-tab {{ 'active' if role_filter == 'USER' }}">Customers</a>
-    <a href="{{ url_for('admin.users', role='CASHIER') }}"
-        class="filter-tab {{ 'active' if role_filter == 'CASHIER' }}">Cashier</a>
-    <a href="{{ url_for('admin.users', role='INVENTORY') }}"
-        class="filter-tab {{ 'active' if role_filter == 'INVENTORY' }}">Inventory</a>
-    <a href="{{ url_for('admin.users', role='RIDER') }}"
-        class="filter-tab {{ 'active' if role_filter == 'RIDER' }}">Riders</a>
-    <a href="{{ url_for('admin.users', role='ADMIN') }}"
-        class="filter-tab {{ 'active' if role_filter == 'ADMIN' }}">Admins</a>
+    <button onclick="filterUsers('ALL', this)" class="filter-tab active"
+        style="border:none; outline:none; cursor:pointer; background:transparent;">All Users</button>
+    <button onclick="filterUsers('USER', this)" class="filter-tab"
+        style="border:none; outline:none; cursor:pointer; background:transparent;">Customers</button>
+    <button onclick="filterUsers('CASHIER', this)" class="filter-tab"
+        style="border:none; outline:none; cursor:pointer; background:transparent;">Cashier</button>
+    <button onclick="filterUsers('INVENTORY', this)" class="filter-tab"
+        style="border:none; outline:none; cursor:pointer; background:transparent;">Inventory</button>
+    <button onclick="filterUsers('RIDER', this)" class="filter-tab"
+        style="border:none; outline:none; cursor:pointer; background:transparent;">Riders</button>
+    <button onclick="filterUsers('ADMIN', this)" class="filter-tab"
+        style="border:none; outline:none; cursor:pointer; background:transparent;">Admins</button>
 </div>
 
-<div class="admin-table-wrap">
-    <div class="admin-table-header">
-        <h3>{{ users.total }} User{{ 's' if users.total != 1 else '' }}</h3>
-        <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <input type="checkbox" id="selectAll" style="transform: scale(1.2); cursor: pointer;"
+<style>
+    /* Premium User Cards Layout */
+    .user-controls-bar {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+        border: 1px solid rgba(139, 99, 75, 0.08);
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .user-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .user-card {
+        background: #ffffff;
+        border-radius: 20px;
+        border: 1px solid rgba(139, 99, 75, 0.1);
+        overflow: hidden;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.03);
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        display: flex;
+        flex-direction: column;
+        position: relative;
+    }
+
+    .user-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 35px rgba(139, 99, 75, 0.08);
+        border-color: rgba(139, 99, 75, 0.2);
+    }
+
+    /* Custom Checkbox */
+    .user-card-checkbox {
+        position: absolute;
+        top: 1.25rem;
+        right: 1.5rem;
+        z-index: 10;
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+    }
+
+    .user-card:hover .user-card-checkbox {
+        opacity: 1;
+    }
+
+    .user-card-header {
+        padding: 1.5rem 1.5rem 1rem 1.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        border-bottom: 1px dashed rgba(139, 99, 75, 0.1);
+        background: linear-gradient(180deg, #faf6f1 0%, #ffffff 100%);
+    }
+
+    .user-avatar {
+        width: 65px;
+        height: 65px;
+        background: linear-gradient(135deg, #8B634B, #5D4037);
+        color: #fff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 1.5rem;
+        box-shadow: 0 6px 15px rgba(139, 99, 75, 0.2);
+        margin-bottom: 0.85rem;
+    }
+
+    .user-name {
+        font-family: 'Playfair Display', serif;
+        font-weight: 800;
+        font-size: 1.25rem;
+        color: #3E2723;
+        margin: 0;
+        line-height: 1.2;
+    }
+
+    .user-username {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #a48c7e;
+        margin-top: 0.2rem;
+    }
+
+    .user-card-body {
+        padding: 1.25rem 1.5rem;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .user-detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .user-detail-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #a48c7e;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .user-detail-value {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #4a3b32;
+    }
+
+    .user-role-select {
+        background: #fdfaf7;
+        color: #5D4037;
+        border: 1px solid rgba(139, 99, 75, 0.15);
+        border-radius: 8px;
+        padding: 0.35rem 0.6rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        cursor: pointer;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+
+    .user-role-select:focus {
+        border-color: #8B634B;
+    }
+
+    .user-card-footer {
+        padding: 1rem 1.5rem;
+        background: #fdfaf7;
+        border-top: 1px solid rgba(139, 99, 75, 0.05);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .btn-view-profile {
+        background: transparent;
+        color: #8b634b;
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        border: 1px solid rgba(139, 99, 75, 0.2);
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .btn-view-profile:hover {
+        background: #8b634b;
+        color: #fff;
+    }
+
+    .broadcast-btn {
+        background: #4a3b32;
+        color: #fff;
+        padding: 0.6rem 1.25rem;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        border: none;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+        box-shadow: 0 4px 10px rgba(74, 59, 50, 0.2);
+    }
+
+    .broadcast-btn:hover {
+        transform: translateY(-2px);
+        background: #352a23;
+    }
+</style>
+
+<div class="user-controls-bar">
+    <div style="display: flex; align-items: center; gap: 1rem;">
+        <h3 style="font-size: 1.15rem; font-weight: 700; color: #3E2723; margin: 0;"><i
+                class="fas fa-users me-2 opacity-75" style="color: #8B634B;"></i>{{ users.total }} User{{ 's' if
+            users.total != 1 else '' }}</h3>
+    </div>
+    <div style="display: flex; align-items: center; gap: 1.25rem;">
+        <div
+            style="display: flex; align-items: center; gap: 0.5rem; background: #faf6f1; padding: 0.4rem 1rem; border-radius: 50px; border: 1px solid rgba(139,99,75,0.1);">
+            <input type="checkbox" id="selectAll" style="transform: scale(1.1); cursor: pointer;"
                 onchange="document.querySelectorAll('.user-check').forEach(c => c.checked = this.checked)">
-            <label for="selectAll" style="font-size: 0.8rem; color: var(--admin-text-muted); cursor: pointer;">Select
+            <label for="selectAll" style="font-size: 0.8rem; font-weight: 700; color: #5D4037; cursor: pointer;">Select
                 All</label>
-            <button class="btn-admin btn-admin-outline ms-2" type="button" onclick="openBroadcastModal()">
-                <i class="fas fa-bullhorn"></i> Broadcast
+        </div>
+        <button class="broadcast-btn" type="button" onclick="openBroadcastModal()">
+            <i class="fas fa-bullhorn"></i> Broadcast
+        </button>
+    </div>
+</div>
+
+<div class="user-grid" id="usersGridContainer">
+    {% for user in users.items %}
+    <div class="user-card" data-role="{{ user.role|upper }}">
+        <input type="checkbox" name="user_ids" class="user-check user-card-checkbox" value="{{ user.id }}"
+            form="broadcastForm">
+
+        <div class="user-card-header">
+            <div class="user-avatar">
+                {{ user.first_name[0] }}{{ user.last_name[0] }}
+            </div>
+            <h3 class="user-name">{{ user.first_name }} {{ user.last_name }}</h3>
+            <div class="user-username">@{{ user.username }}</div>
+        </div>
+
+        <div class="user-card-body">
+            <div class="user-detail-row">
+                <span class="user-detail-label">Email Address</span>
+                <span class="user-detail-value" style="font-size: 0.8rem;"><i
+                        class="fas fa-envelope text-muted me-1"></i>{{ user.email }}</span>
+            </div>
+            <div style="height: 1px; background: rgba(139, 99, 75, 0.05); margin: 0.25rem 0;"></div>
+            <div class="user-detail-row">
+                <span class="user-detail-label">Assigned Role</span>
+                <form method="POST" action="{{ url_for('admin.update_user_role', user_id=user.id) }}"
+                    style="margin: 0;">
+                    <select name="role" class="user-role-select" onchange="this.form.submit()">
+                        {% for r in ['USER', 'CASHIER', 'INVENTORY', 'RIDER', 'ADMIN', 'KITCHEN', 'STAFF'] %}
+                        <option value="{{ r }}" {{ 'selected' if user.role and user.role|upper==r }}>{{ r }}</option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+        </div>
+
+        <div class="user-card-footer">
+            <span class="badge-status badge-{{ user.status|lower }}">{{ user.status }}</span>
+            <button class="btn-view-profile" type="button"
+                data-initials="{{ user.first_name[0] }}{{ user.last_name[0] }}"
+                data-name="{{ user.first_name }} {{ user.last_name }}" data-username="{{ user.username }}"
+                data-email="{{ user.email }}" data-phone="{{ user.phone or 'Not provided' }}"
+                data-role="{{ user.role }}" data-status="{{ user.status }}" onclick="viewUserProfile(this)">
+                <i class="fas fa-id-card"></i> View Profile
             </button>
         </div>
     </div>
-    <div style="overflow-x: auto;">
-        <table class="admin-table">
-            <thead>
-                <tr>
-                    <th style="width: 40px;"></th>
-                    <th>User</th>
-                    <th>Email</th>
-                    <th>Role</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for user in users.items %}
-                <tr>
-                    <td><input type="checkbox" name="user_ids" class="user-check" value="{{ user.id }}"
-                            form="broadcastForm" style="transform: scale(1.1); cursor: pointer;"></td>
-                    <td>
-                        <div style="display: flex; align-items: center; gap: 0.75rem;">
-                            <div
-                                style="width: 36px; height: 36px; border-radius: 50%; background: var(--admin-accent-light); color: var(--admin-accent); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem;">
-                                {{ user.first_name[0] }}{{ user.last_name[0] }}</div>
-                            <div>
-                                <div style="font-weight: 600;">{{ user.first_name }} {{ user.last_name }}</div>
-                                <div style="font-size: 0.75rem; color: var(--admin-text-muted);">@{{ user.username }}
-                                </div>
-                            </div>
-                        </div>
-                    </td>
-                    <td>{{ user.email }}</td>
-                    <td>
-                        <form method="POST" action="{{ url_for('admin.update_user_role', user_id=user.id) }}"
-                            style="display: inline;">
-                            <select name="role" onchange="this.form.submit()"
-                                style="background: var(--admin-bg); color: var(--admin-text); border: 1px solid var(--admin-border); border-radius: 8px; padding: 0.35rem 0.6rem; font-size: 0.8rem; cursor: pointer;">
-                                {% for r in ['USER', 'CASHIER', 'INVENTORY', 'RIDER', 'ADMIN', 'KITCHEN', 'STAFF'] %}
-                                <option value="{{ r }}" {{ 'selected' if user.role and user.role|upper==r }}>{{ r }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </form>
-                    </td>
-                    <td><span class="badge-status badge-{{ user.status|lower }}">{{ user.status }}</span></td>
-                    <td>
-                        <button class="btn-admin btn-admin-outline" style="font-size: 0.8rem;"
-                            onclick="viewUserProfile('{{ user.id }}')"><i class="fas fa-eye"></i></button>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {{ render_pagination(users, 'admin.users') }}
+    {% endfor %}
 </div>
+{{ render_pagination(users, 'admin.users') }}
 
 <!-- Broadcast Modal & Form -->
 <form id="broadcastForm" action="{{ url_for('admin.broadcast') }}" method="POST">
@@ -168,48 +369,47 @@
         }
     }
 
-    function viewUserProfile(userId) {
-        // Show loading state
-        const originalContent = document.querySelector(`button[onclick="viewUserProfile('${userId}')"]`).innerHTML;
-        const btn = document.querySelector(`button[onclick="viewUserProfile('${userId}')"]`);
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        btn.disabled = true;
+    function filterUsers(role, tabElement) {
+        // Update active tab styles
+        document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+        tabElement.classList.add('active');
 
-        fetch(`/admin/api/users/${userId}`)
-            .then(response => {
-                if (!response.ok) throw new Error('User not found');
-                return response.json();
-            })
-            .then(data => {
-                // Populate Modal
-                document.getElementById('up_initials').innerText = (data.first_name[0] || '') + (data.last_name[0] || '');
-                document.getElementById('up_name').innerText = `${data.first_name} ${data.last_name}`;
-                document.getElementById('up_username').innerText = `@${data.username}`;
-                document.getElementById('up_email').innerText = data.email;
-                document.getElementById('up_phone').innerText = data.phone || 'Not provided';
-                document.getElementById('up_role').innerText = data.role;
-                
-                const statusBadge = document.getElementById('up_status');
-                statusBadge.innerText = data.status;
-                statusBadge.className = 'badge-status ' + (data.status.toLowerCase() === 'active' ? 'badge-active' : 'badge-inactive');
+        // Filter user cards instantly
+        const cards = document.querySelectorAll('.user-card');
+        cards.forEach(card => {
+            if (role === 'ALL' || card.dataset.role === role) {
+                card.style.display = 'flex';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
 
-                // Show Modal
-                const profileModal = new bootstrap.Modal(document.getElementById('userProfileModal'));
-                profileModal.show();
-            })
-            .catch(error => {
-                console.error(error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Failed to fetch user details.',
-                    confirmButtonColor: '#8b634b'
-                });
-            })
-            .finally(() => {
-                btn.innerHTML = originalContent;
-                btn.disabled = false;
-            });
+    function viewUserProfile(btnElement) {
+        // Read data directly from the button attributes for INSTANT loading
+        const initials = btnElement.getAttribute('data-initials');
+        const name = btnElement.getAttribute('data-name');
+        const username = btnElement.getAttribute('data-username');
+        const email = btnElement.getAttribute('data-email');
+        const phone = btnElement.getAttribute('data-phone');
+        const role = btnElement.getAttribute('data-role');
+        const status = btnElement.getAttribute('data-status');
+
+        // Populate Modal Immediately
+        document.getElementById('up_initials').innerText = initials;
+        document.getElementById('up_name').innerText = name;
+        document.getElementById('up_username').innerText = `@${username}`;
+        document.getElementById('up_email').innerText = email;
+        document.getElementById('up_phone').innerText = phone;
+        document.getElementById('up_role').innerText = role;
+
+        const statusBadge = document.getElementById('up_status');
+        statusBadge.innerText = status;
+        statusBadge.className = 'badge-status ' + (status.toLowerCase() === 'active' ? 'badge-active' : 'badge-inactive');
+
+        // Show Modal Without Any Delay
+        const profileModal = new bootstrap.Modal(document.getElementById('userProfileModal'));
+        profileModal.show();
     }
 </script>
 
@@ -218,39 +418,56 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content up-modal-content">
             <div class="modal-header border-0 pb-0 px-4 pt-4">
-                <h5 class="modal-title" style="font-family: 'Playfair Display', serif; font-weight: 800; color: #4E342E;">User Profile</h5>
-                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" style="font-size: 0.8rem;"></button>
+                <h5 class="modal-title"
+                    style="font-family: 'Playfair Display', serif; font-weight: 800; color: #4E342E;">User Profile</h5>
+                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"
+                    style="font-size: 0.8rem;"></button>
             </div>
             <div class="modal-body px-4 pb-5 pt-0">
                 <div class="text-center mb-4">
                     <div id="up_initials" class="up-initials">
                         RB
                     </div>
-                    <h3 id="up_name" style="font-family: 'Playfair Display', serif; font-weight: 800; color: #4E342E; margin-bottom: 2px;">Ryan Barilla</h3>
+                    <h3 id="up_name"
+                        style="font-family: 'Playfair Display', serif; font-weight: 800; color: #4E342E; margin-bottom: 2px;">
+                        Ryan Barilla</h3>
                     <div id="up_username" style="color: #A1887F; font-weight: 600; font-size: 0.9rem;">@admin_ryan</div>
                 </div>
 
-                <div class="p-4" style="background: #FAF3EF; border-radius: 24px; border: 1px solid rgba(139, 99, 75, 0.05);">
+                <div class="p-4"
+                    style="background: #FAF3EF; border-radius: 24px; border: 1px solid rgba(139, 99, 75, 0.05);">
                     <div class="mb-3 d-flex justify-content-between align-items-center">
-                        <span style="color: #A1887F; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Email Address</span>
-                        <span id="up_email" style="font-weight: 700; color: #4E342E; font-size: 0.95rem;">ryan@example.com</span>
+                        <span
+                            style="color: #A1887F; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Email
+                            Address</span>
+                        <span id="up_email"
+                            style="font-weight: 700; color: #4E342E; font-size: 0.95rem;">ryan@example.com</span>
                     </div>
                     <div class="mb-3 d-flex justify-content-between align-items-center">
-                        <span style="color: #A1887F; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Phone Number</span>
-                        <span id="up_phone" style="font-weight: 700; color: #4E342E; font-size: 0.95rem;">09123456789</span>
+                        <span
+                            style="color: #A1887F; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Phone
+                            Number</span>
+                        <span id="up_phone"
+                            style="font-weight: 700; color: #4E342E; font-size: 0.95rem;">09123456789</span>
                     </div>
                     <div class="mb-3 d-flex justify-content-between align-items-center">
-                        <span style="color: #A1887F; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Assigned Role</span>
-                        <span id="up_role" class="badge" style="background: #8B634B; color: #fff; font-weight: 800; padding: 6px 14px; border-radius: 50px; font-size: 0.75rem;">ADMIN</span>
+                        <span
+                            style="color: #A1887F; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Assigned
+                            Role</span>
+                        <span id="up_role" class="badge"
+                            style="background: #8B634B; color: #fff; font-weight: 800; padding: 6px 14px; border-radius: 50px; font-size: 0.75rem;">ADMIN</span>
                     </div>
                     <div class="d-flex justify-content-between align-items-center">
-                        <span style="color: #A1887F; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Account Status</span>
+                        <span
+                            style="color: #A1887F; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Account
+                            Status</span>
                         <span id="up_status" class="badge-status badge-active">Active</span>
                     </div>
                 </div>
 
                 <div class="mt-4 text-center">
-                    <button class="btn w-100" data-bs-dismiss="modal" style="background: #8B634B; color: #fff; border-radius: 50px; padding: 12px; font-weight: 700; font-size: 0.9rem; transition: all 0.3s ease; box-shadow: 0 8px 20px rgba(139, 99, 75, 0.25);">
+                    <button class="btn w-100" data-bs-dismiss="modal"
+                        style="background: #8B634B; color: #fff; border-radius: 50px; padding: 12px; font-weight: 700; font-size: 0.9rem; transition: all 0.3s ease; box-shadow: 0 8px 20px rgba(139, 99, 75, 0.25);">
                         Done
                     </button>
                 </div>
@@ -259,6 +476,3 @@
     </div>
 </div>
 {% endblock %}
-
-
-

@@ -259,9 +259,13 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-(function() {
+function initStaffCharts() {
+    if (typeof Chart === 'undefined') {
+        setTimeout(initStaffCharts, 50);
+        return;
+    }
+
     const sharedFont = { family: "'Inter', sans-serif" };
     const gridColor = 'rgba(0,0,0,0.04)';
 
@@ -310,7 +314,9 @@
         },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 14, font: { size: 11, ...sharedFont } } } }, scales: { r: { grid: { color: gridColor }, ticks: { display: false } } } }
     });
-})();
+}
+
+initStaffCharts();
 </script>
 {% endblock %}
 

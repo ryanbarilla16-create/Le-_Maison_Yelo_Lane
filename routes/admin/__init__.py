@@ -1087,6 +1087,8 @@ def menu_edit(item_id):
 @admin_required
 def menu_delete(item_id):
     if current_user.role.upper() != 'ADMIN':
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': False, 'message': 'Admin only.'}), 403
         flash("Access denied. Admin only.", "danger")
         return redirect(url_for('admin.menu'))
 
@@ -1095,6 +1097,10 @@ def menu_delete(item_id):
     item.is_deleted = True
     db.session.commit()
     log_audit('DELETE', 'MenuItem', item_id, f'Trashed menu item: {item.name}')
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({'success': True, 'message': 'Item moved to trash.'})
+        
     flash("Menu item moved to trash.", "success")
     return redirect(url_for('admin.menu', category=category))
 
@@ -1325,15 +1331,19 @@ def api_user_details(user_id):
 @login_required
 @admin_required
 def reservations():
-    status_filter = request.args.get('status', 'ALL')
-    page = request.args.get('page', 1, type=int)
+    # Fetch all reservations for instant client-side filtering
+    all_reservations = Reservation.query.order_by(Reservation.created_at.desc()).all()
     
-    query = Reservation.query
-    if status_filter != 'ALL':
-        query = query.filter_by(status=status_filter)
+    # Mock pagination object since the template uses .items and .total
+    class MockPagination:
+        def __init__(self, items):
+            self.items = items
+            self.total = len(items)
+            self.pages = 1
+            self.page = 1
     
-    pagination = query.order_by(Reservation.created_at.desc()).paginate(page=page, per_page=20, error_out=False)
-    return render_template('admin/reservations.html', reservations=pagination, status_filter=status_filter)
+    pagination = MockPagination(all_reservations)
+    return render_template('admin/reservations.html', reservations=pagination, status_filter='ALL')
 
 @admin_bp.route('/reservations/update/<int:res_id>', methods=['POST'])
 @login_required
@@ -2253,10 +2263,23 @@ def update_order(order_id):
 def update_payment_status(order_id):
     order = Order.query.get_or_404(order_id)
     new_payment_status = request.form.get('payment_status')
+    amount_tendered = request.form.get('amount_tendered')
+    
     if new_payment_status in ['PAID', 'UNPAID']:
         order.payment_status = new_payment_status
+        if new_payment_status == 'PAID' and amount_tendered:
+            order.amount_tendered = float(amount_tendered)
+            order.change_amount = float(amount_tendered) - float(order.total_amount)
+        elif new_payment_status == 'UNPAID':
+            order.amount_tendered = None
+            order.change_amount = None
+            
         db.session.commit()
         flash(f"Order #{order.id} payment status marked as {new_payment_status}.", "success")
+        
+    referrer = request.headers.get("Referer")
+    if referrer:
+        return redirect(referrer)
     return redirect(url_for('admin.orders'))
 
 @admin_bp.route('/orders/split/<int:order_id>', methods=['POST'])
@@ -2335,10 +2358,9 @@ def reviews():
     status_filter = request.args.get('status', 'PENDING')
     limit = request.args.get('limit', 250, type=int)
     limit = max(1, min(limit, 500))
-    if status_filter == 'ALL':
-        all_reviews = Review.query.options(selectinload(Review.user)).order_by(Review.created_at.desc()).limit(limit).all()
-    else:
-        all_reviews = Review.query.options(selectinload(Review.user)).filter_by(status=status_filter).order_by(Review.created_at.desc()).limit(limit).all()
+    
+    # Always fetch all reviews up to the limit to allow instant DOM-based tab switching on the frontend.
+    all_reviews = Review.query.options(selectinload(Review.user)).order_by(Review.created_at.desc()).limit(limit).all()
         
     # AI Sentiment Analysis (Dynamic Calculation to avoid DB Migrations)
     positive_words = ['good', 'great', 'excellent', 'amazing', 'best', 'delicious', 'love', 'perfect', 'nice', 'awesome', 'sarap', 'mabilis', 'ayos', 'sulit', 'outstanding', 'fantastic', 'superb', 'yummy', 'tasty']
@@ -2488,46 +2510,51 @@ def update_profile():
     new_password = request.form.get('admin_new_password', '')
     confirm_new_password = request.form.get('admin_confirm_password', '')
 
+    # Fallback redirect helper
+    def redirect_back():
+        ref = request.headers.get("Referer")
+        return redirect(ref) if ref else redirect(url_for('admin.overview'))
+
     # --- VALIDATIONS ---
     if not all([first_name, last_name, username, email, phone_number]):
         flash("All profile fields are required.", "danger")
-        return redirect(url_for('admin.settings'))
+        return redirect_back()
     
     # Validate Names
     for name, label in [(first_name, 'First Name'), (last_name, 'Last Name')]:
         err = validate_name(name, label)
-        if err: flash(err, "danger"); return redirect(url_for('admin.settings'))
+        if err: flash(err, "danger"); return redirect_back()
     if middle_name:
         err = validate_name(middle_name, 'Middle Name')
-        if err: flash(err, "danger"); return redirect(url_for('admin.settings'))
+        if err: flash(err, "danger"); return redirect_back()
 
     # Validate Email
     err = validate_email(email)
-    if err: flash(err, "danger"); return redirect(url_for('admin.settings'))
+    if err: flash(err, "danger"); return redirect_back()
 
     # Validate Username
     err = validate_username(username, first_name, last_name)
-    if err: flash(err, "danger"); return redirect(url_for('admin.settings'))
+    if err: flash(err, "danger"); return redirect_back()
 
     # Conflicts
     if email != current_user.email and User.query.filter_by(email=email).first():
         flash("Email already registered.", "danger")
-        return redirect(url_for('admin.settings'))
+        return redirect_back()
     if username != current_user.username and User.query.filter_by(username=username).first():
         flash("Username already taken.", "danger")
-        return redirect(url_for('admin.settings'))
+        return redirect_back()
     
     # Password Change
     if new_password:
         if not current_password:
             flash("Current password is required to change password.", "danger")
-            return redirect(url_for('admin.settings'))
+            return redirect_back()
         if not current_user.check_password(current_password):
             flash("Incorrect current password.", "danger")
-            return redirect(url_for('admin.settings'))
+            return redirect_back()
         
         err = validate_password(new_password, confirm_new_password)
-        if err: flash(err, "danger"); return redirect(url_for('admin.settings'))
+        if err: flash(err, "danger"); return redirect_back()
         
         current_user.set_password(new_password)
     
@@ -2541,7 +2568,7 @@ def update_profile():
     
     db.session.commit()
     flash('Staff profile updated successfully!', 'success')
-    return redirect(url_for('admin.settings'))
+    return redirect_back()
 
 # ─── ADMIN NOTIFICATIONS API ─────────────────────────
 @admin_bp.route('/api/notifications')

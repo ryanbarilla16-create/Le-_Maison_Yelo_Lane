@@ -1,0 +1,35 @@
+{# Cashier Portal Sidebar Navigation — include in sidebar_nav block #}
+<div class="nav-section-label" onclick="toggleNavGroup(this, 'group-main')">
+    <span>Main</span>
+    <i class="fas fa-chevron-down toggle-icon"></i>
+</div>
+<div id="group-main" class="nav-group">
+    <a class="nav-item {% if request.endpoint == 'admin.menu' %}active{% endif %}" href="{{ url_for('admin.menu') }}">
+        <i class="fas fa-utensils"></i> Menu
+    </a>
+</div>
+
+<div class="nav-section-label" onclick="toggleNavGroup(this, 'group-management')">
+    <span>Management</span>
+    <i class="fas fa-chevron-down toggle-icon"></i>
+</div>
+<div id="group-management" class="nav-group">
+    <a class="nav-item {% if request.endpoint == 'admin.reservations' %}active{% endif %}" href="{{ url_for('admin.reservations') }}">
+        <i class="fas fa-calendar-alt"></i> Reservations
+    </a>
+    <a class="nav-item {% if request.endpoint == 'cashier_portal.cashier_billing' %}active{% endif %}" href="{{ url_for('cashier_portal.cashier_billing') }}">
+        <i class="fas fa-file-invoice-dollar"></i> Billing
+    </a>
+    <a class="nav-item {% if request.endpoint == 'cashier_portal.cashier_dashboard' %}active{% endif %}" href="{{ url_for('cashier_portal.cashier_dashboard') }}">
+        <i class="fas fa-shopping-bag"></i> Orders
+    </a>
+    <a class="nav-item {% if request.endpoint == 'cashier_portal.cashier_walkin_order' %}active{% endif %}" href="{{ url_for('cashier_portal.cashier_walkin_order') }}">
+        <i class="fas fa-walking"></i> Walk-In Order
+    </a>
+    <a class="nav-item {% if request.endpoint == 'cashier_portal.cashier_chats' %}active{% endif %}" href="{{ url_for('cashier_portal.cashier_chats') }}">
+        <i class="fas fa-comments"></i> Customer Chat
+    </a>
+    <a class="nav-item {% if request.endpoint == 'cashier_portal.cashier_orders_history' %}active{% endif %}" href="{{ url_for('cashier_portal.cashier_orders_history') }}">
+        <i class="fas fa-clock-rotate-left"></i> Order History
+    </a>
+</div>

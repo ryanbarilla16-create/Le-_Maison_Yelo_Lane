@@ -1,0 +1,396 @@
+{% extends "layouts/staff_layout.html" %}
+
+{% block title %}Billing & Payments — Le Maison{% endblock %}
+
+{% block portal_sub %}POS Terminal{% endblock %}
+{% block portal_role %}Cashier Staff{% endblock %}
+{% block logout_url %}{{ url_for('cashier_portal.cashier_logout') }}{% endblock %}
+{% block profile_url %}{{ url_for('cashier_portal.cashier_profile') }}{% endblock %}
+
+{% block sidebar_nav %}
+    {% include "cashier/_sidebar.html" %}
+{% endblock %}
+
+{% block page_title %}Billing & Payments{% endblock %}
+{% block page_subtitle %}Manage payments and settle customer bills{% endblock %}
+
+{% block extra_style %}
+    /* Status filter tabs */
+    .status-filter-group { display:flex; gap:6px; background:var(--card); padding:4px; border-radius:12px; border:1px solid var(--card-border); }
+    .status-tab { padding:6px 16px; border-radius:10px; font-size:0.78rem; font-weight:700; text-decoration:none; color:var(--muted); transition:all 0.3s; border:none; background:transparent; cursor:pointer; }
+    .status-tab.active { background:linear-gradient(135deg,#5D4037,#795548); color:#fff; box-shadow:0 4px 12px rgba(93,64,55,0.2); }
+    .status-tab:hover:not(.active) { background:rgba(93,64,55,0.06); color:var(--primary); }
+
+    /* Soft badges */
+    .badge-soft-success { background:#f0fdf4; color:#166534; border:1px solid #dcfce7; padding:4px 12px; border-radius:50px; font-size:0.72rem; font-weight:700; display:inline-flex; align-items:center; gap:5px; }
+    .badge-soft-warning { background:#fffbeb; color:#92400e; border:1px solid #fef3c7; padding:4px 12px; border-radius:50px; font-size:0.72rem; font-weight:700; display:inline-flex; align-items:center; gap:5px; }
+
+    /* Stats */
+    .billing-stats { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px; }
+    .billing-stat-card { background:var(--card); border:1px solid var(--card-border); border-radius:16px; padding:18px 20px; display:flex; align-items:center; gap:16px; transition:transform 0.2s; }
+    .billing-stat-card:hover { transform:translateY(-2px); }
+    .billing-stat-icon { width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0; }
+    .billing-stat-label { font-size:0.72rem; text-transform:uppercase; color:var(--muted); font-weight:700; letter-spacing:0.5px; }
+    .billing-stat-value { font-size:1.5rem; font-weight:800; color:var(--text); }
+
+    /* Buttons */
+    .btn-settle { background:linear-gradient(135deg,#5D4037,#795548); color:#fff; border:none; padding:6px 16px; border-radius:50px; font-size:0.75rem; font-weight:700; cursor:pointer; transition:all 0.3s; display:inline-flex; align-items:center; gap:6px; }
+    .btn-settle:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(93,64,55,0.3); }
+    .btn-shift { background:var(--card); border:1px solid var(--card-border); padding:8px 18px; border-radius:12px; font-size:0.82rem; font-weight:700; color:var(--text); cursor:pointer; transition:all 0.2s; display:inline-flex; align-items:center; gap:8px; text-decoration:none; }
+    .btn-shift:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(62,39,35,0.08); }
+    .btn-print-sm { background:var(--card); border:1px solid var(--card-border); padding:5px 14px; border-radius:50px; font-size:0.72rem; font-weight:700; color:var(--text); text-decoration:none; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s; }
+    .btn-print-sm:hover { background:rgba(93,64,55,0.06); }
+
+    /* Search */
+    .billing-search { padding:8px 12px 8px 34px; border:1px solid rgba(93,64,55,0.12); border-radius:10px; font-size:0.82rem; width:240px; outline:none; transition:border 0.2s; }
+    .billing-search:focus { border-color:var(--primary); }
+
+    /* Modal */
+    .billing-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); backdrop-filter:blur(5px); display:flex; align-items:center; justify-content:center; z-index:2000; }
+    .billing-modal { background:white; border-radius:20px; width:100%; box-shadow:0 25px 50px rgba(0,0,0,0.25); overflow:hidden; animation:slideUp 0.3s ease-out; }
+    @keyframes slideUp { from { transform:translateY(20px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+    .modal-head { background:linear-gradient(135deg,#5D4037,#795548); padding:20px 24px; color:white; display:flex; align-items:center; justify-content:space-between; }
+    .modal-head h3 { margin:0; font-size:1.1rem; font-weight:700; }
+    .modal-close { background:none; border:none; color:rgba(255,255,255,0.8); font-size:1.5rem; cursor:pointer; line-height:1; }
+    .modal-close:hover { color:white; }
+    .modal-body-inner { padding:24px; }
+    .modal-foot { padding:16px 24px; background:#fafafa; border-top:1px solid rgba(0,0,0,0.05); display:flex; justify-content:flex-end; gap:12px; }
+
+    .modal-input { width:100%; padding:12px 16px; border:1px solid rgba(93,64,55,0.15); border-radius:12px; font-size:1.1rem; font-weight:700; outline:none; transition:border 0.2s; }
+    .modal-input:focus { border-color:var(--primary); }
+    .modal-input.error { border-color:#c62828; }
+    .modal-input.readonly { background:rgba(93,64,55,0.03); color:var(--primary); }
+    .input-error { display:none; color:#c62828; font-size:0.78rem; font-weight:600; margin-top:6px; }
+    .input-label { font-size:0.75rem; font-weight:700; color:var(--muted); display:block; margin-bottom:6px; }
+
+    /* Pagination (for macro output) */
+    .pagination { display:flex; justify-content:center; gap:4px; list-style:none; padding:0; margin:0; }
+    .page-item .page-link { padding:6px 12px; border:1px solid rgba(93,64,55,0.12); border-radius:8px; font-size:0.8rem; color:var(--primary); text-decoration:none; font-weight:600; transition:all 0.2s; display:inline-flex; align-items:center; }
+    .page-item.active .page-link { background:var(--primary); color:white; border-color:var(--primary); }
+    .page-item .page-link:hover { background:rgba(93,64,55,0.06); }
+    .page-item.disabled .page-link { color:var(--muted); opacity:0.5; pointer-events:none; }
+    .billing-pagination { padding:16px 20px; border-top:1px solid rgba(93,64,55,0.06); text-align:center; }
+
+    @media (max-width: 768px) {
+        .billing-stats { grid-template-columns: 1fr; }
+        .billing-search { width: 160px; }
+    }
+{% endblock %}
+
+{% block content %}
+    <div style="display:flex; justify-content:flex-end; margin-bottom:20px;">
+        <button class="btn-shift" onclick="document.getElementById('shiftReportModal').style.display='flex'">
+            <i class="fas fa-cash-register"></i> Shift Report
+        </button>
+    </div>
+
+    <div class="billing-stats">
+        <div class="billing-stat-card" style="border-left:4px solid #15803d;">
+            <div class="billing-stat-icon" style="background:rgba(21,128,61,0.1); color:#15803d;">
+                <i class="fas fa-sack-dollar"></i>
+            </div>
+            <div>
+                <div class="billing-stat-label">Gross Sales (Today)</div>
+                <div class="billing-stat-value" id="statGross">₱{{ "{:,.2f}".format(total_sales_today) }}</div>
+            </div>
+        </div>
+        <div class="billing-stat-card" style="border-left:4px solid #8b634b;">
+            <div class="billing-stat-icon" style="background:rgba(139,99,75,0.1); color:#8b634b;">
+                <i class="fas fa-file-invoice-dollar"></i>
+            </div>
+            <div>
+                <div class="billing-stat-label">Unpaid Bills</div>
+                <div class="billing-stat-value" id="statUnpaid">{{ unpaid_count }} <span style="font-size:0.85rem; color:var(--muted);">Orders</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-card">
+        <div class="section-header" style="flex-wrap:wrap; gap:12px;">
+            <h2>Billing Queue</h2>
+            <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+                <div style="position:relative;">
+                    <i class="fas fa-search" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:0.8rem;"></i>
+                    <input type="text" id="orderSearch" class="billing-search" placeholder="Search Order ID or Customer..." onkeyup="filterOrders()">
+                </div>
+                <div class="status-filter-group">
+                    <a href="{{ url_for('cashier_portal.cashier_billing', status='UNPAID') }}" class="status-tab status-ajax-tab {% if status_filter == 'UNPAID' %}active{% endif %}" data-status="UNPAID">Unpaid</a>
+                    <a href="{{ url_for('cashier_portal.cashier_billing', status='PAID') }}" class="status-tab status-ajax-tab {% if status_filter == 'PAID' %}active{% endif %}" data-status="PAID">Paid</a>
+                    <a href="{{ url_for('cashier_portal.cashier_billing', status='ALL') }}" class="status-tab status-ajax-tab {% if status_filter == 'ALL' %}active{% endif %}" data-status="ALL">All</a>
+                </div>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th style="text-align:left;">Customer / Table</th>
+                    <th>Subtotal</th>
+                    <th>Dine Option</th>
+                    <th>Date & Time</th>
+                    <th>Payment Status</th>
+                    <th style="text-align:right;">Action / Settle</th>
+                </tr>
+            </thead>
+            <tbody id="ordersTableBody">
+                {% for order in orders.items %}
+                <tr class="order-row filter-row">
+                    <td class="row-order-id" style="font-weight:700; font-size:1rem;">#{{ order.id }}</td>
+                    <td class="row-customer-name" style="text-align:left;">
+                        {% if order.user %}
+                        <div style="font-weight:600;">{{ order.user.first_name }} {{ order.user.last_name }}</div>
+                        {% else %}
+                        <div style="font-weight:600;"><i class="fas fa-walking" style="opacity:0.4; margin-right:4px;"></i>{{ order.customer_name or 'Walk-in' }}</div>
+                        <small style="color:var(--muted); font-size:0.72rem;">Walk-in Customer</small>
+                        {% endif %}
+                    </td>
+                    <td style="font-weight:700; font-size:1.05rem;">₱{{ "%.2f"|format(order.total_amount) }}</td>
+                    <td>
+                        {% if order.dining_option == 'DINE_IN' %}
+                        <span class="pill" style="background:rgba(93,64,55,0.06); font-size:0.72rem;"><i class="fas fa-utensils" style="margin-right:4px;"></i>Dine In</span>
+                        {% elif order.dining_option == 'DELIVERY' %}
+                        <span class="pill" style="background:rgba(230,81,0,0.06); color:#e65100; font-size:0.72rem;"><i class="fas fa-truck" style="margin-right:4px;"></i>Delivery</span>
+                        {% else %}
+                        <span class="pill" style="background:rgba(25,118,210,0.06); color:#1976d2; font-size:0.72rem;"><i class="fas fa-shopping-bag" style="margin-right:4px;"></i>Pick-up</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size:0.82rem; color:var(--muted);">
+                        {{ order.created_at.strftime('%I:%M %p') }}<br>
+                        {{ order.created_at.strftime('%b %d, %Y') }}
+                    </td>
+                    <td>
+                        {% if order.payment_status == 'PAID' %}
+                        <span class="badge-soft-success"><i class="fas fa-check-circle"></i> Paid</span>
+                        {% else %}
+                        <span class="badge-soft-warning"><i class="fas fa-clock"></i> Unpaid</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align:right;">
+                        <div style="display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
+                            <a href="{{ url_for('admin.print_receipt', order_id=order.id) }}" class="btn-print-sm">
+                                <i class="fas fa-print"></i> Receipt
+                            </a>
+                            {% if order.payment_status == 'UNPAID' %}
+                            <button type="button" onclick="openSettleModal({{ order.id }}, {{ order.total_amount }})" class="btn-settle">
+                                <i class="fas fa-cash-register"></i> Settle Bill
+                            </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" style="text-align:center; padding:50px 20px;">
+                        <div style="color:var(--muted); margin-bottom:10px;"><i class="fas fa-file-invoice" style="font-size:2rem; opacity:0.2;"></i></div>
+                        <p style="font-weight:700; font-size:1rem; margin:0 0 4px;">No billing records found</p>
+                        <p style="color:var(--muted); font-size:0.82rem; margin:0;">All bills for this filter have been cleared.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="billing-pagination" id="billingPagination">
+            {% if orders.pages > 1 %}
+            <div style="display:flex; justify-content:center; align-items:center; gap:8px; flex-wrap:wrap;">
+                {% if orders.has_prev %}
+                <a href="{{ url_for('cashier_portal.cashier_billing', page=orders.prev_num, status=status_filter) }}" class="btn-print-sm pagination-link">
+                    <i class="fas fa-chevron-left" style="font-size:0.65rem;"></i> Prev
+                </a>
+                {% endif %}
+                {% for p in orders.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if p %}
+                    <a href="{{ url_for('cashier_portal.cashier_billing', page=p, status=status_filter) }}" class="btn-print-sm pagination-link" style="{% if p == orders.page %}background:var(--primary); color:white; border-color:var(--primary);{% endif %}">{{ p }}</a>
+                    {% else %}
+                    <span style="color:var(--muted); font-size:0.8rem;">…</span>
+                    {% endif %}
+                {% endfor %}
+                {% if orders.has_next %}
+                <a href="{{ url_for('cashier_portal.cashier_billing', page=orders.next_num, status=status_filter) }}" class="btn-print-sm pagination-link">
+                    Next <i class="fas fa-chevron-right" style="font-size:0.65rem;"></i>
+                </a>
+                {% endif %}
+            </div>
+            <div style="color:var(--muted); font-size:0.75rem; margin-top:8px;">Page {{ orders.page }} of {{ orders.pages }} · Total {{ orders.total }} records</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- SHIFT REPORT MODAL -->
+    <div id="shiftReportModal" class="billing-overlay" style="display:none;">
+        <div class="billing-modal" style="max-width:450px;">
+            <div class="modal-head">
+                <h3><i class="fas fa-file-invoice-dollar" style="margin-right:8px;"></i>End of Shift Report</h3>
+                <button class="modal-close" onclick="document.getElementById('shiftReportModal').style.display='none'">&times;</button>
+            </div>
+            <div class="modal-body-inner">
+                <p style="color:var(--muted); margin-bottom:20px; font-size:0.88rem;">Today's collection summary. Verify your cash drawer before logging out.</p>
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 18px; background:rgba(93,64,55,0.04); border-radius:12px; margin-bottom:12px;">
+                    <span style="font-weight:700; font-size:0.8rem; text-transform:uppercase; color:var(--muted);"><i class="fas fa-cash-register" style="margin-right:8px;"></i>Cash Expected</span>
+                    <span style="font-weight:800; font-size:1.2rem; color:#2e7d32;">₱{{ "{:,.2f}".format(cash_sales) }}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 18px; background:rgba(93,64,55,0.04); border-radius:12px; margin-bottom:20px;">
+                    <span style="font-weight:700; font-size:0.8rem; text-transform:uppercase; color:var(--muted);"><i class="fas fa-mobile-alt" style="margin-right:8px;"></i>Online Expected</span>
+                    <span style="font-weight:800; font-size:1.2rem; color:var(--primary);">₱{{ "{:,.2f}".format(online_sales) }}</span>
+                </div>
+                <hr style="border:none; border-top:1px solid rgba(93,64,55,0.1); margin:16px 0;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-weight:700; font-size:1rem;">Total Gross</span>
+                    <span style="font-weight:800; font-size:1.5rem; color:var(--text);">₱{{ "{:,.2f}".format(total_sales_today) }}</span>
+                </div>
+            </div>
+            <div class="modal-foot">
+                <button style="background:transparent; border:none; color:var(--muted); font-weight:600; cursor:pointer; padding:8px 16px;" onclick="document.getElementById('shiftReportModal').style.display='none'">Close</button>
+                <button class="btn-settle" onclick="window.print()"><i class="fas fa-print"></i> Print Report</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETTLE BILL MODAL -->
+    <div id="settleBillModal" class="billing-overlay" style="display:none;">
+        <div class="billing-modal" style="max-width:400px;">
+            <div class="modal-head">
+                <h3><i class="fas fa-money-bill-wave" style="margin-right:8px;"></i>Settle Bill #<span id="settleOrderId"></span></h3>
+                <button class="modal-close" onclick="document.getElementById('settleBillModal').style.display='none'">&times;</button>
+            </div>
+            <form id="settleBillForm" method="POST" action="">
+                <div class="modal-body-inner">
+                    <input type="hidden" name="payment_status" value="PAID">
+                    <div style="text-align:center; margin-bottom:20px;">
+                        <p style="color:var(--muted); font-size:0.75rem; text-transform:uppercase; font-weight:700; margin-bottom:4px;">Amount Due</p>
+                        <h2 style="font-weight:800; color:#2e7d32; margin:0;" id="settleAmountDueDisplay">₱0.00</h2>
+                        <input type="hidden" id="amountDueHidden" value="0">
+                    </div>
+                    <div style="margin-bottom:16px;">
+                        <label class="input-label">Amount Tendered (₱)</label>
+                        <input type="number" step="0.01" id="amountTenderedInput" name="amount_tendered" required placeholder="0.00" class="modal-input">
+                        <div class="input-error" id="amountError">Amount must be equal or greater than the due.</div>
+                    </div>
+                    <div style="margin-bottom:8px;">
+                        <label class="input-label">Change / Sukli</label>
+                        <input type="text" id="changeAmountDisplay" readonly value="₱0.00" class="modal-input readonly">
+                    </div>
+                </div>
+                <div class="modal-foot" style="justify-content:stretch;">
+                    <button type="submit" id="confirmSettleBtn" disabled class="btn-settle" style="width:100%; justify-content:center; padding:14px; font-size:0.88rem;">
+                        <i class="fas fa-check-circle"></i> Confirm Payment
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_script %}
+<script>
+    function filterOrders() {
+        const input = document.getElementById('orderSearch').value.toLowerCase();
+        document.querySelectorAll('.filter-row').forEach(row => {
+            const orderId = row.querySelector('.row-order-id').innerText.toLowerCase();
+            const customerName = row.querySelector('.row-customer-name').innerText.toLowerCase();
+            row.style.display = (orderId.includes(input) || customerName.includes(input)) ? '' : 'none';
+        });
+    }
+
+    function openSettleModal(orderId, amountDue) {
+        document.getElementById('settleOrderId').innerText = orderId;
+        document.getElementById('settleAmountDueDisplay').innerText = '₱' + parseFloat(amountDue).toLocaleString(undefined, {minimumFractionDigits: 2});
+        document.getElementById('amountDueHidden').value = amountDue;
+
+        const form = document.getElementById('settleBillForm');
+        form.action = '/admin/orders/update_payment/' + orderId;
+
+        const tenderedInput = document.getElementById('amountTenderedInput');
+        tenderedInput.value = '';
+        tenderedInput.className = 'modal-input';
+        document.getElementById('changeAmountDisplay').value = '₱0.00';
+        document.getElementById('confirmSettleBtn').disabled = true;
+        document.getElementById('amountError').style.display = 'none';
+
+        document.getElementById('settleBillModal').style.display = 'flex';
+        setTimeout(() => tenderedInput.focus(), 100);
+    }
+
+    document.getElementById('amountTenderedInput').addEventListener('input', function() {
+        const tendered = parseFloat(this.value) || 0;
+        const due = parseFloat(document.getElementById('amountDueHidden').value) || 0;
+        const btn = document.getElementById('confirmSettleBtn');
+        const error = document.getElementById('amountError');
+        const changeDisplay = document.getElementById('changeAmountDisplay');
+
+        if (this.value === '' || tendered < due) {
+            btn.disabled = true;
+            changeDisplay.value = '₱0.00';
+            if (this.value !== '') {
+                error.style.display = 'block';
+                this.className = 'modal-input error';
+            } else {
+                error.style.display = 'none';
+                this.className = 'modal-input';
+            }
+        } else {
+            error.style.display = 'none';
+            this.className = 'modal-input';
+            btn.disabled = false;
+            const change = tendered - due;
+            changeDisplay.value = '₱' + change.toLocaleString(undefined, {minimumFractionDigits: 2});
+        }
+    });
+
+    // AJAX Tab Switching
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.status-ajax-tab').forEach(tab => {
+            tab.addEventListener('click', function(e) {
+                e.preventDefault();
+                const url = this.getAttribute('href');
+
+                document.querySelectorAll('.status-ajax-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+
+                document.getElementById('ordersTableBody').innerHTML = '<tr><td colspan="7" style="text-align:center; padding:40px;"><i class="fas fa-spinner fa-spin" style="font-size:1.5rem; color:var(--muted);"></i></td></tr>';
+
+                fetch(url)
+                .then(r => r.text())
+                .then(html => {
+                    const doc = new DOMParser().parseFromString(html, 'text/html');
+                    document.getElementById('ordersTableBody').innerHTML = doc.getElementById('ordersTableBody').innerHTML;
+
+                    const newPag = doc.getElementById('billingPagination');
+                    if (newPag) document.getElementById('billingPagination').innerHTML = newPag.innerHTML;
+
+                    // Update stats
+                    const newGross = doc.getElementById('statGross');
+                    const newUnpaid = doc.getElementById('statUnpaid');
+                    if (newGross) document.getElementById('statGross').innerHTML = newGross.innerHTML;
+                    if (newUnpaid) document.getElementById('statUnpaid').innerHTML = newUnpaid.innerHTML;
+
+                    bindPaginationAjax();
+                });
+            });
+        });
+        bindPaginationAjax();
+    });
+
+    function bindPaginationAjax() {
+        document.querySelectorAll('.pagination-link').forEach(a => {
+            const newA = a.cloneNode(true);
+            a.parentNode.replaceChild(newA, a);
+
+            newA.addEventListener('click', function(e) {
+                e.preventDefault();
+                const url = this.getAttribute('href');
+                if (!url || url === '#') return;
+                document.getElementById('ordersTableBody').innerHTML = '<tr><td colspan="7" style="text-align:center; padding:40px;"><i class="fas fa-spinner fa-spin" style="font-size:1.5rem; color:var(--muted);"></i></td></tr>';
+                fetch(url).then(r => r.text()).then(html => {
+                    const doc = new DOMParser().parseFromString(html, 'text/html');
+                    document.getElementById('ordersTableBody').innerHTML = doc.getElementById('ordersTableBody').innerHTML;
+                    const newPag = doc.getElementById('billingPagination');
+                    if (newPag) document.getElementById('billingPagination').innerHTML = newPag.innerHTML;
+                    bindPaginationAjax();
+                });
+            });
+        });
+    }
+</script>
+{% endblock %}

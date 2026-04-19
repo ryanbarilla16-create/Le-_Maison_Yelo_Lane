@@ -3,106 +3,335 @@
 {% block title %}Review Management{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 style="font-family: 'Georgia', serif; color: var(--text-main); font-size: 2rem; font-weight: bold; margin: 0;">
-        Review Management</h1>
+<style>
+    /* Premium Review Cards Layout */
+    .filter-tabs {
+        display: flex;
+        gap: 0.5rem;
+        background: #ffffff;
+        padding: 0.5rem;
+        border-radius: 50px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+        border: 1px solid rgba(139, 99, 75, 0.08);
+        margin-bottom: 2rem;
+        overflow-x: auto;
+    }
+
+    .filter-tab {
+        padding: 0.6rem 1.25rem;
+        border-radius: 50px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: #8B634B;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        border: none;
+        outline: none;
+        cursor: pointer;
+        background: transparent;
+    }
+
+    .filter-tab:hover {
+        background: #faf6f1;
+    }
+
+    .filter-tab.active {
+        background: #4a3b32; /* Dark Coffee Brown */
+        color: #ffffff;
+        box-shadow: 0 4px 10px rgba(74, 59, 50, 0.2);
+    }
+
+    .review-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .review-card {
+        background: #ffffff;
+        border-radius: 20px;
+        border: 1px solid rgba(139, 99, 75, 0.1);
+        overflow: hidden;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.03);
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .review-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 35px rgba(139, 99, 75, 0.08);
+        border-color: rgba(139, 99, 75, 0.2);
+    }
+
+    .review-header {
+        padding: 1.5rem;
+        border-bottom: 1px dashed rgba(139, 99, 75, 0.1);
+        background: linear-gradient(180deg, #faf6f1 0%, #ffffff 100%);
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+
+    .review-user-info {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+    }
+
+    .review-avatar {
+        width: 45px;
+        height: 45px;
+        background: linear-gradient(135deg, #8B634B, #5D4037);
+        color: #fff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 1.1rem;
+        box-shadow: 0 4px 10px rgba(139, 99, 75, 0.2);
+        flex-shrink: 0;
+    }
+
+    .review-name {
+        font-family: 'Playfair Display', serif;
+        font-weight: 800;
+        font-size: 1.1rem;
+        color: #3E2723;
+        margin: 0;
+    }
+
+    .review-date {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #a48c7e;
+    }
+
+    .review-stars {
+        color: #C2934D; /* Warm Ochre */
+        font-size: 0.9rem;
+    }
+
+    .review-body {
+        padding: 1.5rem;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .review-comment {
+        font-size: 0.95rem;
+        font-style: italic;
+        color: #4a3b32;
+        line-height: 1.5;
+        margin: 0;
+    }
+
+    .sentiment-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.35rem 0.85rem;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        border: 1px solid;
+    }
+
+    .review-footer {
+        padding: 1rem 1.5rem;
+        background: #fdfaf7;
+        border-top: 1px solid rgba(139, 99, 75, 0.05);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.35rem 0.85rem;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 800;
+    }
+
+    .status-pending { background: #fdf6e9; color: #c2934d; border: 1px solid #f6e6cd; }
+    .status-approved { background: #f0f4ef; color: #577551; border: 1px solid #dce5d9; }
+    .status-rejected { background: #f8f3f0; color: #8a4a41; border: 1px solid #eed7d3; }
+
+    .review-action-form {
+        display: flex;
+        gap: 0.5rem;
+        margin: 0;
+    }
+
+    .review-select {
+        background: #ffffff;
+        color: #5D4037;
+        border: 1px solid rgba(139, 99, 75, 0.15);
+        border-radius: 8px;
+        padding: 0.35rem 0.6rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        cursor: pointer;
+        outline: none;
+    }
+
+    .btn-update {
+        background: #4a3b32;
+        color: #ffffff;
+        border: none;
+        padding: 0.35rem 0.85rem;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 2px 5px rgba(74, 59, 50, 0.15);
+    }
+
+    .btn-update:hover {
+        background: #352a23;
+        transform: translateY(-1px);
+    }
+    
+    .empty-reviews-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: #ffffff;
+        border-radius: 20px;
+        border: 1px dashed rgba(139, 99, 75, 0.2);
+        grid-column: 1 / -1;
+    }
+</style>
+
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+    <div>
+        <h1 style="font-family: 'Playfair Display', serif; font-weight: 800; color: #3E2723;">Review Management</h1>
+        <p style="color: #8B634B; opacity: 0.8; font-weight: 500;">Monitor and moderate customer feedback.</p>
+    </div>
 </div>
 
-<div class="card border-0 shadow-sm" style="border-radius: 12px;">
-    <div class="card-header bg-white border-bottom p-3">
-        <div class="d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 fw-bold" style="color: var(--text-main);">Customer Reviews</h5>
+<div class="filter-tabs">
+    <button onclick="filterReviews('ALL', this)" class="filter-tab" id="tab-all">All</button>
+    <button onclick="filterReviews('PENDING', this)" class="filter-tab active" id="tab-pending">Pending</button>
+    <button onclick="filterReviews('APPROVED', this)" class="filter-tab" id="tab-approved">Approved</button>
+    <button onclick="filterReviews('REJECTED', this)" class="filter-tab" id="tab-rejected">Rejected</button>
+</div>
 
-            <div class="status-filter-group">
-                <a href="{{ url_for('admin.reviews', status='ALL') }}"
-                    class="status-tab {% if status_filter == 'ALL' %}active{% endif %}">All</a>
-                <a href="{{ url_for('admin.reviews', status='PENDING') }}"
-                    class="status-tab {% if status_filter == 'PENDING' %}active{% endif %}">Pending</a>
-                <a href="{{ url_for('admin.reviews', status='APPROVED') }}"
-                    class="status-tab {% if status_filter == 'APPROVED' %}active{% endif %}">Approved</a>
-                <a href="{{ url_for('admin.reviews', status='REJECTED') }}"
-                    class="status-tab {% if status_filter == 'REJECTED' %}active{% endif %}">Rejected</a>
+<div class="review-grid" id="reviewsGridContainer">
+    {% for review in reviews %}
+    <div class="review-card" data-status="{{ review.status }}">
+        <div class="review-header">
+            <div class="review-user-info">
+                <div class="review-avatar">
+                    {{ review.user.first_name[0] }}{{ review.user.last_name[0] }}
+                </div>
+                <div>
+                    <h3 class="review-name">{{ review.user.first_name }} {{ review.user.last_name }}</h3>
+                    <div class="review-date">{{ review.created_at.strftime('%b %d, %Y') }}</div>
+                </div>
+            </div>
+            <div class="review-stars">
+                {% for i in range(review.rating) %}<i class="fas fa-star"></i>{% endfor %}{% for i in range(5 - review.rating) %}<i class="far fa-star" style="opacity: 0.3;"></i>{% endfor %}
             </div>
         </div>
-    </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead style="background-color: rgba(0,0,0,0.02);">
-                    <tr>
-                        <th class="ps-4">Date</th>
-                        <th>Customer</th>
-                        <th>Rating</th>
-                        <th style="max-width: 300px;">Comment</th>
-                        <th>Status</th>
-                        <th class="pe-4 text-end">Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for review in reviews %}
-                    <tr>
-                        <td class="ps-4 text-muted" style="font-size: 0.9rem;">
-                            {{ review.created_at.strftime('%b %d, %Y') }}
-                        </td>
-                        <td>
-                            <div class="fw-bold" style="color: var(--text-main);">{{ review.user.first_name }} {{
-                                review.user.last_name }}</div>
-                            <small class="text-muted">{{ review.user.email }}</small>
-                        </td>
-                        <td style="color: #f1c40f;">
-                            {% for i in range(review.rating) %}
-                            <i class="fas fa-star"></i>
-                            {% endfor %}
-                            {% for i in range(5 - review.rating) %}
-                            <i class="far fa-star text-muted"></i>
-                            {% endfor %}
-                        </td>
-                        <td style="font-size: 0.95rem; font-style: italic;">
-                            "{{ review.comment }}"
-                            <div class="mt-2">
-                                <span class="badge bg-{{ review.ai_sentiment_color|default('secondary') }} bg-opacity-10 text-{{ review.ai_sentiment_color|default('secondary') }} border border-{{ review.ai_sentiment_color|default('secondary') }} rounded-pill" style="font-size: 0.75rem;">
-                                    {{ review.ai_sentiment_icon|default('😐') }} {{ review.ai_sentiment|default('NEUTRAL') }}
-                                </span>
-                            </div>
-                        </td>
-                        <td>
-                            {% if review.status == 'PENDING' %}
-                            <span class="badge-soft-warning"><i
-                                    class="fas fa-hourglass-half me-1"></i>Pending</span>
-                            {% elif review.status == 'APPROVED' %}
-                            <span class="badge-soft-success"><i class="fas fa-check-circle me-1"></i>Approved</span>
-                            {% elif review.status == 'REJECTED' %}
-                            <span class="badge-soft-danger"><i class="fas fa-times-circle me-1"></i>Rejected</span>
-                            {% endif %}
-                        </td>
-                        <td class="pe-4 text-end">
-                            <form action="{{ url_for('admin.update_review', review_id=review.id) }}" method="POST"
-                                class="d-inline-flex align-items-center gap-2">
-                                <select name="status" class="form-select form-select-sm"
-                                    style="width: 110px; border-radius: 8px; font-size: 0.75rem;">
-                                    <option value="PENDING" {% if review.status=='PENDING' %}selected{% endif %}>Pending
-                                    </option>
-                                    <option value="APPROVED" {% if review.status=='APPROVED' %}selected{% endif %}>
-                                        Approve</option>
-                                    <option value="REJECTED" {% if review.status=='REJECTED' %}selected{% endif %}>
-                                        Reject</option>
-                                </select>
-                                <button type="submit" class="btn-update-review">Update</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="6" class="text-center py-4 text-muted">
-                            <i class="far fa-star fs-3 mb-2 opacity-50"></i><br>
-                            No reviews found.
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+
+        <div class="review-body">
+            <p class="review-comment">"{{ review.comment }}"</p>
+            <div>
+                <span class="sentiment-badge text-{{ review.ai_sentiment_color|default('secondary') }} border-{{ review.ai_sentiment_color|default('secondary') }}" style="background: rgba(0,0,0,0.02);">
+                    {{ review.ai_sentiment_icon|default('😐') }} {{ review.ai_sentiment|default('NEUTRAL') }}
+                </span>
+            </div>
+        </div>
+
+        <div class="review-footer">
+            {% if review.status == 'PENDING' %}
+                <span class="status-badge status-pending"><i class="fas fa-hourglass-half"></i> Pending</span>
+            {% elif review.status == 'APPROVED' %}
+                <span class="status-badge status-approved"><i class="fas fa-check-circle"></i> Approved</span>
+            {% elif review.status == 'REJECTED' %}
+                <span class="status-badge status-rejected"><i class="fas fa-times-circle"></i> Rejected</span>
+            {% endif %}
+
+            <form action="{{ url_for('admin.update_review', review_id=review.id) }}" method="POST" class="review-action-form">
+                <select name="status" class="review-select">
+                    <option value="PENDING" {% if review.status=='PENDING' %}selected{% endif %}>Pending</option>
+                    <option value="APPROVED" {% if review.status=='APPROVED' %}selected{% endif %}>Approve</option>
+                    <option value="REJECTED" {% if review.status=='REJECTED' %}selected{% endif %}>Reject</option>
+                </select>
+                <button type="submit" class="btn-update">Update</button>
+            </form>
         </div>
     </div>
+    {% else %}
+    <div class="empty-reviews-state empty-state-message">
+        <div style="width: 80px; height: 80px; background: #faf6f1; color: #8b634b; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin: 0 auto 1.5rem;">
+            <i class="far fa-star"></i>
+        </div>
+        <h3 style="font-family: 'Playfair Display', serif; font-weight: 800; color: #3E2723; margin-bottom: 0.5rem;">No Reviews Found</h3>
+        <p style="color: #8D6E63; max-width: 400px; margin: 0 auto;">There are no reviews matching the current filter.</p>
+    </div>
+    {% endfor %}
 </div>
+
+<script>
+    function filterReviews(status, tabElement) {
+        // Update active tab styling
+        document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+        if (tabElement) {
+            tabElement.classList.add('active');
+        } else {
+            // Fallback if called programmatically
+            const targetTab = document.getElementById('tab-' + status.toLowerCase());
+            if(targetTab) targetTab.classList.add('active');
+        }
+
+        const cards = document.querySelectorAll('.review-card');
+        let visibleCount = 0;
+
+        cards.forEach(card => {
+            if (status === 'ALL' || card.dataset.status === status) {
+                card.style.display = 'flex';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        // Toggle empty state if no cards remain
+        let emptyState = document.querySelector('.empty-state-message');
+        if (visibleCount === 0) {
+            if (!emptyState) {
+                // Generate empty state dynamically if it doesn't exist
+                const grid = document.getElementById('reviewsGridContainer');
+                grid.insertAdjacentHTML('beforeend', `
+                    <div class="empty-reviews-state empty-state-message">
+                        <div style="width: 80px; height: 80px; background: #faf6f1; color: #8b634b; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin: 0 auto 1.5rem;">
+                            <i class="far fa-star"></i>
+                        </div>
+                        <h3 style="font-family: 'Playfair Display', serif; font-weight: 800; color: #3E2723; margin-bottom: 0.5rem;">No Reviews Found</h3>
+                        <p style="color: #8D6E63; max-width: 400px; margin: 0 auto;">There are no reviews matching the current filter.</p>
+                    </div>
+                `);
+            } else {
+                emptyState.style.display = 'block';
+            }
+        } else if (emptyState) {
+            emptyState.style.display = 'none';
+        }
+    }
+
+    // Immediately filter by PENDING on initial load
+    document.addEventListener("DOMContentLoaded", () => {
+        filterReviews('PENDING', document.getElementById('tab-pending'));
+    });
+</script>
 {% endblock %}
 

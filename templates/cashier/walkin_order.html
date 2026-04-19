@@ -1,0 +1,456 @@
+{% extends "layouts/staff_layout.html" %}
+
+{% block title %}Walk-In Order — Le Maison{% endblock %}
+
+{% block portal_sub %}POS Terminal{% endblock %}
+{% block portal_role %}Cashier Staff{% endblock %}
+{% block logout_url %}{{ url_for('cashier_portal.cashier_logout') }}{% endblock %}
+
+{% block sidebar_nav %}
+    {% include "cashier/_sidebar.html" %}
+{% endblock %}
+
+{% block page_title %}Walk-In Order{% endblock %}
+{% block page_subtitle %}Create a new order for walk-in customers{% endblock %}
+
+{% block extra_head %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block extra_style %}
+    /* Override staff_layout table styles that conflict with Bootstrap */
+    .walkin-content table { all: unset; }
+    .walkin-content th, .walkin-content td { all: unset; }
+
+    .category-card:hover { transform: translateY(-5px) !important; box-shadow: 0 15px 30px rgba(139, 99, 75, 0.15) !important; border: 1px solid rgba(139, 99, 75, 0.2) !important; }
+    .category-card:hover .category-img { transform: scale(1.08) !important; }
+    .back-btn:hover { background-color: var(--primary) !important; color: white !important; border-color: var(--primary) !important; }
+
+    /* Fix for staff_layout content area */
+    .walkin-content { max-width: 100%; }
+    .walkin-content .card { background: #fff; }
+    .walkin-content .form-control, .walkin-content .form-select { font-family: 'Outfit', sans-serif; }
+{% endblock %}
+
+{% block content %}
+<div class="walkin-content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div></div>
+        <a href="{{ url_for('cashier_portal.cashier_dashboard') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3" style="font-weight:600;">
+            <i class="fas fa-arrow-left me-1"></i>Back to Orders
+        </a>
+    </div>
+
+    {% set categories_data = {} %}
+    {% for item in items %}
+    {% if item.category not in categories_data %}
+    {% set _ = categories_data.update({item.category: {'image': item.image_url, 'count': 1}}) %}
+    {% else %}
+    {% set count = categories_data[item.category]['count'] + 1 %}
+    {% set _ = categories_data.update({item.category: {'image': categories_data[item.category]['image'], 'count': count}}) %}
+    {% endif %}
+    {% endfor %}
+
+    <div class="row g-4 h-100">
+        <!-- LEFT: Menu Categories & Items -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm" style="border-radius: 12px; height: calc(100vh - 160px); display: flex; flex-direction: column;">
+                <div class="card-body p-4" style="overflow-y: auto; flex-grow: 1;">
+                    <!-- 1. Categories Grid View -->
+                    <div id="categories-grid-view">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h4 class="fw-bold mb-0" style="color: var(--text);">Menu Categories</h4>
+                            <input type="text" id="globalSearch" class="form-control form-control-sm" placeholder="Search menu..."
+                                style="border-radius: 20px; max-width: 250px; border: 1px solid rgba(139, 99, 75,0.2);">
+                        </div>
+
+                        <!-- Search Results View -->
+                        <div id="search-results-view" style="display: none;">
+                            <div class="mb-3 d-flex justify-content-between align-items-center">
+                                <button onclick="clearSearch()" class="btn rounded-pill border shadow-sm px-3 py-1 fw-bold back-btn"
+                                    style="color: var(--text); background: white; font-size: 0.9rem; transition: all 0.2s;">
+                                    <i class="fas fa-times me-1"></i> Clear Search
+                                </button>
+                                <h5 class="mb-0 fw-bold" style="color: var(--primary);">Search Results</h5>
+                            </div>
+                            <div id="search-items-container"
+                                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.5rem; align-items: stretch;">
+                            </div>
+                        </div>
+
+                        <div id="categories-container"
+                            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem;">
+                            {% for cat_name, info in categories_data.items() %}
+                            <div class="card border-0 shadow-sm category-card d-flex flex-column h-100"
+                                style="border-radius: 16px; overflow: hidden; cursor: pointer; transition: all 0.3s ease;"
+                                data-cat-trigger="{{ cat_name }}">
+                                <div style="height: 140px; overflow: hidden; position: relative; flex-shrink: 0;">
+                                    {% if info.image %}
+                                    <img loading="lazy" decoding="async" src="{{ info.image }}" class="w-100 h-100 category-img"
+                                        style="object-fit: cover; transition: transform 0.6s ease;" alt="{{ cat_name }}">
+                                    {% else %}
+                                    <div class="w-100 h-100 d-flex align-items-center justify-content-center"
+                                        style="background: rgba(139, 99, 75, 0.05);">
+                                        <i class="fas fa-utensils fa-2x" style="color: rgba(139, 99, 75, 0.2);"></i>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="card-body p-3 d-flex flex-column flex-grow-1" style="background: white;">
+                                    <h6 class="card-title fw-bold m-0" style="color: var(--text);">{{ cat_name }}</h6>
+                                    <p class="mb-0 mt-auto fw-bold" style="font-size: 0.8rem; padding-top: 0.5rem; color: var(--primary);">
+                                        See More <i class="fas fa-arrow-right ms-1"></i>
+                                    </p>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- 2. Items View (Initially Hidden) -->
+                    <div id="items-view" style="display: none;">
+                        <div class="mb-3 d-flex justify-content-between align-items-center bg-white py-2">
+                            <button onclick="showCategoriesGrid()" class="btn rounded-pill border shadow-sm px-3 py-1 fw-bold back-btn"
+                                style="color: var(--text); background: white; font-size: 0.9rem; transition: all 0.2s;">
+                                <i class="fas fa-arrow-left me-1"></i> Categories
+                            </button>
+                            <h4 class="mb-0 fw-bold" id="current-category-title" style="color: var(--primary);"></h4>
+                        </div>
+                        <hr class="mb-4">
+                        {% for cat_name, info in categories_data.items() %}
+                        <div class="menu-category-section" data-category="{{ cat_name }}" style="display: none;">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.5rem; align-items: stretch;">
+                                {% for item in items if item.category == cat_name %}
+                                <div class="card border-0 shadow-sm d-flex flex-column item-card"
+                                    data-name="{{ item.name|lower }}"
+                                    style="border-radius: 16px; overflow: hidden; transition: all 0.3s; background: rgba(255, 255, 255, 0.95); height: 100%;"
+                                    onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 15px 30px rgba(139, 99, 75, 0.1)';"
+                                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 10px rgba(0,0,0,0.05)';">
+                                    {% if item.image_url %}
+                                    <div style="height: 150px; overflow: hidden; position: relative; flex-shrink: 0;">
+                                        <img loading="lazy" decoding="async" src="{{ item.image_url }}" class="w-100 h-100"
+                                            style="object-fit: cover; transition: transform 0.6s ease;"
+                                            onmouseover="this.style.transform='scale(1.08)'"
+                                            onmouseout="this.style.transform='scale(1)'">
+                                    </div>
+                                    {% else %}
+                                    <div style="height: 150px; background: rgba(139, 99, 75, 0.05); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                        <i class="fas fa-utensils fa-3x" style="color: rgba(139, 99, 75, 0.2);"></i>
+                                    </div>
+                                    {% endif %}
+                                    <div class="card-body p-3 d-flex flex-column flex-grow-1" style="background: linear-gradient(to bottom, #ffffff, #fafafa);">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <h6 class="card-title fw-bold m-0" style="color: var(--text); font-size: 1.05rem; line-height: 1.2;">{{ item.name }}</h6>
+                                            <span class="fw-bold px-2 py-1 ms-2 shadow-sm"
+                                                style="background: #ffffff; border: 1px solid rgba(139, 99, 75, 0.2); color: var(--primary); border-radius: 20px; font-size: 0.85rem; white-space: nowrap;">
+                                                ₱{{ "%.2f"|format(item.price) }}
+                                            </span>
+                                        </div>
+                                        {% if current_user.role|upper in ['ADMIN', 'CASHIER', 'STAFF', 'KITCHEN'] %}
+                                        <div class="mt-auto d-flex align-items-center gap-2 pt-3" style="border-top: 1px dashed rgba(139, 99, 75,0.15);">
+                                            <input type="number" id="qty_{{ item.id }}" value="1" min="1" max="99"
+                                                class="form-control form-control-sm rounded-pill text-center shadow-sm"
+                                                style="width: 55px; border: 1px solid rgba(139, 99, 75,0.2); background: #ffffff; font-weight: bold;">
+                                            <button type="button"
+                                                onclick="addFromInput(this, {{ item.id }}, '{{ item.name|replace("'", "\\'") }}', {{ item.price }}, '{{ item.category|replace("'", "\\'") }}')"
+                                                class="btn btn-sm flex-grow-1 rounded-pill fw-bold shadow-sm"
+                                                style="background-color: #8b634b !important; color: white !important; border: none; font-size: 0.85rem; transition: all 0.2s;"
+                                                onmousedown="this.style.transform='scale(0.95)'"
+                                                onmouseup="this.style.transform='scale(1)'">
+                                                <i class="fas fa-plus me-1"></i> Add
+                                            </button>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: Order Summary -->
+        <div class="col-lg-5">
+            <form action="{{ url_for('admin.walkin_order_submit') }}" method="POST" id="orderForm"
+                onsubmit="return handleOrderSubmit(event)" style="height: 100%;">
+                <input type="hidden" name="amount_tendered" id="hiddenAmountTendered">
+                <div class="card border-0 shadow-sm" style="border-radius: 12px; height: calc(100vh - 160px); display: flex; flex-direction: column;">
+                    <div class="card-header bg-white border-bottom p-3">
+                        <h5 class="mb-0 fw-bold" style="color: var(--text);"><i class="fas fa-receipt me-2"></i>Order Summary</h5>
+                    </div>
+                    <div class="card-body p-0" style="display: flex; flex-direction: column; overflow: hidden; height: 100%;">
+                        <div class="p-3" style="flex-grow: 1; overflow-y: auto; scrollbar-width: thin;">
+                            <!-- 1. ORDER LIST -->
+                            <div class="mb-2 d-flex justify-content-between align-items-center">
+                                <span class="fw-bold fs-6" style="color: var(--text);">1. Items Ordered</span>
+                                <button type="button" onclick="Object.keys(orderItems).forEach(removeItem); renderOrder();" class="btn btn-link btn-sm text-danger p-0" style="text-decoration: none; font-size: 0.75rem;">Clear All</button>
+                            </div>
+                            <div id="orderItems" style="min-height: 150px; background: #fff; border-radius: 12px; border: 1px solid rgba(139, 99, 75, 0.15); padding: 10px; margin-bottom: 1.5rem; box-shadow: inset 0 2px 5px rgba(0,0,0,0.02);">
+                                <div class="h-100 d-flex flex-column align-items-center justify-content-center text-muted opacity-75">
+                                    <i class="fas fa-shopping-basket fa-2x mb-2"></i>
+                                    <p id="emptyMsg" style="font-size: 0.85rem;">Order is empty.</p>
+                                </div>
+                            </div>
+
+                            <!-- 2. DINING & CUSTOMER INFO -->
+                            <div class="p-3 mb-3" style="background: rgba(139, 99, 75, 0.03); border-radius: 15px; border: 1px dashed rgba(139, 99, 75, 0.2);">
+                                <div class="mb-2 fs-6 fw-bold" style="color: var(--text);">2. Details</div>
+                                <div class="mb-3">
+                                    <input type="text" name="customer_name" class="form-control form-control-sm shadow-sm"
+                                        placeholder="Customer Name... (e.g. Juan)"
+                                        style="border-radius: 20px; border: 1px solid rgba(139, 99, 75,0.2);"
+                                        value="Walk-in Customer">
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <select name="dining_option" class="form-select form-select-sm shadow-sm"
+                                            style="border-radius: 20px; border: 1px solid rgba(139, 99, 75,0.2);">
+                                            <option value="DINE_IN">🍽️ Dine-In</option>
+                                            <option value="TAKE_OUT">🛍️ Pick-up</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-6">
+                                        <input type="text" name="notes" class="form-control form-control-sm shadow-sm"
+                                            placeholder="Notes..."
+                                            style="border-radius: 20px; border: 1px solid rgba(139, 99, 75,0.2);">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 3. PAYMENT METHOD -->
+                            <div class="p-3 mb-2" style="background: #fff; border-radius: 15px; border: 1px solid rgba(139, 99, 75, 0.1);">
+                                <div class="mb-2 fs-6 fw-bold" style="color: var(--text);">3. Payment</div>
+                                <div class="d-flex flex-row gap-2">
+                                    <label class="flex-grow-1 btn btn-outline-dark rounded-3 text-start p-2 shadow-sm d-flex align-items-center" style="font-size: 0.75rem; border: 1px solid rgba(139, 99, 75, 0.2);">
+                                        <input type="radio" class="form-check-input me-2 mt-0" name="payment_method" value="COUNTER" checked style="width: 1rem; height: 1rem;">
+                                        <span class="fw-bold">Counter</span>
+                                    </label>
+                                    <label class="flex-grow-1 btn btn-outline-dark rounded-3 text-start p-2 shadow-sm d-flex align-items-center" style="font-size: 0.75rem; border: 1px solid rgba(139, 99, 75, 0.2);">
+                                        <input type="radio" class="form-check-input me-2 mt-0" name="payment_method" value="ONLINE" style="width: 1rem; height: 1rem;">
+                                        <span class="fw-bold">GCash</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- FIXED FOOTER AREA -->
+                        <div class="p-3 border-top bg-white">
+                            <div class="d-flex justify-content-between align-items-center mb-3 p-3 rounded"
+                                style="background: rgba(139, 99, 75, 0.05); border: 1px solid rgba(139, 99, 75, 0.1);">
+                                <span class="fw-bold fs-5" style="color: var(--text);">Total:</span>
+                                <span class="fw-bold fs-4 text-success" id="totalAmount">₱0.00</span>
+                            </div>
+
+                            {% if current_user.role|upper not in ['ADMIN', 'CASHIER', 'STAFF', 'KITCHEN'] %}
+                            <button type="button" class="btn w-100 rounded-pill fw-bold text-white py-3 shadow-sm" disabled
+                                style="background: gray; cursor: not-allowed; font-size: 1.1rem;">
+                                <i class="fas fa-lock me-2"></i>View Only (Staff Required)
+                            </button>
+                            {% else %}
+                            <button type="submit" class="btn w-100 rounded-pill fw-bold text-white py-3 shadow-sm"
+                                id="submitBtn"
+                                style="background: linear-gradient(135deg, #8b634b, #a67c64); font-size: 1.1rem; transition: transform 0.2s;"
+                                disabled onmousedown="this.style.transform='scale(0.98)'"
+                                onmouseup="this.style.transform='scale(1)'">
+                                <i class="fas fa-arrow-circle-right me-2"></i>Proceed to Payment
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" style="color: var(--text);">Process Payment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body pb-4">
+                    <div class="mb-3 d-flex justify-content-between align-items-center">
+                        <span class="text-muted fw-bold">Total Amount</span>
+                        <span class="fw-bold fs-4 text-success" id="modalTotalAmount">₱0.00</span>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="font-size: 0.85rem; color: var(--text);">Amount Tendered (₱)</label>
+                        <input type="number" class="form-control form-control-lg text-end shadow-sm" id="modalAmountTendered" min="0" step="0.01"
+                            style="font-weight: bold; border-radius: 8px; border: 1px solid rgba(139, 99, 75,0.2);">
+                    </div>
+                    <div class="mb-3 d-flex justify-content-between align-items-center p-3 rounded"
+                        style="background: rgba(139, 99, 75,0.05); border: 1px dashed rgba(139, 99, 75,0.2);">
+                        <span class="fw-bold text-muted">Change</span>
+                        <span class="fw-bold fs-4" style="color: var(--primary);" id="modalChangeAmount">₱0.00</span>
+                    </div>
+                    <button type="button" id="confirmPaymentBtn"
+                        class="btn w-100 rounded-pill fw-bold text-white py-3 shadow-sm mt-2"
+                        style="background: linear-gradient(135deg, #8b634b, #8b634b);" disabled>
+                        <i class="fas fa-check-circle me-1"></i> Confirm Order
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_script %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const orderItems = {};
+
+    function showCategory(categoryName) {
+        if (!categoryName) return;
+        const gridView = document.getElementById('categories-grid-view');
+        const itemsView = document.getElementById('items-view');
+        const titleEl = document.getElementById('current-category-title');
+        if (!gridView || !itemsView || !titleEl) return;
+
+        gridView.style.display = 'none';
+        itemsView.style.display = 'block';
+        titleEl.textContent = categoryName;
+
+        document.querySelectorAll('.menu-category-section').forEach(function (section) {
+            section.style.display = (section.getAttribute('data-category') || '').trim() === categoryName.trim() ? 'block' : 'none';
+        });
+
+        const cardBody = itemsView.closest('.card-body');
+        if (cardBody) cardBody.scrollTop = 0;
+    }
+
+    document.addEventListener('click', function(e) {
+        const trigger = e.target.closest('[data-cat-trigger]');
+        if (trigger) { showCategory(trigger.getAttribute('data-cat-trigger')); e.preventDefault(); }
+    });
+
+    function showCategoriesGrid() {
+        document.getElementById('items-view').style.display = 'none';
+        document.getElementById('categories-grid-view').style.display = 'block';
+        document.getElementById('globalSearch').value = '';
+        clearSearch();
+    }
+
+    function addFromInput(btn, id, name, price, category) {
+        let container = btn.closest('div');
+        let localInput = container.querySelector('input[type="number"]');
+        let input = document.getElementById('qty_' + id);
+        let qty = parseInt(localInput ? localInput.value : (input ? input.value : 1)) || 1;
+
+        if (orderItems[id]) { orderItems[id].qty += qty; } else { orderItems[id] = { name, price, qty, category }; }
+        if (localInput) localInput.value = 1; else if (input) input.value = 1;
+        renderOrder();
+
+        let originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check"></i> Added';
+        btn.style.backgroundColor = '#28a745';
+        btn.style.boxShadow = '0 0 10px rgba(40, 167, 69, 0.3)';
+        setTimeout(() => { btn.innerHTML = originalText; btn.style.backgroundColor = '#8b634b'; btn.style.boxShadow = 'none'; }, 800);
+    }
+
+    function removeItem(id) { delete orderItems[id]; renderOrder(); }
+    function changeQty(id, delta) { if (!orderItems[id]) return; orderItems[id].qty += delta; if (orderItems[id].qty <= 0) delete orderItems[id]; renderOrder(); }
+
+    function renderOrder() {
+        const container = document.getElementById('orderItems');
+        const keys = Object.keys(orderItems);
+
+        if (keys.length === 0) {
+            container.innerHTML = `<div class="h-100 d-flex flex-column align-items-center justify-content-center text-muted opacity-75 mt-5"><i class="fas fa-shopping-basket fa-3x mb-3"></i><p id="emptyMsg">Order is empty. Click items to add.</p></div>`;
+            document.getElementById('totalAmount').textContent = '₱0.00';
+            document.getElementById('submitBtn').disabled = true;
+            document.querySelectorAll('.hidden-item').forEach(e => e.remove());
+            return;
+        }
+
+        let html = '', total = 0;
+        document.querySelectorAll('.hidden-item').forEach(e => e.remove());
+
+        keys.forEach(id => {
+            const item = orderItems[id];
+            const subtotal = item.price * item.qty;
+            total += subtotal;
+            html += `<div class="d-flex justify-content-between align-items-center mb-2 p-2 rounded shadow-sm" style="background: #ffffff; border: 1px solid rgba(139, 99, 75,0.1);">
+                <div style="flex: 1; padding-right: 10px;"><div class="fw-bold" style="font-size: 0.9rem; color: var(--text); line-height: 1.2;">${item.name}</div><small class="text-muted" style="font-size: 0.75rem;">₱${item.price.toFixed(2)}</small></div>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="d-flex align-items-center border rounded-pill overflow-hidden" style="background: rgba(139, 99, 75,0.03);">
+                        <button type="button" class="btn btn-sm" style="width:28px;height:28px;padding:0;border:none;" onclick="changeQty(${id}, -1)">−</button>
+                        <span class="fw-bold" style="min-width: 20px; text-align: center; font-size: 0.85rem;">${item.qty}</span>
+                        <button type="button" class="btn btn-sm" style="width:28px;height:28px;padding:0;border:none;" onclick="changeQty(${id}, 1)">+</button>
+                    </div>
+                    <span class="fw-bold text-success ms-1" style="min-width: 60px; text-align: right; font-size: 0.9rem;">₱${subtotal.toFixed(2)}</span>
+                    <button type="button" class="btn btn-sm text-danger" onclick="removeItem(${id})" style="padding: 2px 6px; background: rgba(220,53,69,0.1); border-radius: 6px;"><i class="fas fa-trash-alt"></i></button>
+                </div></div>`;
+            const form = document.getElementById('orderForm');
+            let h1 = document.createElement('input'); h1.type='hidden'; h1.name='item_id[]'; h1.value=id; h1.className='hidden-item'; form.appendChild(h1);
+            let h2 = document.createElement('input'); h2.type='hidden'; h2.name='quantity[]'; h2.value=item.qty; h2.className='hidden-item'; form.appendChild(h2);
+        });
+
+        container.innerHTML = html;
+        document.getElementById('totalAmount').textContent = '₱' + total.toFixed(2);
+        document.getElementById('submitBtn').disabled = false;
+        container.scrollTop = container.scrollHeight;
+    }
+
+    // Global Search
+    document.getElementById('globalSearch').addEventListener('input', function () {
+        const q = this.value.toLowerCase().trim();
+        if (q.length === 0) { clearSearch(); return; }
+        document.getElementById('categories-container').style.display = 'none';
+        document.getElementById('search-results-view').style.display = 'block';
+        const itemsContainer = document.getElementById('search-items-container');
+        itemsContainer.innerHTML = '';
+        let foundAny = false;
+        document.querySelectorAll('.item-card').forEach(card => {
+            if (card.dataset.name.includes(q)) { foundAny = true; itemsContainer.appendChild(card.cloneNode(true)); }
+        });
+        if (!foundAny) itemsContainer.innerHTML = '<div class="col-12 py-4 text-center text-muted">No items matched your search.</div>';
+    });
+
+    function clearSearch() {
+        document.getElementById('globalSearch').value = '';
+        document.getElementById('categories-container').style.display = 'grid';
+        document.getElementById('search-results-view').style.display = 'none';
+        document.getElementById('search-items-container').innerHTML = '';
+    }
+
+    // Payment Modal Logic
+    function handleOrderSubmit(e) {
+        if (document.querySelector('input[name="payment_method"]:checked').value === 'ONLINE') return true;
+        e.preventDefault();
+        let total = parseFloat(document.getElementById('totalAmount').textContent.replace('₱', '').replace(/,/g, ''));
+        document.getElementById('modalTotalAmount').textContent = '₱' + total.toFixed(2);
+        document.getElementById('modalAmountTendered').value = '';
+        document.getElementById('modalAmountTendered').min = total;
+        document.getElementById('modalChangeAmount').textContent = '₱0.00';
+        document.getElementById('confirmPaymentBtn').disabled = true;
+        new bootstrap.Modal(document.getElementById('paymentModal')).show();
+        document.getElementById('paymentModal').addEventListener('shown.bs.modal', () => document.getElementById('modalAmountTendered').focus(), { once: true });
+        return false;
+    }
+
+    document.getElementById('modalAmountTendered').addEventListener('input', function () {
+        let total = parseFloat(document.getElementById('totalAmount').textContent.replace('₱', '').replace(/,/g, ''));
+        let tendered = parseFloat(this.value) || 0;
+        let change = tendered - total;
+        if (change >= 0 && this.value !== '') {
+            document.getElementById('modalChangeAmount').textContent = '₱' + change.toFixed(2);
+            document.getElementById('confirmPaymentBtn').disabled = false;
+        } else {
+            document.getElementById('modalChangeAmount').textContent = '₱0.00';
+            document.getElementById('confirmPaymentBtn').disabled = true;
+        }
+    });
+
+    document.getElementById('confirmPaymentBtn').addEventListener('click', function () {
+        document.getElementById('hiddenAmountTendered').value = document.getElementById('modalAmountTendered').value;
+        this.disabled = true;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Processing...';
+        HTMLFormElement.prototype.submit.call(document.getElementById('orderForm'));
+    });
+</script>
+{% endblock %}

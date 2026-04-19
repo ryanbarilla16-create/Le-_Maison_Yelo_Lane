@@ -107,9 +107,7 @@
 
 <!-- ROW 5 : Existing Menu Analytics -->
 
-{% endblock %}
 
-{% block scripts %}
 <div id="chartServerData" style="display: none;" data-revenue-trend-labels="{{ revenue_trend_labels | forceescape }}"
     data-revenue-trend-data="{{ revenue_trend_data | forceescape }}" data-order-status-labels="{{ order_status_labels | forceescape }}"
     data-order-status-data="{{ order_status_data | forceescape }}" data-daily-orders-labels="{{ daily_orders_labels | forceescape }}"
@@ -119,7 +117,7 @@
     data-monthly-rev-data="{{ monthly_rev_data | forceescape }}" data-loyalty-labels="{{ loyalty_labels | forceescape }}"
     data-loyalty-data="{{ loyalty_data | forceescape }}"
     data-forecast-labels="{{ forecast_labels | forceescape }}" data-forecast-data="{{ forecast_data | forceescape }}"></div>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
     function initAnalyticsCharts() {
         console.log("Initializing Analytics Charts...");

@@ -11,76 +11,316 @@
     </button>
 </div>
 
-<div class="card border-0 shadow-sm" style="border-radius: 12px;">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead style="background-color: rgba(0,0,0,0.02);">
-                    <tr>
-                        <th class="ps-4">Code</th>
-                        <th>Discount</th>
-                        <th>Min Order</th>
-                        <th>Usage</th>
-                        <th>Validity</th>
-                        <th>Status</th>
-                        <th class="pe-4 text-end">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for v in vouchers %}
-                    <tr>
-                        <td class="ps-4 fw-bold" style="letter-spacing: 1px;">{{ v.code }}</td>
-                        <td>
-                            {% if v.discount_type == 'PERCENT' %}
-                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary rounded-pill">{{ v.discount_value }}% OFF</span>
-                            {% else %}
-                            <span class="badge bg-success bg-opacity-10 text-success border border-success rounded-pill">₱{{ v.discount_value }} OFF</span>
-                            {% endif %}
-                        </td>
-                        <td>₱{{ v.min_order_amount }}</td>
-                        <td>{{ v.times_used }} / {{ v.max_uses }}</td>
-                        <td class="small text-muted">
-                            {% if v.valid_from and v.valid_until %}
+<style>
+    .voucher-controls-bar {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+        border: 1px solid rgba(139, 99, 75, 0.08);
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .voucher-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .voucher-card {
+        background: #ffffff;
+        border-radius: 16px;
+        border: 1px solid rgba(139, 99, 75, 0.1);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.03);
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        display: flex;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .voucher-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 35px rgba(139, 99, 75, 0.08);
+        border-color: rgba(139, 99, 75, 0.2);
+    }
+
+    /* Ticket edge effect */
+    .voucher-card::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 10px;
+        background: linear-gradient(180deg, #8B634B, #5D4037);
+    }
+
+    .voucher-content {
+        padding: 1.5rem 1.5rem 1.5rem 2rem;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .voucher-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+
+    .voucher-code {
+        font-family: 'Playfair Display', serif;
+        font-weight: 900;
+        font-size: 1.4rem;
+        color: #3E2723;
+        letter-spacing: 2px;
+        margin: 0;
+        background: #fdfaf7;
+        padding: 0.3rem 0.8rem;
+        border-radius: 8px;
+        border: 1px dashed rgba(139, 99, 75, 0.3);
+    }
+
+    .voucher-discount {
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: #577551;
+        background: #f0f4ef;
+        padding: 0.4rem 1rem;
+        border-radius: 50px;
+        border: 1px solid #dce5d9;
+    }
+    
+    .voucher-discount.percent {
+        color: #c2934d;
+        background: #fdf6e9;
+        border-color: #f6e6cd;
+    }
+
+    .voucher-details {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        padding-top: 1rem;
+        border-top: 1px dashed rgba(139, 99, 75, 0.1);
+    }
+
+    .vd-item {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .vd-label {
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: #a48c7e;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .vd-value {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #4a3b32;
+    }
+
+    .voucher-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: auto;
+        padding-top: 1rem;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.35rem 0.85rem;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 800;
+    }
+    .status-active { background: #f0f4ef; color: #577551; border: 1px solid #dce5d9; }
+    .status-inactive { background: #f5f5f5; color: #757575; border: 1px solid #e0e0e0; }
+
+    .voucher-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .btn-v-action {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 0.8rem;
+    }
+
+    .btn-v-toggle {
+        background: #fdf6e9;
+        color: #c2934d;
+        border: 1px solid #f6e6cd;
+    }
+    .btn-v-toggle:hover { background: #faeccd; transform: scale(1.05); }
+
+    .btn-v-delete {
+        background: #f8f3f0;
+        color: #8a4a41;
+        border: 1px solid #eed7d3;
+    }
+    .btn-v-delete:hover { background: #eed7d3; transform: scale(1.05); }
+
+</style>
+
+<div class="voucher-controls-bar">
+    <div style="display: flex; align-items: center; gap: 1rem;">
+        <h1 style="font-family: 'Playfair Display', serif; font-weight: 800; color: #3E2723; margin: 0; font-size: 1.8rem;"><i class="fas fa-ticket-alt me-3 opacity-75" style="color: #8B634B;"></i>Vouchers & Promos</h1>
+    </div>
+    <button class="btn-admin-primary px-4 py-2" data-bs-toggle="modal" data-bs-target="#addVoucherModal" style="border-radius: 50px; background: #4a3b32; border: none; font-weight: 700; font-size: 0.9rem; box-shadow: 0 4px 10px rgba(74, 59, 50, 0.2);">
+        <i class="fas fa-plus me-1"></i> Create Voucher
+    </button>
+</div>
+
+<div class="voucher-grid">
+    {% for v in vouchers %}
+    <div class="voucher-card">
+        <div class="voucher-content">
+            <div class="voucher-header">
+                <h3 class="voucher-code">{{ v.code }}</h3>
+                <span class="voucher-discount {% if v.discount_type == 'PERCENT' %}percent{% endif %}">
+                    {% if v.discount_type == 'PERCENT' %}{{ v.discount_value }}% OFF{% else %}₱{{ v.discount_value }} OFF{% endif %}
+                </span>
+            </div>
+            
+            <div class="voucher-details">
+                <div class="vd-item">
+                    <span class="vd-label">Min. Order</span>
+                    <span class="vd-value">₱{{ v.min_order_amount }}</span>
+                </div>
+                <div class="vd-item">
+                    <span class="vd-label">Usage Limit</span>
+                    <span class="vd-value">{{ v.times_used }} / {{ v.max_uses }} Used</span>
+                </div>
+                <div class="vd-item" style="grid-column: 1 / -1;">
+                    <span class="vd-label">Validity Period</span>
+                    <span class="vd-value">
+                        <i class="far fa-calendar-alt me-1 text-muted"></i>
+                        {% if v.valid_from and v.valid_until %}
                             {{ v.valid_from.strftime('%b %d') }} - {{ v.valid_until.strftime('%b %d, %Y') }}
-                            {% elif v.valid_until %}
-                            Until {{ v.valid_until.strftime('%b %d, %Y') }}
-                            {% else %}
-                            No expiry
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if v.is_active %}
-                            <span class="badge bg-success rounded-pill">Active</span>
-                            {% else %}
-                            <span class="badge bg-secondary rounded-pill">Inactive</span>
-                            {% endif %}
-                        </td>
-                        <td class="pe-4 text-end">
-                            <form action="{{ url_for('admin.voucher_toggle', voucher_id=v.id) }}" method="POST" class="d-inline">
-                                <button type="submit" class="btn btn-sm btn-outline-warning rounded-pill px-3">
-                                    <i class="fas fa-{{ 'pause' if v.is_active else 'play' }}"></i>
-                                </button>
-                            </form>
-                            <form action="{{ url_for('admin.voucher_delete', voucher_id=v.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this voucher?');">
-                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="7" class="text-center py-5 text-muted">
-                            <i class="fas fa-ticket-alt fs-1 mb-3 opacity-25"></i>
-                            <p>No vouchers created yet. Click "New Voucher" to get started!</p>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                        {% elif v.valid_until %}
+                            Valid until {{ v.valid_until.strftime('%b %d, %Y') }}
+                        {% else %}
+                            No Expiry
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+
+            <div class="voucher-footer">
+                <span class="status-badge {{ 'status-active' if v.is_active else 'status-inactive' }}">
+                    <i class="fas fa-{{ 'check-circle' if v.is_active else 'circle' }}"></i> <span>{{ 'Active' if v.is_active else 'Inactive' }}</span>
+                </span>
+                
+                <div class="voucher-actions">
+                    <button type="button" class="btn-v-action btn-v-toggle" data-id="{{ v.id }}" data-active="{{ 'true' if v.is_active else 'false' }}" onclick="toggleVoucherOptimistic(this)" title="Toggle Status">
+                        <i class="fas fa-{{ 'pause' if v.is_active else 'play' }}"></i>
+                    </button>
+                    <button type="button" class="btn-v-action btn-v-delete" onclick="deleteVoucherOptimistic('{{ v.id }}', this)" title="Delete Voucher">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
+    {% else %}
+    <div style="grid-column: 1 / -1; text-align: center; padding: 4rem 2rem; background: #ffffff; border-radius: 20px; border: 1px dashed rgba(139, 99, 75, 0.2);">
+        <div style="width: 80px; height: 80px; background: #faf6f1; color: #8b634b; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin: 0 auto 1.5rem;">
+            <i class="fas fa-ticket-alt"></i>
+        </div>
+        <h3 style="font-family: 'Playfair Display', serif; font-weight: 800; color: #3E2723; margin-bottom: 0.5rem;">No Vouchers Yet</h3>
+        <p style="color: #8D6E63; max-width: 400px; margin: 0 auto;">There are currently no discount codes available. Click "Create Voucher" to make one.</p>
+    </div>
+    {% endfor %}
 </div>
+
+<script>
+    function toggleVoucherOptimistic(btn) {
+        const id = btn.getAttribute('data-id');
+        const isActive = btn.getAttribute('data-active') === 'true';
+        const card = btn.closest('.voucher-card');
+        const badge = card.querySelector('.status-badge');
+        const btnIcon = btn.querySelector('i');
+        const badgeIcon = badge.querySelector('i');
+        const badgeText = badge.querySelector('span');
+
+        // Optimistic UI Update (INSTANT WITHOUT LOADING)
+        if (isActive) {
+            btn.setAttribute('data-active', 'false');
+            btnIcon.className = 'fas fa-play';
+            badge.className = 'status-badge status-inactive';
+            badgeIcon.className = 'fas fa-circle';
+            badgeText.innerText = 'Inactive';
+        } else {
+            btn.setAttribute('data-active', 'true');
+            btnIcon.className = 'fas fa-pause';
+            badge.className = 'status-badge status-active';
+            badgeIcon.className = 'fas fa-check-circle';
+            badgeText.innerText = 'Active';
+        }
+
+        // Fire network request silently in background
+        fetch(`/admin/vouchers/${id}/toggle`, { method: 'POST' })
+            .catch(err => {
+                console.error("Toggle failed", err);
+                alert("Failed to toggle voucher on the server. Please try again.");
+            });
+    }
+
+    function deleteVoucherOptimistic(id, btn) {
+        if (!confirm("Are you sure you want to permanently delete this voucher?")) return;
+        
+        const card = btn.closest('.voucher-card');
+        
+        // Instant visual removal animation
+        card.style.transform = 'scale(0.9)';
+        card.style.opacity = '0';
+        
+        setTimeout(() => {
+            card.remove();
+            
+            // Check if grid is empty to show empty state
+            const grid = document.querySelector('.voucher-grid');
+            if (grid && grid.querySelectorAll('.voucher-card').length === 0) {
+                grid.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 4rem 2rem; background: #ffffff; border-radius: 20px; border: 1px dashed rgba(139, 99, 75, 0.2);">
+                        <div style="width: 80px; height: 80px; background: #faf6f1; color: #8b634b; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin: 0 auto 1.5rem;">
+                            <i class="fas fa-ticket-alt"></i>
+                        </div>
+                        <h3 style="font-family: 'Playfair Display', serif; font-weight: 800; color: #3E2723; margin-bottom: 0.5rem;">No Vouchers Yet</h3>
+                        <p style="color: #8D6E63; max-width: 400px; margin: 0 auto;">There are currently no discount codes available. Click "Create Voucher" to make one.</p>
+                    </div>
+                `;
+            }
+        }, 300); // 300ms matches CSS transition setup
+
+        // Fire network request silently in background
+        fetch(`/admin/vouchers/${id}/delete`, { method: 'POST' })
+            .catch(err => console.error("Deletion failed", err));
+    }
+</script>
 
 <!-- Add Voucher Modal -->
 <div class="modal fade" id="addVoucherModal" tabindex="-1" aria-hidden="true">

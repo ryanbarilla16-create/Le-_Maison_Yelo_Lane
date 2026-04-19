@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Staff Portal — Le Maison{% endblock %}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap"
+        rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -15,60 +18,112 @@
             --accent-dark: #A1887F;
             --sidebar-w: 260px;
             --bg: #F5EFE8;
-            --card: rgba(255,255,255,0.72);
-            --card-border: rgba(255,255,255,0.9);
+            --card: rgba(255, 255, 255, 0.72);
+            --card-border: rgba(255, 255, 255, 0.9);
             --text: #3E2723;
             --muted: #8D6E63;
             --success: #2e7d32;
             --warning: #e65100;
             --danger: #c62828;
         }
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text); display:flex; min-height:100vh; }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            min-height: 100vh;
+        }
 
         /* ── Sidebar ── */
         .sidebar {
             width: var(--sidebar-w);
             background: linear-gradient(160deg, #3E2723 0%, #5D4037 60%, #6D4C41 100%);
-            position: fixed; top:0; left:0; height:100vh;
-            display:flex; flex-direction:column;
-            box-shadow: 4px 0 24px rgba(62,39,35,0.25);
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 4px 0 24px rgba(62, 39, 35, 0.25);
             z-index: 1000;
         }
+
         .sidebar-brand {
             padding: 28px 24px 22px;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
+
         .sidebar-brand .brand-name {
-            font-family:'Playfair Display',serif;
-            font-size:1.25rem; color:#fff; margin-bottom:4px;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.25rem;
+            color: #fff;
+            margin-bottom: 4px;
         }
+
         .sidebar-brand .brand-sub {
-            font-size:0.72rem; color:rgba(255,255,255,0.5);
-            letter-spacing:1.5px; text-transform:uppercase;
+            font-size: 0.72rem;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
         }
 
         .sidebar-user {
-            margin:20px 16px;
-            padding:14px 16px;
-            background:rgba(255,255,255,0.07);
-            border-radius:14px;
-            display:flex; align-items:center; gap:12px;
+            margin: 20px 16px;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.07);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
-        .avatar {
-            width:38px; height:38px; border-radius:50%;
-            background:linear-gradient(135deg, var(--accent), #BCAAA4);
-            display:flex; align-items:center; justify-content:center;
-            font-weight:700; font-size:0.9rem; color:#3E2723; flex-shrink:0;
-        }
-        .sidebar-user .user-info .name { font-size:0.88rem; font-weight:600; color:#fff; }
-        .sidebar-user .user-info .role  { font-size:0.7rem; color:rgba(255,255,255,0.45); letter-spacing:1px; text-transform:uppercase; }
 
-        .sidebar-nav { flex:1; padding:8px 12px; overflow-y:auto; }
+        .avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), #BCAAA4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #3E2723;
+            flex-shrink: 0;
+        }
+
+        .sidebar-user .user-info .name {
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .sidebar-user .user-info .role {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.45);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 8px 12px;
+            overflow-y: auto;
+        }
+
         .nav-section-label {
-            font-size:0.65rem; font-weight:600; color:rgba(255,255,255,0.3);
-            letter-spacing:1.8px; text-transform:uppercase;
-            padding:16px 12px 8px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.3);
+            letter-spacing: 1.8px;
+            text-transform: uppercase;
+            padding: 16px 12px 8px;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -76,74 +131,163 @@
             transition: color 0.2s;
             user-select: none;
         }
-        .nav-section-label:hover { color: rgba(255,255,255,0.7); }
+
+        .nav-section-label:hover {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
         .nav-section-label i.toggle-icon {
             font-size: 0.6rem;
             transition: transform 0.3s;
         }
-        .nav-section-label.collapsed i.toggle-icon { transform: rotate(-90deg); }
-        
+
+        .nav-section-label.collapsed i.toggle-icon {
+            transform: rotate(-90deg);
+        }
+
         .nav-group {
             overflow: hidden;
             transition: max-height 0.3s ease-out;
-            max-height: 1000px; /* Large enough to show all items */
+            max-height: 1000px;
+            /* Large enough to show all items */
         }
-        .nav-group.collapsed { max-height: 0; }
+
+        .nav-group.collapsed {
+            max-height: 0;
+        }
 
         .nav-item {
-            display:flex; align-items:center; gap:12px;
-            padding:12px 14px; border-radius:12px;
-            color:rgba(255,255,255,0.65); font-size:0.88rem; font-weight:500;
-            text-decoration:none; transition:all 0.25s; margin-bottom:2px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            color: rgba(255, 255, 255, 0.65);
+            font-size: 0.88rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.25s;
+            margin-bottom: 2px;
         }
-        .nav-item i { width:18px; text-align:center; font-size:0.85rem; }
-        .nav-item:hover, .nav-item.active { background:rgba(255,255,255,0.1); color:#fff; }
+
+        .nav-item i {
+            width: 18px;
+            text-align: center;
+            font-size: 0.85rem;
+        }
+
+        .nav-item:hover,
         .nav-item.active {
-            background:rgba(215, 204, 200, 0.18);
-            color:var(--accent); font-weight:600;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .nav-item.active {
+            background: rgba(215, 204, 200, 0.18);
+            color: var(--accent);
+            font-weight: 600;
         }
 
         .sidebar-footer {
             padding: 16px 12px;
-            border-top:1px solid rgba(255,255,255,0.06);
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
         }
+
         .btn-logout {
-            display:flex; align-items:center; gap:10px;
-            width:100%; padding:11px 14px;
-            background:rgba(198,40,40,0.15); border:1px solid rgba(198,40,40,0.2);
-            border-radius:12px; color:rgba(255,130,120,0.9);
-            font-size:0.85rem; font-weight:600; cursor:pointer; transition:all 0.25s;
-            text-decoration:none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 11px 14px;
+            background: rgba(198, 40, 40, 0.15);
+            border: 1px solid rgba(198, 40, 40, 0.2);
+            border-radius: 12px;
+            color: rgba(255, 130, 120, 0.9);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s;
+            text-decoration: none;
         }
-        .btn-logout:hover { background:rgba(198,40,40,0.28); color:#ff8a80; }
+
+        .btn-logout:hover {
+            background: rgba(198, 40, 40, 0.28);
+            color: #ff8a80;
+        }
 
         /* ── Main ── */
-        .main { margin-left:var(--sidebar-w); flex:1; padding:32px 36px; min-height:100vh; }
+        .main {
+            margin-left: var(--sidebar-w);
+            flex: 1;
+            padding: 32px 36px;
+            min-height: 100vh;
+        }
 
         .topbar {
-            display:flex; align-items:center; justify-content:space-between;
-            margin-bottom:32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 32px;
         }
-        .topbar-title h1 { font-size:1.5rem; font-weight:700; color:var(--text); }
-        .topbar-title p { font-size:0.85rem; color:var(--muted); margin-top:2px; }
-        .topbar-right { display:flex; align-items:center; gap:12px; }
-        .clock { font-size:1.5rem; font-weight:700; color:var(--primary); font-family:'Playfair Display',serif; }
-        .date-badge { background:var(--card); border:1px solid var(--card-border); border-radius:10px; padding:6px 14px; font-size:0.8rem; color:var(--muted); backdrop-filter:blur(10px); }
+
+        .topbar-title h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .topbar-title p {
+            font-size: 0.85rem;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .clock {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            font-family: 'Playfair Display', serif;
+        }
+
+        .date-badge {
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 6px 14px;
+            font-size: 0.8rem;
+            color: var(--muted);
+            backdrop-filter: blur(10px);
+        }
 
         .section-card {
-            background:var(--card); backdrop-filter:blur(16px);
-            border:1px solid var(--card-border); border-radius:20px;
-            box-shadow:0 6px 24px rgba(93,64,55,0.07);
-            overflow:hidden;
+            background: var(--card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            box-shadow: 0 6px 24px rgba(93, 64, 55, 0.07);
+            overflow: hidden;
             margin-bottom: 24px;
         }
+
         .section-header {
-            padding:20px 24px;
-            border-bottom:1px solid rgba(93,64,55,0.06);
-            display:flex; align-items:center; justify-content:space-between;
+            padding: 20px 24px;
+            border-bottom: 1px solid rgba(93, 64, 55, 0.06);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
-        .section-header h2 { font-size:1rem; font-weight:700; }
-        
+
+        .section-header h2 {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
         /* Forms & Inputs */
         .btn-staff {
             padding: 10px 20px;
@@ -160,132 +304,537 @@
             gap: 8px;
             text-decoration: none;
         }
-        .btn-staff:hover { background: var(--primary-dark); transform: translateY(-1px); }
 
-        table { width:100%; border-collapse:collapse; }
-        thead th {
-            padding:12px 20px;
-            font-size:0.73rem; font-weight:600; color:var(--muted);
-            letter-spacing:0.8px; text-transform:uppercase;
-            text-align:left; background:rgba(245,239,232,0.6);
-            border-bottom:1px solid rgba(93,64,55,0.06);
+        .btn-staff:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
         }
-        tbody tr { transition:background 0.2s; }
-        tbody tr:hover { background:rgba(245,239,232,0.5); }
-        tbody td { padding:14px 20px; font-size:0.88rem; border-bottom:1px solid rgba(93,64,55,0.04); }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead th {
+            padding: 12px 20px;
+            font-size: 0.73rem;
+            font-weight: 600;
+            color: var(--muted);
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            text-align: left;
+            background: rgba(245, 239, 232, 0.6);
+            border-bottom: 1px solid rgba(93, 64, 55, 0.06);
+        }
+
+        tbody tr {
+            transition: background 0.2s;
+        }
+
+        tbody tr:hover {
+            background: rgba(245, 239, 232, 0.5);
+        }
+
+        tbody td {
+            padding: 14px 20px;
+            font-size: 0.88rem;
+            border-bottom: 1px solid rgba(93, 64, 55, 0.04);
+        }
 
         .pill {
-            display:inline-flex; align-items:center; gap:5px;
-            padding:4px 12px; border-radius:50px;
-            font-size:0.72rem; font-weight:600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 12px;
+            border-radius: 50px;
+            font-size: 0.72rem;
+            font-weight: 600;
         }
 
         /* Scrollbar */
-        ::-webkit-scrollbar { width:5px; }
-        ::-webkit-scrollbar-thumb { background:rgba(93,64,55,0.2); border-radius:4px; }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: rgba(93, 64, 55, 0.2); border-radius: 4px; }
 
         {% block extra_style %}{% endblock %}
     </style>
+    {% block extra_head %}{% endblock %}
 </head>
+
 <body>
 
-<aside class="sidebar">
-    <div class="sidebar-brand">
-        <div class="brand-name">Le Maison</div>
-        <div class="brand-sub">{% block portal_sub %}Staff Portal{% endblock %}</div>
-    </div>
-
-    <div class="sidebar-user">
-        <div class="avatar">{{ current_user.first_name[:1] }}</div>
-        <div class="user-info">
-            <div class="name">{{ current_user.first_name }} {{ current_user.last_name }}</div>
-            <div class="role">{% block portal_role %}Staff{% endblock %}</div>
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-name">Le Maison</div>
+            <div class="brand-sub">{% block portal_sub %}Staff Portal{% endblock %}</div>
         </div>
-    </div>
 
-    <nav class="sidebar-nav">
-        {% block sidebar_nav %}{% endblock %}
-    </nav>
-
-    <div style="padding:8px 12px; border-top: 1px solid rgba(255,255,255,0.05); margin-top: auto;">
-        <div class="nav-section-label" onclick="toggleNavGroup(this, 'group-account')">
-            <span>Account</span>
-            <i class="fas fa-chevron-down toggle-icon"></i>
+        <div class="sidebar-user">
+            <div class="avatar">{{ current_user.first_name[:1] }}</div>
+            <div class="user-info">
+                <div class="name">{{ current_user.first_name }} {{ current_user.last_name }}</div>
+                <div class="role">{% block portal_role %}Staff{% endblock %}</div>
+            </div>
         </div>
-        <div id="group-account" class="nav-group">
-            <a class="nav-item {% block profile_active %}{% endblock %}" href="{% block profile_url %}#{% endblock %}">
-                <i class="fas fa-user-pen"></i> Edit Profile
-            </a>
-        </div>
-    </div>
 
-    <div class="sidebar-footer">
-        <a class="btn-logout" href="{% block logout_url %}/{% endblock %}">
-            <i class="fas fa-sign-out-alt"></i> Sign Out
-        </a>
-    </div>
-</aside>
+        <nav class="sidebar-nav">
+            {% block sidebar_nav %}{% endblock %}
+        </nav>
 
-<main class="main">
-    <div class="topbar">
-        <div class="topbar-title">
-            <h1>{% block page_title %}Dashboard{% endblock %}</h1>
-            <p>{% block page_subtitle %}Manage your workspace tasks{% endblock %}</p>
-        </div>
-        <div class="topbar-right">
-            <div class="date-badge" id="date-display"></div>
-            <div class="clock" id="clock-display">--:--</div>
-        </div>
-    </div>
+    </aside>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
+    <main class="main">
+        <div class="topbar">
+            <div class="topbar-title">
+                <h1>{% block page_title %}Dashboard{% endblock %}</h1>
+                <p>{% block page_subtitle %}Manage your workspace tasks{% endblock %}</p>
+            </div>
+            <div class="topbar-right">
+                <div class="date-badge" id="date-display"></div>
+                <div class="clock" id="clock-display">--:--</div>
+                
+                <!-- NOTIFICATION BELL -->
+                <div class="notif-bell-wrapper" style="position: relative; margin-left: 15px;">
+                    <button id="adminNotifBell" onclick="toggleNotifPanel()"
+                        style="background: none; border: none; cursor: pointer; position: relative; padding: 8px;">
+                        <i class="fas fa-bell" style="font-size: 1.25rem; color: var(--muted); transition: color 0.2s;"></i>
+                        <span id="adminNotifBadge"
+                            style="display:none; position: absolute; top: 2px; right: 2px; background: #dc3545; color: #fff; font-size: 0.6rem; font-weight: 700; border-radius: 50%; min-width: 18px; height: 18px; line-height: 18px; text-align: center; padding: 0 4px; box-shadow: 0 2px 6px rgba(220,53,69,0.4); animation: notifPulse 2s infinite;">0</span>
+                    </button>
+
+                    <!-- Notification Dropdown Panel -->
+                    <div id="adminNotifPanel"
+                        style="display:none; position: absolute; right: 0; top: 48px; width: 350px; max-height: 480px; background: #fff; border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,0.15); z-index: 9999; overflow: hidden; border: 1px solid rgba(0,0,0,0.08);">
+                        <div
+                            style="padding: 16px 20px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #8b634b, #8b634b);">
+                            <span style="font-weight: 700; font-size: 0.9rem; color: #fff;"><i
+                                    class="fas fa-bell me-2"></i>Notifications</span>
+                            <button onclick="markAllNotifRead()"
+                                style="background: rgba(255,255,255,0.2); border: none; color: #fff; font-size: 0.7rem; cursor: pointer; padding: 3px 10px; border-radius: 20px; font-weight: 600;">Mark all read</button>
+                        </div>
+                        <div id="adminNotifList" style="max-height: 380px; overflow-y: auto; padding: 8px 0;"></div>
+                        <div id="adminNotifEmpty"
+                            style="display:none; text-align: center; padding: 40px 20px; color: #999;">
+                            <i class="fas fa-bell-slash" style="font-size: 1.5rem; margin-bottom: 10px; opacity: 0.3;"></i>
+                            <p style="margin: 0; font-size: 0.8rem;">No notifications yet</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-dropdown-container" style="position:relative; margin-left:15px;">
+                    <div class="profile-trigger" id="profileDropdownBtn"
+                        style="display:flex; align-items:center; gap:10px; cursor:pointer; background:rgba(255,255,255,0.6); padding:6px 14px; border-radius:50px; border:1px solid rgba(93,64,55,0.1);">
+                        <div class="avatar"
+                            style="width:30px; height:30px; font-size:0.8rem; margin:0; box-shadow:none;">{{
+                            current_user.first_name[:1] }}</div>
+                        <span style="font-weight:600; font-size:0.85rem; color:var(--text);">{{ current_user.first_name
+                            }}</span>
+                        <i class="fas fa-chevron-down" style="font-size:0.7rem; color:var(--muted);"></i>
+                    </div>
+                    <div id="profileDropdownMenu" class="profile-menu"
+                        style="display:none; position:absolute; right:0; top:110%; background:#fff; min-width:220px; border-radius:15px; box-shadow:0 10px 30px rgba(0,0,0,0.1); border:1px solid rgba(0,0,0,0.05); z-index:100; overflow:hidden;">
+                        <div
+                            style="padding:15px 20px; border-bottom:1px solid rgba(0,0,0,0.05); background:linear-gradient(135deg,rgba(245,239,232,0.8),rgba(255,255,255,1));">
+                            <div style="font-weight:700; color:var(--text); font-size:0.95rem;">{{
+                                current_user.first_name }} {{ current_user.last_name }}</div>
+                            <div style="font-size:0.75rem; color:var(--muted);">{{ current_user.email }}</div>
+                        </div>
+                        <div style="padding:8px;">
+                            <a href="javascript:void(0)"
+                                onclick="openProfileModal(); document.getElementById('profileDropdownMenu').style.display='none';"
+                                style="display:flex; align-items:center; gap:12px; padding:10px 15px; color:var(--text); text-decoration:none; font-size:0.85rem; font-weight:500; border-radius:8px; transition:background 0.2s;"
+                                onmouseover="this.style.background='rgba(0,0,0,0.03)'"
+                                onmouseout="this.style.background='transparent'">
+                                <i class="fas fa-user-edit" style="color:var(--muted); width:16px;"></i> Edit Profile
+                            </a>
+                            <a href="{% block logout_url %}/{% endblock %}"
+                                style="display:flex; align-items:center; gap:12px; padding:10px 15px; color:#d32f2f; text-decoration:none; font-size:0.85rem; font-weight:600; border-radius:8px; transition:background 0.2s; margin-top:4px;"
+                                onmouseover="this.style.background='rgba(211,47,47,0.05)'"
+                                onmouseout="this.style.background='transparent'">
+                                <i class="fas fa-sign-out-alt" style="width:16px;"></i> Sign Out
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
         {% for category, message in messages %}
-          <div style="padding: 12px 20px; border-radius: 12px; margin-bottom: 24px; background: {% if category=='success' %}#e8f5e9; color: #2e7d32;{% else %}#ffebee; color: #c62828;{% endif %}; font-size: 0.9rem; font-weight: 500;">
+        <div
+            style="padding: 12px 20px; border-radius: 12px; margin-bottom: 24px; background: {% if category=='success' %}#e8f5e9; color: #2e7d32;{% else %}#ffebee; color: #c62828;{% endif %}; font-size: 0.9rem; font-weight: 500;">
             {{ message }}
-          </div>
+        </div>
         {% endfor %}
-      {% endif %}
-    {% endwith %}
+        {% endif %}
+        {% endwith %}
 
-    {% block content %}{% endblock %}
-</main>
+        {% block content %}{% endblock %}
+    </main>
 
-<script>
-    function tick() {
-        const now = new Date();
-        const cd = document.getElementById('clock-display');
-        const dd = document.getElementById('date-display');
-        if(cd) cd.textContent = now.toLocaleTimeString('en-PH', { hour:'2-digit', minute:'2-digit' });
-        if(dd) dd.textContent = now.toLocaleDateString('en-PH', { weekday:'short', month:'short', day:'numeric' });
-    }
-    tick(); setInterval(tick, 1000);
+    <!-- GLOBAL EDIT PROFILE MODAL (STAFF) -->
+    <style>
+        .staff-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 1;
+            transition: opacity 0.3s;
+        }
 
-    function toggleNavGroup(labelEl, groupId) {
-        const group = document.getElementById(groupId);
-        if (!group) return;
-        
-        const isCollapsed = group.classList.toggle('collapsed');
-        labelEl.classList.toggle('collapsed', isCollapsed);
-        
-        // Save state to localStorage
-        localStorage.setItem('sidebar-group-' + groupId, isCollapsed ? 'collapsed' : 'expanded');
-    }
+        .staff-modal-content {
+            background: white;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 520px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            animation: slideUp 0.3s ease-out;
+        }
 
-    // Initialize sidebar states
-    document.addEventListener('DOMContentLoaded', () => {
-        document.querySelectorAll('.nav-group').forEach(group => {
-            const state = localStorage.getItem('sidebar-group-' + group.id);
-            if (state === 'collapsed') {
-                group.classList.add('collapsed');
-                const label = group.previousElementSibling;
-                if (label && label.classList.contains('nav-section-label')) {
-                    label.classList.add('collapsed');
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .staff-modal-header {
+            background: linear-gradient(135deg, #5D4037, #795548);
+            padding: 25px;
+            position: relative;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .staff-modal-header h3 {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .staff-modal-close {
+            position: absolute;
+            right: 25px;
+            top: 20px;
+            font-size: 1.5rem;
+            color: rgba(255, 255, 255, 0.8);
+            cursor: pointer;
+            border: none;
+            background: transparent;
+        }
+
+        .staff-modal-close:hover {
+            color: white;
+        }
+
+        .staff-form-body {
+            padding: 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .staff-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .staff-full {
+            grid-column: span 2;
+        }
+
+        .staff-group label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+
+        .staff-group input {
+            padding: 12px 16px;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            font-family: inherit;
+            font-size: 0.9rem;
+            background: #fdfdfd;
+            transition: all 0.3s;
+        }
+
+        .staff-group input:focus {
+            border-color: var(--primary);
+            outline: none;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(93, 64, 55, 0.1);
+        }
+
+        .staff-footer {
+            padding: 20px 30px;
+            background: #fafafa;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .staff-btn-save {
+            padding: 10px 25px;
+            background: var(--primary);
+            color: white;
+            border-radius: 10px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .staff-btn-save:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+    </style>
+
+    <div id="staffEditProfileModal" class="staff-modal-overlay" style="display: none;">
+        <div class="staff-modal-content">
+            <div class="staff-modal-header">
+                <h3><i class="fas fa-user-circle"></i> Update Profile</h3>
+                <button class="staff-modal-close"
+                    onclick="document.getElementById('staffEditProfileModal').style.display='none'">&times;</button>
+            </div>
+            <form method="POST" action="/admin/settings/profile" onsubmit="return validateStaffProfile()">
+                <div class="staff-form-body">
+                    <div class="staff-group">
+                        <label>First Name</label>
+                        <input type="text" id="prof_first_name" name="admin_first_name"
+                            value="{{ current_user.first_name }}" required>
+                    </div>
+                    <div class="staff-group">
+                        <label>Middle Name</label>
+                        <input type="text" id="prof_middle_name" name="admin_middle_name"
+                            value="{{ current_user.middle_name or '' }}">
+                    </div>
+                    <div class="staff-group">
+                        <label>Last Name</label>
+                        <input type="text" id="prof_last_name" name="admin_last_name"
+                            value="{{ current_user.last_name }}" required>
+                    </div>
+                    <div class="staff-group">
+                        <label>Username</label>
+                        <input type="text" id="prof_username" name="admin_username" value="{{ current_user.username }}"
+                            required>
+                    </div>
+                    <div class="staff-group staff-full">
+                        <label>Email Address</label>
+                        <input type="email" id="prof_email" name="admin_email" value="{{ current_user.email }}"
+                            required>
+                    </div>
+                    <div class="staff-group staff-full">
+                        <label>Phone Number</label>
+                        <input type="text" id="prof_phone" name="admin_phone_number"
+                            value="{{ current_user.phone_number }}" required>
+                    </div>
+
+                    <h4 class="staff-full"
+                        style="margin: 15px 0 5px; font-size: 1rem; color: var(--primary); border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 5px;">
+                        Security / Password</h4>
+
+                    <div class="staff-group staff-full">
+                        <label>Current Password (Required for changes)</label>
+                        <input type="password" id="prof_current_password" name="admin_current_password">
+                    </div>
+                    <div class="staff-group">
+                        <label>New Password (Optional)</label>
+                        <input type="password" id="prof_new_password" name="admin_new_password">
+                    </div>
+                    <div class="staff-group">
+                        <label>Confirm Password</label>
+                        <input type="password" id="prof_confirm_password" name="admin_confirm_password">
+                    </div>
+                </div>
+                <div class="staff-footer">
+                    <button type="button"
+                        style="background:transparent; border:none; color:var(--muted); font-weight:600; cursor:pointer; padding:10px;"
+                        onclick="document.getElementById('staffEditProfileModal').style.display='none'">Dismiss</button>
+                    <button type="submit" class="staff-btn-save">Save Changes <i
+                            class="fas fa-arrow-right ms-1"></i></button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <script>
+        function tick() {
+            const now = new Date();
+            const cd = document.getElementById('clock-display');
+            const dd = document.getElementById('date-display');
+            if (cd) cd.textContent = now.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' });
+            if (dd) dd.textContent = now.toLocaleDateString('en-PH', { weekday: 'short', month: 'short', day: 'numeric' });
+        }
+        tick(); setInterval(tick, 1000);
+
+        function toggleNavGroup(labelEl, groupId) {
+            const group = document.getElementById(groupId);
+            if (!group) return;
+
+            const isCollapsed = group.classList.toggle('collapsed');
+            labelEl.classList.toggle('collapsed', isCollapsed);
+
+            // Save state to localStorage
+            localStorage.setItem('sidebar-group-' + groupId, isCollapsed ? 'collapsed' : 'expanded');
+        }
+
+        // Initialize sidebar states
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.nav-group').forEach(group => {
+                const state = localStorage.getItem('sidebar-group-' + group.id);
+                if (state === 'collapsed') {
+                    group.classList.add('collapsed');
+                    const label = group.previousElementSibling;
+                    if (label && label.classList.contains('nav-section-label')) {
+                        label.classList.add('collapsed');
+                    }
+                }
+            });
+        });
+
+        // Profile Dropdown
+        document.addEventListener('click', function (e) {
+            const btn = document.getElementById('profileDropdownBtn');
+            const menu = document.getElementById('profileDropdownMenu');
+            if (btn && menu) {
+                if (btn.contains(e.target)) {
+                    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+                } else if (!menu.contains(e.target)) {
+                    menu.style.display = 'none';
                 }
             }
         });
-    });
-</script>
-{% block extra_script %}{% endblock %}
+
+        // Profile Modal
+        function openProfileModal() {
+            document.getElementById('staffEditProfileModal').style.display = 'flex';
+        }
+
+        function validateStaffProfile() {
+            const currentPwd = document.getElementById('prof_current_password').value;
+            const newPwd = document.getElementById('prof_new_password').value;
+            const confirmPwd = document.getElementById('prof_confirm_password').value;
+
+            if (!currentPwd) {
+                alert("Please enter your Current Password to save any changes to your profile.");
+                return false;
+            }
+
+            if (newPwd && newPwd !== confirmPwd) {
+                alert("New passwords do not match.");
+                return false;
+            }
+
+            return true;
+        }
+
+        // --- NOTIFICATION SYSTEM (Synced with Admin) ---
+        let _notifPanelOpen = false;
+        function toggleNotifPanel() {
+            const panel = document.getElementById('adminNotifPanel');
+            _notifPanelOpen = !_notifPanelOpen;
+            panel.style.display = _notifPanelOpen ? 'block' : 'none';
+            if (_notifPanelOpen) fetchStaffNotifs();
+        }
+
+        document.addEventListener('click', function (e) {
+            const wrapper = document.querySelector('.notif-bell-wrapper');
+            if (wrapper && !wrapper.contains(e.target)) {
+                _notifPanelOpen = false;
+                const panel = document.getElementById('adminNotifPanel');
+                if(panel) panel.style.display = 'none';
+            }
+        });
+
+        function _staffNotifIcon(type) {
+            const icons = {
+                'ORDER': '<i class="fas fa-shopping-bag" style="color:#8b634b;"></i>',
+                'RESERVATION': '<i class="fas fa-calendar-check" style="color:#17a2b8;"></i>',
+                'DELIVERY': '<i class="fas fa-truck" style="color:#28a745;"></i>',
+                'SYSTEM': '<i class="fas fa-cog" style="color:#6c757d;"></i>',
+            };
+            return icons[type] || icons['SYSTEM'];
+        }
+
+        async function fetchStaffNotifs() {
+            try {
+                const resp = await fetch('/admin/api/notifications');
+                const data = await resp.json();
+                const list = document.getElementById('adminNotifList');
+                const empty = document.getElementById('adminNotifEmpty');
+                if (!list || !empty) return;
+
+                if (!data.notifications || data.notifications.length === 0) {
+                    list.innerHTML = '';
+                    empty.style.display = 'block';
+                    return;
+                }
+                empty.style.display = 'none';
+                list.innerHTML = data.notifications.map(n => `
+                    <div style="padding: 12px 20px; border-bottom: 1px solid #f5f5f5; display: flex; gap: 12px; align-items: flex-start; background: ${n.is_read ? '#fff' : '#faf6f2'};">
+                        <div style="width: 32px; height: 32px; border-radius: 50%; background: ${n.is_read ? '#f0f0f0' : 'rgba(139, 99, 75,0.1)'}; display:flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.8rem;">
+                            ${_staffNotifIcon(n.type)}
+                        </div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-weight: ${n.is_read ? '400' : '600'}; font-size: 0.8rem; color: #333; margin-bottom: 2px;">${n.title}</div>
+                            <div style="font-size: 0.72rem; color: #777; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${n.message}</div>
+                        </div>
+                        ${!n.is_read ? '<div style="width:6px;height:6px;border-radius:50%;background:#8b634b;flex-shrink:0;margin-top:6px;"></div>' : ''}
+                    </div>
+                `).join('');
+            } catch (e) { }
+        }
+
+        async function fetchStaffUnreadCount() {
+            try {
+                const resp = await fetch('/admin/api/notifications/unread-count');
+                const data = await resp.json();
+                const badge = document.getElementById('adminNotifBadge');
+                if (!badge) return;
+                if (data.count > 0) {
+                    badge.textContent = data.count > 99 ? '99+' : data.count;
+                    badge.style.display = 'block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            } catch (e) { }
+        }
+
+        async function markAllNotifRead() {
+            try {
+                await fetch('/admin/api/notifications/mark-all-read', { method: 'POST' });
+                fetchStaffUnreadCount();
+                fetchStaffNotifs();
+            } catch (e) { }
+        }
+
+        // Poll every 15 seconds
+        fetchStaffUnreadCount();
+        setInterval(fetchStaffUnreadCount, 15000);
+    </script>
+    {% block extra_script %}{% endblock %}
 </body>
+
 </html>

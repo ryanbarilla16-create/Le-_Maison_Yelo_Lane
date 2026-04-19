@@ -3,87 +3,240 @@
 {% block title %}Audit Logs{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 style="font-family: 'Georgia', serif; color: var(--text-main); font-size: 2rem; font-weight: bold; margin: 0;">
-        <i class="fas fa-clipboard-list me-2"></i>Audit Logs</h1>
-    <span class="badge bg-light text-dark px-3 py-2 rounded-pill shadow-sm" style="font-size: 0.85rem;">
-        <i class="fas fa-shield-alt me-1 text-success"></i> Security Trail
-    </span>
-</div>
+<style>
+    .audit-header-bar {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 1.5rem 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+        border: 1px solid rgba(139, 99, 75, 0.08);
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
 
-<div class="card border-0 shadow-sm" style="border-radius: 12px;">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead style="background-color: rgba(0,0,0,0.02);">
-                    <tr>
-                        <th class="ps-4" style="width: 160px;">Timestamp</th>
-                        <th>User</th>
-                        <th>Action</th>
-                        <th>Target</th>
-                        <th>Description</th>
-                        <th class="pe-4">IP Address</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for log in logs.items %}
-                    <tr>
-                        <td class="ps-4 text-muted small">{{ log.created_at.strftime('%Y-%m-%d %I:%M %p') if log.created_at else 'N/A' }}</td>
-                        <td>
-                            {% if log.user %}
-                            <span class="fw-bold">{{ log.user.first_name }} {{ log.user.last_name }}</span>
-                            <br><small class="text-muted">{{ log.user.role }}</small>
-                            {% else %}
-                            <span class="text-muted">System</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if log.action == 'CREATE' %}
-                            <span class="badge bg-success bg-opacity-10 text-success border border-success rounded-pill">{{ log.action }}</span>
-                            {% elif log.action == 'UPDATE' %}
-                            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning rounded-pill">{{ log.action }}</span>
-                            {% elif log.action == 'DELETE' %}
-                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger rounded-pill">{{ log.action }}</span>
-                            {% else %}
-                            <span class="badge bg-info bg-opacity-10 text-info border border-info rounded-pill">{{ log.action }}</span>
-                            {% endif %}
-                        </td>
-                        <td><span class="text-muted">{{ log.target_type }}</span> <small class="text-muted">#{{ log.target_id or '' }}</small></td>
-                        <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ log.description }}</td>
-                        <td class="pe-4 text-muted small"><code>{{ log.ip_address or 'N/A' }}</code></td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="6" class="text-center py-5 text-muted">
-                            <i class="fas fa-clipboard-list fs-1 mb-3 opacity-25"></i>
-                            <p>No audit logs recorded yet.</p>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    .audit-ledger-container {
+        background: #ffffff;
+        border-radius: 16px;
+        border: 1px solid rgba(139, 99, 75, 0.1);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.03);
+        overflow: hidden;
+    }
+
+    .ledger-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .ledger-table th {
+        background: #fbf8f5;
+        font-size: 0.75rem;
+        font-weight: 800;
+        color: #a48c7e;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid rgba(139, 99, 75, 0.1);
+        text-align: left;
+    }
+
+    .ledger-table td {
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px dashed rgba(139, 99, 75, 0.15);
+        vertical-align: middle;
+        transition: background 0.2s;
+    }
+
+    .ledger-table tr:hover td {
+        background: rgba(139, 99, 75, 0.015);
+    }
+
+    .ledger-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .al-time { display: flex; flex-direction: column; gap: 0.1rem; }
+    .al-date { font-weight: 800; font-size: 0.85rem; color: #3E2723; }
+    .al-hour { font-size: 0.75rem; color: #8B634B; font-weight: 600; opacity: 0.8; }
+
+    .al-user { display: flex; align-items: center; gap: 0.85rem; }
+    .al-avatar {
+        width: 38px; height: 38px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 800; font-size: 0.85rem; flex-shrink: 0;
+    }
+    .al-user-real { background: linear-gradient(135deg, #f0f4ef, #dce5d9); color: #577551; }
+    .al-user-sys { background: linear-gradient(135deg, #f8f3f0, #eed7d3); color: #8a4a41; }
+    
+    .al-uname { font-weight: 800; font-size: 0.9rem; color: #4a3b32; line-height: 1.2; margin: 0; }
+    .al-urole { font-size: 0.65rem; font-weight: 800; color: #C2934D; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .al-badge {
+        padding: 0.4rem 0.85rem;
+        border-radius: 50px;
+        font-size: 0.7rem;
+        font-weight: 800;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        letter-spacing: 0.5px;
+    }
+    .al-create { background: #f0fdf4; color: #166534; border: 1px solid #dcfce7; }
+    .al-update { background: #fffbeb; color: #92400e; border: 1px solid #fef3c7; }
+    .al-delete { background: #fef2f2; color: #991b1b; border: 1px solid #fee2e2; }
+    .al-restore { background: #f0f9ff; color: #075985; border: 1px solid #e0f2fe; }
+
+    .al-desc-col { display: flex; flex-direction: column; gap: 0.3rem; }
+    .al-target { font-family: 'Playfair Display', serif; font-weight: 900; font-size: 1.05rem; color: #3E2723; margin: 0; }
+    .al-desc { font-size: 0.85rem; color: #5D4037; font-weight: 500; font-style: italic; }
+
+    .al-ip-badge {
+        font-family: 'Courier New', Courier, monospace;
+        font-weight: 700; font-size: 0.75rem; color: #8B634B;
+        background: #faf6f1; padding: 0.35rem 0.75rem;
+        border-radius: 8px; border: 1px solid rgba(139, 99, 75, 0.15);
+        display: inline-block; white-space: nowrap;
+    }
+
+    /* Premium Pagination */
+    .premium-pagination {
+        display: flex; justify-content: center; gap: 0.5rem; padding: 1.5rem;
+        background: #fdfaf7; border-top: 1px solid rgba(139, 99, 75, 0.08);
+        list-style: none; margin: 0;
+    }
+    .p-item {
+        margin: 0;
+    }
+    .p-link {
+        display: flex; align-items: center; justify-content: center;
+        min-width: 36px; height: 36px; padding: 0 0.5rem;
+        border-radius: 10px; font-weight: 700; font-size: 0.85rem;
+        color: #4a3b32; background: #ffffff;
+        border: 1px solid rgba(139, 99, 75, 0.15);
+        transition: all 0.2s; text-decoration: none;
+    }
+    .p-link:hover { background: #faf6f1; color: #3E2723; border-color: #8B634B; }
+    .p-item.active .p-link { background: #4a3b32; color: #ffffff; border-color: #4a3b32; box-shadow: 0 4px 10px rgba(74, 59, 50, 0.2); }
+    .p-item.disabled .p-link { opacity: 0.5; pointer-events: none; background: transparent; border: none; }
+    
+</style>
+
+<div class="audit-header-bar">
+    <div style="display: flex; align-items: center; gap: 1rem;">
+        <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #8B634B, #5D4037); color: #fff; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; box-shadow: 0 4px 12px rgba(139,99,75,0.2);">
+            <i class="fas fa-clipboard-check"></i>
+        </div>
+        <div>
+            <h1 style="font-family: 'Playfair Display', serif; font-weight: 800; color: #3E2723; margin: 0; font-size: 1.8rem;">System Audit Logs</h1>
+            <p style="margin: 0; font-size: 0.85rem; color: #8B634B; font-weight: 600;">Secure ledger of all administrative actions</p>
         </div>
     </div>
-    {% if logs.pages > 1 %}
-    <div class="card-footer bg-white border-top text-center py-3">
-        <nav>
-            <ul class="pagination justify-content-center mb-0">
-                {% if logs.has_prev %}
-                <li class="page-item"><a class="page-link" href="{{ url_for('admin.audit_logs', page=logs.prev_num) }}">Previous</a></li>
-                {% endif %}
-                {% for p in logs.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
-                    {% if p %}
-                    <li class="page-item {% if p == logs.page %}active{% endif %}"><a class="page-link" href="{{ url_for('admin.audit_logs', page=p) }}">{{ p }}</a></li>
-                    {% else %}
-                    <li class="page-item disabled"><span class="page-link">…</span></li>
-                    {% endif %}
+    <span style="background: rgba(87, 117, 81, 0.1); color: #577551; border: 1px solid rgba(87, 117, 81, 0.2); padding: 0.5rem 1rem; border-radius: 50px; font-size: 0.75rem; font-weight: 800; display: flex; align-items: center; gap: 6px;">
+        <div style="width: 8px; height: 8px; background: #577551; border-radius: 50%; box-shadow: 0 0 0 2px rgba(87, 117, 81, 0.2); animation: pulse 2s infinite;"></div>
+        SECURITY TRAIL ACTIVE
+    </span>
+</div>
+<style>@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(87, 117, 81, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(87, 117, 81, 0); } 100% { box-shadow: 0 0 0 0 rgba(87, 117, 81, 0); } }</style>
+
+<div class="audit-ledger-container">
+    <div style="overflow-x: auto;">
+        <table class="ledger-table">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>User Identity</th>
+                    <th>Action</th>
+                    <th>Details</th>
+                    <th style="text-align: right;">IP Source</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs.items %}
+                <tr>
+                    <td style="width: 130px;">
+                        <div class="al-time">
+                            <span class="al-date">{{ log.created_at.strftime('%b %d, %Y') if log.created_at else 'N/A' }}</span>
+                            <span class="al-hour">{{ log.created_at.strftime('%I:%M %p') if log.created_at else '' }}</span>
+                        </div>
+                    </td>
+                    <td style="width: 220px;">
+                        <div class="al-user">
+                            {% if log.user %}
+                            <div class="al-avatar al-user-real">
+                                {{ log.user.first_name[0]|upper if log.user.first_name else 'U' }}{{ log.user.last_name[0]|upper if log.user.last_name else '' }}
+                            </div>
+                            <div>
+                                <p class="al-uname">{{ log.user.first_name or 'Unknown' }} {{ log.user.last_name or '' }}</p>
+                                <span class="al-urole">{{ log.user.role or 'USER' }}</span>
+                            </div>
+                            {% else %}
+                            <div class="al-avatar al-user-sys"><i class="fas fa-robot"></i></div>
+                            <div>
+                                <p class="al-uname">System Engine</p>
+                                <span class="al-urole" style="color: #8a4a41;">AUTOMATED</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td style="width: 120px;">
+                        {% if log.action == 'CREATE' %}
+                            <span class="al-badge al-create"><i class="fas fa-plus"></i> CREATE</span>
+                        {% elif log.action == 'UPDATE' %}
+                            <span class="al-badge al-update"><i class="fas fa-pen"></i> UPDATE</span>
+                        {% elif log.action == 'DELETE' %}
+                            <span class="al-badge al-delete"><i class="fas fa-trash"></i> DELETE</span>
+                        {% elif log.action == 'RESTORE' %}
+                            <span class="al-badge al-restore"><i class="fas fa-undo"></i> RESTORE</span>
+                        {% else %}
+                            <span class="al-badge al-update"><i class="fas fa-cog"></i> {{ log.action }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="al-desc-col">
+                            <p class="al-target">{{ log.target_type }} <span style="opacity: 0.5;">#{{ log.target_id or '' }}</span></p>
+                            <span class="al-desc">{{ log.description }}</span>
+                        </div>
+                    </td>
+                    <td style="text-align: right;">
+                        <span class="al-ip-badge"><i class="fas fa-globe me-1" style="opacity: 0.5;"></i> {{ log.ip_address or 'System Int.' }}</span>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 4rem 2rem;">
+                        <div style="width: 60px; height: 60px; background: #fdfaf7; color: #8b634b; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin: 0 auto 1rem; opacity: 0.5;">
+                            <i class="fas fa-clipboard"></i>
+                        </div>
+                        <h4 style="font-family: 'Playfair Display', serif; font-weight: 800; color: #3E2723;">No Audit Trails Found</h4>
+                        <p style="color: #8D6E63; margin: 0;">System actions will be recorded here securely.</p>
+                    </td>
+                </tr>
                 {% endfor %}
-                {% if logs.has_next %}
-                <li class="page-item"><a class="page-link" href="{{ url_for('admin.audit_logs', page=logs.next_num) }}">Next</a></li>
-                {% endif %}
-            </ul>
-        </nav>
+            </tbody>
+        </table>
     </div>
+
+    {% if logs.pages > 1 %}
+    <ul class="premium-pagination">
+        {% if logs.has_prev %}
+        <li class="p-item"><a class="p-link" href="{{ url_for('admin.audit_logs', page=logs.prev_num) }}"><i class="fas fa-angle-left"></i></a></li>
+        {% endif %}
+        
+        {% for p in logs.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if p %}
+                <li class="p-item {% if p == logs.page %}active{% endif %}"><a class="p-link" href="{{ url_for('admin.audit_logs', page=p) }}">{{ p }}</a></li>
+            {% else %}
+                <li class="p-item disabled"><span class="p-link">…</span></li>
+            {% endif %}
+        {% endfor %}
+
+        {% if logs.has_next %}
+        <li class="p-item"><a class="p-link" href="{{ url_for('admin.audit_logs', page=logs.next_num) }}"><i class="fas fa-angle-right"></i></a></li>
+        {% endif %}
+    </ul>
     {% endif %}
 </div>
 {% endblock %}

@@ -63,11 +63,11 @@
 
             <div class="status-filter-group">
                 <a href="{{ url_for('admin.billing', status='UNPAID') }}"
-                    class="status-tab {% if status_filter == 'UNPAID' %}active{% endif %}">Unpaid</a>
+                    class="status-tab status-ajax-tab {% if status_filter == 'UNPAID' %}active{% endif %}" data-status="UNPAID">Unpaid</a>
                 <a href="{{ url_for('admin.billing', status='PAID') }}"
-                    class="status-tab {% if status_filter == 'PAID' %}active{% endif %}">Paid</a>
+                    class="status-tab status-ajax-tab {% if status_filter == 'PAID' %}active{% endif %}" data-status="PAID">Paid</a>
                 <a href="{{ url_for('admin.billing', status='ALL') }}"
-                    class="status-tab {% if status_filter == 'ALL' %}active{% endif %}">All</a>
+                    class="status-tab status-ajax-tab {% if status_filter == 'ALL' %}active{% endif %}" data-status="ALL">All</a>
             </div>
             </div>
         </div>
@@ -130,14 +130,9 @@
                                 {% endif %}
                                 <ul class="dropdown-menu border-0 shadow-sm"
                                     style="border-radius: 12px; font-size: 0.9rem; min-width: 150px; padding: 0.5rem 0;">
-                                    <li>
-                                        <form action="{{ url_for('admin.update_payment_status', order_id=order.id) }}"
-                                            method="POST" style="margin: 0;">
-                                            <input type="hidden" name="payment_status" value="PAID">
-                                            <button type="submit" class="dropdown-item text-success fw-bold py-2"><i
-                                                    class="fas fa-check-circle me-2"></i> Mark as Paid</button>
-                                        </form>
-                                    </li>
+                                        <button type="button" onclick="openSettleModal({{ order.id }}, {{ order.total_amount }})" class="dropdown-item text-success fw-bold py-2">
+                                            <i class="fas fa-check-circle me-2"></i> Mark as Paid
+                                        </button>
                                     <li>
                                         <form action="{{ url_for('admin.update_payment_status', order_id=order.id) }}"
                                             method="POST" style="margin: 0;">
@@ -156,7 +151,7 @@
                                     <i class="fas fa-print me-1"></i> Print Receipt
                                 </a>
                                 {% if order.payment_status == 'UNPAID' %}
-                                <button class="btn-admin-primary btn-sm px-3 py-1 mt-1" style="border-radius: 50px; font-size: 0.75rem; border: none;">
+                                <button type="button" onclick="openSettleModal({{ order.id }}, {{ order.total_amount }})" class="btn-admin-primary btn-sm px-3 py-1 mt-1" style="border-radius: 50px; font-size: 0.75rem; border: none;">
                                     <i class="fas fa-cash-register me-1"></i> Settle Bill
                                 </button>
                                 {% endif %}
@@ -239,6 +234,140 @@
                 row.style.display = 'none';
             }
         });
+    }
+</script>
+
+<!-- SETTLE BILL MODAL -->
+<div id="settleBillModal" class="admin-modal" style="display: none; align-items:center;">
+    <div class="admin-modal-content" style="max-width: 400px; border-radius: 12px; padding: 24px;">
+        <div class="admin-modal-header border-bottom pb-3 mb-3 d-flex justify-content-between">
+            <h4 class="m-0 fw-bold" style="color: var(--text-main);"><i class="fas fa-money-bill-wave text-success me-2"></i>Settle Bill #<span id="settleOrderId"></span></h4>
+            <span class="admin-close fs-4" style="cursor: pointer;" onclick="document.getElementById('settleBillModal').style.display='none'">&times;</span>
+        </div>
+        <form id="settleBillForm" method="POST" action="">
+            <input type="hidden" name="payment_status" value="PAID">
+            <div class="mb-3 text-center">
+                <p class="text-muted mb-1 text-uppercase fw-bold" style="font-size: 0.8rem;">Amount Due</p>
+                <h2 class="fw-bold text-success m-0" id="settleAmountDueDisplay">₱0.00</h2>
+                <input type="hidden" id="amountDueHidden" value="0">
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold text-muted small">Amount Tendered (₱)</label>
+                <input type="number" step="0.01" class="form-control form-control-lg fw-bold" id="amountTenderedInput" name="amount_tendered" required placeholder="0.00">
+                <div class="invalid-feedback fw-bold" id="amountError" style="display: none;">Amount must be exactly or greater than the due.</div>
+            </div>
+            <div class="mb-4">
+                <label class="form-label fw-bold text-muted small">Change / Sukli</label>
+                <input type="text" class="form-control form-control-lg fw-bold text-primary" id="changeAmountDisplay" readonly value="₱0.00">
+            </div>
+            <button type="submit" class="btn btn-primary w-100 py-3 fw-bold rounded-pill shadow-sm" id="confirmSettleBtn" disabled>Confirm Payment</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openSettleModal(orderId, amountDue) {
+        document.getElementById('settleOrderId').innerText = orderId;
+        document.getElementById('settleAmountDueDisplay').innerText = '₱' + parseFloat(amountDue).toLocaleString(undefined, {minimumFractionDigits: 2});
+        document.getElementById('amountDueHidden').value = amountDue;
+        
+        let form = document.getElementById('settleBillForm');
+        form.action = '/admin/orders/update_payment/' + orderId; // Will work for both admin/cashier since they share the same backend routing mapping via include in blueprints if any
+        
+        let tenderedInput = document.getElementById('amountTenderedInput');
+        tenderedInput.value = '';
+        document.getElementById('changeAmountDisplay').value = '₱0.00';
+        document.getElementById('confirmSettleBtn').disabled = true;
+        document.getElementById('amountError').style.display = 'none';
+        
+        document.getElementById('settleBillModal').style.display = 'flex';
+        
+        // Auto-focus after modal opens
+        setTimeout(() => tenderedInput.focus(), 100);
+    }
+    
+    document.getElementById('amountTenderedInput').addEventListener('input', function() {
+        let tendered = parseFloat(this.value) || 0;
+        let due = parseFloat(document.getElementById('amountDueHidden').value) || 0;
+        let btn = document.getElementById('confirmSettleBtn');
+        let error = document.getElementById('amountError');
+        let changeDisplay = document.getElementById('changeAmountDisplay');
+        
+        if (this.value === '' || tendered < due) {
+            btn.disabled = true;
+            changeDisplay.value = '₱0.00';
+            if (this.value !== '') {
+                error.style.display = 'block';
+                this.classList.add('is-invalid');
+            } else {
+                error.style.display = 'none';
+                this.classList.remove('is-invalid');
+            }
+        } else {
+            error.style.display = 'none';
+            this.classList.remove('is-invalid');
+            btn.disabled = false;
+            let change = tendered - due;
+            changeDisplay.value = '₱' + change.toLocaleString(undefined, {minimumFractionDigits: 2});
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- AJAX Tab Implementations ---
+        document.querySelectorAll('.status-ajax-tab').forEach(tab => {
+            tab.addEventListener('click', function(e) {
+                e.preventDefault();
+                const url = this.getAttribute('href');
+                
+                document.querySelectorAll('.status-ajax-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Show loading spinner
+                document.getElementById('ordersTableBody').innerHTML = '<tr><td colspan="7" class="text-center py-5"><i class="fas fa-spinner fa-spin fs-2 text-muted"></i></td></tr>';
+                
+                fetch(url)
+                .then(r => r.text())
+                .then(html => {
+                    const doc = new DOMParser().parseFromString(html, 'text/html');
+                    document.getElementById('ordersTableBody').innerHTML = doc.getElementById('ordersTableBody').innerHTML;
+                    
+                    const pagination = doc.querySelector('.card-footer');
+                    if (pagination) {
+                        document.querySelector('.card-footer').innerHTML = pagination.innerHTML;
+                    }
+                    
+                    // Update stats
+                    const statsCards = doc.querySelectorAll('.card.shadow-sm h3.fw-bold');
+                    if(statsCards.length >= 2) {
+                        document.querySelectorAll('.card.shadow-sm h3.fw-bold')[0].innerHTML = statsCards[0].innerHTML;
+                        document.querySelectorAll('.card.shadow-sm h3.fw-bold')[1].innerHTML = statsCards[1].innerHTML;
+                    }
+                    
+                    bindPaginationAjax();
+                });
+            });
+        });
+        bindPaginationAjax();
+    });
+    
+    function bindPaginationAjax() {
+         document.querySelectorAll('.card-footer .pagination a').forEach(a => {
+             let newA = a.cloneNode(true);
+             a.parentNode.replaceChild(newA, a);
+             
+             newA.addEventListener('click', function(e) {
+                  e.preventDefault();
+                  const url = this.getAttribute('href');
+                  if (!url || url === '#') return;
+                  document.getElementById('ordersTableBody').innerHTML = '<tr><td colspan="7" class="text-center py-5"><i class="fas fa-spinner fa-spin fs-2 text-muted"></i></td></tr>';
+                  fetch(url).then(r=>r.text()).then(html=>{
+                      const doc = new DOMParser().parseFromString(html, 'text/html');
+                      document.getElementById('ordersTableBody').innerHTML = doc.getElementById('ordersTableBody').innerHTML;
+                      document.querySelector('.card-footer').innerHTML = doc.querySelector('.card-footer').innerHTML;
+                      bindPaginationAjax();
+                  });
+             });
+         });
     }
 </script>
 {% endblock %}

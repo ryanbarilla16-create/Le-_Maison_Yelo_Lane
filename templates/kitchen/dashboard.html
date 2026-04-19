@@ -97,12 +97,17 @@
         display: none; /* Hidden by default */
         background: rgba(255, 255, 255, 0.4); 
         border-radius: 24px; 
-        padding: 24px; 
+        padding: 30px; 
         border: 1px solid rgba(93, 64, 55, 0.06); 
         min-height: 70vh;
         animation: fadeIn 0.4s ease-out;
     }
-    .board-col.active { display: flex; flex-direction: column; }
+    .board-col.active { 
+        display: grid; 
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 24px;
+        align-content: start;
+    }
 
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(10px); }
@@ -262,39 +267,39 @@
     <div class="kitchen-board">
         <!-- TO COOK -->
         <div class="board-col active" id="col-PENDING">
-            <div class="col-header">
-                <h3><i class="fas fa-list-check me-2" style="opacity:0.5;"></i> Orders Waiting to Prepare</h3>
+            <div class="col-header" style="grid-column: 1 / -1; margin-bottom: 20px;">
+                <h3 style="font-size:1.1rem;"><i class="fas fa-list-check me-2" style="opacity:0.5;"></i> Orders Waiting to Prepare</h3>
             </div>
             {% for order in pending_orders %}
-            <div class="order-card">
+            <div class="order-card" style="display:flex; flex-direction:column; height:100%;">
                 <div class="order-header">
-                    <span class="order-num">#{{ '%04d' % order.id }}</span>
+                    <span class="order-num" style="font-size:1.1rem;">#{{ '%04d' % order.id }}</span>
                     <span class="order-time">{{ order.created_at.strftime('%I:%M %p') if order.created_at else '' }}</span>
                 </div>
-                <div class="order-customer">
+                <div class="order-customer" style="font-size:1rem;">
                     <i class="fas fa-user-circle"></i>
                     {% if order.user %}{{ order.user.first_name }}{% elif order.customer_name %}{{ order.customer_name }}{% else %}Walk-in Guest{% endif %}
                 </div>
-                <div class="dining-tag">
+                <div class="dining-tag" style="padding:6px 12px; font-size:0.75rem;">
                     <i class="fas fa-{% if order.dining_option=='DINE_IN' %}utensils{% elif order.dining_option=='TAKE_OUT' %}bag-shopping{% else %}truck{% endif %}"></i>
                     {{ (order.dining_option or 'DINE_IN').replace('_',' ').title() }}
                 </div>
-                <div class="order-items">
+                <div class="order-items" style="flex-grow:1;">
                     {% for item in order.items %}
-                    <div class="item-row">
-                        <span class="item-qty">{{ item.quantity }}</span>
-                        <span class="item-name">{{ item.menu_item.name if item.menu_item else 'Item' }}</span>
+                    <div class="item-row" style="margin-bottom:10px;">
+                        <span class="item-qty" style="width:28px; height:28px; font-size:0.9rem;">{{ item.quantity }}</span>
+                        <span class="item-name" style="font-size:1rem; font-weight:600;">{{ item.menu_item.name if item.menu_item else 'Item' }}</span>
                     </div>
                     {% endfor %}
                 </div>
-                <div class="order-actions">
-                    <button class="action-btn btn-start" onclick="updateOrderStatus({{ order.id }}, 'PREPARING', this)">
+                <div class="order-actions" style="margin-top:20px;">
+                    <button class="action-btn btn-start" onclick="updateOrderStatus({{ order.id }}, 'PREPARING', this)" style="padding:15px;">
                         <i class="fas fa-fire-flame-curved"></i> Start Cooking
                     </button>
                 </div>
             </div>
             {% else %}
-            <div class="empty-state">
+            <div class="empty-state" style="grid-column: 1 / -1;">
                 <i class="fas fa-clipboard-list"></i>
                 <p>Clean Board</p>
             </div>
@@ -303,39 +308,39 @@
 
         <!-- COOKING NOW -->
         <div class="board-col" id="col-PREPARING">
-            <div class="col-header">
-                <h3><i class="fas fa-fire-burner me-2" style="opacity:0.5;"></i> Orders Currently Cooking</h3>
+            <div class="col-header" style="grid-column: 1 / -1; margin-bottom: 20px;">
+                <h3 style="font-size:1.1rem;"><i class="fas fa-fire-burner me-2" style="opacity:0.5;"></i> Orders Currently Cooking</h3>
             </div>
             {% for order in preparing_orders %}
-            <div class="order-card card-preparing">
+            <div class="order-card card-preparing" style="display:flex; flex-direction:column; height:100%;">
                 <div class="order-header">
-                    <span class="order-num">#{{ '%04d' % order.id }}</span>
+                    <span class="order-num" style="font-size:1.1rem;">#{{ '%04d' % order.id }}</span>
                     <span class="order-time">{{ order.created_at.strftime('%I:%M %p') if order.created_at else '' }}</span>
                 </div>
-                <div class="order-customer">
+                <div class="order-customer" style="font-size:1rem;">
                     <i class="fas fa-user-circle"></i>
                     {% if order.user %}{{ order.user.first_name }}{% elif order.customer_name %}{{ order.customer_name }}{% else %}Walk-in Guest{% endif %}
                 </div>
-                <div class="dining-tag">
+                <div class="dining-tag" style="padding:6px 12px; font-size:0.75rem;">
                     <i class="fas fa-{% if order.dining_option=='DINE_IN' %}utensils{% elif order.dining_option=='TAKE_OUT' %}bag-shopping{% else %}truck{% endif %}"></i>
                     {{ (order.dining_option or 'DINE_IN').replace('_',' ').title() }}
                 </div>
-                <div class="order-items">
+                <div class="order-items" style="flex-grow:1;">
                     {% for item in order.items %}
-                    <div class="item-row">
-                        <span class="item-qty">{{ item.quantity }}</span>
-                        <span class="item-name">{{ item.menu_item.name if item.menu_item else 'Item' }}</span>
+                    <div class="item-row" style="margin-bottom:10px;">
+                        <span class="item-qty" style="width:28px; height:28px; font-size:0.9rem;">{{ item.quantity }}</span>
+                        <span class="item-name" style="font-size:1rem; font-weight:600;">{{ item.menu_item.name if item.menu_item else 'Item' }}</span>
                     </div>
                     {% endfor %}
                 </div>
-                <div class="order-actions">
-                    <button class="action-btn btn-ready" onclick="updateOrderStatus({{ order.id }}, 'READY', this)">
+                <div class="order-actions" style="margin-top:20px;">
+                    <button class="action-btn btn-ready" onclick="updateOrderStatus({{ order.id }}, 'READY', this)" style="padding:15px;">
                         <i class="fas fa-check-double"></i> Ready for Pickup
                     </button>
                 </div>
             </div>
             {% else %}
-            <div class="empty-state">
+            <div class="empty-state" style="grid-column: 1 / -1;">
                 <i class="fas fa-mug-hot"></i>
                 <p>Oven Off</p>
             </div>
@@ -344,36 +349,36 @@
 
         <!-- FOR PICKUP -->
         <div class="board-col" id="col-READY">
-            <div class="col-header">
-                <h3><i class="fas fa-circle-check me-2" style="opacity:0.5;"></i> Orders Ready for Pickup</h3>
+            <div class="col-header" style="grid-column: 1 / -1; margin-bottom: 20px;">
+                <h3 style="font-size:1.1rem;"><i class="fas fa-circle-check me-2" style="opacity:0.5;"></i> Orders Ready for Pickup</h3>
             </div>
             {% for order in ready_orders %}
-            <div class="order-card card-ready">
+            <div class="order-card card-ready" style="display:flex; flex-direction:column; height:100%;">
                 <div class="order-header">
-                    <span class="order-num">#{{ '%04d' % order.id }}</span>
+                    <span class="order-num" style="font-size:1.1rem;">#{{ '%04d' % order.id }}</span>
                     <span class="order-time">{{ order.created_at.strftime('%I:%M %p') if order.created_at else '' }}</span>
                 </div>
-                <div class="order-customer">
+                <div class="order-customer" style="font-size:1rem;">
                     <i class="fas fa-user-circle"></i>
                     {% if order.user %}{{ order.user.first_name }}{% elif order.customer_name %}{{ order.customer_name }}{% else %}Walk-in Guest{% endif %}
                 </div>
-                <div class="dining-tag" style="background:rgba(46,125,50,0.1); color:var(--success);">
+                <div class="dining-tag" style="background:rgba(46,125,50,0.1); color:var(--success); padding:6px 12px; font-size:0.75rem;">
                     <i class="fas fa-bell"></i> Service Required
                 </div>
-                <div class="order-items">
+                <div class="order-items" style="flex-grow:1;">
                     {% for item in order.items %}
-                    <div class="item-row">
-                        <span class="item-qty">{{ item.quantity }}</span>
-                        <span class="item-name" style="opacity:0.7;">{{ item.menu_item.name if item.menu_item else 'Item' }}</span>
+                    <div class="item-row" style="margin-bottom:10px;">
+                        <span class="item-qty" style="width:28px; height:28px; font-size:0.9rem;">{{ item.quantity }}</span>
+                        <span class="item-name" style="font-size:1rem; font-weight:600; opacity:0.7;">{{ item.menu_item.name if item.menu_item else 'Item' }}</span>
                     </div>
                     {% endfor %}
                 </div>
-                <div style="font-size:0.65rem; color:var(--muted); text-align:center; font-weight:700; text-transform:uppercase;">
+                <div style="font-size:0.75rem; color:var(--muted); text-align:center; font-weight:700; text-transform:uppercase; margin-top:20px;">
                     Awaiting Cashier Handover
                 </div>
             </div>
             {% else %}
-            <div class="empty-state">
+            <div class="empty-state" style="grid-column: 1 / -1;">
                 <i class="fas fa-bell-slash"></i>
                 <p>Pass Empty</p>
             </div>

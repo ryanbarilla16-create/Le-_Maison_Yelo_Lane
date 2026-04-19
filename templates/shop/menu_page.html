@@ -599,18 +599,21 @@
         .menu-item-name {
             font-family: 'Georgia', serif;
             font-weight: 400;
-            font-size: 1.15rem;
+            font-size: 1.18rem;
             color: var(--text-main);
-            margin: 0 0 0.4rem;
-            line-height: 1.35;
+            margin: 0 0 0.6rem;
+            line-height: 1.4;
+            display: block;
         }
 
         .menu-item-price {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            font-size: 1.1rem;
+            font-family: 'Inter', sans-serif;
+            font-size: 1.15rem;
             font-weight: 700;
-            color: #443127;
+            color: #8B634B;
             margin: 0;
+            display: block;
+            letter-spacing: -0.5px;
         }
 
         /* ── Responsive ── */
@@ -678,8 +681,8 @@
                         btn.innerHTML = '<i class="fas fa-check"></i>';
                         btn.style.background = '#28a745';
                         btn.style.color = '#fff';
-                        if (window.showToast) window.showToast('success', data.message);
                         updateCartBadge(data.cart_count);
+                        if (typeof openMiniCart === 'function') openMiniCart();
                         setTimeout(function () {
                             btn.innerHTML = originalHTML;
                             btn.style.background = '';
@@ -776,7 +779,6 @@
                     if (data && data.status === 'success') {
                         btn.innerHTML = '<i class="fas fa-check me-2"></i>Added!';
                         btn.style.background = '#28a745';
-                        if (window.showToast) window.showToast('success', data.message);
                         updateCartBadge(data.cart_count);
                         setTimeout(function () {
                             var m = bootstrap.Modal.getInstance(document.getElementById('itemDetailsModal'));
@@ -785,6 +787,7 @@
                             btn.style.background = originalBg;
                             btn.disabled = false;
                             form.querySelector('input[name="quantity"]').value = 1;
+                            if (typeof openMiniCart === 'function') openMiniCart();
                         }, 1000);
                     }
                 })

@@ -132,120 +132,452 @@
     }
 </style>
 
-<div class="page-header">
-    <h1>Reservations</h1>
-    <p>Manage incoming table bookings and exclusive events.</p>
+<style>
+    /* Premium Reservation Cards Layout */
+    .res-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .res-card {
+        background: #ffffff;
+        border-radius: 20px;
+        border: 1px solid rgba(139, 99, 75, 0.1);
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .res-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(139, 99, 75, 0.08);
+        border-color: rgba(139, 99, 75, 0.2);
+    }
+
+    .res-card-header {
+        padding: 1.25rem 1.5rem;
+        background: linear-gradient(135deg, #ffffff 0%, #faf6f1 100%);
+        border-bottom: 1px solid rgba(139, 99, 75, 0.05);
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+
+    .res-guest-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .res-avatar {
+        width: 45px;
+        height: 45px;
+        background: linear-gradient(135deg, #8B634B, #5D4037);
+        color: #fff;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 1.2rem;
+        box-shadow: 0 4px 10px rgba(139, 99, 75, 0.2);
+    }
+
+    .res-guest-name {
+        font-family: 'Playfair Display', serif;
+        font-weight: 800;
+        font-size: 1.15rem;
+        color: #3E2723;
+        margin: 0;
+        line-height: 1.2;
+    }
+
+    .res-type-badge {
+        font-size: 0.65rem;
+        font-weight: 800;
+        padding: 0.25rem 0.6rem;
+        border-radius: 50px;
+        letter-spacing: 0.5px;
+        margin-top: 0.25rem;
+        display: inline-block;
+    }
+
+    .type-regular {
+        background: #E8F5E9;
+        color: #2E7D32;
+    }
+
+    .type-exclusive {
+        background: #FFF3E0;
+        color: #E65100;
+    }
+
+    .res-card-body {
+        padding: 1.5rem;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 1.2rem;
+    }
+
+    .res-detail-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    .res-detail-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .res-detail-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #a48c7e;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .res-detail-value {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #4a3b32;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .res-detail-value i {
+        color: #8B634B;
+        opacity: 0.7;
+    }
+
+    .res-payment-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+    }
+
+    .payment-paid {
+        background: #eff2eb;
+        border-color: #dee5d9;
+        color: #425c38;
+    }
+
+    .payment-unpaid {
+        background: #f6ebe9;
+        border-color: #eddad7;
+        color: #874338;
+    }
+
+    .res-card-footer {
+        padding: 1.25rem 1.5rem;
+        background: #fdfaf7;
+        border-top: 1px solid rgba(139, 99, 75, 0.05);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .res-status-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
+
+    .res-status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+    }
+
+    .status-dot-pending {
+        background: #c2934d;
+        box-shadow: 0 0 0 3px rgba(194, 147, 77, 0.2);
+    }
+
+    .status-dot-confirmed {
+        background: #577551;
+        box-shadow: 0 0 0 3px rgba(87, 117, 81, 0.2);
+    }
+
+    .status-dot-completed {
+        background: #4a3b32;
+        box-shadow: 0 0 0 3px rgba(74, 59, 50, 0.2);
+    }
+
+    .status-dot-rejected {
+        background: #8a4a41;
+        box-shadow: 0 0 0 3px rgba(138, 74, 65, 0.2);
+    }
+
+    .status-dot-cancelled {
+        background: #8b8178;
+        box-shadow: 0 0 0 3px rgba(139, 129, 120, 0.2);
+    }
+
+    .res-actions {
+        display: flex;
+        gap: 0.6rem;
+        align-items: center;
+    }
+
+    .btn-res-action {
+        padding: 0.6rem 1.25rem;
+        border-radius: 12px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        height: 40px;
+        /* Consistent height for alignment */
+    }
+
+    .btn-approve {
+        background: #4a3b32;
+        /* Dark Coffee Brown */
+        color: white;
+        box-shadow: 0 4px 10px rgba(74, 59, 50, 0.15);
+    }
+
+    .btn-approve:hover {
+        background: #352a23;
+        transform: translateY(-2px);
+    }
+
+    .btn-reject {
+        background: #f8f3f0;
+        color: #8a4a41;
+        width: 40px;
+        /* Make it square for the 'X' button appearance */
+        padding: 0;
+        font-size: 0.9rem;
+    }
+
+    .btn-reject:hover {
+        background: #f0e6e1;
+        color: #a93c2e;
+    }
+
+    .btn-complete {
+        background: #4a3b32;
+        color: white;
+        box-shadow: 0 4px 10px rgba(74, 59, 50, 0.2);
+    }
+
+    .btn-complete:hover {
+        background: #352a23;
+        transform: translateY(-2px);
+    }
+
+    /* Empty state styling */
+    .empty-res-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: #ffffff;
+        border-radius: 20px;
+        border: 1px dashed rgba(139, 99, 75, 0.2);
+    }
+</style>
+
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div>
+        <h1 style="font-family: 'Playfair Display', serif; font-weight: 800; color: #3E2723;">Reservations</h1>
+        <p style="color: #8B634B; opacity: 0.8; font-weight: 500;">Manage incoming table bookings and exclusive events.
+        </p>
+    </div>
+    <div class="filter-tabs"
+        style="background: #fff; padding: 0.4rem; border-radius: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); margin: 0;">
+        <button onclick="filterReservations('ALL')" class="filter-tab active" data-filter="ALL"
+            style="border:none; outline:none; font-family:inherit;">All</button>
+        <button onclick="filterReservations('PENDING')" class="filter-tab" data-filter="PENDING"
+            style="border:none; outline:none; font-family:inherit;"><i class="fas fa-clock me-1"></i> Pending</button>
+        <button onclick="filterReservations('CONFIRMED')" class="filter-tab" data-filter="CONFIRMED"
+            style="border:none; outline:none; font-family:inherit;"><i class="fas fa-check me-1"></i> Confirmed</button>
+        <button onclick="filterReservations('COMPLETED')" class="filter-tab" data-filter="COMPLETED"
+            style="border:none; outline:none; font-family:inherit;"><i class="fas fa-flag-checkered me-1"></i>
+            Completed</button>
+    </div>
 </div>
 
-<div class="filter-tabs">
-    <a href="{{ url_for('admin.reservations', status='ALL') }}"
-        class="filter-tab {{ 'active' if status_filter == 'ALL' }}">All</a>
-    <a href="{{ url_for('admin.reservations', status='PENDING') }}"
-        class="filter-tab {{ 'active' if status_filter == 'PENDING' }}"><i class="fas fa-clock me-1"></i> Pending</a>
-    <a href="{{ url_for('admin.reservations', status='CONFIRMED') }}"
-        class="filter-tab {{ 'active' if status_filter == 'CONFIRMED' }}"><i class="fas fa-check me-1"></i>
-        Confirmed</a>
-    <a href="{{ url_for('admin.reservations', status='COMPLETED') }}"
-        class="filter-tab {{ 'active' if status_filter == 'COMPLETED' }}"><i class="fas fa-flag-checkered me-1"></i>
-        Completed</a>
+<div class="mb-3">
+    <h3 style="font-size: 1.1rem; font-weight: 700; color: #5D4037;"><i class="fas fa-list me-2 opacity-50"></i>{{
+        reservations.total }} Reservation{{ 's' if reservations.total != 1 else '' }}</h3>
 </div>
 
-<div class="admin-table-wrap">
-    <div class="admin-table-header">
-        <h3>{{ reservations.total }} Reservation{{ 's' if reservations.total != 1 else '' }}</h3>
+{% if reservations.items %}
+<div class="res-grid">
+    {% for res in reservations.items %}
+    <div class="res-card" data-status="{{ res.status }}">
+        <div class="res-card-header">
+            <div class="res-guest-info">
+                <div class="res-avatar">
+                    {{ res.user.first_name[0] }}{{ res.user.last_name[0] }}
+                </div>
+                <div>
+                    <h3 class="res-guest-name">{{ res.user.first_name }} {{ res.user.last_name }}</h3>
+                    <div
+                        class="res-type-badge {{ 'type-exclusive' if res.booking_type == 'EXCLUSIVE' else 'type-regular' }}">
+                        {{ res.booking_type }}
+                    </div>
+                </div>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-size: 0.75rem; color: #a48c7e; font-weight: 700;">GUESTS</div>
+                <div style="font-size: 1.25rem; font-weight: 800; color: #8B634B;">{{ res.guest_count }}</div>
+            </div>
+        </div>
+
+        <div class="res-card-body">
+            <div class="res-detail-grid">
+                <div class="res-detail-item">
+                    <span class="res-detail-label">Schedule</span>
+                    <span class="res-detail-value"><i class="fas fa-calendar-alt"></i> {{ res.date.strftime('%b %d, %Y')
+                        }}</span>
+                    <span class="res-detail-value" style="font-size: 0.8rem; opacity: 0.8;"><i class="fas fa-clock"></i>
+                        {{ res.time.strftime('%I:%M %p') }}</span>
+                </div>
+
+                <div class="res-detail-item">
+                    <span class="res-detail-label">Table / Details</span>
+                    <span class="res-detail-value"><i class="fas fa-chair"></i> {{ res.table_number or 'Unassigned'
+                        }}</span>
+                    <span class="res-detail-value"
+                        style="font-size: 0.8rem; opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+                        title="{{ res.occasion or 'No occasion specified' }}">
+                        <i class="fas fa-gift"></i> {{ res.occasion or 'No occassion' }}
+                    </span>
+                </div>
+            </div>
+
+            <div style="height: 1px; background: rgba(139, 99, 75, 0.05); margin: 0.25rem 0;"></div>
+
+            <div class="res-detail-item">
+                <span class="res-detail-label">Payment & Order Link</span>
+                {% if res.linked_order %}
+                {% if res.linked_order.payment_status == 'PAID' %}
+                <div class="res-payment-badge payment-paid">
+                    <i class="fas fa-check-circle"></i> PAID · ₱{{ "%.2f"|format(res.linked_order.total_amount) }}
+                </div>
+                {% else %}
+                <div class="res-payment-badge payment-unpaid">
+                    <i class="fas fa-times-circle"></i> UNPAID · ₱{{ "%.2f"|format(res.linked_order.total_amount) }}
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="res-payment-badge">
+                    <i class="fas fa-minus-circle" style="color: #adb5bd;"></i> No Associated Order
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="res-card-footer">
+            <div class="res-status-indicator">
+                <div class="res-status-dot status-dot-{{ res.status|lower }}"></div>
+                <span style="color: #4a3b32;">{{ res.status }}</span>
+            </div>
+
+            <div class="res-actions">
+                {% if res.status == 'PENDING' %}
+                <form method="POST" action="{{ url_for('admin.update_reservation', res_id=res.id) }}"
+                    style="margin: 0;">
+                    <input type="hidden" name="status" value="REJECTED">
+                    <button type="submit" class="btn-res-action btn-reject" title="Reject">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </form>
+                <button class="btn-res-action btn-approve" data-res-id="{{ res.id }}"
+                    data-guest-name="{{ res.user.first_name }} {{ res.user.last_name }}"
+                    data-res-date="{{ res.date.strftime('%b %d, %Y') }}"
+                    data-res-time="{{ res.time.strftime('%I:%M %p') }}" data-guest-count="{{ res.guest_count }}"
+                    data-occasion="{{ res.occasion or '' }}"
+                    data-has-order="{{ 'true' if res.linked_order else 'false' }}"
+                    data-order-total="{{ '%.2f'|format(res.linked_order.total_amount) if res.linked_order else '0.00' }}"
+                    onclick="openTableModal(this)">
+                    <i class="fas fa-check"></i> Confirm
+                </button>
+                {% elif res.status == 'CONFIRMED' %}
+                <form method="POST" action="{{ url_for('admin.update_reservation', res_id=res.id) }}"
+                    style="margin: 0;">
+                    <input type="hidden" name="status" value="COMPLETED">
+                    <button type="submit" class="btn-res-action btn-complete">
+                        <i class="fas fa-flag-checkered"></i> Complete
+                    </button>
+                </form>
+                {% else %}
+                <span style="font-size: 0.75rem; color: #9ca3af; font-weight: 600; font-style: italic;">No further
+                    action</span>
+                {% endif %}
+            </div>
+        </div>
     </div>
-    <div style="overflow-x: auto;">
-        <table class="admin-table">
-            <thead>
-                <tr>
-                    <th>Guest</th>
-                    <th>Type</th>
-                    <th>Date & Time</th>
-                    <th>Payment/Order</th>
-                    <th>Table</th>
-                    <th>Guests</th>
-                    <th>Occasion</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for res in reservations.items %}
-                <tr>
-                    <td><strong>{{ res.user.first_name }} {{ res.user.last_name }}</strong></td>
-                    <td><span
-                            class="badge-status {{ 'badge-active' if res.booking_type == 'EXCLUSIVE' else 'badge-pending' }}">{{
-                            res.booking_type }}</span></td>
-                    <td>{{ res.date.strftime('%b %d, %Y') }} · {{ res.time.strftime('%I:%M %p') }}</td>
-                    <td>
-                        {% if res.linked_order %}
-                            {% if res.linked_order.payment_status == 'PAID' %}
-                                <span style="color: #27ae60; font-weight: bold; font-size: 0.8rem;"><i class="fas fa-check-circle"></i> PAID</span>
-                            {% else %}
-                                <span style="color: #e74c3c; font-weight: bold; font-size: 0.8rem;"><i class="fas fa-times-circle"></i> UNPAID</span>
-                            {% endif %}
-                            <div style="font-size: 0.75rem; color: #7f8c8d; margin-top: 2px;">₱{{ "%.2f"|format(res.linked_order.total_amount) }}</div>
-                        {% else %}
-                            <span style="color: #7f8c8d; font-size: 0.8rem;">No Order Linked</span>
-                        {% endif %}
-                    </td>
-                    <td><span style="font-weight: 700; color: #8b634b;">{{ res.table_number or '—' }}</span></td>
-                    <td>{{ res.guest_count }}</td>
-                    <td>{{ res.occasion or '—' }}</td>
-                    <td><span class="badge-status badge-{{ res.status|lower }}">{{ res.status }}</span></td>
-                    <td>
-                        <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
-                            {% if res.status == 'PENDING' %}
-                            <button class="btn-admin btn-admin-success" style="font-size: 0.78rem;"
-                                data-res-id="{{ res.id }}"
-                                data-guest-name="{{ res.user.first_name }} {{ res.user.last_name }}"
-                                data-res-date="{{ res.date.strftime('%b %d, %Y') }}"
-                                data-res-time="{{ res.time.strftime('%I:%M %p') }}"
-                                data-guest-count="{{ res.guest_count }}"
-                                data-occasion="{{ res.occasion or '' }}"
-                                data-has-order="{{ 'true' if res.linked_order else 'false' }}"
-                                data-order-total="{{ '%.2f'|format(res.linked_order.total_amount) if res.linked_order else '0.00' }}"
-                                onclick="openTableModal(this)">
-                                <i class="fas fa-check"></i> Confirm
-                            </button>
-                            <form method="POST" action="{{ url_for('admin.update_reservation', res_id=res.id) }}"><input
-                                    type="hidden" name="status" value="REJECTED"><button
-                                    class="btn-admin btn-admin-danger" style="font-size: 0.78rem;"><i
-                                        class="fas fa-times"></i> Reject</button></form>
-                            {% elif res.status == 'CONFIRMED' %}
-                            <form method="POST" action="{{ url_for('admin.update_reservation', res_id=res.id) }}"><input
-                                    type="hidden" name="status" value="COMPLETED"><button
-                                    class="btn-admin btn-admin-primary" style="font-size: 0.78rem;"><i
-                                        class="fas fa-flag-checkered"></i> Complete</button></form>
-                            {% else %}
-                            <span style="color: var(--admin-text-muted); font-size: 0.8rem;">No actions</span>
-                            {% endif %}
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {{ render_pagination(reservations, 'admin.reservations') }}
+    {% endfor %}
 </div>
+</div>
+
+<div id="noReservationsState" class="empty-res-state" style="display: none;">
+    <div
+        style="width: 80px; height: 80px; background: #faf6f1; color: #8B634B; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin: 0 auto 1.5rem;">
+        <i class="fas fa-calendar-times"></i>
+    </div>
+    <h3 style="font-family: 'Playfair Display', serif; font-weight: 800; color: #3E2723; margin-bottom: 0.5rem;">No
+        reservations found</h3>
+    <p style="color: #8D6E63; max-width: 400px; margin: 0 auto;">There are currently no reservations under this
+        category. Check back later.</p>
+</div>
+{% else %}
+<div class="empty-res-state">
+    <div
+        style="width: 80px; height: 80px; background: #faf6f1; color: #8B634B; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin: 0 auto 1.5rem;">
+        <i class="fas fa-calendar-times"></i>
+    </div>
+    <h3 style="font-family: 'Playfair Display', serif; font-weight: 800; color: #3E2723; margin-bottom: 0.5rem;">No
+        reservations found</h3>
+    <p style="color: #8D6E63; max-width: 400px; margin: 0 auto;">There are currently no reservations locally present.
+        Check back later.</p>
+</div>
+{% endif %}
 
 <!-- Table Assignment Modal -->
 <div id="tableModal" class="table-modal">
     <div class="table-modal-card">
         <div class="modal-head">
             <h4>Confirm Booking</h4>
-            <div id="resSummary" style="background: rgba(139, 99, 75, 0.05); padding: 1rem; border-radius: 12px; margin: 1rem 0; border: 1px dashed rgba(139, 99, 75, 0.2);">
+            <div id="resSummary"
+                style="background: rgba(139, 99, 75, 0.05); padding: 1rem; border-radius: 12px; margin: 1rem 0; border: 1px dashed rgba(139, 99, 75, 0.2);">
                 <div style="font-size: 0.85rem; color: #5D4037; font-weight: 600; margin-bottom: 0.4rem;">
                     <i class="fas fa-user-circle me-1"></i> <span id="sumName">Ryan</span>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.78rem; color: #8D6E63;">
+                <div
+                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.78rem; color: #8D6E63;">
                     <span><i class="fas fa-calendar-alt me-1"></i> <span id="sumDate">Date</span></span>
                     <span><i class="fas fa-clock me-1"></i> <span id="sumTime">Time</span></span>
                     <span><i class="fas fa-users me-1"></i> <span id="sumGuests">0</span> guests</span>
-                    <span id="sumOccasionTag"><i class="fas fa-gift me-1"></i> <span id="sumOccasion">Occasion</span></span>
+                    <span id="sumOccasionTag"><i class="fas fa-gift me-1"></i> <span
+                            id="sumOccasion">Occasion</span></span>
                 </div>
-                <div id="orderBadge" style="display:none; margin-top: 0.8rem; padding: 4px 8px; background: #E8F5E9; color: #2E7D32; border-radius: 6px; font-size: 0.72rem; font-weight: 700; width: fit-content;">
+                <div id="orderBadge"
+                    style="display:none; margin-top: 0.8rem; padding: 4px 8px; background: #E8F5E9; color: #2E7D32; border-radius: 6px; font-size: 0.72rem; font-weight: 700; width: fit-content;">
                     <i class="fas fa-utensils me-1"></i> PRE-ORDERED FOOD READY
                 </div>
             </div>
@@ -254,8 +586,8 @@
             <input type="hidden" name="status" value="CONFIRMED">
             <div class="modal-input-group">
                 <label for="table_number_input">Table Number / Label</label>
-                <input type="text" id="table_number_input" name="table_number" list="tables-list" placeholder="e.g. 1, 5, Vip 1"
-                    required autofocus>
+                <input type="text" id="table_number_input" name="table_number" list="tables-list"
+                    placeholder="e.g. 1, 5, Vip 1" required autofocus>
                 <datalist id="tables-list">
                     <option value="Table 1">
                     <option value="Table 2">
@@ -282,20 +614,20 @@
         const modal = document.getElementById('tableModal');
         const form = document.getElementById('modalConfirmForm');
         const data = btn.dataset;
-        
+
         // Fill Summary
         document.getElementById('sumName').innerText = data.guestName;
         document.getElementById('sumDate').innerText = data.resDate;
         document.getElementById('sumTime').innerText = data.resTime;
         document.getElementById('sumGuests').innerText = data.guestCount;
-        
+
         if (data.occasion) {
             document.getElementById('sumOccasionTag').style.display = 'inline';
             document.getElementById('sumOccasion').innerText = data.occasion;
         } else {
             document.getElementById('sumOccasionTag').style.display = 'none';
         }
- 
+
         const orderBadge = document.getElementById('orderBadge');
         if (data.hasOrder === 'true') {
             orderBadge.style.display = 'block';
@@ -303,10 +635,10 @@
         } else {
             orderBadge.style.display = 'none';
         }
- 
+
         // Dynamic URL for the form action
         form.action = `/admin/reservations/update/${data.resId}`;
- 
+
         modal.style.display = 'flex';
         document.getElementById('table_number_input').focus();
     }
@@ -323,9 +655,28 @@
             closeTableModal();
         }
     }
+    // Instant Client-side filtering logic
+    function filterReservations(status) {
+        // Toggle Active state on Tabs
+        document.querySelectorAll('.filter-tabs .filter-tab').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.filter === status) btn.classList.add('active');
+        });
+
+        let visibleCount = 0;
+        document.querySelectorAll('.res-card').forEach(card => {
+            if (status === 'ALL' || card.dataset.status === status) {
+                card.style.display = 'flex';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        const emptyState = document.getElementById('noReservationsState');
+        if (emptyState) {
+            emptyState.style.display = visibleCount === 0 ? 'block' : 'none';
+        }
+    }
 </script>
 {% endblock %}
-
-
-
-

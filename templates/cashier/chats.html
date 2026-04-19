@@ -1,0 +1,81 @@
+{% extends "layouts/staff_layout.html" %}
+
+{% block title %}Customer Chats — Le Maison{% endblock %}
+
+{% block portal_sub %}POS Terminal{% endblock %}
+{% block portal_role %}Cashier Staff{% endblock %}
+{% block logout_url %}{{ url_for('cashier_portal.cashier_logout') }}{% endblock %}
+
+{% block sidebar_nav %}
+    {% include "cashier/_sidebar.html" %}
+{% endblock %}
+
+{% block page_title %}Customer Support{% endblock %}
+{% block page_subtitle %}View and respond to customer messages{% endblock %}
+
+{% block extra_style %}
+    .chat-avatar {
+        width: 40px; height: 40px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(139, 99, 75, 0.1); color: var(--primary);
+        font-weight: 800; font-size: 0.9rem; flex-shrink: 0;
+    }
+    .chat-row td { vertical-align: middle; }
+    .chat-name { font-weight: 700; color: var(--text); font-size: 0.95rem; }
+    .chat-email { font-size: 0.83rem; color: #8d6e63; font-weight: 500; }
+    .chat-time { font-size: 0.78rem; color: var(--muted); font-weight: 500; }
+    .btn-open-chat {
+        background: linear-gradient(135deg, #5D4037, #795548);
+        color: #fff; border: none; padding: 6px 18px;
+        border-radius: 50px; font-size: 0.75rem; font-weight: 700;
+        text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+        transition: all 0.2s;
+    }
+    .btn-open-chat:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(93,64,55,0.25); color:#fff; }
+{% endblock %}
+
+{% block content %}
+    <div class="section-card">
+        <div class="section-header">
+            <h2><i class="fas fa-comments" style="opacity:0.5; margin-right:10px;"></i>Active Conversations</h2>
+            <span class="pill" style="background:rgba(93,64,55,0.08); color:var(--primary); font-weight:700;">{{ chat_users|length }} Chats</span>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th style="text-align:left;">Customer</th>
+                    <th>Email</th>
+                    <th>Last Message</th>
+                    <th style="text-align:right;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user, last_at in chat_users %}
+                <tr class="chat-row">
+                    <td style="text-align:left;">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <div class="chat-avatar">{{ user.first_name[0] }}</div>
+                            <span class="chat-name">{{ user.first_name }} {{ user.last_name }}</span>
+                        </div>
+                    </td>
+                    <td class="chat-email">{{ user.email }}</td>
+                    <td class="chat-time">{{ last_at.strftime('%b %d, %Y — %I:%M %p') }}</td>
+                    <td style="text-align:right;">
+                        <a href="{{ url_for('admin.chat_with_user', user_id=user.id) }}" class="btn-open-chat">
+                            <i class="fas fa-paper-plane"></i> Open Chat
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" style="text-align:center; padding:50px 20px;">
+                        <div style="color:var(--muted);"><i class="fas fa-comment-slash" style="font-size:2rem; opacity:0.2; margin-bottom:10px; display:block;"></i></div>
+                        <p style="font-weight:700; font-size:0.95rem;">No chat conversations found</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

@@ -20,6 +20,13 @@ window.showToast = function(category, message) {
     const container = document.getElementById('toastContainer');
     if (!container) return;
 
+    // Auto-open mini-cart sidebar when item is added to cart
+    if (category === 'success' && message && (message.toLowerCase().includes('added') || message.toLowerCase().includes('cart'))) {
+        if (typeof openMiniCart === 'function') {
+            openMiniCart();
+        }
+    }
+
     const cfg = {
         success: { icon: '✅', title: 'Success',     color: '#2E7D32', bg: '#E8F5E9' },
         danger:  { icon: '❌', title: 'Error',       color: '#C62828', bg: '#FFEBEE' },

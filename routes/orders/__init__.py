@@ -153,6 +153,7 @@ def checkout():
     notes = request.form.get('notes', '')
     dining_option = request.form.get('dining_option', 'DINE_IN')
     payment_method = request.form.get('payment_method', 'COUNTER')
+    voucher_code = request.form.get('voucher_code', '').strip().upper()
     
     delivery_area = request.form.get('delivery_area', '')
     delivery_address_input = request.form.get('delivery_address', '')
@@ -183,6 +184,31 @@ def checkout():
             )
             order_items.append(order_item)
             
+    # Apply Voucher if provided
+    from models import Voucher # just in case
+    discount_amount = Decimal('0.0')
+    if voucher_code:
+        voucher = Voucher.query.filter_by(code=voucher_code, is_active=True).first()
+        from datetime import datetime
+        now = datetime.now()
+        is_valid = True
+        if not voucher: is_valid = False
+        elif voucher.valid_from and now < voucher.valid_from: is_valid = False
+        elif voucher.valid_until and now > voucher.valid_until: is_valid = False
+        elif voucher.times_used >= voucher.max_uses: is_valid = False
+        elif total < Decimal(str(voucher.min_order_amount)): is_valid = False
+        
+        if is_valid:
+            if voucher.discount_type == 'PERCENT':
+                discount_amount = total * (Decimal(str(voucher.discount_value)) / Decimal('100.0'))
+            else:
+                discount_amount = Decimal(str(voucher.discount_value))
+            
+            total -= discount_amount
+            if total < Decimal('0.0'):
+                total = Decimal('0.0')
+            voucher.times_used += 1
+
     # Add Delivery Fee if applicable
     if dining_option == 'DELIVERY':
         total += Decimal('50.0')  # Flat delivery fee

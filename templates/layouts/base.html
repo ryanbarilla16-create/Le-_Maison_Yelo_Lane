@@ -10,15 +10,17 @@
     {% include 'includes/navbar.html' %}
 
     <!-- Toast Notification Container -->
-    <div id="toastContainer" style="position: fixed; top: 80px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;"></div>
+    <div id="toastContainer"
+        style="position: fixed; bottom: 40px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; justify-content: flex-end;">
+    </div>
 
-    <div class="container-fluid main-container" style="padding-top: 56px;">
+    <div class="container-fluid main-container" style="padding-top: 65px;">
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
         <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const toasts = [
-                {% for category, message in messages %}
+            document.addEventListener('DOMContentLoaded', function () {
+                const toasts = [
+                    {% for category, message in messages %}
                 { category: "{{ category }}", message: {{ message | tojson }} },
                 {% endfor %}
             ];
@@ -29,34 +31,272 @@
         {% endwith %}
 
         <style>
-        .toast-notif {
-            pointer-events: all;
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            background: #fff;
-            border-radius: 14px;
-            padding: 14px 18px;
-            min-width: 300px;
-            max-width: 380px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.13), 0 2px 8px rgba(0,0,0,0.07);
-            transform: translateX(120%);
-            opacity: 0;
-            transition: transform 0.4s cubic-bezier(.22,1,.36,1), opacity 0.35s ease;
-            border-left: 4px solid #8b634b;
-            position: relative;
-            overflow: hidden;
-        }
-        .toast-notif.show { transform: translateX(0); opacity: 1; }
-        .toast-notif.hide { transform: translateX(120%); opacity: 0; }
-        .toast-notif .toast-icon { font-size: 1.3rem; margin-top: 1px; flex-shrink: 0; }
-        .toast-notif .toast-body { flex: 1; }
-        .toast-notif .toast-title { font-weight: 700; font-size: 0.85rem; margin-bottom: 2px; }
-        .toast-notif .toast-msg { font-size: 0.82rem; color: #555; line-height: 1.4; }
-        .toast-notif .toast-close { background: none; border: none; cursor: pointer; color: #aaa; font-size: 1rem; padding: 0; line-height: 1; flex-shrink: 0; margin-top: 1px; }
-        .toast-notif .toast-close:hover { color: #333; }
-        .toast-notif .toast-progress { position: absolute; bottom: 0; left: 0; height: 3px; border-radius: 0 0 0 14px; animation: toastProgress 4s linear forwards; }
-        @keyframes toastProgress { from { width: 100%; } to { width: 0%; } }
+            /* ── Mini Cart Sidebar ── */
+            .mini-cart-drawer {
+                position: fixed;
+                top: 0;
+                right: -420px;
+                width: 420px;
+                height: 100vh;
+                background: #FDFBF9;
+                z-index: 2001;
+                box-shadow: -10px 0 40px rgba(0, 0, 0, 0.1);
+                transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+                display: flex;
+                flex-direction: column;
+                border-left: 1px solid rgba(139, 99, 75, 0.1);
+            }
+
+            .mini-cart-drawer.open {
+                right: 0;
+            }
+
+            .mini-cart-overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0);
+                z-index: 2000;
+                display: none;
+                pointer-events: none;
+            }
+
+            .mini-cart-overlay.show {
+                display: block;
+            }
+
+            .m-cart-header {
+                padding: 1.5rem 2rem;
+                border-bottom: 1px solid rgba(139, 99, 75, 0.08);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                background: #fff;
+            }
+
+            .m-cart-header h4 {
+                font-family: 'Playfair Display', serif;
+                font-weight: 800;
+                color: #4E342E;
+                margin: 0;
+            }
+
+            .m-cart-body {
+                flex: 1;
+                overflow-y: auto;
+                padding: 1.5rem;
+            }
+
+            .m-cart-footer {
+                padding: 2rem;
+                background: #fff;
+                border-top: 1px solid rgba(139, 99, 75, 0.08);
+                box-shadow: 0 -10px 20px rgba(0, 0, 0, 0.02);
+            }
+
+            .m-cart-item {
+                display: grid;
+                grid-template-columns: 24px 60px 1fr auto;
+                gap: 1rem;
+                align-items: center;
+                padding: 1rem 0;
+                border-bottom: 1px dashed rgba(139, 99, 75, 0.12);
+            }
+
+            .m-cart-item:last-child {
+                border-bottom: none;
+            }
+
+            .m-cart-img {
+                width: 60px;
+                height: 60px;
+                border-radius: 12px;
+                object-fit: cover;
+            }
+
+            .m-cart-info h6 {
+                font-weight: 700;
+                color: #4E342E;
+                margin: 0;
+                font-size: 0.9rem;
+                margin-bottom: 4px;
+            }
+
+            .m-cart-info p {
+                color: #8B634B;
+                font-weight: 700;
+                margin: 0;
+                font-size: 0.85rem;
+            }
+
+            .m-cart-qty {
+                font-size: 0.75rem;
+                color: #A1887F;
+                margin-top: 2px;
+            }
+
+            .m-cart-total {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 1.2rem;
+            }
+
+            .m-cart-total span:first-child {
+                font-weight: 700;
+                color: #6D4C41;
+            }
+
+            .m-cart-total span:last-child {
+                font-family: 'Playfair Display', serif;
+                font-weight: 900;
+                color: #8B634B;
+                font-size: 1.3rem;
+            }
+
+            .m-cart-actions {
+                display: flex;
+                flex-direction: column;
+                gap: 0.8rem;
+            }
+
+            .btn-m-checkout {
+                background: #8B634B;
+                color: #fff;
+                padding: 0.9rem;
+                border-radius: 50px;
+                border: none;
+                font-weight: 800;
+                cursor: pointer;
+                transition: all 0.3s;
+            }
+
+            .btn-m-checkout:hover {
+                background: #5D4037;
+                transform: translateY(-2px);
+                box-shadow: 0 8px 20px rgba(139, 99, 75, 0.25);
+            }
+
+            .btn-m-view {
+                background: transparent;
+                color: #8B634B;
+                border: 1.5px solid #8B634B;
+                padding: 0.8rem;
+                border-radius: 50px;
+                font-weight: 700;
+                text-decoration: none;
+                text-align: center;
+                font-size: 0.85rem;
+                transition: all 0.2s;
+            }
+
+            .btn-m-view:hover {
+                background: rgba(139, 99, 75, 0.05);
+            }
+
+            .m-cart-empty {
+                text-align: center;
+                padding: 4rem 2rem;
+                color: #A1887F;
+            }
+
+            .m-cart-empty i {
+                font-size: 3rem;
+                opacity: 0.2;
+                margin-bottom: 1.5rem;
+                display: block;
+            }
+
+            @media (max-width: 480px) {
+                .mini-cart-drawer {
+                    width: 100%;
+                    right: -100%;
+                }
+            }
+
+            .toast-notif {
+                pointer-events: all;
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+                background: #fff;
+                border-radius: 14px;
+                padding: 14px 18px;
+                min-width: 300px;
+                max-width: 380px;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.13), 0 2px 8px rgba(0, 0, 0, 0.07);
+                transform: translateX(120%);
+                opacity: 0;
+                transition: transform 0.4s cubic-bezier(.22, 1, .36, 1), opacity 0.35s ease;
+                border-left: 4px solid #8b634b;
+                position: relative;
+                overflow: hidden;
+            }
+
+            .toast-notif.show {
+                transform: translateX(0);
+                opacity: 1;
+            }
+
+            .toast-notif.hide {
+                transform: translateX(120%);
+                opacity: 0;
+            }
+
+            .toast-notif .toast-icon {
+                font-size: 1.3rem;
+                margin-top: 1px;
+                flex-shrink: 0;
+            }
+
+            .toast-notif .toast-body {
+                flex: 1;
+            }
+
+            .toast-notif .toast-title {
+                font-weight: 700;
+                font-size: 0.85rem;
+                margin-bottom: 2px;
+            }
+
+            .toast-notif .toast-msg {
+                font-size: 0.82rem;
+                color: #555;
+                line-height: 1.4;
+            }
+
+            .toast-notif .toast-close {
+                background: none;
+                border: none;
+                cursor: pointer;
+                color: #aaa;
+                font-size: 1rem;
+                padding: 0;
+                line-height: 1;
+                flex-shrink: 0;
+                margin-top: 1px;
+            }
+
+            .toast-notif .toast-close:hover {
+                color: #333;
+            }
+
+            .toast-notif .toast-progress {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                height: 3px;
+                border-radius: 0 0 0 14px;
+                animation: toastProgress 4s linear forwards;
+            }
+
+            @keyframes toastProgress {
+                from {
+                    width: 100%;
+                }
+
+                to {
+                    width: 0%;
+                }
+            }
         </style>
 
         {% block content %}{% endblock %}
@@ -66,13 +306,167 @@
     {% include 'includes/chatbot.html' %}
     {% include 'includes/modals.html' %}
 
+    <!-- Mini Cart Sidebar -->
+    <div class="mini-cart-overlay" id="miniCartOverlay" onclick="closeMiniCart()"></div>
+    <div class="mini-cart-drawer" id="miniCartDrawer">
+        <div class="m-cart-header">
+            <h4><i class="fas fa-shopping-basket me-2" style="color:#8B634B;"></i>My Tray</h4>
+            <button class="btn-close" onclick="closeMiniCart()" style="box-shadow:none;"></button>
+        </div>
+
+        <div class="m-cart-body" id="miniCartBody">
+            <!-- Items load here via JS -->
+            <div class="text-center p-5">
+                <div class="spinner-border spinner-border-sm" style="color: #8B634B;"></div>
+            </div>
+        </div>
+
+        <div class="m-cart-footer" id="miniCartFooter" style="display: none;">
+            <div class="m-cart-total">
+                <span>Estimated Total</span>
+                <span id="miniCartTotal">₱0.00</span>
+            </div>
+            <div class="m-cart-actions">
+                <a href="{{ url_for('main.view_cart') }}"
+                    class="btn-m-checkout d-block w-100 text-center text-decoration-none">View Full Cart</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Cart Scripts -->
+    <script>
+        function toggleMiniCart() {
+            const drawer = document.getElementById('miniCartDrawer');
+            const overlay = document.getElementById('miniCartOverlay');
+            if (drawer.classList.contains('open')) {
+                closeMiniCart();
+            } else {
+                openMiniCart();
+            }
+        }
+
+        function openMiniCart() {
+            document.getElementById('miniCartDrawer').classList.add('open');
+            document.getElementById('miniCartOverlay').classList.add('show');
+            loadMiniCart();
+        }
+
+        function closeMiniCart() {
+            document.getElementById('miniCartDrawer').classList.remove('open');
+            document.getElementById('miniCartOverlay').classList.remove('show');
+        }
+
+        function loadMiniCart() {
+            const body = document.getElementById('miniCartBody');
+            const footer = document.getElementById('miniCartFooter');
+
+            fetch('/api/cart/items')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.items && data.items.length > 0) {
+                        let html = `
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="d-flex align-items-center gap-2" style="cursor:pointer;" onclick="toggleSelectAllMini()">
+                                    <input type="checkbox" id="mSelectAll" style="accent-color: #8B634B; width:16px; height:16px;">
+                                    <label for="mSelectAll" style="font-size: 0.8rem; font-weight: 700; color: #8B634B; cursor:pointer;">Select All</label>
+                                </div>
+                                <button type="button" onclick="deleteSelectedMini()" class="text-danger" style="background: none; border: none; font-size: 0.8rem; font-weight: 700; cursor: pointer; padding: 0;">
+                                    <i class="fas fa-trash-alt me-1"></i> Delete
+                                </button>
+                            </div>
+                        `;
+
+                        data.items.forEach(item => {
+                            html += `
+                                <div class="m-cart-item">
+                                    <input type="checkbox" class="m-item-check" value="${item.id}" onchange="updateMiniCheckoutBtn()" style="accent-color: #8B634B;">
+                                    <img src="${item.image_url || '/static/images/placeholder.png'}" class="m-cart-img" onerror="this.src='https://placehold.co/100x100?text=Food'">
+                                    <div class="m-cart-info">
+                                        <h6>${item.name}</h6>
+                                        <p>₱${item.price.toFixed(2)}</p>
+                                        <div class="m-cart-qty">Qty: ${item.quantity}</div>
+                                    </div>
+                                    <div style="font-weight: 800; color: #4E342E; font-size: 0.9rem;">₱${item.subtotal.toFixed(2)}</div>
+                                </div>
+                            `;
+                        });
+
+                        body.innerHTML = html;
+                        document.getElementById('miniCartTotal').innerText = '₱' + data.total.toLocaleString(undefined, { minimumFractionDigits: 2 });
+                        footer.style.display = 'block';
+                        updateMiniCheckoutBtn();
+                    } else {
+                        body.innerHTML = `
+                            <div class="m-cart-empty">
+                                <i class="fas fa-shopping-basket"></i>
+                                <p style="font-family: 'Playfair Display', serif; font-size: 1.2rem; color: #4E342E; font-weight: 700;">Your tray is empty</p>
+                                <p style="font-size: 0.85rem; padding: 0 1rem;">Looks like you haven't added anything yet. Discover our delicious menu!</p>
+                                <a href="/menu" onclick="closeMiniCart()" class="btn-m-checkout d-inline-block px-5 mt-3" style="text-decoration:none;">Go to Menu</a>
+                            </div>
+                        `;
+                        footer.style.display = 'none';
+                    }
+                })
+                .catch(err => {
+                    console.error('Mini Cart Error:', err);
+                    body.innerHTML = '<div class="text-center p-5 text-danger">Failed to load cart.</div>';
+                });
+        }
+
+        function toggleSelectAllMini() {
+            const master = document.getElementById('mSelectAll');
+            const checks = document.querySelectorAll('.m-item-check');
+            checks.forEach(c => c.checked = master.checked);
+            updateMiniCheckoutBtn();
+        }
+
+        function updateMiniCheckoutBtn() {
+            const checks = document.querySelectorAll('.m-item-check');
+            const checked = document.querySelectorAll('.m-item-check:checked');
+            const master = document.getElementById('mSelectAll');
+
+            if (master) master.checked = (checks.length > 0 && checks.length === checked.length);
+        }
+
+        function deleteSelectedMini() {
+            const checked = document.querySelectorAll('.m-item-check:checked');
+            if (checked.length === 0) return;
+
+            const ids = Array.from(checked).map(c => c.value);
+            const formData = new FormData();
+            ids.forEach(id => formData.append('item_ids[]', id));
+
+            fetch('/cart/remove_multiple', {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            }).then(r => r.json()).then(data => {
+                if (data.status === 'success') {
+                    loadMiniCart();
+                    if (window.updateCartBadge) {
+                        // Recalculate badge (simple approach: fetch again or just decrement)
+                        fetch('/api/cart/items').then(r => r.json()).then(d => updateCartBadge(d.cart_count));
+                    }
+                }
+            });
+        }
+
+        // Expose helper to update badge (if not already defined globably)
+        window.updateCartBadge = function (count) {
+            const badge = document.querySelector('.cart-badge');
+            if (badge) {
+                badge.innerText = count;
+                badge.style.display = count > 0 ? 'block' : 'none';
+            }
+        };
+
+
+    </script>
+
     <!-- Scripts -->
     <script defer src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script defer src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='js/script.js') }}?v=2.0"></script>
 </body>
 
 </html>
-
-
-

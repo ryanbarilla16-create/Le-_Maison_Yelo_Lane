@@ -548,7 +548,8 @@
     .dashCatCard .ccImg {
         position: relative;
         width: 100%;
-        padding-top: 130%; /* Portrait rectangle aspect ratio */
+        padding-top: 130%;
+        /* Portrait rectangle aspect ratio */
         border-radius: 0;
         overflow: hidden;
         background: #f8f9fa;
@@ -697,7 +698,8 @@
 <main>
     <!-- ═══ CINEMATIC HERO ═══ -->
     <section class="dashHero">
-        <img loading="lazy" decoding="async" src="https://images.unsplash.com/photo-1600093463592-8e36ae95ef56?q=75&w=1600&auto=format&fit=crop"
+        <img loading="lazy" decoding="async"
+            src="https://images.unsplash.com/photo-1600093463592-8e36ae95ef56?q=75&w=1600&auto=format&fit=crop"
             alt="Restaurant Ambiance">
         <div class="dashHero-content">
             <div class="dashHero-text">
@@ -744,7 +746,8 @@
                 <div class="dashPanel-head">
                     <h5><i class="fas fa-clock" style="color: var(--primary-color); font-size: 0.95rem;"></i> Upcoming
                         Reservations</h5>
-                    <a href="{{ url_for('main.reserve') }}" class="panelBtn" onclick="clearReservationSession()"><i class="fas fa-plus"></i> New</a>
+                    <a href="{{ url_for('main.reserve') }}" class="panelBtn" onclick="clearReservationSession()"><i
+                            class="fas fa-plus"></i> New</a>
                 </div>
                 {% if upcoming %}
                 {% for res in upcoming %}
@@ -775,7 +778,8 @@
                 <div class="dashEmpty">
                     <div class="dashEmpty-icon"><i class="far fa-calendar"></i></div>
                     <p>No upcoming reservations</p>
-                    <a href="{{ url_for('main.reserve') }}" class="panelBtn" style="display: inline-flex;" onclick="clearReservationSession()">Book a
+                    <a href="{{ url_for('main.reserve') }}" class="panelBtn" style="display: inline-flex;"
+                        onclick="clearReservationSession()">Book a
                         Table</a>
                 </div>
                 {% endif %}
@@ -881,7 +885,8 @@
             {% for cat in categories %}
             <a href="{{ url_for('main.menu_page') }}" class="dashCatCard">
                 {% if cat.sample_image %}
-                <div class="ccImg"><img loading="lazy" decoding="async" src="{{ cat.sample_image }}" alt="{{ cat.category }}"></div>
+                <div class="ccImg"><img loading="lazy" decoding="async" src="{{ cat.sample_image }}"
+                        alt="{{ cat.category }}"></div>
                 {% else %}
                 <div class="ccImg"
                     style="background: linear-gradient(135deg, #8b634b, #8D6E63, #D4A862); display: flex; align-items: center; justify-content: center;">
@@ -890,7 +895,9 @@
                 {% endif %}
                 <div class="ccInfo" style="flex-grow: 1; display: flex; flex-direction: column;">
                     <h5>{{ cat.category }}</h5>
-                    <p class="fw-bold" style="color: var(--primary-color); font-size: 0.75rem; margin: 0; margin-top: auto;">See More <i class="fas fa-arrow-right ms-1"></i></p>
+                    <p class="fw-bold"
+                        style="color: var(--primary-color); font-size: 0.75rem; margin: 0; margin-top: auto;">See More
+                        <i class="fas fa-arrow-right ms-1"></i></p>
                 </div>
             </a>
             {% endfor %}
@@ -934,6 +941,3 @@
     </section>
 </main>
 {% endblock %}
-
-
-

@@ -167,6 +167,39 @@ def get_menu():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@api_bp.route('/cart/items', methods=['GET'])
+def get_cart_items():
+    """
+    Get current cart items from session (used for web mini-cart)
+    """
+    from flask import session
+    cart = session.get('cart', {})
+    cart_items = []
+    total = 0
+    total_qty = 0
+    
+    for item_id, quantity in cart.items():
+        menu_item = MenuItem.query.get(int(item_id))
+        if menu_item and not menu_item.is_deleted:
+            sub = float(menu_item.price * quantity)
+            total += sub
+            total_qty += quantity
+            cart_items.append({
+                'id': menu_item.id,
+                'name': menu_item.name,
+                'price': float(menu_item.price),
+                'quantity': quantity,
+                'subtotal': sub,
+                'image_url': menu_item.image_url,
+                'category': menu_item.category
+            })
+            
+    return jsonify({
+        'items': cart_items,
+        'total': total,
+        'cart_count': total_qty
+    }), 200
+
 @api_bp.route('/menu/categories', methods=['GET'])
 def get_categories():
     """

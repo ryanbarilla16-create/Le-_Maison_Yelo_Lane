@@ -60,8 +60,8 @@
 
     .cartItem {
         display: grid;
-        grid-template-columns: 30px 80px 2fr 1.2fr 1fr 1.2fr auto;
-        gap: 1.5rem;
+        grid-template-columns: 30px 80px minmax(120px, 2fr) auto auto auto auto;
+        gap: 1.2rem;
         align-items: center;
         padding: 1.8rem 2rem;
         border-bottom: 1px dashed rgba(139, 99, 75, 0.15);
@@ -134,6 +134,9 @@
         color: #4E342E;
         margin-bottom: 4px;
         font-family: 'Playfair Display', serif;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .cartItem-cat {
@@ -142,6 +145,9 @@
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .cartItem-price {
@@ -149,6 +155,8 @@
         font-weight: 600;
         font-size: 0.95rem;
         text-align: right;
+        white-space: nowrap;
+        min-width: 80px;
     }
 
     .qty-control {
@@ -420,7 +428,7 @@
         <div class="left-column">
             <div class="cart-controls d-flex justify-content-between align-items-center mb-3 px-2">
                 <div class="d-flex align-items-center gap-2" style="cursor:pointer;" onclick="document.getElementById('selectAllCheckbox').click();">
-                    <input class="custom-checkbox" type="checkbox" id="selectAllCheckbox" checked onclick="event.stopPropagation();">
+                    <input class="custom-checkbox" type="checkbox" id="selectAllCheckbox" onclick="event.stopPropagation();">
                     <label class="fw-bold mb-0" for="selectAllCheckbox" style="cursor:pointer; color: #8b634b; font-size: 1rem;">
                         Select All Items
                     </label>
@@ -434,7 +442,7 @@
                 {% for c_item in cart_items %}
                 <div class="cartItem" id="cart-row-{{ c_item.item.id }}">
                     <div class="m-0 p-0 text-center d-flex align-items-center justify-content-center">
-                        <input class="item-checkbox custom-checkbox" type="checkbox" value="{{ c_item.item.id }}" checked>
+                        <input class="item-checkbox custom-checkbox" type="checkbox" value="{{ c_item.item.id }}">
                     </div>
                 
                 {% if c_item.item.image_url %}
@@ -484,13 +492,28 @@
             <h5>Order Summary</h5>
             <div class="sumRow"><span>Items Subtotal</span><span id="itemsSubtotalDisplay">₱{{ "%.2f"|format(total)
                     }}</span></div>
+            <div class="sumRow text-success" id="discount_row" style="display: none !important;">
+                <span>Discount <small id="discount_label"></small></span>
+                <span id="discount_amountDisplay">-₱0.00</span>
+            </div>
             <div class="sumRow"><span>Tax & Fees</span><span style="font-style:italic;">At store</span></div>
             <div class="sumRow" id="delivery_fee_row" style="display: none !important;"><span>Delivery
                     Fee</span><span>₱50.00</span></div>
             <div class="sumTotal"><span>Total</span><span id="totalAmountDisplay">₱{{ "%.2f"|format(total) }}</span>
             </div>
 
+            <div class="voucher-section mb-4 mt-4 pb-3" style="border-bottom: 1px dashed rgba(139, 99, 75, 0.2);">
+                <label class="form-label mb-2" style="font-size: 0.85rem; font-weight: 600;"><i class="fas fa-ticket-alt me-1" style="color:var(--primary-color);"></i> Apply Voucher Code</label>
+                <div class="input-group input-group-sm">
+                    <input type="text" id="voucherCodeInput" class="form-control" placeholder="Enter code" style="border-radius: 8px 0 0 8px; border: 1px solid var(--border-color); text-transform: uppercase;">
+                    <button class="btn" type="button" id="applyVoucherBtn" style="background: var(--primary-color); color: white; border-radius: 0 8px 8px 0; font-weight: 600;">Apply</button>
+                    <button class="btn btn-outline-danger" type="button" id="removeVoucherBtn" style="display: none; border-radius: 0 8px 8px 0; font-weight: 600;">Remove</button>
+                </div>
+                <div id="voucherMessage" class="mt-2" style="font-size: 0.8rem; display: none;"></div>
+            </div>
+
             <form action="{{ url_for('main.checkout') }}" method="POST" style="margin-top: 1.5rem;">
+                <input type="hidden" name="voucher_code" id="checkout_voucher_code">
                 <label class="form-label">Dining Option</label>
                 <div class="cartOpt">
                     <input type="radio" class="btn-check" name="dining_option" id="dine_in" value="DINE_IN" checked>
@@ -602,9 +625,29 @@
             }
 
             // --- UI Update Helpers ---
+            let appliedDiscountAmount = 0;
+            let appliedVoucherCode = null;
+
             function refreshTotalsDisplay() {
                 const isDel = document.getElementById('delivery').checked;
-                const finalTotal = isDel ? currentBaseTotal + deliveryFee : currentBaseTotal;
+                let finalTotal = currentBaseTotal;
+                
+                if (appliedDiscountAmount > 0) {
+                    finalTotal -= appliedDiscountAmount;
+                }
+                if (finalTotal < 0) finalTotal = 0;
+
+                const dRow = document.getElementById('discount_row');
+                if (appliedDiscountAmount > 0) {
+                    dRow.style.setProperty('display', 'flex', 'important');
+                    document.getElementById('discount_amountDisplay').innerText = '-₱' + appliedDiscountAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                } else {
+                    dRow.style.setProperty('display', 'none', 'important');
+                }
+
+                if (isDel) {
+                     finalTotal += deliveryFee;
+                }
 
                 document.getElementById('itemsSubtotalDisplay').innerText = '₱' + currentBaseTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                 document.getElementById('totalAmountDisplay').innerText = '₱' + finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -613,6 +656,42 @@
                 // Update Labels
                 document.getElementById('label_pay_counter').innerHTML = isDel ? 'Cash on Delivery' : 'Pay at Counter';
                 document.getElementById('desc_pay_counter').innerText = isDel ? 'Pay cash when your order arrives.' : 'Pay cash or card in-store.';
+            }
+
+            function revalidateVoucher() {
+                if (!appliedVoucherCode) {
+                    refreshTotalsDisplay();
+                    return;
+                }
+                const msg = document.getElementById('voucherMessage');
+                
+                if (currentBaseTotal === 0) {
+                     appliedDiscountAmount = 0;
+                     refreshTotalsDisplay();
+                     return;
+                }
+
+                fetch('/api/voucher/apply', { 
+                    method: 'POST', 
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        code: appliedVoucherCode,
+                        order_total: currentBaseTotal
+                    })
+                })
+                .then(r => r.json()).then(data => {
+                    if (data.success) {
+                        appliedDiscountAmount = parseFloat(data.discount);
+                    } else {
+                        appliedDiscountAmount = 0;
+                        msg.innerHTML = `<span class="text-danger">${data.message}</span>`;
+                        msg.style.display = 'block';
+                    }
+                    refreshTotalsDisplay();
+                }).catch(()=> { refreshTotalsDisplay(); });
             }
 
             function recalculateCheckedTotal() {
@@ -627,7 +706,7 @@
                     }
                 });
                 currentBaseTotal = newTotal;
-                refreshTotalsDisplay();
+                revalidateVoucher(); // This will call refreshTotalsDisplay
                 
                 let totalCbs = document.querySelectorAll('.item-checkbox').length;
                 let checkedCbs = document.querySelectorAll('.item-checkbox:checked').length;
@@ -659,6 +738,68 @@
                     submitBtn.style.opacity = ((isDel && !deliveryAllowed) || !anyChecked) ? '0.5' : '1';
                 }
             }
+
+            // --- Voucher UI Event Listeners ---
+            document.getElementById('applyVoucherBtn').addEventListener('click', function() {
+                const code = document.getElementById('voucherCodeInput').value.trim();
+                const msg = document.getElementById('voucherMessage');
+                if (!code) return;
+                
+                if (currentBaseTotal === 0) {
+                    msg.innerHTML = `<span class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>Please select items first.</span>`;
+                    msg.style.display = 'block';
+                    return;
+                }
+
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+                fetch('/api/voucher/apply', { 
+                    method: 'POST', 
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        code: code,
+                        order_total: currentBaseTotal
+                    })
+                })
+                .then(r => r.json()).then(data => {
+                    this.innerHTML = 'Apply';
+                    if (data.success) {
+                        appliedVoucherCode = code;
+                        appliedDiscountAmount = parseFloat(data.discount);
+                        document.getElementById('checkout_voucher_code').value = code;
+                        document.getElementById('discount_label').innerText = `(${code.toUpperCase()})`;
+                        
+                        msg.innerHTML = `<span class="text-success"><i class="fas fa-check-circle me-1"></i>${data.message}</span>`;
+                        msg.style.display = 'block';
+                        
+                        this.style.display = 'none';
+                        document.getElementById('removeVoucherBtn').style.display = 'block';
+                        document.getElementById('voucherCodeInput').readOnly = true;
+                        refreshTotalsDisplay();
+                    } else {
+                        msg.innerHTML = `<span class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>${data.message}</span>`;
+                        msg.style.display = 'block';
+                    }
+                }).catch(() => {
+                    this.innerHTML = 'Apply';
+                });
+            });
+
+            document.getElementById('removeVoucherBtn').addEventListener('click', function() {
+                appliedVoucherCode = null;
+                appliedDiscountAmount = 0;
+                document.getElementById('checkout_voucher_code').value = '';
+                document.getElementById('voucherMessage').style.display = 'none';
+                this.style.display = 'none';
+                document.getElementById('applyVoucherBtn').style.display = 'block';
+                const inp = document.getElementById('voucherCodeInput');
+                inp.readOnly = false;
+                inp.value = '';
+                refreshTotalsDisplay();
+            });
 
             // --- Event Listeners: Checkboxes ---
             document.querySelectorAll('.item-checkbox').forEach(cb => {

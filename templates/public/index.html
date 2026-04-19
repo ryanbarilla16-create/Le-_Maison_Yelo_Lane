@@ -11,21 +11,25 @@
         border: none !important;
         box-shadow: 0 4px 14px rgba(93, 64, 55, 0.25) !important;
     }
+
     .btn-premium:hover {
         transform: translateY(-3px) !important;
-        background: linear-gradient(135deg, #3E2723 0%, #5D4037 100%) !important; /* Darker on hover */
+        background: linear-gradient(135deg, #3E2723 0%, #5D4037 100%) !important;
+        /* Darker on hover */
         box-shadow: 0 8px 24px rgba(93, 64, 55, 0.35) !important;
         color: #fff !important;
     }
+
     .star-neon {
-        color: #FFD700 !important; /* Neon Yellow/Gold stars */
+        color: #FFD700 !important;
+        /* Neon Yellow/Gold stars */
         text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
     }
 </style>
 <main>
     <!-- ═══ HERO 1: Full-Width Cinematic Banner ═══ -->
     <section
-        style="position: relative; width: 100vw; max-width: 100vw; height: 100vh; min-height: 600px; overflow: hidden; margin-top: -56px; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw;">
+        style="position: relative; width: 100vw; max-width: 100vw; height: 100vh; min-height: 600px; overflow: hidden; margin-top: -65px; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw;">
         <!-- Background Image and Gradient Overlay -->
         <div style="position: absolute; inset: 0; z-index: 0; background-color: #0c0c0c;">
             <div
@@ -75,9 +79,11 @@
             </p>
             {% if current_user.is_authenticated %}
             <a href="{{ url_for('main.reserve') }}" class="btn btn-dark rounded-pill px-5 py-2 fw-bold"
-                style="background: linear-gradient(135deg, #5D4037, #795548); border: none; box-shadow: 0 4px 14px rgba(93, 64, 55, 0.25);">Book a Table</a>
+                style="background: linear-gradient(135deg, #5D4037, #795548); border: none; box-shadow: 0 4px 14px rgba(93, 64, 55, 0.25);">Book
+                a Table</a>
             {% else %}
-            <a href="{{ url_for('main.signup') }}" class="btn btn-dark rounded-pill px-5 py-2 fw-bold btn-premium">Discover the Flavors</a>
+            <a href="{{ url_for('main.signup') }}"
+                class="btn btn-dark rounded-pill px-5 py-2 fw-bold btn-premium">Discover the Flavors</a>
             {% endif %}
         </div>
         <div class="col-md-6 p-0 d-none d-md-block">
@@ -95,42 +101,50 @@
                 Best Sellers</h2>
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 2rem; padding: 0 0.5rem; align-items: stretch;">
+        <div
+            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 2rem; padding: 0 0.5rem; align-items: stretch;">
             {% for item in bestsellers %}
             <a href="{{ url_for('main.menu_page') }}" class="bestseller-card"
                 style="text-decoration: none; color: inherit; display: flex; flex-direction: column; background: transparent; border: none; box-shadow: none; cursor: pointer;">
-                
+
                 {% if item.image_url %}
-                <div style="position: relative; padding-top: 130%; overflow: hidden; border-radius: 0; background: #f8f9fa;">
-                    <img loading="lazy" decoding="async" src="{{ item.image_url }}"
-                        alt="{{ item.name }}"
+                <div
+                    style="position: relative; padding-top: 130%; overflow: hidden; border-radius: 0; background: #f8f9fa;">
+                    <img loading="lazy" decoding="async" src="{{ item.image_url }}" alt="{{ item.name }}"
                         style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s;"
-                        onmouseover="this.style.transform='scale(1.08)';"
-                        onmouseout="this.style.transform='scale(1)';">
-                    <div style="position: absolute; top: 12px; left: 12px; background: rgba(139,99,75,0.9); color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
+                        onmouseover="this.style.transform='scale(1.08)';" onmouseout="this.style.transform='scale(1)';">
+                    <div
+                        style="position: absolute; top: 12px; left: 12px; background: rgba(139,99,75,0.9); color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
                         <i class="fas fa-fire me-1"></i>Best Seller
                     </div>
                 </div>
                 {% else %}
-                <div style="position: relative; padding-top: 130%; background: linear-gradient(135deg, #8b634b, #a17860); border-radius: 0; display: flex; align-items: center; justify-content: center;">
-                    <i class="fas fa-utensils" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 3rem; color: rgba(255,255,255,0.3);"></i>
+                <div
+                    style="position: relative; padding-top: 130%; background: linear-gradient(135deg, #8b634b, #a17860); border-radius: 0; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-utensils"
+                        style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 3rem; color: rgba(255,255,255,0.3);"></i>
                 </div>
                 {% endif %}
-                
+
                 <div style="padding: 1rem 0; display: flex; flex-direction: column;">
-                    <h4 style="font-family: 'Georgia', serif; font-weight: 700; font-size: 1.15rem; color: var(--text-main); margin-bottom: 0.3rem;">
+                    <h4
+                        style="font-family: 'Georgia', serif; font-weight: 700; font-size: 1.15rem; color: var(--text-main); margin-bottom: 0.3rem;">
                         {{ item.name }}
                     </h4>
                     <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <span style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 1.1rem; color: #443127;">₱{{ '%.2f'|format(item.price) }}</span>
-                        <span class="fw-bold" style="color: #8B634B; font-size: 0.85rem;">View <i class="fas fa-arrow-right ms-1"></i></span>
+                        <span
+                            style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 1.1rem; color: #443127;">₱{{
+                            '%.2f'|format(item.price) }}</span>
+                        <span class="fw-bold" style="color: #8B634B; font-size: 0.85rem;">View <i
+                                class="fas fa-arrow-right ms-1"></i></span>
                     </div>
                 </div>
             </a>
             {% else %}
             <!-- Fallback if no best sellers -->
             <div class="text-center py-5" style="grid-column: 1 / -1;">
-                <i class="fas fa-utensils" style="font-size: 3rem; color: rgba(139,99,75,0.2); margin-bottom: 1rem;"></i>
+                <i class="fas fa-utensils"
+                    style="font-size: 3rem; color: rgba(139,99,75,0.2); margin-bottom: 1rem;"></i>
                 <p class="text-muted">Our best sellers are being prepared. Check back soon!</p>
             </div>
             {% endfor %}
@@ -159,7 +173,8 @@
                         {{ site.card1.title }}</h3>
                     <p class="card-text text-muted mb-4">{{ site.card1.description }}</p>
                     <div><a href="{{ url_for('main.menu_page') }}" class="btn btn-dark rounded-pill px-5 py-2 fw-bold"
-                            style="background: linear-gradient(135deg, #5D4037, #795548); border: none; box-shadow: 0 4px 14px rgba(93, 64, 55, 0.25);">Discover More</a></div>
+                            style="background: linear-gradient(135deg, #5D4037, #795548); border: none; box-shadow: 0 4px 14px rgba(93, 64, 55, 0.25);">Discover
+                            More</a></div>
                 </div>
             </div>
         </div>
@@ -176,7 +191,8 @@
                     <h3 class="card-title fw-bold mb-4" style="font-family: 'Georgia', serif; color: var(--text-main);">
                         {{ site.card2.title }}</h3>
                     <p class="card-text text-muted mb-4">{{ site.card2.description }}</p>
-                    <div><a href="{{ url_for('main.menu_page') }}" class="btn btn-dark rounded-pill px-5 py-2 fw-bold btn-premium">Discover More</a></div>
+                    <div><a href="{{ url_for('main.menu_page') }}"
+                            class="btn btn-dark rounded-pill px-5 py-2 fw-bold btn-premium">Discover More</a></div>
                 </div>
             </div>
         </div>
@@ -320,7 +336,8 @@
                 {% endif %}
             </div>
             <div class="mt-5 pt-3">
-                <a href="{{ url_for('main.reviews_page') }}" class="btn text-white rounded-pill px-5 py-3 fw-bold btn-premium"
+                <a href="{{ url_for('main.reviews_page') }}"
+                    class="btn text-white rounded-pill px-5 py-3 fw-bold btn-premium"
                     style="width: 100%; max-width: 600px;">Read all reviews</a>
             </div>
         </div>
@@ -332,10 +349,12 @@
             <div class="text-center mb-5">
                 <p class="text-uppercase fw-bold mb-1"
                     style="color: var(--primary-color); letter-spacing: 3px; font-size: 0.85rem;">Our Story</p>
-                <h2 style="font-family: 'Georgia', serif; font-size: 2.5rem; color: var(--text-main); font-weight: bold;">
+                <h2
+                    style="font-family: 'Georgia', serif; font-size: 2.5rem; color: var(--text-main); font-weight: bold;">
                     A Culinary Journey</h2>
                 <p class="text-muted mx-auto mt-3" style="max-width: 600px; font-size: 1rem; line-height: 1.7;">
-                    From humble beginnings on Yelo Lane to becoming Pagsanjan's beloved dining destination, every dish we serve carries a story of passion, tradition, and French-inspired artistry.
+                    From humble beginnings on Yelo Lane to becoming Pagsanjan's beloved dining destination, every dish
+                    we serve carries a story of passion, tradition, and French-inspired artistry.
                 </p>
             </div>
 
@@ -343,16 +362,21 @@
             <div class="row g-4 align-items-stretch">
                 <!-- Left Column: Tall Image -->
                 <div class="col-md-5 d-flex">
-                    <div style="border-radius: 20px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.1); position: relative; width: 100%;">
+                    <div
+                        style="border-radius: 20px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.1); position: relative; width: 100%;">
                         <img loading="lazy" decoding="async"
                             src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=1200&auto=format&fit=crop"
                             alt="Fine dining experience"
                             style="width: 100%; height: 100%; min-height: 480px; object-fit: cover; display: block; transition: transform 0.6s ease;"
                             onmouseover="this.style.transform='scale(1.03)';"
                             onmouseout="this.style.transform='scale(1)';">
-                        <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 2rem; background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);">
-                            <p style="color: #fff; font-family: 'Georgia', serif; font-size: 1.3rem; margin: 0; font-weight: bold;">Crafted with Love</p>
-                            <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; margin: 0.25rem 0 0;">Every plate tells our story</p>
+                        <div
+                            style="position: absolute; bottom: 0; left: 0; right: 0; padding: 2rem; background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);">
+                            <p
+                                style="color: #fff; font-family: 'Georgia', serif; font-size: 1.3rem; margin: 0; font-weight: bold;">
+                                Crafted with Love</p>
+                            <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; margin: 0.25rem 0 0;">Every
+                                plate tells our story</p>
                         </div>
                     </div>
                 </div>
@@ -361,7 +385,8 @@
                 <div class="col-md-7 d-flex flex-column">
                     <div class="row g-3 mb-3" style="flex: 1;">
                         <div class="col-6 d-flex">
-                            <div style="border-radius: 20px; overflow: hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.08); width: 100%;">
+                            <div
+                                style="border-radius: 20px; overflow: hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.08); width: 100%;">
                                 <img loading="lazy" decoding="async"
                                     src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=800&auto=format&fit=crop"
                                     alt="Restaurant ambiance"
@@ -371,7 +396,8 @@
                             </div>
                         </div>
                         <div class="col-6 d-flex">
-                            <div style="border-radius: 20px; overflow: hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.08); width: 100%;">
+                            <div
+                                style="border-radius: 20px; overflow: hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.08); width: 100%;">
                                 <img loading="lazy" decoding="async"
                                     src="https://images.unsplash.com/photo-1551218808-94e220e084d2?q=80&w=800&auto=format&fit=crop"
                                     alt="Chef preparing food"
@@ -385,23 +411,40 @@
                     <div class="d-flex justify-content-around align-items-center py-4 px-3"
                         style="background: #ffffff; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 1px solid rgba(139, 99, 75, 0.08); flex-shrink: 0;">
                         <div class="text-center">
-                            <h3 style="font-family: 'Georgia', serif; font-size: 2rem; color: var(--primary-color); margin: 0; font-weight: 800;">5+</h3>
-                            <p style="color: var(--text-muted); font-size: 0.75rem; margin: 0.2rem 0 0; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Years of Service</p>
+                            <h3
+                                style="font-family: 'Georgia', serif; font-size: 2rem; color: var(--primary-color); margin: 0; font-weight: 800;">
+                                5+</h3>
+                            <p
+                                style="color: var(--text-muted); font-size: 0.75rem; margin: 0.2rem 0 0; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
+                                Years of Service</p>
                         </div>
                         <div style="width: 1px; height: 45px; background: rgba(139, 99, 75, 0.15);"></div>
                         <div class="text-center">
-                            <h3 style="font-family: 'Georgia', serif; font-size: 2rem; color: var(--primary-color); margin: 0; font-weight: 800;">50+</h3>
-                            <p style="color: var(--text-muted); font-size: 0.75rem; margin: 0.2rem 0 0; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Signature Dishes</p>
+                            <h3
+                                style="font-family: 'Georgia', serif; font-size: 2rem; color: var(--primary-color); margin: 0; font-weight: 800;">
+                                50+</h3>
+                            <p
+                                style="color: var(--text-muted); font-size: 0.75rem; margin: 0.2rem 0 0; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
+                                Signature Dishes</p>
                         </div>
                         <div style="width: 1px; height: 45px; background: rgba(139, 99, 75, 0.15);"></div>
                         <div class="text-center">
-                            <h3 style="font-family: 'Georgia', serif; font-size: 2rem; color: var(--primary-color); margin: 0; font-weight: 800;">10K+</h3>
-                            <p style="color: var(--text-muted); font-size: 0.75rem; margin: 0.2rem 0 0; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Happy Guests</p>
+                            <h3
+                                style="font-family: 'Georgia', serif; font-size: 2rem; color: var(--primary-color); margin: 0; font-weight: 800;">
+                                10K+</h3>
+                            <p
+                                style="color: var(--text-muted); font-size: 0.75rem; margin: 0.2rem 0 0; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
+                                Happy Guests</p>
                         </div>
-                        <div style="width: 1px; height: 45px; background: rgba(139, 99, 75, 0.15);" class="d-none d-md-block"></div>
+                        <div style="width: 1px; height: 45px; background: rgba(139, 99, 75, 0.15);"
+                            class="d-none d-md-block"></div>
                         <div class="text-center d-none d-md-block">
-                            <h3 style="font-family: 'Georgia', serif; font-size: 2rem; color: var(--primary-color); margin: 0; font-weight: 800;">4.9</h3>
-                            <p style="color: var(--text-muted); font-size: 0.75rem; margin: 0.2rem 0 0; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Average Rating</p>
+                            <h3
+                                style="font-family: 'Georgia', serif; font-size: 2rem; color: var(--primary-color); margin: 0; font-weight: 800;">
+                                4.9</h3>
+                            <p
+                                style="color: var(--text-muted); font-size: 0.75rem; margin: 0.2rem 0 0; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
+                                Average Rating</p>
                         </div>
                     </div>
                 </div>
@@ -449,7 +492,8 @@
                     </div>
 
                     <div class="mt-3">
-                        <a href="{{ url_for('main.reserve') }}" class="btn rounded-pill px-5 py-3 fw-bold text-white btn-premium"
+                        <a href="{{ url_for('main.reserve') }}"
+                            class="btn rounded-pill px-5 py-3 fw-bold text-white btn-premium"
                             style="font-size: 1rem; width: 100%; display: inline-block;">Book
                             a Table</a>
                     </div>
@@ -467,29 +511,42 @@
     </section>
 
     <!-- ═══ CALL TO ACTION ═══ -->
-    <section style="position: relative; width: 100vw; max-width: 100vw; overflow: hidden; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw;">
+    <section
+        style="position: relative; width: 100vw; max-width: 100vw; overflow: hidden; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw;">
         <!-- Background -->
         <div style="position: absolute; inset: 0; z-index: 0;">
-            <div style="position: absolute; inset: 0; background-image: url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=75&w=1600&auto=format&fit=crop'); background-size: cover; background-position: center;"></div>
-            <div style="position: absolute; inset: 0; background: linear-gradient(135deg, rgba(62,39,35,0.92) 0%, rgba(93,64,55,0.88) 50%, rgba(62,39,35,0.92) 100%);"></div>
+            <div
+                style="position: absolute; inset: 0; background-image: url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=75&w=1600&auto=format&fit=crop'); background-size: cover; background-position: center;">
+            </div>
+            <div
+                style="position: absolute; inset: 0; background: linear-gradient(135deg, rgba(62,39,35,0.92) 0%, rgba(93,64,55,0.88) 50%, rgba(62,39,35,0.92) 100%);">
+            </div>
         </div>
 
         <!-- Content -->
         <div style="position: relative; z-index: 1; text-align: center; padding: 6rem 2rem;">
             <div style="max-width: 700px; margin: 0 auto;">
-                <div style="display: inline-block; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 50px; padding: 0.5rem 1.5rem; margin-bottom: 1.5rem;">
-                    <span style="color: rgba(255,255,255,0.85); font-size: 0.8rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;"><i class="fas fa-calendar-alt me-2"></i>Reserve Your Experience</span>
+                <div
+                    style="display: inline-block; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 50px; padding: 0.5rem 1.5rem; margin-bottom: 1.5rem;">
+                    <span
+                        style="color: rgba(255,255,255,0.85); font-size: 0.8rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;"><i
+                            class="fas fa-calendar-alt me-2"></i>Reserve Your Experience</span>
                 </div>
-                <h2 style="font-family: 'Georgia', serif; font-size: 3.2rem; color: #ffffff; font-weight: 800; line-height: 1.15; margin-bottom: 1.5rem; text-shadow: 0 2px 20px rgba(0,0,0,0.3);">
+                <h2
+                    style="font-family: 'Georgia', serif; font-size: 3.2rem; color: #ffffff; font-weight: 800; line-height: 1.15; margin-bottom: 1.5rem; text-shadow: 0 2px 20px rgba(0,0,0,0.3);">
                     Your Table Awaits at<br>
                     <span style="color: #a17860;">Le Maison</span>
                 </h2>
-                <p style="color: rgba(255,255,255,0.7); font-size: 1.15rem; line-height: 1.7; margin-bottom: 2.5rem; max-width: 550px; margin-left: auto; margin-right: auto;">
-                    Whether it's a romantic dinner, a family celebration, or a casual coffee date — we've prepared the perfect ambiance just for you.
+                <p
+                    style="color: rgba(255,255,255,0.7); font-size: 1.15rem; line-height: 1.7; margin-bottom: 2.5rem; max-width: 550px; margin-left: auto; margin-right: auto;">
+                    Whether it's a romantic dinner, a family celebration, or a casual coffee date — we've prepared the
+                    perfect ambiance just for you.
                 </p>
                 <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center align-items-center">
                     {% if current_user.is_authenticated %}
-                    <a href="{{ url_for('main.reserve') }}" class="btn rounded-pill px-5 py-3 fw-bold text-white shadow-lg" onclick="clearReservationSession()"
+                    <a href="{{ url_for('main.reserve') }}"
+                        class="btn rounded-pill px-5 py-3 fw-bold text-white shadow-lg"
+                        onclick="clearReservationSession()"
                         style="background: linear-gradient(135deg, #8b634b 0%, #a17860 100%); font-size: 1.05rem; letter-spacing: 1px; border: none; min-width: 260px; transition: all 0.3s ease;"
                         onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 30px rgba(139, 99, 75, 0.4)';"
                         onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)';">
@@ -502,7 +559,8 @@
                         <i class="fas fa-utensils me-2"></i>Explore Menu
                     </a>
                     {% else %}
-                    <a href="javascript:void(0)" onclick="$('#termsModal').modal('show'); window.authIntent = 'signup';" class="btn rounded-pill px-5 py-3 fw-bold text-white shadow-lg"
+                    <a href="javascript:void(0)" onclick="$('#termsModal').modal('show'); window.authIntent = 'signup';"
+                        class="btn rounded-pill px-5 py-3 fw-bold text-white shadow-lg"
                         style="background: linear-gradient(135deg, #8b634b 0%, #a17860 100%); font-size: 1.05rem; letter-spacing: 1px; border: none; min-width: 260px; transition: all 0.3s ease;"
                         onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 30px rgba(139, 99, 75, 0.4)';"
                         onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)';">
@@ -544,7 +602,7 @@
     .bestseller-card img {
         transition: transform 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
     }
-    
+
     .bestseller-card:hover img {
         transform: scale(1.08) !important;
     }
@@ -556,7 +614,3 @@
     }
 </style>
 {% endblock %}
-
-
-
-
