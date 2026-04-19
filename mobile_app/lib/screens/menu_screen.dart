@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../services/api_service.dart';
 import 'cart_screen.dart';
+import 'menu_item_detail_screen.dart';
 
 class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});
@@ -426,7 +427,14 @@ class _MenuScreenState extends State<MenuScreen> {
   }
 
   Widget _menuItemCard(dynamic item) {
-    return Container(
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => MenuItemDetailScreen(item: item)),
+        );
+      },
+      child: Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -611,6 +619,7 @@ class _MenuScreenState extends State<MenuScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

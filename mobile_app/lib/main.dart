@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'theme.dart';
 import 'services/auth_service.dart';
 import 'screens/login_screen.dart';
+import 'screens/welcome_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/rider_screen.dart';
 import 'services/socket_service.dart';
@@ -78,7 +79,7 @@ class _SplashScreenState extends State<SplashScreen>
         destination = const HomeScreen();
       }
     } else {
-      destination = const LoginScreen();
+      destination = const WelcomeScreen();
     }
 
     Navigator.pushReplacement(

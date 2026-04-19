@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // ═══ THEME MANAGER ═══
@@ -113,9 +114,9 @@ class GradientButton extends StatelessWidget {
               ? const SizedBox(
                   width: 22,
                   height: 22,
-                  child: CircularProgressIndicator(
+                  child: SpinKitFadingCircle(
                     color: Colors.white,
-                    strokeWidth: 2.5,
+                    size: 22.0,
                   ),
                 )
               : Row(

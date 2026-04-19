@@ -250,9 +250,20 @@ class _CartScreenState extends State<CartScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'My Cart (${CartScreen.count})',
-          style: AppTextStyles.heading.copyWith(fontSize: 18),
+          'My Order',
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
+        actions: [
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.only(right: 16.0),
+              child: Text(
+                '${CartScreen.count} positions',
+                style: const TextStyle(color: Colors.grey, fontSize: 13),
+              ),
+            ),
+          )
+        ],
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -680,54 +691,43 @@ class _CartScreenState extends State<CartScreen> {
                       ),
                     ],
                   ),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          if (_voucherDiscount > 0) ...[
-                            Text(
-                              '₱${_selectedTotal.toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                decoration: TextDecoration.lineThrough,
-                                color: Colors.grey,
-                                fontSize: 12,
-                              ),
-                            ),
-                            Text(
-                              '₱${(_selectedTotal - _voucherDiscount).toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                fontFamily: 'Georgia',
-                                fontWeight: FontWeight.bold,
-                                fontSize: 22,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          ] else ...[
-                            const Text('Total', style: AppTextStyles.muted),
-                            Text(
-                              '₱${_selectedTotal.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                fontFamily: 'Georgia',
-                                fontWeight: FontWeight.bold,
-                                fontSize: 22,
-                                color: AppColors.accent,
-                              ),
-                            ),
-                          ],
+                          const Text('DISCOUNT', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                          Text(_voucherDiscount > 0 ? '-₱${_voucherDiscount.toStringAsFixed(2)}' : '-', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                         ],
                       ),
-                      const Spacer(),
-                      SizedBox(
-                        width: 160,
-                        child: GradientButton(
-                          label: 'Place Order',
-                          icon: Icons.check_circle_outline_rounded,
-                          onPressed: _loading ? null : _checkout,
-                          isLoading: _loading,
-                          height: 50,
-                          radius: 14,
-                        ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('DELIVERY', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                          const Text('FREE', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('TOTAL', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                          Text(
+                            '₱${(_selectedTotal - _voucherDiscount).toStringAsFixed(2)}',
+                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.textMain),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      GradientButton(
+                        label: 'Confirm Order',
+                        onPressed: _loading ? null : _checkout,
+                        isLoading: _loading,
+                        height: 55,
+                        radius: 30,
+                        fontSize: 16,
                       ),
                     ],
                   ),
@@ -739,139 +739,118 @@ class _CartScreenState extends State<CartScreen> {
 
   Widget _cartItemCard(Map<String, dynamic> item, int index) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(10),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            spreadRadius: 2,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          SizedBox(
-            width: 24, height: 24,
-            child: Checkbox(
-              value: _selectedIds.contains(item['id']),
-              activeColor: AppColors.primary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-              onChanged: (v) {
-                setState(() {
-                  if (v == true) {
-                    _selectedIds.add(item['id'] as int);
-                  } else {
-                    _selectedIds.remove(item['id'] as int);
-                  }
-                  _selectAll = _selectedIds.length == CartScreen._cartItems.length;
-                });
-              },
-            ),
-          ),
-          const SizedBox(width: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
+          ClipOval(
             child: item['image_url'] != null
                 ? Image.network(
                     item['image_url'],
-                    width: 60,
-                    height: 60,
+                    width: 65,
+                    height: 65,
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => Container(
-                      width: 60,
-                      height: 60,
+                      width: 65,
+                      height: 65,
                       color: AppColors.primary.withOpacity(0.1),
-                      child: const Icon(
-                        Icons.restaurant,
-                        size: 20,
-                        color: AppColors.primary,
-                      ),
                     ),
                   )
-                : Container(
-                    width: 60,
-                    height: 60,
-                    color: AppColors.primary.withOpacity(0.1),
-                    child: const Icon(
-                      Icons.restaurant,
-                      size: 20,
-                      color: AppColors.primary,
-                    ),
-                  ),
+                : Container(width: 65, height: 65, color: AppColors.primary.withOpacity(0.1)),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 15),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   item['name'],
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                  ),
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
                 ),
+                const SizedBox(height: 2),
+                Text(
+                  '380g',
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+                ),
+                const SizedBox(height: 8),
                 Text(
                   '₱${(item['price'] as num).toStringAsFixed(2)}',
-                  style: TextStyle(
-                    color: AppColors.accent,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
                   ),
                 ),
               ],
             ),
           ),
-          Row(
-            children: [
-              _qtyBtn(Icons.remove, () {
-                setState(() {
-                  if (item['quantity'] > 1) {
-                    item['quantity']--;
-                  } else {
-                    CartScreen._cartItems.removeAt(index);
-                    _selectedIds.remove(item['id'] as int);
-                    _selectAll = _selectedIds.length == CartScreen._cartItems.length && CartScreen._cartItems.isNotEmpty;
-                  }
-                  CartScreen.saveCart();
-                });
-              }),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Text(
-                  '${item['quantity']}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      if (item['quantity'] > 1) {
+                        item['quantity']--;
+                      } else {
+                        CartScreen._cartItems.removeAt(index);
+                        _selectedIds.remove(item['id'] as int);
+                        _selectAll = _selectedIds.length == CartScreen._cartItems.length && CartScreen._cartItems.isNotEmpty;
+                      }
+                      CartScreen.saveCart();
+                    });
+                  },
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 6),
+                    child: Icon(Icons.remove, size: 14, color: Colors.black87),
                   ),
                 ),
-              ),
-              _qtyBtn(Icons.add, () {
-                setState(() {
-                  item['quantity']++;
-                  CartScreen.saveCart();
-                });
-              }),
-            ],
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: Text(
+                    '${item['quantity']}',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      item['quantity']++;
+                      CartScreen.saveCart();
+                    });
+                  },
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 6),
+                    child: Icon(Icons.add, size: 14, color: Colors.black87),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _qtyBtn(IconData icon, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(icon, size: 16, color: AppColors.primary),
-      ),
-    );
-  }
+
 
 
   Widget _optionChip(
