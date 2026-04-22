@@ -211,337 +211,198 @@ class _ReserveScreenState extends State<ReserveScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text(
-          'Reserve a Table',
-          style: AppTextStyles.heading.copyWith(fontSize: 20),
-        ),
+        title: const Text('RESERVATIONS', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, letterSpacing: 1.2)),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const SizedBox(height: 20),
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.04),
-                    blurRadius: 12,
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
                   ),
                 ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Book Your Visit',
-                    style: AppTextStyles.heading.copyWith(fontSize: 18),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Fill in the details below',
-                    style: AppTextStyles.muted,
-                  ),
-                  const SizedBox(height: 20),
+                  const Text('BOOK A TABLE', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: 1.5, color: AppColors.primary)),
+                  const SizedBox(height: 24),
+                  
                   // Booking Type
+                  _formLabel('Experience Type'),
                   DropdownButtonFormField<String>(
                     isExpanded: true,
                     value: _bookingType,
-                    decoration: const InputDecoration(
-                      labelText: 'Booking Type',
-                      prefixIcon: Icon(Icons.category, color: AppColors.primary),
-                    ),
+                    style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textMain, fontSize: 15),
+                    decoration: _inputDecoration(Icons.restaurant_menu),
                     items: const [
-                      DropdownMenuItem(value: 'REGULAR', child: Text('Standard Booking')),
-                      DropdownMenuItem(value: 'EXCLUSIVE', child: Text('Exclusive (Rent Whole Restaurant)')),
+                      DropdownMenuItem(value: 'REGULAR', child: Text('Standard Dining')),
+                      DropdownMenuItem(value: 'EXCLUSIVE', child: Text('Private Event')),
                     ],
                     onChanged: (v) => setState(() {
                       if (v != null) {
                         _bookingType = v;
-                        _date = null; // force re-select date for new constraints
-                        if (_bookingType == 'EXCLUSIVE') {
-                          _guests = _guests > 50 ? 50 : _guests;
-                        } else {
-                          _guests = _guests > 20 ? 20 : _guests;
-                        }
+                        _date = null;
                       }
                     }),
                   ),
-                  const SizedBox(height: 14),
-                  // Date
+                  const SizedBox(height: 20),
+
+                  // Date Selection
+                  _formLabel('Preferred Date'),
                   GestureDetector(
                     onTap: _pickDate,
                     child: Container(
-                      padding: const EdgeInsets.all(14),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                       decoration: BoxDecoration(
-                        border: Border.all(
-                          color: AppColors.primary.withOpacity(0.15),
-                        ),
-                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey.shade200),
                       ),
                       child: Row(
                         children: [
-                          const Icon(
-                            Icons.calendar_today,
-                            color: AppColors.primary,
-                            size: 20,
-                          ),
+                          const Icon(Icons.calendar_today_rounded, color: AppColors.primary, size: 20),
                           const SizedBox(width: 12),
                           Text(
-                            _date != null
-                                ? '${_date!.month}/${_date!.day}/${_date!.year}'
-                                : 'Select Date',
-                            style: TextStyle(
-                              color: _date != null
-                                  ? AppColors.textMain
-                                  : AppColors.textMuted,
-                              fontSize: 15,
-                            ),
+                            _date != null ? '${_date!.month}/${_date!.day}/${_date!.year}' : 'Pick a date',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: _date != null ? AppColors.textMain : Colors.grey),
                           ),
                         ],
                       ),
                     ),
                   ),
-                  if (_isTodayClosed && (_date == null || (_date!.year == DateTime.now().year && _date!.month == DateTime.now().month && _date!.day == DateTime.now().day)))
-                    Padding(
+                  const SizedBox(height: 20),
 
-                      padding: const EdgeInsets.only(top: 6, left: 4),
-                      child: Row(
-                        children: [
-                          Icon(Icons.info_outline, size: 14, color: Colors.orange.shade700),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Today is unavailable — restaurant is closed.',
-                            style: TextStyle(
-                              color: Colors.orange.shade700,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  const SizedBox(height: 14),
-                  // Time
+                  // Time Selection
+                  _formLabel('Time Slot'),
                   DropdownButtonFormField<String>(
                     isExpanded: true,
                     value: _time,
-                    hint: const Text('Select Time'),
-                    decoration: const InputDecoration(
-                      prefixIcon: Icon(
-                        Icons.access_time,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    items: _getAvailableTimeSlots
-                        .map(
-                          (t) =>
-                              DropdownMenuItem(value: t, child: Text(_fmt(t))),
-                        )
-                        .toList(),
+                    hint: const Text('Choose a time'),
+                    decoration: _inputDecoration(Icons.access_time_rounded),
+                    items: _getAvailableTimeSlots.map((t) => DropdownMenuItem(value: t, child: Text(_fmt(t)))).toList(),
                     onChanged: (v) => setState(() => _time = v),
                   ),
-                  const SizedBox(height: 14),
-                  // Guests
+                  const SizedBox(height: 20),
+
+                  // Guest Count
+                  _formLabel('Party Size'),
                   Row(
                     children: [
-                      const Icon(
-                        Icons.people,
-                        color: AppColors.primary,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      const Text('Guests: ', style: TextStyle(fontSize: 15)),
-                      const Spacer(),
-                      Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(25),
-                          border: Border.all(
-                            color: AppColors.primary.withOpacity(0.2),
+                      _guestButton(Icons.remove, () => setState(() => _guests > 1 ? _guests-- : null)),
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            '$_guests GUESTS',
+                            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppColors.primary),
                           ),
                         ),
-                        child: Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.remove, size: 18),
-                              onPressed: _guests > 1
-                                  ? () => setState(() => _guests--)
-                                  : null,
-                              color: AppColors.primary,
-                              constraints: const BoxConstraints(
-                                minWidth: 36,
-                                minHeight: 36,
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                              ),
-                              child: Text(
-                                '$_guests',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
-                                ),
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.add, size: 18),
-                              onPressed: () => setState(() => _guests++),
-                              color: AppColors.primary,
-                              constraints: const BoxConstraints(
-                                minWidth: 36,
-                                minHeight: 36,
-                              ),
-                            ),
-                          ],
-                        ),
                       ),
+                      _guestButton(Icons.add, () => setState(() => _guests++)),
                     ],
                   ),
-                  const SizedBox(height: 14),
-                  // Duration
-                  DropdownButtonFormField<int>(
-                    isExpanded: true,
-                    value: _duration,
-                    decoration: const InputDecoration(
-                      labelText: 'Duration',
-                      prefixIcon: Icon(Icons.timer, color: AppColors.primary),
-                    ),
-                    items: const [
-                      DropdownMenuItem(value: 1, child: Text('1 Hour')),
-                      DropdownMenuItem(value: 2, child: Text('2 Hours (Standard)')),
-                      DropdownMenuItem(value: 3, child: Text('3 Hours')),
-                      DropdownMenuItem(value: 4, child: Text('4 Hours')),
-                      DropdownMenuItem(value: 5, child: Text('5 Hours')),
-                      DropdownMenuItem(value: 8, child: Text('8 Hours (Full Day)')),
-                    ],
-                    onChanged: (v) => setState(() => _duration = v ?? 2),
-                  ),
-                  const SizedBox(height: 14),
-                  // Occasion (Optional)
-                  TextField(
-                    controller: _occasionCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Occasion (optional)',
-                      prefixIcon: Icon(
-                        Icons.celebration,
-                        color: AppColors.primary,
-                      ),
-                      hintText: 'Birthday, Anniversary, etc.',
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  // Gradient Submit Button
+                  const SizedBox(height: 32),
+
                   GradientButton(
-                    label: 'Proceed to Step 2',
-                    icon: Icons.arrow_forward_rounded,
+                    label: 'CONTINUE TO MENU',
                     onPressed: (_loading || _isSelectionInvalid) ? null : _submit,
                     isLoading: _loading,
-                    height: 54,
+                    height: 56,
                   ),
-
-
                 ],
               ),
             ),
-            const SizedBox(height: 24),
-            Text(
-              'Upcoming Reservations',
-              style: AppTextStyles.heading.copyWith(fontSize: 17),
-            ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 40),
+            const Text('UPCOMING BOOKINGS', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1.5, color: Colors.grey)),
+            const SizedBox(height: 16),
             if (_loadingRes)
-              const Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
-              )
+              const Center(child: CircularProgressIndicator(color: AppColors.primary))
             else if (_upcoming.isEmpty)
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Column(
-                  children: [
-                    Icon(
-                      Icons.calendar_today,
-                      color: AppColors.primary,
-                      size: 30,
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'No upcoming reservations',
-                      style: AppTextStyles.muted,
-                    ),
-                  ],
-                ),
-              )
+              _emptyReservations()
             else
-              ..._upcoming.map(
-                (r) => InkWell(
-                  onTap: () => _showReservationDetails(r),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
-                          blurRadius: 8,
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(
-                            Icons.calendar_today,
-                            color: AppColors.primary,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${r['date_formatted']} · ${r['time_formatted']}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 13,
-                                ),
-                              ),
-                              Text(
-                                '${r['guest_count']} guests${r['occasion'] != null && r['occasion'] != '' ? ' · ${r['occasion']}' : ''}',
-                                style: AppTextStyles.muted.copyWith(fontSize: 12),
-                              ),
-                            ],
-                          ),
-                        ),
-                        _badge(r['status']),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+              ..._upcoming.map((r) => _reservationCard(r)),
             const SizedBox(height: 30),
           ],
         ),
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration(IconData icon) {
+    return InputDecoration(
+      prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
+      filled: true,
+      fillColor: Colors.grey.shade50,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.grey.shade200)),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.grey.shade200)),
+    );
+  }
+
+  Widget _formLabel(String t) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 8),
+      child: Text(t, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey.shade600, letterSpacing: 0.5)),
+    );
+  }
+
+  Widget _guestButton(IconData icon, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+        child: Icon(icon, color: AppColors.primary, size: 20),
+      ),
+    );
+  }
+
+  Widget _reservationCard(dynamic r) {
+    return GestureDetector(
+      onTap: () => _showReservationDetails(r),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.grey.shade100)),
+        child: Row(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${r['date_formatted']}', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
+                Text('${r['time_formatted']} · ${r['guest_count']} Guests', style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const Spacer(),
+            _badge(r['status']),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _emptyReservations() {
+    return Center(
+      child: Column(
+        children: [
+          const SizedBox(height: 20),
+          Icon(Icons.calendar_today_outlined, color: Colors.grey.shade200, size: 64),
+          const SizedBox(height: 12),
+          const Text('No bookings found', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+        ],
       ),
     );
   }

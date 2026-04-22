@@ -5,7 +5,6 @@ import 'services/auth_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/welcome_screen.dart';
 import 'screens/home_screen.dart';
-import 'screens/rider_screen.dart';
 import 'services/socket_service.dart';
 import 'screens/cart_screen.dart';
 
@@ -74,7 +73,9 @@ class _SplashScreenState extends State<SplashScreen>
     if (loggedIn) {
       final user = await AuthService.getUser();
       if (user != null && user['role'] == 'RIDER') {
-        destination = const RiderScreen();
+        // Riders should not be in the customer app, force logout or send to login
+        await AuthService.logout();
+        destination = const WelcomeScreen();
       } else {
         destination = const HomeScreen();
       }

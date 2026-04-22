@@ -55,15 +55,15 @@
             letter-spacing: 0.2rem;
             font-weight: 500;
             width: 94%;
-            background-color: #A1887F !important; /* Inventory Tan */
+            background-color: #5D4037 !important; /* Cashier Brown applied to Inventory */
             color: white !important;
             transition: all 0.3s ease;
             border: none;
         }
         .faculty_btn_login:hover {
-            background-color: #8D6E63 !important;
+            background-color: #3E2723 !important;
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(161, 136, 127, 0.4);
+            box-shadow: 0 5px 15px rgba(93, 64, 55, 0.4);
         }
 
         .lulms-card {
@@ -90,7 +90,7 @@
         }
 
         .lu-user_type {
-            color: #A1887F;
+            color: #5D4037;
             font-family: 'Poppins', sans-serif;
             font-size: 1.5rem;
             letter-spacing: 0.2rem;
@@ -105,7 +105,7 @@
             left: 1rem;
             top: 50%;
             transform: translateY(-50%);
-            color: #A1887F;
+            color: #5D4037;
             z-index: 10;
         }
 
@@ -144,7 +144,7 @@
                     <div class="card card-body shadow py-5 my-5" style="border-radius: 1.5rem; background: rgba(255, 255, 255, 0.95);">
                         <div class="lulms-card">
                             <div style="width:80%">
-                                <h3 class="lu-welcome mb-1">Welcome to <span style="color:#A1887F;">Le Maison</span></h3>
+                                <h3 class="lu-welcome mb-1">Welcome to <span style="color:#5D4037;">Le Maison</span></h3>
                                 <h6 class="lulms mb-5">
                                     Inventory Access Portal
                                 </h6>
@@ -179,12 +179,12 @@
                                 <div class="input-icon">
                                     <span class="input-icon-addon"><i class="fa fa-lock"></i></span>
                                     <input placeholder="Password" class="faculty_input form-control" type="password" id="password" name="password" required>
-                                    <span id="togglePassword" style="position:absolute; right:20px; top:50%; transform:translateY(-50%); cursor:pointer; color: #A1887F; z-index: 10;">
+                                    <span id="togglePassword" style="position:absolute; right:20px; top:50%; transform:translateY(-50%); cursor:pointer; color: #5D4037; z-index: 10;">
                                         <i class="fa fa-eye" id="passwordToggleIcon"></i>
                                     </span>
                                 </div>
                                 <div class="text-end mt-2">
-                                    <a href="{{ url_for('inventory_portal.inventory_forgot_password') }}" style="color: #A1887F; font-size: 0.8rem; text-decoration: none; font-weight: 500;">Forgot Password?</a>
+                                    <a href="{{ url_for('inventory_portal.inventory_forgot_password') }}" style="color: #5D4037; font-size: 0.8rem; text-decoration: none; font-weight: 500;">Forgot Password?</a>
                                 </div>
                             </div>
 

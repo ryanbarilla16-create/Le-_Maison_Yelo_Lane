@@ -376,6 +376,28 @@
     .moBadge-prep {
         background: #E3F2FD;
         color: #1565C0;
+        position: relative;
+        padding-left: 1.2rem;
+    }
+
+    .moBadge-prep::before {
+        content: '';
+        position: absolute;
+        left: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 8px;
+        height: 8px;
+        background: #1565C0;
+        border-radius: 50%;
+        box-shadow: 0 0 0 rgba(21, 101, 192, 0.4);
+        animation: pulse-blue 2s infinite;
+    }
+
+    @keyframes pulse-blue {
+        0% { box-shadow: 0 0 0 0 rgba(21, 101, 192, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(21, 101, 192, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(21, 101, 192, 0); }
     }
 
     .moBadge-cancel {
@@ -536,7 +558,7 @@
         </div>
         <div class="moStat">
             <h4 style="color: #1565C0;">{{ preparing_count }}</h4>
-            <p>Preparing</p>
+            <p>Cooking</p>
         </div>
         <div class="moStat">
             <h4 style="color: #2E7D32;">{{ completed_count }}</h4>
@@ -548,7 +570,7 @@
     <div class="moTabs">
         <button class="moTab active" onclick="filterOrders('all', this)">All Orders</button>
         <button class="moTab" onclick="filterOrders('PENDING', this)">Pending</button>
-        <button class="moTab" onclick="filterOrders('PREPARING', this)">Preparing</button>
+        <button class="moTab" onclick="filterOrders('PREPARING', this)">Cooking Now</button>
         <button class="moTab" onclick="filterOrders('COMPLETED', this)">Completed</button>
         <button class="moTab" onclick="filterOrders('CANCELLED', this)">Cancelled</button>
     </div>
@@ -567,15 +589,15 @@
                     <div class="text-end">
                         <div class="moCard-price">₱{{ "%.2f"|format(order.total_amount) }}</div>
                         {% if order.overall_status == 'COMPLETED' %}
-                        <span class="moBadge moBadge-done">Completed</span>
+                        <span class="moBadge moBadge-done"><i class="fas fa-check-circle me-1"></i>Completed</span>
                         {% elif order.overall_status == 'PENDING' %}
-                        <span class="moBadge moBadge-pending">Pending</span>
+                        <span class="moBadge moBadge-pending"><i class="fas fa-clock me-1"></i>Pending</span>
                         {% elif order.overall_status == 'ON_THE_WAY' %}
-                        <span class="moBadge moBadge-otw">On the Way</span>
+                        <span class="moBadge moBadge-otw"><i class="fas fa-motorcycle me-1"></i>On the Way</span>
                         {% elif order.overall_status == 'PREPARING' %}
-                        <span class="moBadge moBadge-prep">Preparing</span>
+                        <span class="moBadge moBadge-prep"><i class="fas fa-fire-burner me-1"></i>Cooking Now</span>
                         {% elif order.overall_status == 'CANCELLED' %}
-                        <span class="moBadge moBadge-cancel">Cancelled</span>
+                        <span class="moBadge moBadge-cancel"><i class="fas fa-times-circle me-1"></i>Cancelled</span>
                         {% else %}
                         <span class="moBadge" style="background: rgba(139, 99, 75, 0.08); color: #8B634B;">{{
                             order.overall_status }}</span>
@@ -931,6 +953,30 @@
                 body: JSON.stringify({ sender_id: currentUserId, message: msg })
             }).then(() => loadOrderChats());
         }
+
+        // Silent Order Status Auto-Refresh (Every 10s)
+        setInterval(async () => {
+            try {
+                const response = await fetch(window.location.href);
+                const html = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // 1. Update the orders container
+                const newOrders = doc.getElementById('ordersContainer');
+                const oldOrders = document.getElementById('ordersContainer');
+                if (newOrders && oldOrders) {
+                    oldOrders.innerHTML = newOrders.innerHTML;
+                }
+
+                // 2. Update Stats (Counts)
+                const statHolders = document.querySelectorAll('.moStat h4');
+                const newStatHolders = doc.querySelectorAll('.moStat h4');
+                statHolders.forEach((s, i) => {
+                    if(newStatHolders[i]) s.innerText = newStatHolders[i].innerText;
+                });
+            } catch (e) { console.error("Silent refresh failed", e); }
+        }, 10000);
     </script>
 </main>
 {% endblock %}

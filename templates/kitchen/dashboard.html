@@ -16,6 +16,9 @@
         <a class="nav-item active" href="{{ url_for('kitchen_portal.kitchen_dashboard') }}">
             <i class="fas fa-fire"></i> Order Board
         </a>
+        <a class="nav-item" href="{{ url_for('kitchen_portal.kitchen_reservations') }}">
+            <i class="fas fa-calendar-check"></i> Event Pre-Orders
+        </a>
         <a class="nav-item" href="{{ url_for('kitchen_portal.kitchen_pantry') }}">
             <i class="fas fa-archive"></i> Kitchen Pantry
         </a>
@@ -189,7 +192,12 @@
         border-top: 1px solid rgba(93,64,55,0.05);
         padding-top: 14px;
         margin-bottom: 16px;
+        max-height: 220px;
+        overflow-y: auto;
+        padding-right: 5px;
     }
+    .order-items::-webkit-scrollbar { width: 4px; }
+    .order-items::-webkit-scrollbar-thumb { background: rgba(93,64,55,0.2); border-radius: 4px; }
     .item-row { 
         display: flex; 
         justify-content: space-between; 

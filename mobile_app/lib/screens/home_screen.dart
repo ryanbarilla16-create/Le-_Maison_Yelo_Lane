@@ -106,10 +106,8 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _dashboard = null;
-        _bestsellers = [];
-        _featured = [];
         _loading = false;
+        // Keep existing data instead of clearing it to prevent blank screens
       });
     }
   }
@@ -125,7 +123,10 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
 
     return Scaffold(
-      body: screens[_currentIndex],
+      body: IndexedStack(
+        index: _currentIndex,
+        children: screens,
+      ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -139,7 +140,10 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
-          onTap: (i) => setState(() => _currentIndex = i),
+          onTap: (i) {
+            setState(() => _currentIndex = i);
+            if (i == 0) _loadData(); 
+          },
           type: BottomNavigationBarType.fixed,
           backgroundColor: Colors.white,
           selectedItemColor: AppColors.primary,
@@ -174,10 +178,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildDashboard() {
-    if (_loading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
-      );
+    if (_loading && _dashboard == null) {
+      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
     }
 
     return RefreshIndicator(
@@ -519,44 +521,24 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _statCard(IconData icon, String value, String label, Color color) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10),
           ],
         ),
-        child: Row(
+        child: Column(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 18),
+              decoration: BoxDecoration(color: color.withOpacity(0.08), shape: BoxShape.circle),
+              child: Icon(icon, color: color, size: 20),
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textMain,
-                      fontSize: 16,
-                    ),
-                  ),
-                  Text(
-                    label,
-                    style: TextStyle(color: AppColors.textMuted, fontSize: 10),
-                  ),
-                ],
-              ),
-            ),
+            const SizedBox(height: 10),
+            Text(value, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: AppColors.textMain), textAlign: TextAlign.center, maxLines: 1),
+            Text(label, style: const TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
@@ -849,12 +831,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _menuCard(dynamic item, {String? badge}) {
     return Container(
       width: 170,
-      margin: const EdgeInsets.only(right: 12),
+      margin: const EdgeInsets.only(right: 16, bottom: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10),
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 8)),
         ],
       ),
       child: Column(
@@ -863,165 +845,43 @@ class _HomeScreenState extends State<HomeScreen> {
           Stack(
             children: [
               ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(14),
-                ),
-                child: ColorFiltered(
-                  colorFilter: ColorFilter.mode(
-                    item['is_out_of_stock'] == true ? Colors.grey : Colors.transparent,
-                    BlendMode.saturation,
-                  ),
-                  child: item['image_url'] != null
-                      ? Image.network(
-                          item['image_url'],
-                          height: 120,
-                          width: 170,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            height: 120,
-                            width: 170,
-                            color: AppColors.primary.withOpacity(0.1),
-                            child: const Icon(
-                              Icons.restaurant,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        )
-                      : Container(
-                          height: 120,
-                          width: 170,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [AppColors.primary, AppColors.primaryLight],
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.restaurant,
-                            color: Colors.white54,
-                            size: 35,
-                          ),
-                        ),
-                ),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                child: item['image_url'] != null
+                    ? Image.network(item['image_url'], height: 120, width: 170, fit: BoxFit.cover)
+                    : Container(height: 120, width: 170, color: AppColors.primary.withOpacity(0.05), child: const Icon(Icons.restaurant, color: AppColors.primary, size: 40)),
               ),
-              if (item['is_out_of_stock'] == true)
-                Positioned.fill(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.2),
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(14),
-                      ),
-                    ),
-                    child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: AppColors.danger,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Text(
-                          'OUT OF STOCK',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 7,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
               if (badge != null)
                 Positioned(
-                  top: 6,
-                  left: 6,
+                  top: 10, left: 10,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppColors.accent, Color(0xFFC49652)],
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.local_fire_department,
-                          color: Colors.white,
-                          size: 11,
-                        ),
-                        const SizedBox(width: 3),
-                        Text(
-                          badge,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(color: AppColors.accent, borderRadius: BorderRadius.circular(10)),
+                    child: Text(badge.toUpperCase(), style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 1)),
                   ),
                 ),
             ],
           ),
           Padding(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  item['name'] ?? '',
-                  style: TextStyle(
-                    fontFamily: 'Georgia',
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                    color: AppColors.textMain,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
+                Text(item['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: AppColors.textMain), maxLines: 1, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 10),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
+                    Text('₱${(item['price'] ?? 0).toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.primary, fontSize: 14)),
+                    GestureDetector(
+                      onTap: () {
+                        CartScreen.addItem({'id': item['id'], 'name': item['name'], 'price': item['price'], 'image_url': item['image_url']});
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${item['name']} added to cart'), behavior: SnackBarBehavior.floating, duration: const Duration(seconds: 1)));
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
+                        child: const Icon(Icons.add, color: Colors.white, size: 14),
                       ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.06),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        item['category'] ?? '',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textMuted,
-                        ),
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        Text(
-                          '₱${item['price']?.toStringAsFixed(0) ?? ''}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.accent,
-                            fontSize: 14,
-                          ),
-                        ),
-                        if (item['is_out_of_stock'] != true) ...[
-                          const SizedBox(width: 4),
-                          _addIcon(() => _addToCart(item)),
-                        ],
-                      ],
                     ),
                   ],
                 ),

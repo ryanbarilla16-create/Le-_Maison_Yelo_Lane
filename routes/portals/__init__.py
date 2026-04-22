@@ -390,10 +390,10 @@ def kitchen_dashboard():
         
     try:
         from sqlalchemy.orm import selectinload
-        pending_orders = Order.query.options(selectinload(Order.items)).filter_by(status='PENDING').order_by(Order.created_at.asc()).all()
-        preparing_orders = Order.query.options(selectinload(Order.items)).filter_by(status='PREPARING').order_by(Order.created_at.asc()).all()
+        pending_orders = Order.query.options(selectinload(Order.items)).filter(Order.status == 'PENDING', Order.reservation_id.is_(None)).order_by(Order.created_at.asc()).all()
+        preparing_orders = Order.query.options(selectinload(Order.items)).filter(Order.status == 'PREPARING', Order.reservation_id.is_(None)).order_by(Order.created_at.asc()).all()
         # For ready orders, we want to see the last 20
-        ready_orders = Order.query.options(selectinload(Order.items)).filter_by(status='READY').order_by(Order.created_at.desc()).limit(20).all()
+        ready_orders = Order.query.options(selectinload(Order.items)).filter(Order.status == 'READY', Order.reservation_id.is_(None)).order_by(Order.created_at.desc()).limit(20).all()
         
         return render_template('kitchen/dashboard.html',
                                portal_name=f"{current_user.first_name} {current_user.last_name}",
@@ -403,6 +403,29 @@ def kitchen_dashboard():
     except Exception as e:
         import traceback
         print("ERROR IN KITCHEN DASHBOARD:")
+        traceback.print_exc()
+        return f"Internal Error: {str(e)}", 500
+
+@kitchen_bp.route('/staff/kitchen/reservations')
+def kitchen_reservations():
+    if not current_user.is_authenticated or current_user.role not in KITCHEN_ROLES:
+        return redirect(url_for('kitchen_portal.kitchen_login'))
+        
+    try:
+        from sqlalchemy.orm import selectinload
+        # Fetching pre-orders linked to a reservation, ordered by the reservation date/time
+        # We join Reservation to order by date
+        from models import Reservation
+        reserve_orders = Order.query.options(selectinload(Order.items)).join(Reservation).filter(
+            Order.reservation_id.isnot(None),
+            ~Order.status.in_(['COMPLETED', 'CANCELLED'])
+        ).order_by(Reservation.date.asc(), Reservation.time.asc()).all()
+        
+        return render_template('kitchen/reservations.html',
+                               portal_name=f"{current_user.first_name} {current_user.last_name}",
+                               reserve_orders=reserve_orders)
+    except Exception as e:
+        import traceback
         traceback.print_exc()
         return f"Internal Error: {str(e)}", 500
 

@@ -245,7 +245,13 @@
         <div class="header">
             <div class="logo">Le Maison</div>
             <p>Yelo Lane • Premium Coffee & Dine</p>
-            <div class="paid-stamp">PAID VIA E-WALLET</div>
+            {% if order.payment_status == 'PAID' %}
+                {% if order.payment_method == 'COUNTER' %}
+                    <div class="paid-stamp">PAID AT COUNTER</div>
+                {% else %}
+                    <div class="paid-stamp">PAID VIA E-WALLET</div>
+                {% endif %}
+            {% endif %}
         </div>
 
         <div class="info-grid">

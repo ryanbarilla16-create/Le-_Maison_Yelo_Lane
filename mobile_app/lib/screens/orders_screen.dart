@@ -198,115 +198,97 @@ class _OrdersScreenState extends State<OrdersScreen>
     final paymentMethod = o['payment_method'] ?? '';
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
-      child: Stack(
-        children: [
-          Positioned(
-            left: -8,
-            top: 50,
-            child: CircleAvatar(radius: 8, backgroundColor: const Color(0xFFF5F5F5)),
-          ),
-          Positioned(
-            right: -8,
-            top: 50,
-            child: CircleAvatar(radius: 8, backgroundColor: const Color(0xFFF5F5F5)),
-          ),
-          Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Colors.grey.shade100, width: 1)),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Icon(Icons.store_rounded, size: 14, color: AppColors.primary),
-                    ),
-                    const SizedBox(width: 8),
-                    const Expanded(
-                      child: Text(
-                        'Le Maison Yelo Lane',
-                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, letterSpacing: 0.2),
-                      ),
-                    ),
-                    Text(
-                      _statusLabel(status),
-                      style: TextStyle(color: statusColor, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.5),
-                    ),
-                  ],
-                ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Column(
+          children: [
+            // Status Header
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+              decoration: BoxDecoration(
+                color: statusColor.withOpacity(0.05),
               ),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 14),
-                child: _DashedDivider(),
-              ),
-              ...items.map((item) => _orderItemRow(item)),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 14),
-                child: _DashedDivider(),
-              ),
-              if (diningOption == 'DELIVERY' && o['delivery_address'] != null && o['delivery_address'] != '')
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFF8E1),
-                    border: Border(top: BorderSide(color: Colors.amber.shade100)),
+              child: Row(
+                children: [
+                   Container(
+                    width: 8, height: 8,
+                    decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
                   ),
-                  child: Row(
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _statusLabel(status),
+                      style: TextStyle(color: statusColor, fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 1),
+                    ),
+                  ),
+                  Text(
+                    'Order #${o['id']}',
+                    style: TextStyle(color: Colors.grey.shade400, fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Items Section
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  ...items.map((item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: [
+                        Text('${item['quantity']}x', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
+                        const SizedBox(width: 12),
+                        Expanded(child: Text(item['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14))),
+                        Text('₱${(item['price'] * item['quantity']).toStringAsFixed(2)}', style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  )),
+                ],
+              ),
+            ),
+
+            const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: _DashedDivider()),
+
+            // Total & Payment
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.delivery_dining_rounded, size: 16, color: Colors.amber.shade800),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          o['delivery_address'],
-                          style: TextStyle(fontSize: 11, color: Colors.amber.shade900),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                      Text(diningOption == 'DELIVERY' ? 'Delivery' : 'Dine-In', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textMuted)),
+                      Text(paymentMethod == 'ONLINE' ? 'Paid via E-Wallet' : 'Pay at Counter', style: TextStyle(fontSize: 10, color: Colors.grey.shade400)),
+                    ],
+                  ),
+                  const Spacer(),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      const Text('TOTAL AMOUNT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textMuted, letterSpacing: 1)),
+                      Text(
+                        '₱${(o['total_amount'] as num).toStringAsFixed(2)}',
+                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.accent),
                       ),
                     ],
                   ),
-                ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  border: Border(top: BorderSide(color: Colors.grey.shade100, width: 1)),
-                ),
-                child: Row(
-                  children: [
-                    _miniTag(diningOption == 'DINE_IN' ? 'Dine In' : diningOption == 'DELIVERY' ? 'Delivery' : 'Pick-up', diningOption == 'DELIVERY' ? Icons.delivery_dining : diningOption == 'DINE_IN' ? Icons.restaurant : Icons.takeout_dining),
-                    const SizedBox(width: 6),
-                    _miniTag(paymentMethod == 'ONLINE' || paymentMethod == 'GCASH' ? 'GCash' : 'Counter', Icons.payment_rounded),
-                    const Spacer(),
-                    Text('${items.length} item${items.length > 1 ? 's' : ''}', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-                    const SizedBox(width: 6),
-                    const Text('Total:', style: TextStyle(fontSize: 13, color: Colors.black54)),
-                    const SizedBox(width: 4),
-                    Text(
-                      '₱${(o['total_amount'] as num).toStringAsFixed(2)}',
-                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.accent, fontFamily: 'Georgia'),
-                    ),
-                  ],
-                ),
+                ],
               ),
+            ),
               if (o['notes'] != null && o['notes'] != '')
                 Container(
                   width: double.infinity,
@@ -385,8 +367,7 @@ class _OrdersScreenState extends State<OrdersScreen>
                 ),
               ),
             ],
-          ),
-        ],
+        ),
       ),
     );
   }

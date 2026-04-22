@@ -6,19 +6,27 @@
 <div class="row w-100 m-0 login-split-layout">
     <!-- Left Section: Image (Hidden on small screens) -->
     <div class="col-12 col-md-6 d-none d-md-block login-image-section position-relative p-0">
-        <div class="login-image-overlay position-absolute top-0 start-0 w-100 h-100 d-flex flex-column justify-content-center align-items-center text-center p-5">
-            <h1 class="text-white fw-bold mb-3" style="font-family: 'Georgia', serif; font-size: 3.5rem;">Welcome Back</h1>
-            <p class="text-white fs-5 mb-5" style="max-width: 80%;">Settle in, relax, and log in to your account. We've missed your presence at our tables.</p>
-            <a href="{{ url_for('main.about_page') }}" class="text-white text-decoration-none border-bottom border-white pb-1 fw-semibold" style="letter-spacing: 0.5px;">About Le Maison &rarr;</a>
+        <div
+            class="login-image-overlay position-absolute top-0 start-0 w-100 h-100 d-flex flex-column justify-content-center align-items-center text-center p-5">
+            <h1 class="text-white fw-bold mb-3" style="font-family: 'Georgia', serif; font-size: 3.5rem;">Welcome Back
+            </h1>
+            <p class="text-white fs-5 mb-5" style="max-width: 80%;">Settle in, relax, and log in to your account. We've
+                missed your presence at our tables.</p>
+            <a href="{{ url_for('main.about_page') }}"
+                class="text-white text-decoration-none border-bottom border-white pb-1 fw-semibold"
+                style="letter-spacing: 0.5px;">About Le Maison &rarr;</a>
         </div>
     </div>
-    
+
     <!-- Right Section: Form -->
-    <div class="col-12 col-md-6 d-flex flex-column align-items-center justify-content-center bg-white p-4 p-md-5 position-relative border-start border-light border-2">
+    <div
+        class="col-12 col-md-6 d-flex flex-column align-items-center justify-content-center bg-white p-4 p-md-5 position-relative border-start border-light border-2">
         <div class="login-form-container w-100" style="max-width: 420px; z-index: 2;">
             <div class="text-start mb-4 pb-2">
-                <h2 class="fw-bold mb-2 text-dark" style="font-family: 'Inter', sans-serif; font-size: 2.2rem; letter-spacing: -0.5px;">Sign In</h2>
-                <p class="text-muted" style="font-size: 1rem;">Access your account to manage reservations and orders.</p>
+                <h2 class="fw-bold mb-2 text-dark"
+                    style="font-family: 'Inter', sans-serif; font-size: 2.2rem; letter-spacing: -0.5px;">Sign In</h2>
+                <p class="text-muted" style="font-size: 1rem;">Access your account to manage reservations and orders.
+                </p>
             </div>
 
             <!-- Social Login Buttons -->
@@ -26,14 +34,17 @@
                 <div class="col-6">
                     <button type="button" onclick="handleGoogleLogin()"
                         class="btn btn-outline-secondary text-dark w-100 rounded-3 d-flex align-items-center justify-content-center gap-2 shadow-sm btn-social-new border-opacity-50">
-                        <img loading="lazy" decoding="async" src="https://cdn-icons-png.flaticon.com/512/300/300221.png" alt="Google" style="width: 20px; height: 20px;">
+                        <img loading="lazy" decoding="async" src="https://cdn-icons-png.flaticon.com/512/300/300221.png"
+                            alt="Google" style="width: 20px; height: 20px;">
                         <span class="fw-bold" style="font-size: 0.95rem;">Google</span>
                     </button>
                 </div>
                 <div class="col-6">
                     <button type="button" onclick="handleFacebookLogin()"
                         class="btn btn-outline-secondary text-dark w-100 rounded-3 d-flex align-items-center justify-content-center gap-2 shadow-sm btn-social-new border-opacity-50">
-                        <img loading="lazy" decoding="async" src="https://upload.wikimedia.org/wikipedia/commons/b/b8/2021_Facebook_icon.svg" alt="Facebook" style="width: 20px; height: 20px;">
+                        <img loading="lazy" decoding="async"
+                            src="https://upload.wikimedia.org/wikipedia/commons/b/b8/2021_Facebook_icon.svg"
+                            alt="Facebook" style="width: 20px; height: 20px;">
                         <span class="fw-bold" style="font-size: 0.95rem;">Facebook</span>
                     </button>
                 </div>
@@ -41,7 +52,8 @@
 
             <div class="d-flex align-items-center mb-4 pb-1 mt-2">
                 <hr class="flex-grow-1 divider-line m-0">
-                <span class="mx-3 fw-bold divider-text" style="font-size: 0.75rem; color: #a18a7a;">OR USE YOUR EMAIL</span>
+                <span class="mx-3 fw-bold divider-text" style="font-size: 0.75rem; color: #a18a7a;">OR USE YOUR
+                    EMAIL</span>
                 <hr class="flex-grow-1 divider-line m-0">
             </div>
 
@@ -55,25 +67,32 @@
                 <!-- Password field -->
                 <div class="form-group mb-5 position-relative">
                     <div class="position-relative">
-                        <input type="password" id="password" name="password" class="form-control rounded-3 p-3 border-opacity-50 password-input"
-                            required placeholder="Password">
+                        <input type="password" id="password" name="password"
+                            class="form-control rounded-3 p-3 border-opacity-50 password-input" required
+                            placeholder="Password">
                         <!-- Custom eye icon color to match the design -->
-                        <i class="fas fa-eye text-muted toggle-password" onclick="togglePasswordVisibility('password', this)" style="position: absolute; right: 1.2rem; top: 50%; transform: translateY(-50%); cursor: pointer; color: #b38b6d !important;"></i>
+                        <i class="fas fa-eye text-muted toggle-password"
+                            onclick="togglePasswordVisibility('password', this)"
+                            style="position: absolute; right: 1.2rem; top: 50%; transform: translateY(-50%); cursor: pointer; color: #b38b6d !important;"></i>
                     </div>
                     <div class="text-end mt-3">
-                        <a href="{{ url_for('main.forgot_password') }}" class="text-decoration-none fw-bold" style="font-size: 0.85rem; color: #8b5a2b; letter-spacing: 0.3px;">Forgot Password?</a>
+                        <a href="{{ url_for('main.forgot_password') }}" class="text-decoration-none fw-bold"
+                            style="font-size: 0.85rem; color: #8b5a2b; letter-spacing: 0.3px;">Forgot Password?</a>
                     </div>
                 </div>
 
-                <button type="submit" class="btn w-100 rounded-3 fw-bold text-white shadow py-3 btn-primary-custom" style="font-size: 1.1rem; letter-spacing: 0.3px;">
+                <button type="submit" class="btn w-100 rounded-3 fw-bold text-white shadow py-3 btn-primary-custom"
+                    style="font-size: 1.1rem; letter-spacing: 0.3px;">
                     Sign In
                 </button>
             </form>
 
             <div class="text-center mt-5">
                 <p class="text-muted fw-medium mb-0" style="font-size: 0.95rem;">
-                    New to Le Maison? 
-                    <a href="{{ url_for('main.signup') }}" class="fw-bold text-decoration-none border-bottom border-dark pb-1" style="color: #4a3b32; margin-left: 5px;">
+                    New to Le Maison?
+                    <a href="{{ url_for('main.signup') }}"
+                        class="fw-bold text-decoration-none border-bottom border-dark pb-1"
+                        style="color: #4a3b32; margin-left: 5px;">
                         Create an account
                     </a>
                 </p>
@@ -83,116 +102,120 @@
 </div>
 
 <style>
-/* Reset Container Padding for Full Width */
-.main-container {
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-}
+    /* Reset Container Padding for Full Width */
+    .main-container {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
 
-/* Base override to let splitting stretch */
-.login-split-layout {
-    min-height: 850px; /* Fixed height to match signup perfectly */
-}
+    /* Base override to let splitting stretch */
+    .login-split-layout {
+        min-height: 850px;
+        /* Fixed height to match signup perfectly */
+    }
 
-/* Left Image Section */
-.login-image-section {
-    background-image: url('https://i.postimg.cc/PqLbFYhr/9.webp');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-}
+    /* Left Image Section */
+    .login-image-section {
+        background-image: url('https://i.postimg.cc/PqLbFYhr/9.webp');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+    }
 
-.login-image-overlay {
-    background: rgba(0, 0, 0, 0.4); /* Stronger dark overlay for improved text contrast */
-}
+    .login-image-overlay {
+        background: rgba(0, 0, 0, 0.4);
+        /* Stronger dark overlay for improved text contrast */
+    }
 
-/* Form Section Buttons & Inputs */
-.btn-social-new {
-    background: #ffffff;
-    border-color: #dee2e6;
-    transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
-    height: 52px;
-}
-.btn-social-new:hover {
-    background: #f8f9fa;
-    border-color: #adb5bd;
-}
+    /* Form Section Buttons & Inputs */
+    .btn-social-new {
+        background: #ffffff;
+        border-color: #dee2e6;
+        transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+        height: 52px;
+    }
 
-.form-control {
-    font-size: 1rem;
-    color: #4a3b32;
-    transition: all 0.3s ease;
-    border-color: #ced4da;
-    height: 54px;
-}
+    .btn-social-new:hover {
+        background: #f8f9fa;
+        border-color: #adb5bd;
+    }
 
-.form-control::placeholder {
-    color: #a18a7a;
-    font-weight: 500;
-}
+    .form-control {
+        font-size: 1rem;
+        color: #4a3b32;
+        transition: all 0.3s ease;
+        border-color: #ced4da;
+        height: 54px;
+    }
 
-.form-control:focus {
-    border-color: #8b5a2b;
-    box-shadow: 0 0 0 4px rgba(139, 90, 43, 0.1);
-    outline: none;
-}
+    .form-control::placeholder {
+        color: #a18a7a;
+        font-weight: 500;
+    }
 
-.divider-line {
-    border-top: 2px solid rgba(139, 99, 75, 0.15);
-}
+    .form-control:focus {
+        border-color: #8b5a2b;
+        box-shadow: 0 0 0 4px rgba(139, 90, 43, 0.1);
+        outline: none;
+    }
 
-.divider-text {
-    letter-spacing: 1.5px;
-}
+    .divider-line {
+        border-top: 2px solid rgba(139, 99, 75, 0.15);
+    }
 
-.password-input {
-    padding-right: 3rem !important;
-}
+    .divider-text {
+        letter-spacing: 1.5px;
+    }
 
-.toggle-password {
-    background: transparent;
-    padding: 0.5rem;
-    border-radius: 50%;
-    transition: background 0.2s ease, color 0.2s ease;
-}
+    .password-input {
+        padding-right: 3rem !important;
+    }
 
-.toggle-password:hover {
-    background: rgba(139, 99, 75, 0.1);
-    color: #5c3a21 !important;
-}
+    .toggle-password {
+        background: transparent;
+        padding: 0.5rem;
+        border-radius: 50%;
+        transition: background 0.2s ease, color 0.2s ease;
+    }
 
-/* Custom Sign In Button */
-.btn-primary-custom {
-    background: linear-gradient(135deg, #5D4037 0%, #795548 100%) !important;
-    border: none !important;
-    transition: all 0.3s ease !important;
-    box-shadow: 0 4px 14px rgba(93, 64, 55, 0.25) !important;
-}
-.btn-primary-custom:hover {
-    background: linear-gradient(135deg, #3E2723 0%, #5D4037 100%) !important;
-    transform: translateY(-2px) !important;
-    box-shadow: 0 10px 15px -3px rgba(139, 90, 43, 0.35) !important;
-}
+    .toggle-password:hover {
+        background: rgba(139, 99, 75, 0.1);
+        color: #5c3a21 !important;
+    }
 
-/* Chrome Autofill adjustment */
-input:-webkit-autofill,
-input:-webkit-autofill:hover, 
-input:-webkit-autofill:focus, 
-input:-webkit-autofill:active{
-    -webkit-box-shadow: 0 0 0 30px #ffffff inset !important;
-    -webkit-text-fill-color: #4a3b32 !important;
-    border-radius: 0.5rem !important;
-}
+    /* Custom Sign In Button */
+    .btn-primary-custom {
+        background: linear-gradient(135deg, #5D4037 0%, #795548 100%) !important;
+        border: none !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 4px 14px rgba(93, 64, 55, 0.25) !important;
+    }
 
-/* Hide auth background if it interferes */
-.auth-bg {
-    display: none !important;
-}
+    .btn-primary-custom:hover {
+        background: linear-gradient(135deg, #3E2723 0%, #5D4037 100%) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 10px 15px -3px rgba(139, 90, 43, 0.35) !important;
+    }
 
-/* Remove footer top margin to connect perfectly */
-footer {
-    margin-top: 0 !important;
-}
+    /* Chrome Autofill adjustment */
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus,
+    input:-webkit-autofill:active {
+        -webkit-box-shadow: 0 0 0 30px #ffffff inset !important;
+        -webkit-text-fill-color: #4a3b32 !important;
+        border-radius: 0.5rem !important;
+    }
+
+    /* Hide auth background if it interferes */
+    .auth-bg {
+        display: none !important;
+    }
+
+    /* Remove footer top margin to connect perfectly */
+    footer {
+        margin-top: 0 !important;
+    }
 </style>
 <script>
     // --- Social Login Integration ---
@@ -285,5 +308,3 @@ footer {
 <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
 <script src="https://accounts.google.com/gsi/client" async></script>
 {% endblock %}
-
-

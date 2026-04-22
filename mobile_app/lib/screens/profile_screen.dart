@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import '../theme.dart';
 import '../services/api_service.dart';
@@ -112,39 +113,89 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _save() async {
+    final first = _firstCtrl.text.trim();
+    final middle = _middleCtrl.text.trim();
+    final last = _lastCtrl.text.trim();
+    final username = _usernameCtrl.text.trim();
+    final phone = _phoneCtrl.text.trim();
+    final currentPwd = _currentPwdCtrl.text;
+    final newPwd = _newPwdCtrl.text;
+    final confirmPwd = _confirmPwdCtrl.text;
+
+    // --- REPLICATING WEB SIGNUP VALIDATION ---
+    
+    // 1. Phone Validation (Starts with 09, 11 digits, no repeats)
+    final phRegex = RegExp(r'^09\d{9}$');
+    if (phone.isNotEmpty) {
+      if (!phRegex.hasMatch(phone)) {
+        _showError("Phone must be 11 digits starting with 09.");
+        return;
+      }
+      // Check for repeating digits (last 9)
+      final digitsOnly = phone.substring(2);
+      if (RegExp(r'^([0-9])\1{8}$').hasMatch(digitsOnly)) {
+        _showError("Invalid phone sequence (repeating digits).");
+        return;
+      }
+    }
+
+    // 2. Name Validation (Letters, spaces, dashes only)
+    final nameRegex = RegExp(r'^[A-Za-z\s\-]+$');
+    if (!nameRegex.hasMatch(first)) { _showError("First Name: letters, spaces, and dashes only."); return; }
+    if (middle.isNotEmpty && !nameRegex.hasMatch(middle)) { _showError("Middle Name: letters, spaces, and dashes only."); return; }
+    if (!nameRegex.hasMatch(last)) { _showError("Last Name: letters, spaces, and dashes only."); return; }
+
+    // 3. Username Validation (5-20 chars, alphanumeric/underscore)
+    if (username.length < 5 || username.length > 20) { _showError("Username must be 5-20 characters."); return; }
+    if (!RegExp(r'^[A-Za-z0-9_]+$').hasMatch(username)) { _showError("Username: letters, numbers, and underscores only."); return; }
+
+    // 4. Password Validation (if being changed)
+    if (newPwd.isNotEmpty) {
+       if (newPwd.length < 6) { _showError("New password must be at least 6 characters."); return; }
+       if (newPwd != confirmPwd) { _showError("New passwords do not match."); return; }
+       if (currentPwd.isEmpty) { _showError("Current password is required to change password."); return; }
+    }
+
     setState(() => _saving = true);
     final userId = await AuthService.getUserId();
     final res = await ApiService.put('/api/user/$userId/profile', {
-      'first_name': _firstCtrl.text.trim(),
-      'middle_name': _middleCtrl.text.trim(),
-      'last_name': _lastCtrl.text.trim(),
-      'username': _usernameCtrl.text.trim(),
+      'first_name': first,
+      'middle_name': middle,
+      'last_name': last,
+      'username': username,
       'email': _emailCtrl.text.trim(),
-      'phone_number': _phoneCtrl.text.trim(),
-      'current_password': _currentPwdCtrl.text,
-      'new_password': _newPwdCtrl.text,
-      'confirm_new_password': _confirmPwdCtrl.text,
+      'phone_number': phone,
+      'current_password': currentPwd,
+      'new_password': newPwd,
+      'confirm_new_password': confirmPwd,
     });
     setState(() => _saving = false);
+    
     final ok = res['success'] == true;
     if (ok) {
       final u = await AuthService.getUser();
       if (u != null) {
-        u['first_name'] = _firstCtrl.text.trim();
-        u['last_name'] = _lastCtrl.text.trim();
-        u['username'] = _usernameCtrl.text.trim();
-        u['email'] = _emailCtrl.text.trim();
-        u['phone_number'] = _phoneCtrl.text.trim();
+        u['first_name'] = first;
+        u['last_name'] = last;
+        u['username'] = username;
+        u['phone_number'] = phone;
         await AuthService.saveUser(u);
       }
     }
+    
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(res['message'] ?? ''),
+        content: Text(res['message'] ?? (ok ? 'Profile updated!' : 'Error updating profile')),
         backgroundColor: ok ? AppColors.success : AppColors.danger,
       ),
     );
+    
+    if (ok) setState(() => _isEditing = false);
+  }
+
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: AppColors.danger, behavior: SnackBarBehavior.floating));
   }
 
   Future<void> _pickAndUploadImage() async {
@@ -382,14 +433,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text(
-          'Profile',
-          style: AppTextStyles.heading.copyWith(fontSize: 20, color: AppColors.textMain),
-        ),
+        title: const Text('PROFILE', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, letterSpacing: 1.2)),
         centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
         actions: [
           IconButton(
             icon: Icon(_isEditing ? Icons.close : Icons.edit_note_rounded, color: AppColors.primary),
@@ -397,12 +444,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.settings_outlined, color: AppColors.primary),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SettingsScreen()),
-              );
-            },
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
           ),
           const SizedBox(width: 8),
         ],
@@ -412,32 +454,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
         onRefresh: _load,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             children: [
-              // Avatar with camera edit button
+              const SizedBox(height: 20),
+              // Avatar
               Stack(
                 children: [
-                  CircleAvatar(
-                    radius: 55,
-                    backgroundColor: AppColors.primary.withOpacity(0.1),
-                    backgroundImage:
-                        fullImageUrl != null ? NetworkImage(fullImageUrl) : null,
-                    child: _uploadingPic
-                        ? const CircularProgressIndicator(
-                            color: AppColors.primary,
-                            strokeWidth: 2.5,
-                          )
-                        : fullImageUrl == null
-                            ? Text(
-                                '${(_user?['first_name'] ?? 'U')[0]}',
-                                style: const TextStyle(
-                                  fontSize: 38,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.primary,
-                                ),
-                              )
-                            : null,
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: AppColors.primary.withOpacity(0.2), width: 2)),
+                    child: CircleAvatar(
+                      radius: 50,
+                      backgroundColor: AppColors.primary.withOpacity(0.05),
+                      backgroundImage: fullImageUrl != null ? NetworkImage(fullImageUrl) : null,
+                      child: _uploadingPic
+                          ? const CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)
+                          : fullImageUrl == null ? Text('${(_user?['first_name'] ?? 'U')[0]}', style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppColors.primary)) : null,
+                    ),
                   ),
                   Positioned(
                     bottom: 0,
@@ -446,129 +480,64 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       onTap: _uploadingPic ? null : _pickAndUploadImage,
                       child: Container(
                         padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [AppColors.primary, AppColors.primaryLight],
-                          ),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2.5),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withOpacity(0.3),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.camera_alt,
-                          color: Colors.white,
-                          size: 18,
-                        ),
+                        decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
+                        child: const Icon(Icons.camera_alt, color: Colors.white, size: 16),
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Text(
-                '${_user?['first_name'] ?? ''} ${_user?['last_name'] ?? ''}',
-                style: AppTextStyles.heading.copyWith(fontSize: 20),
-              ),
-              Text('@${_user?['username'] ?? ''}', style: AppTextStyles.muted),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
+              Text('${_user?['first_name'] ?? ''} ${_user?['last_name'] ?? ''}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.textMain)),
+              Text('@${_user?['username'] ?? ''}', style: const TextStyle(color: AppColors.textMuted, fontSize: 13, fontWeight: FontWeight.w500)),
+              const SizedBox(height: 32),
+
+              // Loyalty Progress (if bronze/silver/gold)
+              if (_user?['loyalty_points'] != null) ...[
+                 _buildLoyaltyCard(),
+                 const SizedBox(height: 32),
+              ],
+
               _field('First Name', _firstCtrl, Icons.person_outline, enabled: _isEditing),
               _field('Middle Name', _middleCtrl, Icons.person_outline, enabled: _isEditing),
               _field('Last Name', _lastCtrl, Icons.person_outline, enabled: _isEditing),
               _field('Username', _usernameCtrl, Icons.alternate_email, enabled: _isEditing),
-              _field('Email', _emailCtrl, Icons.email_outlined, enabled: false), // Email NOT editable
-              _field('Phone', _phoneCtrl, Icons.phone_outlined, enabled: _isEditing),
+              _field('Email', _emailCtrl, Icons.email_outlined, enabled: false),
+              _field('Phone', _phoneCtrl, Icons.phone_outlined, enabled: _isEditing, keyboardType: TextInputType.phone, maxLength: 11, formatters: [FilteringTextInputFormatter.digitsOnly]),
               
               if (_isEditing) ...[
-                const SizedBox(height: 16),
-                const Divider(),
-                const SizedBox(height: 16),
-                Text('Change Password', style: AppTextStyles.heading.copyWith(fontSize: 16)),
-                const SizedBox(height: 8),
-                Text('Leave blank if you don\'t want to change password', style: AppTextStyles.muted.copyWith(fontSize: 12)),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
+                const Text('CHANGE PASSWORD', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1.5, color: AppColors.primary)),
+                const SizedBox(height: 20),
                 _field('Current Password', _currentPwdCtrl, Icons.lock_outline, enabled: true, isPassword: true, showPassword: _showCurrentPwd, onToggle: () => setState(() => _showCurrentPwd = !_showCurrentPwd)),
                 _field('New Password', _newPwdCtrl, Icons.lock_reset, enabled: true, isPassword: true, showPassword: _showNewPwd, onToggle: () => setState(() => _showNewPwd = !_showNewPwd)),
                 _field('Confirm New Password', _confirmPwdCtrl, Icons.lock_reset, enabled: true, isPassword: true, showPassword: _showConfirmPwd, onToggle: () => setState(() => _showConfirmPwd = !_showConfirmPwd)),
+                const SizedBox(height: 24),
+                GradientButton(label: 'SAVE CHANGES', onPressed: _saving ? null : _save, isLoading: _saving),
               ],
-              const SizedBox(height: 24),
-              if (_isEditing)
-                GradientButton(
-                  label: 'Update Profile',
-                  icon: Icons.save_rounded,
-                  onPressed: _saving ? null : _save,
-                  isLoading: _saving,
-                  height: 56,
-                ),
 
               if (!_isEditing) ...[
+                const SizedBox(height: 20),
+                const Align(alignment: Alignment.centerLeft, child: Text('MY ACTIVITY', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1.5, color: Colors.grey))),
                 const SizedBox(height: 16),
-                const Divider(),
-                const SizedBox(height: 16),
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'My Activity',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: AppColors.primary,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _infoTile(
-                  Icons.rate_review_outlined,
-                  'My Reviews',
-                  'Track and view your feedback history',
-                  () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyReviewsScreen())),
-                ),
-                const SizedBox(height: 16),
-                const Divider(),
-                const SizedBox(height: 16),
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Information & Support',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: AppColors.primary,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _infoTile(
-                  Icons.info_outline_rounded,
-                  'About & FAQs',
-                  'Our story, delivery info, and more',
-                  () => Navigator.push(context, MaterialPageRoute(builder: (_) => const InfoHubScreen())),
-                ),
-                const SizedBox(height: 24),
-              ],
-
-              if (!_isEditing)
+                _activityCard(Icons.rate_review_outlined, 'My Reviews', 'See your feedback', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyReviewsScreen()))),
+                _activityCard(Icons.info_outline, 'About & FAQs', 'Learn more about us', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const InfoHubScreen()))),
+                const SizedBox(height: 32),
                 SizedBox(
                   width: double.infinity,
-                  height: 52,
                   child: OutlinedButton.icon(
                     onPressed: _logout,
                     icon: const Icon(Icons.logout_rounded),
-                    label: const Text('Sign Out'),
+                    label: const Text('SIGN OUT', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.danger,
-                      side: BorderSide(color: AppColors.danger.withOpacity(0.5)),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      side: BorderSide(color: AppColors.danger.withOpacity(0.3)),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     ),
                   ),
                 ),
+              ],
               const SizedBox(height: 40),
             ],
           ),
@@ -577,44 +546,71 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _infoTile(IconData icon, String title, String subtitle, VoidCallback onTap) {
+  Widget _buildLoyaltyCard() {
+    final points = _user?['loyalty_points'] ?? 0;
+    final status = _user?['role'] == 'RIDER' ? 'RIDER' : 'BRONZE'; // simplified
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Loyalty Progress', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+              Text('$points pts', style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.primary)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: LinearProgressIndicator(
+              value: points / 1000, 
+              minHeight: 8,
+              backgroundColor: Colors.grey.shade200,
+              valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Bronze', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey)),
+              Text('Silver Target: 1000 pts', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.primary)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _activityCard(IconData icon, String title, String sub, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.primary.withOpacity(0.1)),
+          border: Border.all(color: Colors.grey.shade100),
         ),
         child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: AppColors.primary, size: 22),
-            ),
+            Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.05), borderRadius: BorderRadius.circular(12)), child: Icon(icon, color: AppColors.primary, size: 20)),
             const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  Text(subtitle, style: AppTextStyles.muted.copyWith(fontSize: 12)),
-                ],
-              ),
-            ),
-            const Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey, size: 14),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)), Text(sub, style: const TextStyle(color: Colors.grey, fontSize: 12))])),
+            const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
           ],
         ),
       ),
     );
   }
 
-  Widget _field(String label, TextEditingController ctrl, IconData icon, {bool enabled = true, bool isPassword = false, bool showPassword = false, VoidCallback? onToggle}) {
+  Widget _field(String label, TextEditingController ctrl, IconData icon, {bool enabled = true, bool isPassword = false, bool showPassword = false, VoidCallback? onToggle, TextInputType? keyboardType, int? maxLength, List<TextInputFormatter>? formatters}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
       child: Column(
@@ -636,12 +632,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
             controller: ctrl,
             readOnly: !enabled,
             obscureText: isPassword && !showPassword,
+            keyboardType: keyboardType,
+            maxLength: maxLength,
+            inputFormatters: formatters,
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w500,
               color: enabled ? AppColors.textMain : AppColors.textMain.withOpacity(0.5),
             ),
             decoration: InputDecoration(
+              counterText: "",
               prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
               suffixIcon: isPassword ? IconButton(
                 icon: Icon(showPassword ? Icons.visibility_off : Icons.visibility, color: AppColors.primary, size: 20),

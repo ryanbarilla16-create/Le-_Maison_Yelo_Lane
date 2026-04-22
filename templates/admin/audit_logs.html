@@ -122,6 +122,19 @@
     .p-item.active .p-link { background: #4a3b32; color: #ffffff; border-color: #4a3b32; box-shadow: 0 4px 10px rgba(74, 59, 50, 0.2); }
     .p-item.disabled .p-link { opacity: 0.5; pointer-events: none; background: transparent; border: none; }
     
+    /* Interactive Filters */
+    .audit-filters {
+        display: flex; gap: 0.5rem; margin-bottom: 1.5rem; overflow-x: auto; padding-bottom: 0.5rem;
+    }
+    .btn-audit-filter {
+        background: #ffffff; color: #8B634B; border: 1px solid rgba(139, 99, 75, 0.2);
+        padding: 0.5rem 1.2rem; border-radius: 50px; font-weight: 700; font-size: 0.8rem;
+        cursor: pointer; transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+        white-space: nowrap; display: flex; align-items: center; gap: 0.5rem;
+    }
+    .btn-audit-filter:hover { background: #faf6f1; border-color: #8B634B; transform: translateY(-2px); }
+    .btn-audit-filter.active { background: #5D4037; color: white; border-color: #5D4037; box-shadow: 0 4px 10px rgba(93, 64, 55, 0.3); }
+
 </style>
 
 <div class="audit-header-bar">
@@ -139,6 +152,14 @@
         SECURITY TRAIL ACTIVE
     </span>
 </div>
+
+<div class="audit-filters">
+    <button class="btn-audit-filter active" data-filter="ALL"><i class="fas fa-list"></i> All Trails</button>
+    <button class="btn-audit-filter" data-filter="CREATE"><i class="fas fa-plus"></i> Creates</button>
+    <button class="btn-audit-filter" data-filter="UPDATE"><i class="fas fa-pen"></i> Updates</button>
+    <button class="btn-audit-filter" data-filter="DELETE"><i class="fas fa-trash"></i> Deletes</button>
+    <button class="btn-audit-filter" data-filter="RESTORE"><i class="fas fa-undo"></i> Restores</button>
+</div>
 <style>@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(87, 117, 81, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(87, 117, 81, 0); } 100% { box-shadow: 0 0 0 0 rgba(87, 117, 81, 0); } }</style>
 
 <div class="audit-ledger-container">
@@ -155,7 +176,7 @@
             </thead>
             <tbody>
                 {% for log in logs.items %}
-                <tr>
+                <tr class="ledger-row" data-action="{{ log.action }}">
                     <td style="width: 130px;">
                         <div class="al-time">
                             <span class="al-date">{{ log.created_at.strftime('%b %d, %Y') if log.created_at else 'N/A' }}</span>
@@ -239,6 +260,62 @@
     </ul>
     {% endif %}
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const filterBtns = document.querySelectorAll('.btn-audit-filter');
+        const rows = document.querySelectorAll('.ledger-row');
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Update active button state
+                filterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                // Filter logic
+                const filterValue = btn.getAttribute('data-filter');
+                let visibleCount = 0;
+
+                rows.forEach(row => {
+                    if (filterValue === 'ALL') {
+                        row.style.display = '';
+                        // Reset alternating background styles on table naturally
+                        visibleCount++;
+                    } else {
+                        if (row.getAttribute('data-action') === filterValue) {
+                            row.style.display = '';
+                            visibleCount++;
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    }
+                });
+                
+                // Optional: Handle empty state if filtering results in 0 rows
+                let emptyMsg = document.getElementById('empty-filter-msg');
+                if (visibleCount === 0 && rows.length > 0) {
+                    if (!emptyMsg) {
+                        const tbody = document.querySelector('.ledger-table tbody');
+                        emptyMsg = document.createElement('tr');
+                        emptyMsg.id = 'empty-filter-msg';
+                        emptyMsg.innerHTML = `<td colspan="5" style="text-align: center; padding: 4rem 2rem;">
+                            <div style="width: 60px; height: 60px; background: #fdfaf7; color: #8b634b; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin: 0 auto 1rem; opacity: 0.5;">
+                                <i class="fas fa-filter"></i>
+                            </div>
+                            <h4 style="font-family: 'Playfair Display', serif; font-weight: 800; color: #3E2723;">No matches for this filter</h4>
+                            <p style="color: #8D6E63; margin: 0;">Try selecting a different action filter.</p>
+                        </td>`;
+                        tbody.appendChild(emptyMsg);
+                    }
+                    emptyMsg.style.display = '';
+                } else if (emptyMsg) {
+                    emptyMsg.style.display = 'none';
+                }
+            });
+        });
+    });
+</script>
+
 {% endblock %}
 
 

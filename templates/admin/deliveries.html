@@ -3,107 +3,114 @@
 {% block title %}Deliveries{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="admin-page-title mb-0"><i class="fas fa-truck me-2" style="color: var(--primary-color);"></i>Delivery
-        Tracking</h2>
-    <div class="btn-group btn-group-sm border" style="border-radius: 8px; overflow: hidden;">
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <h2 class="admin-page-title mb-0" style="font-weight: 800; letter-spacing: -0.5px;">
+        <i class="fas fa-route me-2" style="color: var(--primary-color);"></i>Delivery Fleet
+    </h2>
+    <div class="d-flex flex-wrap gap-2">
         <a href="?status=ALL"
-            class="btn btn-sm {% if status_filter == 'ALL' %}btn-dark{% else %}btn-outline-dark{% endif %}">All</a>
+            class="btn btn-sm {% if status_filter == 'ALL' %}btn-dark shadow-sm{% else %}btn-light border{% endif %}" style="border-radius: 20px; padding: 6px 16px; font-weight: 600;">All</a>
         <a href="?status=WAITING"
-            class="btn btn-sm {% if status_filter == 'WAITING' %}btn-warning{% else %}btn-outline-warning{% endif %}">Waiting</a>
+            class="btn btn-sm {% if status_filter == 'WAITING' %}btn-warning text-dark shadow-sm{% else %}btn-light border text-muted{% endif %}" style="border-radius: 20px; padding: 6px 16px; font-weight: 600;">Waiting</a>
         <a href="?status=PICKED_UP"
-            class="btn btn-sm {% if status_filter == 'PICKED_UP' %}btn-info{% else %}btn-outline-info{% endif %}">Picked
-            Up</a>
+            class="btn btn-sm {% if status_filter == 'PICKED_UP' %}btn-info text-dark shadow-sm{% else %}btn-light border text-muted{% endif %}" style="border-radius: 20px; padding: 6px 16px; font-weight: 600;">Picked Up</a>
         <a href="?status=ON_THE_WAY"
-            class="btn btn-sm {% if status_filter == 'ON_THE_WAY' %}btn-primary{% else %}btn-outline-primary{% endif %}">On
-            the Way</a>
+            class="btn btn-sm {% if status_filter == 'ON_THE_WAY' %}btn-primary text-white shadow-sm{% else %}btn-light border text-muted{% endif %}" style="border-radius: 20px; padding: 6px 16px; font-weight: 600;">On the Way</a>
         <a href="?status=DELIVERED"
-            class="btn btn-sm {% if status_filter == 'DELIVERED' %}btn-success{% else %}btn-outline-success{% endif %}">Delivered</a>
+            class="btn btn-sm {% if status_filter == 'DELIVERED' %}btn-success text-white shadow-sm{% else %}btn-light border text-muted{% endif %}" style="border-radius: 20px; padding: 6px 16px; font-weight: 600;">Delivered</a>
     </div>
 </div>
 
 <!-- ═══ LIVE TRACKING MAP ═══ -->
-<div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
-    <div class="card-header bg-white border-0 py-3 px-4">
-        <div class="d-flex align-items-center justify-content-between">
-            <div class="d-flex align-items-center">
-                <i class="fas fa-map-marked-alt me-2" style="color: var(--primary-color); font-size: 1.1rem;"></i>
-                <h6 class="mb-0 fw-bold">Live Rider Map</h6>
-                <span id="riderCount" class="badge bg-success ms-2" style="font-size: 0.7rem;">0 active</span>
+<div class="card border-0 mb-4" style="border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.04); overflow: hidden;">
+    <div class="card-header bg-white border-0 py-3 px-4 d-flex flex-wrap gap-3 align-items-center justify-content-between" style="border-bottom: 1px solid rgba(0,0,0,0.04) !important;">
+        <div class="d-flex align-items-center gap-3">
+            <div style="width: 40px; height: 40px; border-radius: 12px; background: rgba(139, 99, 75, 0.1); display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-map-marked-alt" style="color: var(--primary-color); font-size: 1.2rem;"></i>
             </div>
             <div>
-                <span class="text-muted" style="font-size: 0.75rem;">
-                    <i class="fas fa-sync-alt me-1"></i>Updates every 5s
-                </span>
+                <h6 class="mb-0 fw-bold" style="font-size: 1.05rem; color: #333;">Live Radar</h6>
+                <span style="font-size: 0.75rem; color: #888;">Real-time GPS tracking</span>
             </div>
+            <span id="riderCount" class="badge bg-success-subtle text-success border border-success-subtle rounded-pill ms-2 px-3 py-1 text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                <i class="fas fa-circle me-1" style="font-size: 0.4rem; vertical-align: middle;"></i>0 ACTIVE
+            </span>
+        </div>
+        <div>
+            <span class="badge bg-light text-muted border px-2 py-1" style="font-size: 0.7rem; font-weight: 500;">
+                <i class="fas fa-sync-alt me-1"></i>Updates every 5s
+            </span>
         </div>
     </div>
-    <div class="card-body p-0">
-        <div id="deliveryMap" style="height: 380px; border-radius: 0 0 12px 12px; z-index: 1;"></div>
+    <div class="card-body p-0" style="position: relative;">
+        <!-- Soft top shadow over map -->
+        <div style="position: absolute; top: 0; left: 0; right: 0; height: 10px; background: linear-gradient(to bottom, rgba(0,0,0,0.02), transparent); z-index: 10; pointer-events: none;"></div>
+        <div id="deliveryMap" style="height: 420px; z-index: 1;"></div>
     </div>
 </div>
 
 <!-- ═══ DELIVERY TABLE ═══ -->
-<div class="card border-0 shadow-sm" style="border-radius: 12px;">
+<div class="card border-0 mb-4" style="border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.04); overflow: hidden;">
+    <div class="card-header bg-white border-0 py-3 px-4 d-flex align-items-center" style="border-bottom: 1px solid rgba(0,0,0,0.04) !important;">
+        <h6 class="mb-0 fw-bold" style="font-size: 1.05rem; color: #333;"><i class="fas fa-list-ul me-2 text-muted"></i>Active Orders</h6>
+    </div>
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead style="background-color: rgba(0,0,0,0.02);">
+            <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+                <thead style="background-color: #faf9f7; color: #666; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">
                     <tr>
-                        <th class="ps-4">Order #</th>
-                        <th>Customer</th>
-                        <th>Address</th>
-                        <th>Total</th>
-                        <th>Rider</th>
-                        <th>Delivery Status</th>
-                        <th>Payment</th>
+                        <th class="ps-4 py-3 border-0">Order ID</th>
+                        <th class="py-3 border-0">Customer</th>
+                        <th class="py-3 border-0">Address</th>
+                        <th class="py-3 border-0">Total</th>
+                        <th class="py-3 border-0">Rider / Carrier</th>
+                        <th class="py-3 border-0">Status</th>
+                        <th class="py-3 border-0">Payment</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for order in orders.items %}
                     <tr>
-                        <td class="ps-4 fw-bold">#{{ order.id }}</td>
-                        <td>
+                        <td class="ps-4 fw-bold" style="color: #444;">#{{ order.id }}</td>
+                        <td style="font-weight: 500;">
                             {% if order.user %}
                             {{ order.user.first_name }} {{ order.user.last_name }}
                             {% else %}
                             {{ order.customer_name or 'Walk-in' }}
                             {% endif %}
                         </td>
-                        <td style="font-size: 0.85rem; max-width: 200px;">
-                            <i class="fas fa-map-marker-alt text-danger me-1"></i>
-                            {{ order.delivery_address or 'No address' }}
+                        <td style="font-size: 0.8rem; max-width: 250px; color: #666;">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-map-marker-alt text-danger mt-1 me-2" style="font-size: 0.85rem;"></i>
+                                <span class="text-truncate d-inline-block" style="max-width: 220px;" title="{{ order.delivery_address }}">{{ order.delivery_address or 'No address provided' }}</span>
+                            </div>
                         </td>
-                        <td class="fw-bold text-success">₱{{ "%.2f"|format(order.total_amount) }}</td>
+                        <td class="fw-bold" style="color: #2e7d32;">₱{{ "%.2f"|format(order.total_amount) }}</td>
                         <td>
                             {% if order.rider %}
-                            <span class="badge bg-info-subtle text-info border border-info-subtle">
-                                <i class="fas fa-motorcycle me-1"></i>{{ order.rider.first_name }} {{
-                                order.rider.last_name }}
+                            <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-2 py-1">
+                                <i class="fas fa-motorcycle me-1"></i>{{ order.rider.first_name }}
                             </span>
                             {% else %}
-                            <span class="badge bg-light text-muted border">No rider yet</span>
+                            <span class="badge bg-light text-muted border rounded-pill px-2 py-1" style="font-weight: 500;">Unassigned</span>
                             {% endif %}
                         </td>
                         <td>
                             {% if order.delivery_status == 'WAITING' or order.delivery_status is none %}
-                            <span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i>Waiting</span>
+                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-3 py-1"><i class="fas fa-clock me-1"></i>Waiting</span>
                             {% elif order.delivery_status == 'PICKED_UP' %}
-                            <span class="badge" style="background-color: #2196F3; color: white;"><i
-                                    class="fas fa-box me-1"></i>Picked Up</span>
+                            <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-3 py-1"><i class="fas fa-box me-1"></i>Picked Up</span>
                             {% elif order.delivery_status == 'ON_THE_WAY' %}
-                            <span class="badge bg-primary"><i class="fas fa-motorcycle me-1"></i>On the Way</span>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1"><i class="fas fa-motorcycle me-1"></i>On the Way</span>
                             {% elif order.delivery_status == 'DELIVERED' %}
-                            <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Delivered</span>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1"><i class="fas fa-check-circle me-1"></i>Delivered</span>
                             {% endif %}
                         </td>
                         <td>
                             {% if order.payment_status == 'PAID' %}
-                            <span class="badge bg-success-subtle text-success border border-success-subtle"><i
-                                    class="fas fa-check-circle me-1"></i>Paid</span>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1"><i class="fas fa-check-circle me-1"></i>Paid</span>
                             {% else %}
-                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i
-                                    class="fas fa-times-circle me-1"></i>COD</span>
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-1"><i class="fas fa-wallet me-1"></i>COD</span>
                             {% endif %}
                         </td>
                     </tr>

@@ -1199,6 +1199,7 @@ def approve_user(user_id):
     # Create in-app notification for user
     _create_web_notification(user.id, 'Account Approved! 🎉', 'Your account has been approved. You can now log in and enjoy all features!', 'SYSTEM')
     
+    log_audit('UPDATE', 'User', user.id, f'Approved user registration for {user.username}')
     flash(f"User {user.username} approved.", "success")
     return redirect(url_for('admin.approvals'))
 
@@ -1210,6 +1211,8 @@ def reject_user(user_id):
     user.status = 'REJECTED'
     db.session.commit()
     _create_web_notification(user.id, 'Account Update', 'Your account registration was not approved. Please contact us for more information.', 'SYSTEM')
+    
+    log_audit('UPDATE', 'User', user.id, f'Rejected user registration for {user.username}')
     flash(f"User {user.username} rejected.", "warning")
     return redirect(url_for('admin.approvals'))
 
@@ -1242,8 +1245,11 @@ def update_user_role(user_id):
 
     user = User.query.get_or_404(user_id)
     new_role = request.form.get('role')
+    old_role = user.role
     user.role = new_role
     db.session.commit()
+    
+    log_audit('UPDATE', 'User', user.id, f"Changed role of {user.username} from {old_role} to {new_role}")
     flash(f"Role updated for {user.username}.", "success")
     return redirect(url_for('admin.users'))
 
@@ -2772,6 +2778,7 @@ def add_ingredient():
     if supplier_id:
         _sync_supplier_catalog(supplier_id)
         
+    log_audit('CREATE', 'Ingredient', ing.id, f'Added new ingredient: {name}')
     flash(f'Ingredient "{name}" added successfully!', 'success')
     return redirect(url_for('admin.inventory', tab='ingredients'))
 
@@ -2801,6 +2808,9 @@ def update_ingredient(ing_id):
 
     # If AJAX request, return JSON
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    
+    log_audit('UPDATE', 'Ingredient', ing.id, f'Updated ingredient: {ing.name}')
+    
     if is_ajax:
         supplier_name = ing.supplier.name if ing.supplier else None
         return jsonify({
@@ -2836,6 +2846,7 @@ def delete_ingredient(ing_id):
     if sup_id:
         _sync_supplier_catalog(sup_id)
         
+    log_audit('DELETE', 'Ingredient', ing_id, f'Deleted ingredient: {ing.name}')
     flash(f'Ingredient "{ing.name}" deleted.', 'success')
     return redirect(url_for('admin.inventory', tab='ingredients'))
 
@@ -2857,6 +2868,7 @@ def bulk_delete_ingredients():
         for sid in supplier_ids:
             _sync_supplier_catalog(sid)
             
+        log_audit('DELETE', 'Ingredient', None, f'Bulk deleted {len(item_ids)} ingredients')
         flash(f'Deleted {len(item_ids)} ingredients.', 'success')
     return redirect(url_for('admin.inventory', tab='ingredients'))
 
@@ -3095,6 +3107,7 @@ def add_supplier():
         sup.catalog_items = new_ingredients_str
         db.session.commit()
         
+    log_audit('CREATE', 'Supplier', sup.id, f'Added new supplier: {name}')
     flash(f'Supplier "{name}" added successfully!', 'success')
     return redirect(url_for('admin.inventory', tab='suppliers'))
 
@@ -3112,6 +3125,7 @@ def update_supplier(sup_id):
     if new_catalog is not None:
         sup.catalog_items = new_catalog.strip()
     db.session.commit()
+    log_audit('UPDATE', 'Supplier', sup.id, f'Updated supplier: {sup.name}')
     flash(f'Supplier "{sup.name}" updated!', 'success')
     return redirect(url_for('admin.inventory', tab='suppliers'))
 
@@ -3124,6 +3138,7 @@ def delete_supplier(sup_id):
     Ingredient.query.filter_by(supplier_id=sup_id).update({'supplier_id': None})
     db.session.delete(sup)
     db.session.commit()
+    log_audit('DELETE', 'Supplier', sup_id, f'Deleted supplier: {sup.name}')
     flash(f'Supplier "{sup.name}" deleted.', 'success')
     return redirect(url_for('admin.inventory', tab='suppliers'))
 
@@ -3136,6 +3151,7 @@ def bulk_delete_suppliers():
         Ingredient.query.filter(Ingredient.supplier_id.in_(item_ids)).update({'supplier_id': None}, synchronize_session=False)
         Supplier.query.filter(Supplier.id.in_(item_ids)).delete(synchronize_session=False)
         db.session.commit()
+        log_audit('DELETE', 'Supplier', None, f'Bulk deleted {len(item_ids)} suppliers')
         flash(f'Deleted {len(item_ids)} suppliers.', 'success')
     return redirect(url_for('admin.inventory', tab='suppliers'))
 

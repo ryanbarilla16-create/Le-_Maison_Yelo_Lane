@@ -1,0 +1,297 @@
+{% extends "layouts/staff_layout.html" %}
+
+{% block title %}Reservation Pre-Orders — Le Maison{% endblock %}
+
+{% block portal_sub %}Kitchen Portal{% endblock %}
+{% block portal_role %}Kitchen Staff{% endblock %}
+{% block logout_url %}{{ url_for('kitchen_portal.kitchen_logout') }}{% endblock %}
+{% block profile_url %}{{ url_for('kitchen_portal.kitchen_profile') }}{% endblock %}
+
+{% block sidebar_nav %}
+    <div class="nav-section-label" onclick="toggleNavGroup(this, 'group-workspace')">
+        <span>Workspace</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+    </div>
+    <div id="group-workspace" class="nav-group">
+        <a class="nav-item" href="{{ url_for('kitchen_portal.kitchen_dashboard') }}">
+            <i class="fas fa-fire"></i> Order Board
+        </a>
+        <a class="nav-item active" href="{{ url_for('kitchen_portal.kitchen_reservations') }}">
+            <i class="fas fa-calendar-check"></i> Event Pre-Orders
+        </a>
+        <a class="nav-item" href="{{ url_for('kitchen_portal.kitchen_pantry') }}">
+            <i class="fas fa-archive"></i> Kitchen Pantry
+        </a>
+    </div>
+
+    <div class="nav-section-label" onclick="toggleNavGroup(this, 'group-reference')">
+        <span>Reference</span>
+        <i class="fas fa-chevron-down toggle-icon"></i>
+    </div>
+    <div id="group-reference" class="nav-group">
+        <a class="nav-item" href="{{ url_for('kitchen_portal.kitchen_recipes') }}">
+            <i class="fas fa-utensils"></i> Menu Recipes
+        </a>
+        <a class="nav-item" href="{{ url_for('kitchen_portal.kitchen_stock_requests') }}">
+            <i class="fas fa-file-invoice"></i> Stock Requests
+        </a>
+    </div>
+{% endblock %}
+
+{% block page_title %}Event Pre-Orders{% endblock %}
+{% block page_subtitle %}Advanced food preparation list for upcoming reservations{% endblock %}
+
+{% block extra_style %}
+    .reservations-board {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 24px;
+        align-content: start;
+        margin-top: 20px;
+    }
+
+    .reserve-card {
+        background: var(--card); 
+        border: 1px solid var(--card-border); 
+        border-radius: 16px; 
+        padding: 20px; 
+        box-shadow: 0 4px 12px rgba(62,39,35,0.04);
+        position: relative;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .reserve-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        border-bottom: 1px dashed rgba(93, 64, 55, 0.1);
+        padding-bottom: 12px;
+        margin-bottom: 15px;
+    }
+
+    .reserve-date {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: var(--primary);
+    }
+    
+    .reserve-time {
+        font-size: 0.85rem;
+        color: var(--muted);
+        font-weight: 600;
+        margin-top: 5px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .reserve-badge {
+        background: rgba(93, 64, 55, 0.1);
+        color: var(--primary);
+        font-size: 0.7rem;
+        font-weight: 800;
+        padding: 4px 10px;
+        border-radius: 50px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .reserve-badge.exclusive {
+        background: rgba(46, 125, 50, 0.1);
+        color: var(--success);
+    }
+
+    .reserve-guest {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 5px;
+    }
+
+    .guest-count {
+        font-size: 0.85rem;
+        color: var(--muted);
+        margin-bottom: 15px;
+    }
+
+    .order-items { 
+        border-top: 1px solid rgba(93,64,55,0.05);
+        background: #fdfaf7;
+        border-radius: 10px;
+        padding: 14px;
+        margin-bottom: 16px;
+        flex-grow: 1;
+        max-height: 250px;
+        overflow-y: auto;
+    }
+    .order-items::-webkit-scrollbar { width: 4px; }
+    .order-items::-webkit-scrollbar-thumb { background: rgba(93,64,55,0.2); border-radius: 4px; }
+
+    .item-row { 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+        margin-bottom: 8px; 
+        font-size: 0.9rem; 
+        font-weight: 500;
+    }
+    .item-qty { 
+        background: rgba(93, 64, 55, 0.1); 
+        color: var(--primary); 
+        width: 24px; height: 24px; 
+        display: flex; align-items: center; justify-content: center; 
+        border-radius: 6px; font-weight: 700; font-size: 0.75rem; 
+    }
+
+    .action-btn {
+        width: 100%; padding: 12px; 
+        border-radius: 12px; border: none;
+        font-weight: 700; font-size: 0.85rem; 
+        cursor: pointer; transition: all 0.2s;
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+        text-transform: uppercase; letter-spacing: 1px;
+    }
+    .btn-start { 
+        background: var(--primary); color: #fff; 
+        box-shadow: 0 4px 12px rgba(93,64,55,0.2);
+    }
+    .btn-start:hover { background: #3E2723; transform: scale(1.02); }
+
+    .btn-ready { 
+        background: var(--success); color: #fff; 
+        box-shadow: 0 4px 12px rgba(46,125,50,0.2);
+    }
+    .btn-ready:hover { background: #1b5e20; transform: scale(1.02); }
+
+    .order-status-badge {
+        font-size: 0.75rem;
+        font-weight: 800;
+        color: var(--primary);
+        text-align: center;
+        margin-top: 10px;
+        text-transform: uppercase;
+        padding: 5px;
+        background: rgba(93, 64, 55, 0.05);
+        border-radius: 8px;
+    }
+
+    .empty-state {
+        grid-column: 1 / -1;
+        text-align: center;
+        color: rgba(93,64,55,0.3);
+        padding: 60px 20px;
+        background: rgba(255,255,255,0.5);
+        border-radius: 20px;
+        border: 1px dashed rgba(93,64,55,0.1);
+    }
+    .empty-state i { font-size: 3rem; margin-bottom: 15px; }
+    .empty-state p { font-size: 1rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+
+    .reserve-updating {
+        opacity: 0.5;
+        pointer-events: none;
+        transform: scale(0.98);
+        transition: all 0.2s;
+    }
+{% endblock %}
+
+{% block content %}
+    <div class="reservations-board">
+        {% for order in reserve_orders %}
+        {% set res = order.reservation %}
+        <div class="reserve-card" id="res-card-{{ order.id }}">
+            <div class="reserve-header">
+                <div>
+                    <div class="reserve-date">{{ res.date.strftime('%b %d, %Y') }}</div>
+                    <div class="reserve-time"><i class="far fa-clock"></i> {{ res.time.strftime('%I:%M %p') }}</div>
+                </div>
+                <span class="reserve-badge {% if res.booking_type == 'EXCLUSIVE' %}exclusive{% endif %}">
+                    {% if res.booking_type == 'EXCLUSIVE' %}
+                        <i class="fas fa-crown"></i> Exclusive
+                    {% else %}
+                        Regular
+                    {% endif %}
+                </span>
+            </div>
+            
+            <div class="reserve-guest">
+                <i class="fas fa-user-circle" style="color: var(--muted);"></i>
+                {{ res.user.first_name }} {{ res.user.last_name }}
+            </div>
+            <div class="guest-count">
+                <i class="fas fa-users" style="margin-right: 5px;"></i> {{ res.guest_count }} Guests expected
+            </div>
+
+            <div class="order-items">
+                <div style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; letter-spacing: 1px;">Pre-Ordered Menu</div>
+                {% for item in order.items %}
+                <div class="item-row">
+                    <span class="item-qty">{{ item.quantity }}</span>
+                    <span class="item-name" style="font-weight:600;">{{ item.menu_item.name if item.menu_item else 'Item' }}</span>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="order-actions">
+                {% if order.status == 'PENDING' %}
+                    <button class="action-btn btn-start" onclick="updateOrderStatus({{ order.id }}, 'PREPARING', this)">
+                        <i class="fas fa-fire-flame-curved"></i> Start Prep
+                    </button>
+                {% elif order.status == 'PREPARING' %}
+                    <button class="action-btn btn-ready" onclick="updateOrderStatus({{ order.id }}, 'READY', this)">
+                        <i class="fas fa-check-double"></i> Ready to Serve
+                    </button>
+                    <div class="order-status-badge">
+                        <i class="fas fa-spinner fa-spin me-1"></i> Currently Prepping
+                    </div>
+                {% elif order.status == 'READY' %}
+                    <div class="order-status-badge" style="background: rgba(46, 125, 50, 0.1); color: var(--success);">
+                        <i class="fas fa-check-circle me-1"></i> Food is Ready
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-calendar-times"></i>
+            <p>No Pre-Orders for Upcoming Events</p>
+        </div>
+        {% endfor %}
+    </div>
+{% endblock %}
+
+{% block extra_script %}
+<script>
+    async function updateOrderStatus(orderId, newStatus, btn) {
+        const card = btn.closest('.reserve-card');
+        card.classList.add('reserve-updating');
+        
+        const formData = new FormData();
+        formData.append('status', newStatus);
+
+        try {
+            const response = await fetch(`/staff/kitchen/update/${orderId}`, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+
+            if (response.ok) {
+                // Refresh the page or card
+                window.location.reload();
+            } else {
+                alert('Failed to update event order status');
+                card.classList.remove('reserve-updating');
+            }
+        } catch (error) {
+            console.error('Error updating order:', error);
+            card.classList.remove('reserve-updating');
+        }
+    }
+</script>
+{% endblock %}

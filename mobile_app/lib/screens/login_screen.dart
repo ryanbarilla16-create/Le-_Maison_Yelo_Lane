@@ -8,7 +8,6 @@ import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import 'signup_screen.dart';
 import 'home_screen.dart';
-import 'rider_screen.dart';
 import 'otp_screen.dart';
 import 'forgot_password_screen.dart';
 
@@ -80,10 +79,15 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       final res = await ApiService.post('/api/auth/login', {'email': email, 'password': password});
       setState(() => _loading = false);
       if (res['success'] == true) {
+        final role = res['user']['role'] ?? 'USER';
+        if (role == 'RIDER') {
+          _showMsg('Please use the dedicated Rider Portal app.');
+          setState(() => _loading = false);
+          return;
+        }
         await AuthService.saveUser(res['user']);
         if (!mounted) return;
-        final role = res['user']['role'] ?? 'USER';
-        Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => role == 'RIDER' ? const RiderScreen() : const HomeScreen()), (_) => false);
+        Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const HomeScreen()), (_) => false);
       } else if (res['needs_otp'] == true) {
         Navigator.push(context, MaterialPageRoute(builder: (_) => OtpScreen(userId: res['user_id'])));
       } else { _showMsg(res['message'] ?? 'Login failed.'); }

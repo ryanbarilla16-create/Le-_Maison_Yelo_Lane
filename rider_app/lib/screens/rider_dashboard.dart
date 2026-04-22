@@ -9,15 +9,16 @@ import 'login_screen.dart';
 import 'notifications_screen.dart';
 import 'chat_screen.dart';
 import 'order_chat_screen.dart';
+import 'change_password_screen.dart';
 
-class RiderScreen extends StatefulWidget {
-  const RiderScreen({super.key});
+class RiderDashboard extends StatefulWidget {
+  const RiderDashboard({super.key});
 
   @override
-  State<RiderScreen> createState() => _RiderScreenState();
+  State<RiderDashboard> createState() => _RiderDashboardState();
 }
 
-class _RiderScreenState extends State<RiderScreen>
+class _RiderDashboardState extends State<RiderDashboard>
     with SingleTickerProviderStateMixin {
   late TabController _tabCtrl;
   dynamic _summary;
@@ -411,9 +412,19 @@ class _RiderScreenState extends State<RiderScreen>
               ),
             ),
           ),
-          IconButton(
-            onPressed: _logout,
-            icon: Icon(Icons.logout, color: AppColors.textMain),
+          PopupMenuButton<String>(
+            onSelected: (val) {
+              if (val == 'password') {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const ChangePasswordScreen()));
+              } else if (val == 'logout') {
+                _logout();
+              }
+            },
+            icon: Icon(Icons.more_vert, color: AppColors.textMain),
+            itemBuilder: (ctx) => [
+              const PopupMenuItem(value: 'password', child: Row(children: [Icon(Icons.lock_reset, size: 20), SizedBox(width: 10), Text('Change Password')])),
+              const PopupMenuItem(value: 'logout', child: Row(children: [Icon(Icons.logout, size: 20), SizedBox(width: 10), Text('Logout')])),
+            ],
           ),
         ],
         bottom: TabBar(
