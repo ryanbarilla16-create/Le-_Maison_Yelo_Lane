@@ -19,7 +19,7 @@ class Config:
         # Fallback to SQLite for local development
         import sys
         if 'pytest' not in sys.modules:
-            print("⚠️  Warning: NEON_DATABASE_URL not set. Using SQLite for development.")
+            print("[WARNING] NEON_DATABASE_URL not set. Using SQLite for development.")
         _db_url = "sqlite:///lemaisondb.db"
     
     # Neon strings often use `postgres://`, but SQLAlchemy requires `postgresql://`

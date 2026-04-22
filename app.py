@@ -195,7 +195,7 @@ def handle_exception(e):
     traceback.print_exc()
     
     # Try to render the 500 error page if it exists, else return text
-    return "Internal Server Error - Check Render Logs for the Antigravity Traceback", 500
+    return f"Internal Server Error:\n\n{traceback.format_exc()}", 500
 
 if __name__ == '__main__':
     with app.app_context():
