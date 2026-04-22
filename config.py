@@ -12,14 +12,15 @@ class Config:
     XENDIT_SECRET_KEY = os.environ.get('XENDIT_SECRET_KEY')
     
     
-    # Neon PostgreSQL (Primary Database)
-    _db_url = os.environ.get("NEON_DATABASE_URL")
+    # PostgreSQL Database (supports Neon, Supabase, or any provider)
+    # Priority: NEON_DATABASE_URL -> DATABASE_URL -> SQLite fallback
+    _db_url = os.environ.get("NEON_DATABASE_URL") or os.environ.get("DATABASE_URL")
     
     if not _db_url:
         # Fallback to SQLite for local development
         import sys
         if 'pytest' not in sys.modules:
-            print("[WARNING] NEON_DATABASE_URL not set. Using SQLite for development.")
+            print("[WARNING] No DATABASE_URL set. Using SQLite for development.")
         _db_url = "sqlite:///lemaisondb.db"
     
     # Neon strings often use `postgres://`, but SQLAlchemy requires `postgresql://`
