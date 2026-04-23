@@ -2,9 +2,31 @@
 {% block title %}Overview{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <h1>Dashboard Overview</h1>
-    <p>Welcome back, {{ current_user.first_name }}. Here's what's happening today.</p>
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+    <div>
+        <h1>Dashboard Overview</h1>
+        <p>Welcome back, {{ current_user.first_name }}. Here's what's happening today.</p>
+    </div>
+    <div class="dropdown">
+        <button class="btn-admin btn-admin-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="border-radius: 10px; font-size: 0.85rem; padding: 0.5rem 1rem;">
+            <i class="fas fa-file-export me-1"></i> Generate Report
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" style="border-radius: 12px; min-width: 230px;">
+            <li><h6 class="dropdown-header" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; color: #999;">Dashboard Summary</h6></li>
+            <li><a class="dropdown-item py-2 d-flex align-items-center" href="javascript:void(0)" onclick="downloadDashboardPDF()">
+                <div style="width: 28px; height: 28px; background: rgba(220, 53, 69, 0.1); border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-right: 10px;">
+                    <i class="fas fa-file-pdf text-danger" style="font-size: 0.85rem;"></i>
+                </div>
+                <span style="font-size: 0.85rem; font-weight: 500;">Download PDF Report</span>
+            </a></li>
+            <li><a class="dropdown-item py-2 d-flex align-items-center" href="javascript:void(0)" onclick="downloadDashboardExcel()">
+                <div style="width: 28px; height: 28px; background: rgba(40, 167, 69, 0.1); border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-right: 10px;">
+                    <i class="fas fa-file-excel text-success" style="font-size: 0.85rem;"></i>
+                </div>
+                <span style="font-size: 0.85rem; font-weight: 500;">Download Excel (CSV)</span>
+            </a></li>
+        </ul>
+    </div>
 </div>
 
 <!-- TOP WIDGETS -->
@@ -193,5 +215,127 @@
     }
 
     initOverviewCharts();
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script>
+    window.downloadDashboardPDF = function() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+        const timestamp = new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' });
+
+        // Header
+        doc.setFillColor(93, 64, 55);
+        doc.rect(0, 0, 210, 40, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        doc.text('LE MAISON YELO LANE', 105, 18, { align: 'center' });
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Admin Dashboard Summary Report', 105, 28, { align: 'center' });
+
+        doc.setTextColor(100, 100, 100);
+        doc.setFontSize(9);
+        doc.text('Generated on: ' + timestamp, 15, 48);
+
+        // Stats
+        const stats = document.querySelectorAll('.stats-grid .stat-card');
+        const statData = [];
+        stats.forEach(card => {
+            const label = card.querySelector('.stat-label')?.textContent.trim() || '';
+            const value = card.querySelector('.stat-value')?.textContent.trim() || '';
+            if (label) statData.push([label, value]);
+        });
+
+        doc.setFontSize(13);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(62, 39, 35);
+        doc.text('Key Performance Indicators', 15, 58);
+
+        doc.autoTable({
+            startY: 62,
+            head: [['Metric', 'Value']],
+            body: statData,
+            theme: 'striped',
+            headStyles: { fillColor: [93, 64, 55], textColor: 255, fontSize: 10, fontStyle: 'bold' },
+            bodyStyles: { fontSize: 10 },
+            alternateRowStyles: { fillColor: [250, 248, 246] },
+            columnStyles: { 1: { halign: 'center', fontStyle: 'bold' } },
+            margin: { left: 15, right: 15 }
+        });
+
+        // Recent Reservations
+        let curY = doc.lastAutoTable.finalY + 12;
+        const resCols = [];
+        document.querySelectorAll('.admin-card:first-child .admin-alert').forEach(alert => {
+            const name = alert.querySelector('div > div:first-child')?.textContent.trim() || '';
+            const detail = alert.querySelector('div > div:last-child')?.textContent.trim() || '';
+            const status = alert.querySelector('.badge-status')?.textContent.trim() || '';
+            resCols.push([name, detail, status]);
+        });
+
+        if (resCols.length > 0) {
+            doc.setFontSize(13);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(62, 39, 35);
+            doc.text('Recent Reservations', 15, curY);
+
+            doc.autoTable({
+                startY: curY + 4,
+                head: [['Guest', 'Details', 'Status']],
+                body: resCols,
+                theme: 'striped',
+                headStyles: { fillColor: [93, 64, 55], textColor: 255, fontSize: 9, fontStyle: 'bold' },
+                bodyStyles: { fontSize: 8 },
+                alternateRowStyles: { fillColor: [250, 248, 246] },
+                margin: { left: 15, right: 15 }
+            });
+        }
+
+        // Footer
+        const totalPages = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= totalPages; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.setTextColor(150, 150, 150);
+            doc.text('Page ' + i + ' of ' + totalPages, 105, 285, { align: 'center' });
+        }
+
+        doc.save('LeMaison_Dashboard_Report_' + new Date().toISOString().slice(0,10) + '.pdf');
+    };
+
+    window.downloadDashboardExcel = function() {
+        const stats = document.querySelectorAll('.stats-grid .stat-card');
+        let csv = '\uFEFF';
+        csv += 'LE MAISON YELO LANE - Dashboard Summary Report\n';
+        csv += 'Generated on: ' + new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' }) + '\n\n';
+
+        csv += 'Metric,Value\n';
+        stats.forEach(card => {
+            const label = card.querySelector('.stat-label')?.textContent.trim() || '';
+            const value = card.querySelector('.stat-value')?.textContent.trim() || '';
+            if (label) csv += '"' + label + '","' + value + '"\n';
+        });
+
+        csv += '\nRecent Reservations\n';
+        csv += 'Guest,Details,Status\n';
+        document.querySelectorAll('.admin-card:first-child .admin-alert').forEach(alert => {
+            const name = (alert.querySelector('div > div:first-child')?.textContent.trim() || '').replace(/"/g, '""');
+            const detail = (alert.querySelector('div > div:last-child')?.textContent.trim() || '').replace(/"/g, '""');
+            const status = (alert.querySelector('.badge-status')?.textContent.trim() || '').replace(/"/g, '""');
+            csv += '"' + name + '","' + detail + '","' + status + '"\n';
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'LeMaison_Dashboard_' + new Date().toISOString().slice(0,10) + '.csv';
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 </script>
 {% endblock %}

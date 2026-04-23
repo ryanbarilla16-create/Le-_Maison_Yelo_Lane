@@ -78,7 +78,23 @@
 {% endblock %}
 
 {% block content %}
-    <div style="display:flex; justify-content:flex-end; margin-bottom:20px;">
+    <div style="display:flex; justify-content:flex-end; gap:10px; margin-bottom:20px;">
+        <div style="position:relative; display:inline-block;" id="reportDropdownWrap">
+            <button class="btn-shift" onclick="this.parentElement.querySelector('.report-dropdown-menu').classList.toggle('show')">
+                <i class="fas fa-file-export"></i> Generate Report <i class="fas fa-chevron-down" style="font-size:0.6rem; margin-left:4px;"></i>
+            </button>
+            <div class="report-dropdown-menu" style="display:none; position:absolute; right:0; top:100%; margin-top:6px; background:white; border-radius:14px; box-shadow:0 12px 40px rgba(0,0,0,0.15); border:1px solid rgba(0,0,0,0.06); z-index:100; min-width:230px; overflow:hidden;">
+                <div style="padding:10px 16px 6px; font-size:0.65rem; text-transform:uppercase; letter-spacing:1px; color:#999; font-weight:700;">Sales Reports</div>
+                <a href="javascript:void(0)" onclick="downloadSalesPDF()" style="display:flex; align-items:center; gap:10px; padding:10px 16px; text-decoration:none; color:#333; font-size:0.85rem; font-weight:500; transition:background 0.15s;" onmouseover="this.style.background='rgba(93,64,55,0.04)'" onmouseout="this.style.background='transparent'">
+                    <div style="width:28px; height:28px; background:rgba(220,53,69,0.1); border-radius:6px; display:flex; align-items:center; justify-content:center;"><i class="fas fa-file-pdf" style="color:#dc3545; font-size:0.85rem;"></i></div>
+                    Download PDF Report
+                </a>
+                <a href="javascript:void(0)" onclick="downloadSalesExcel()" style="display:flex; align-items:center; gap:10px; padding:10px 16px 14px; text-decoration:none; color:#333; font-size:0.85rem; font-weight:500; transition:background 0.15s;" onmouseover="this.style.background='rgba(93,64,55,0.04)'" onmouseout="this.style.background='transparent'">
+                    <div style="width:28px; height:28px; background:rgba(40,167,69,0.1); border-radius:6px; display:flex; align-items:center; justify-content:center;"><i class="fas fa-file-excel" style="color:#28a745; font-size:0.85rem;"></i></div>
+                    Download Excel (CSV)
+                </a>
+            </div>
+        </div>
         <button class="btn-shift" onclick="document.getElementById('shiftReportModal').style.display='flex'">
             <i class="fas fa-cash-register"></i> Shift Report
         </button>
@@ -282,8 +298,107 @@
     </div>
 {% endblock %}
 
+{% block extra_head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+{% endblock %}
+
 {% block extra_script %}
 <script>
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        const wrap = document.getElementById('reportDropdownWrap');
+        if (wrap && !wrap.contains(e.target)) {
+            const menu = wrap.querySelector('.report-dropdown-menu');
+            if (menu) menu.classList.remove('show');
+        }
+    });
+    // Toggle show class
+    document.addEventListener('DOMContentLoaded', () => {
+        const style = document.createElement('style');
+        style.textContent = '.report-dropdown-menu.show { display:block !important; animation: dropIn 0.2s ease-out; } @keyframes dropIn { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }';
+        document.head.appendChild(style);
+    });
+
+    function getSalesReportData() {
+        const rows = [];
+        document.querySelectorAll('#ordersTableBody .filter-row').forEach(row => {
+            if (row.style.display === 'none') return;
+            const orderId = row.querySelector('.row-order-id')?.textContent.trim() || '';
+            const customer = row.querySelector('.row-customer-name')?.textContent.trim().replace(/\s+/g, ' ') || '';
+            const amount = row.cells[2]?.textContent.trim() || '';
+            const service = row.cells[3]?.textContent.trim() || '';
+            const dateTime = row.cells[4]?.textContent.trim().replace(/\s+/g, ' ') || '';
+            const payment = row.cells[5]?.textContent.trim() || '';
+            rows.push([orderId, customer, amount, service, dateTime, payment]);
+        });
+        return rows;
+    }
+
+    window.downloadSalesPDF = function() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+        const data = getSalesReportData();
+        const timestamp = new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' });
+        const grossSales = document.getElementById('statGross')?.textContent.trim() || '₱0.00';
+
+        // Header
+        doc.setFillColor(93, 64, 55);
+        doc.rect(0, 0, 210, 40, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        doc.text('LE MAISON YELO LANE', 105, 18, { align: 'center' });
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Daily Sales & Billing Report', 105, 28, { align: 'center' });
+
+        // Summary
+        doc.setTextColor(100, 100, 100);
+        doc.setFontSize(9);
+        doc.text('Generated on: ' + timestamp, 15, 48);
+        doc.text('Total Records: ' + data.length, 15, 53);
+        doc.text('Gross Sales (Today): ' + grossSales, 15, 58);
+
+        doc.autoTable({
+            startY: 65,
+            head: [['Order ID', 'Customer', 'Amount', 'Service', 'Date/Time', 'Payment']],
+            body: data,
+            theme: 'striped',
+            headStyles: { fillColor: [93, 64, 55], textColor: 255, fontSize: 9, fontStyle: 'bold' },
+            bodyStyles: { fontSize: 8 },
+            alternateRowStyles: { fillColor: [250, 248, 246] },
+            margin: { top: 65 },
+            didDrawPage: function(d) {
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.text('Page ' + d.pageNumber, 105, 285, { align: 'center' });
+            }
+        });
+
+        doc.save('LeMaison_Sales_Report_' + new Date().toISOString().slice(0,10) + '.pdf');
+        document.querySelector('.report-dropdown-menu').classList.remove('show');
+    };
+
+    window.downloadSalesExcel = function() {
+        const data = getSalesReportData();
+        const headers = ['Order ID', 'Customer', 'Amount', 'Service', 'Date/Time', 'Payment Status'];
+        let csv = '\uFEFF';
+        csv += headers.join(',') + '\n';
+        data.forEach(row => {
+            csv += row.map(c => '"' + (c || '').replace(/"/g, '""') + '"').join(',') + '\n';
+        });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'LeMaison_Sales_' + new Date().toISOString().slice(0,10) + '.csv';
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        document.querySelector('.report-dropdown-menu').classList.remove('show');
+    };
+
     function filterOrders() {
         const input = document.getElementById('orderSearch').value.toLowerCase();
         document.querySelectorAll('.filter-row').forEach(row => {
