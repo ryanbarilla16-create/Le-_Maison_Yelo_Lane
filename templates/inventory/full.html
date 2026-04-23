@@ -181,6 +181,7 @@
                 <th>Unit</th>
                 <th>Reorder Level</th>
                 <th>Status</th>
+                <th>Action</th>
             </tr>
         </thead>
         <tbody>
@@ -197,6 +198,11 @@
                     {% else %}
                         <span class="pill" style="background:rgba(46,125,50,0.1); color:var(--success); border: 1px solid rgba(46,125,50,0.1);">OPTIMAL</span>
                     {% endif %}
+                </td>
+                <td>
+                    <button class="btn-primary" onclick="openEditModal('{{ ing.id }}', '{{ ing.name|e }}', '{{ ing.category|e }}', '{{ ing.reorder_level }}')" style="padding: 6px 12px; font-size: 0.75rem; border-radius: 8px; background: #5d4037;">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
                 </td>
             </tr>
             {% endfor %}
@@ -222,13 +228,9 @@
                 <div class="form-group">
                     <label>Category</label>
                     <select name="category">
-                        <option value="General">General</option>
-                        <option value="Meat">Meat</option>
-                        <option value="Seafood">Seafood</option>
-                        <option value="Poultry">Poultry</option>
-                        <option value="Dairy">Dairy & Eggs</option>
-                        <option value="Pantry">Pantry & Spices</option>
-                        <option value="Vegetables">Fruits & Vegetables</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat }}">{{ cat }}</option>
+                        {% endfor %}
                     </select>
                 </div>
                 <div class="form-group">
@@ -274,6 +276,40 @@
         </form>
     </div>
 </div>
+
+<!-- Edit Ingredient Modal -->
+<div id="editIngredientModal" class="modal-overlay">
+    <div class="modal-content-custom">
+        <div class="modal-header-custom" style="background: #5d4037;">
+            <h3><i class="fas fa-edit"></i> Edit Ingredient</h3>
+            <button class="close-modal" onclick="closeModal('editIngredientModal')">&times;</button>
+        </div>
+        <form id="editIngredientForm" method="POST" class="modal-body-custom">
+            <div class="form-grid">
+                <div class="form-group full-width">
+                    <label>Ingredient Name *</label>
+                    <input type="text" name="name" id="edit_name" required>
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <select name="category" id="edit_category">
+                        {% for cat in categories %}
+                        <option value="{{ cat }}">{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Reorder Level</label>
+                    <input type="number" name="reorder_level" id="edit_reorder_level" step="0.01" required>
+                </div>
+            </div>
+            <div class="modal-footer-custom">
+                <button type="button" class="btn-secondary" onclick="closeModal('editIngredientModal')">Cancel</button>
+                <button type="submit" class="btn-primary" style="background: #5d4037;">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_script %}
@@ -283,6 +319,17 @@
     }
     function closeModal(id) {
         document.getElementById(id).style.display = 'none';
+    }
+    
+    function openEditModal(id, name, category, reorderLevel) {
+        const form = document.getElementById('editIngredientForm');
+        form.action = `/staff/inventory/ingredients/edit/${id}`;
+        
+        document.getElementById('edit_name').value = name;
+        document.getElementById('edit_category').value = category || 'General';
+        document.getElementById('edit_reorder_level').value = reorderLevel;
+        
+        openModal('editIngredientModal');
     }
     // Close on click outside
     window.onclick = function(event) {

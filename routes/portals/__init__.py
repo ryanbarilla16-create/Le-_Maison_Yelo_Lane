@@ -888,7 +888,30 @@ def inventory_add_ingredient():
     db.session.add(ing)
     db.session.commit()
     flash(f'Ingredient "{name}" added successfully!', 'success')
-    return redirect(url_for('inventory_portal.inventory_dashboard'))
+    return redirect(url_for('inventory_portal.inventory_full'))
+
+@inventory_bp.route('/staff/inventory/ingredients/edit/<int:ing_id>', methods=['POST'])
+def inventory_edit_ingredient(ing_id):
+    if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        return redirect(url_for('cashier_portal.staff_login'))
+    
+    ing = Ingredient.query.get_or_404(ing_id)
+    
+    name = request.form.get('name', '').strip()
+    category = request.form.get('category', 'General')
+    reorder_level = request.form.get('reorder_level', 0, type=float)
+    
+    if not name:
+        flash('Ingredient name is required.', 'danger')
+        return redirect(url_for('inventory_portal.inventory_full'))
+        
+    ing.name = name
+    ing.category = category
+    ing.reorder_level = reorder_level
+    
+    db.session.commit()
+    flash(f'Changes saved for "{name}".', 'success')
+    return redirect(url_for('inventory_portal.inventory_full'))
 
 @inventory_bp.route('/staff/inventory/suppliers/add', methods=['POST'])
 def inventory_add_supplier():
