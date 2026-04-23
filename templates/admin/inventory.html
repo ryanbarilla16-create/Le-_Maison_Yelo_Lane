@@ -211,10 +211,34 @@
             <h3 class="m-0">Ingredient Stock</h3>
             <div class="d-flex gap-2 align-items-center">
                 {% if current_user.role|upper not in ['CASHIER', 'STAFF'] %}
-                <a href="{{ url_for('admin.generate_purchase_order') }}" class="btn-admin-primary text-nowrap text-decoration-none"
-                    style="border-radius: 10px; font-size: 0.85rem; padding: 0.5rem 1rem;">
-                    <i class="fas fa-file-pdf me-1"></i> Generate PO (PDF)
-                </a>
+                <div class="dropdown d-inline-block">
+                    <button class="btn-admin btn-admin-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="border-radius: 10px; font-size: 0.85rem; padding: 0.5rem 1rem;">
+                        <i class="fas fa-file-export me-1"></i> Generate Report
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" style="border-radius: 12px; min-width: 220px;">
+                        <li><h6 class="dropdown-header" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; color: #999;">Inventory Reports</h6></li>
+                        <li><a class="dropdown-item py-2 d-flex align-items-center" href="javascript:void(0)" onclick="downloadInventoryPDF()">
+                            <div style="width: 28px; height: 28px; background: rgba(220, 53, 69, 0.1); border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-right: 10px;">
+                                <i class="fas fa-file-pdf text-danger" style="font-size: 0.85rem;"></i>
+                            </div>
+                            <span style="font-size: 0.85rem; font-weight: 500;">Download PDF Report</span>
+                        </a></li>
+                        <li><a class="dropdown-item py-2 d-flex align-items-center" href="javascript:void(0)" onclick="downloadInventoryExcel()">
+                            <div style="width: 28px; height: 28px; background: rgba(40, 167, 69, 0.1); border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-right: 10px;">
+                                <i class="fas fa-file-excel text-success" style="font-size: 0.85rem;"></i>
+                            </div>
+                            <span style="font-size: 0.85rem; font-weight: 500;">Download Excel (CSV)</span>
+                        </a></li>
+                        <li><hr class="dropdown-divider mx-2 opacity-10"></li>
+                        <li><h6 class="dropdown-header" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; color: #999;">Procurement</h6></li>
+                        <li><a class="dropdown-item py-2 d-flex align-items-center" href="{{ url_for('admin.generate_purchase_order') }}">
+                            <div style="width: 28px; height: 28px; background: rgba(93, 64, 55, 0.1); border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-right: 10px;">
+                                <i class="fas fa-shopping-cart" style="color: #5D4037; font-size: 0.85rem;"></i>
+                            </div>
+                            <span style="font-size: 0.85rem; font-weight: 500;">Generate PO (PDF)</span>
+                        </a></li>
+                    </ul>
+                </div>
                 {% endif %}
                 <div style="position: relative; width: 100%; min-width: 220px;">
                     <i class="fas fa-search"
@@ -1437,6 +1461,109 @@
         const any = document.querySelector('.'+cls+':checked') !== null;
         if (btn) btn.style.display = any ? 'inline-block' : 'none';
     }
+
+    // ── INVENTORY REPORT GENERATION (PDF/EXCEL) ──
+    // Load required libraries for PDF generation
+    (function() {
+        const jsPdfScript = document.createElement('script');
+        jsPdfScript.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+        document.head.appendChild(jsPdfScript);
+        
+        const autoTableScript = document.createElement('script');
+        autoTableScript.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js";
+        document.head.appendChild(autoTableScript);
+    })();
+
+    function getReportData() {
+        const rows = [];
+        const tableRows = document.querySelectorAll('#ingredientsTable tbody tr:not(.category-header)');
+        
+        tableRows.forEach(row => {
+            if (row.style.display !== 'none') {
+                const name = row.cells[1]?.textContent.trim() || '';
+                const unit = row.cells[2]?.textContent.trim() || '';
+                const stock = row.cells[3]?.textContent.trim() || '';
+                const kitchen = row.cells[4]?.textContent.trim() || '';
+                const reorder = row.cells[5]?.textContent.trim() || '';
+                const supplier = row.cells[7]?.textContent.trim() || '';
+                const status = row.cells[9]?.textContent.trim() || '';
+                
+                rows.push([name, unit, stock, kitchen, reorder, supplier, status]);
+            }
+        });
+        return rows;
+    }
+
+    window.downloadInventoryPDF = function() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+        const data = getReportData();
+        const timestamp = new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' });
+
+        // Branding
+        doc.setFillColor(93, 64, 55); // #5D4037
+        doc.rect(0, 0, 210, 40, 'F');
+        
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        doc.text('LE MAISON YELO LANE', 105, 18, { align: 'center' });
+        
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Inventory Master Report', 105, 28, { align: 'center' });
+
+        doc.setTextColor(100, 100, 100);
+        doc.setFontSize(9);
+        doc.text(`Generated on: ${timestamp}`, 15, 48);
+        doc.text(`Total Records: ${data.length}`, 15, 53);
+
+        doc.autoTable({
+            startY: 60,
+            head: [['Ingredient', 'Unit', 'Bodega', 'Kitchen', 'Reorder', 'Supplier', 'Status']],
+            body: data,
+            theme: 'striped',
+            headStyles: { fillColor: [93, 64, 55], textColor: 255, fontSize: 9, fontStyle: 'bold' },
+            bodyStyles: { fontSize: 8 },
+            alternateRowStyles: { fillColor: [250, 248, 246] },
+            margin: { top: 60 },
+            didDrawPage: function(data) {
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.text(`Page ${data.pageNumber}`, 105, 285, { align: 'center' });
+            },
+            columnStyles: {
+                2: { halign: 'center' },
+                3: { halign: 'center' },
+                4: { halign: 'center' }
+            }
+        });
+
+        doc.save(`LeMaison_Inventory_Report_${new Date().toISOString().slice(0,10)}.pdf`);
+    };
+
+    window.downloadInventoryExcel = function() {
+        const data = getReportData();
+        const headers = ['Ingredient', 'Unit', 'Bodega Stock', 'Kitchen Stock', 'Reorder Level', 'Supplier', 'Status'];
+        
+        let csvContent = "\uFEFF"; // UTF-8 BOM
+        csvContent += headers.join(",") + "\n";
+        
+        data.forEach(row => {
+            const sanitizedRow = row.map(cell => `"${(cell || '').replace(/"/g, '""')}"`);
+            csvContent += sanitizedRow.join(",") + "\n";
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `LeMaison_Inventory_${new Date().toISOString().slice(0,10)}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 </script>
 {% endblock %}
 {% endblock %}
