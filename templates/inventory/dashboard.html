@@ -81,6 +81,38 @@
     .empty-state { text-align:center; padding:60px 20px; color:var(--muted); }
     .empty-state i { font-size:2.5rem; opacity:0.25; margin-bottom:12px; display:block; }
 
+    /* REPORT DROPDOWN */
+    .report-dropdown { position: relative; display: inline-block; }
+    .btn-report {
+        background: linear-gradient(135deg, #5D4037, #795548);
+        color: white; border: none; padding: 8px 18px; border-radius: 10px;
+        font-size: 0.85rem; font-weight: 600; cursor: pointer;
+        display: inline-flex; align-items: center; gap: 8px;
+        transition: all 0.25s; box-shadow: 0 2px 8px rgba(93,64,55,0.2);
+    }
+    .btn-report:hover { background: linear-gradient(135deg, #3E2723, #5D4037); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(93,64,55,0.3); }
+    .btn-report i.fa-chevron-down { font-size: 0.6rem; transition: transform 0.2s; }
+    .btn-report.open i.fa-chevron-down { transform: rotate(180deg); }
+    .report-menu {
+        display: none; position: absolute; right: 0; top: calc(100% + 6px);
+        background: #fff; border-radius: 12px; min-width: 210px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.12); border: 1px solid rgba(0,0,0,0.06);
+        z-index: 100; overflow: hidden; animation: reportSlide 0.2s ease-out;
+    }
+    .report-menu.show { display: block; }
+    @keyframes reportSlide { from { opacity:0; transform: translateY(-6px); } to { opacity:1; transform: translateY(0); } }
+    .report-menu-item {
+        display: flex; align-items: center; gap: 12px; padding: 12px 18px;
+        color: var(--text); font-size: 0.85rem; font-weight: 500; cursor: pointer;
+        transition: background 0.2s; border: none; background: none; width: 100%;
+        text-align: left;
+    }
+    .report-menu-item:hover { background: rgba(93,64,55,0.05); }
+    .report-menu-item i { width: 18px; text-align: center; }
+    .report-menu-item .item-label { flex:1; }
+    .report-menu-item .item-sub { font-size: 0.7rem; color: var(--muted); }
+    .report-menu-divider { height: 1px; background: rgba(0,0,0,0.06); margin: 4px 0; }
+
     /* ACTION BUTTONS */
     .btn-action {
         width: 32px; height: 32px; border-radius: 8px; border: none;
@@ -164,13 +196,38 @@
     <div class="section-card">
         <div class="section-header" style="flex-wrap: wrap; gap: 15px;">
             <h2><i class="fas fa-list" style="color:var(--primary);margin-right:8px;"></i>Ingredient Stock Levels</h2>
-            <div style="display:flex; gap:12px; align-items:center;">
+            <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
                 <select id="ingredientCategoryFilter" onchange="filterIngredients(this.value)" style="padding:6px 10px; border-radius:8px; border:1px solid rgba(93,64,55,0.2); font-size:0.85rem; background:white;">
                     <option value="ALL">All Categories</option>
                     {% for cat in grouped_ingredients.keys() %}
                     <option value="{{ cat|replace(' ', '-')|lower }}">{{ cat }}</option>
                     {% endfor %}
                 </select>
+
+                <!-- GENERATE REPORT DROPDOWN -->
+                <div class="report-dropdown" id="reportDropdown">
+                    <button class="btn-report" id="reportDropdownBtn" onclick="toggleReportMenu()">
+                        <i class="fas fa-file-export"></i> Generate Report <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="report-menu" id="reportMenu">
+                        <button class="report-menu-item" onclick="downloadPDF()">
+                            <i class="fas fa-file-pdf" style="color:#c62828;"></i>
+                            <div>
+                                <div class="item-label">Download PDF</div>
+                                <div class="item-sub">Formatted inventory report</div>
+                            </div>
+                        </button>
+                        <div class="report-menu-divider"></div>
+                        <button class="report-menu-item" onclick="downloadExcel()">
+                            <i class="fas fa-file-excel" style="color:#2e7d32;"></i>
+                            <div>
+                                <div class="item-label">Download Excel</div>
+                                <div class="item-sub">Spreadsheet (.csv) format</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
                 <button class="btn-primary" style="padding: 8px 16px; font-size: 0.85rem;" onclick="openModal('addIngredientModal')">
                     <i class="fas fa-plus me-1"></i> Add Ingredient
                 </button>
@@ -380,6 +437,12 @@
 
 {% endblock %}
 
+{% block extra_head %}
+<!-- jsPDF + AutoTable for PDF generation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+{% endblock %}
+
 {% block extra_script %}
 <script>
     function openModal(id) {
@@ -429,6 +492,176 @@
         document.getElementById('ingredientCountPill').innerText = `${visibleCount} items shown`;
     }
 
+    /* ═══════════════════════════════════════════
+       REPORT DROPDOWN
+    ═══════════════════════════════════════════ */
+    function toggleReportMenu() {
+        const menu = document.getElementById('reportMenu');
+        const btn = document.getElementById('reportDropdownBtn');
+        const isOpen = menu.classList.toggle('show');
+        btn.classList.toggle('open', isOpen);
+    }
+
+    // Close report dropdown on outside click
+    document.addEventListener('click', function(e) {
+        const dropdown = document.getElementById('reportDropdown');
+        if (dropdown && !dropdown.contains(e.target)) {
+            document.getElementById('reportMenu').classList.remove('show');
+            document.getElementById('reportDropdownBtn').classList.remove('open');
+        }
+    });
+
+    /* ── Collect visible table data ── */
+    function getReportData() {
+        const rows = document.querySelectorAll('.ing-row');
+        const data = [];
+        let currentCategory = '';
+
+        // Walk through all rows including category headers
+        const allRows = document.querySelectorAll('.ing-row, .ing-category-header');
+        allRows.forEach(row => {
+            // Skip hidden rows
+            if (row.style.display === 'none') return;
+
+            if (row.classList.contains('ing-category-header')) {
+                currentCategory = row.querySelector('td').textContent.trim();
+                return;
+            }
+
+            const cells = row.querySelectorAll('td');
+            if (cells.length >= 6) {
+                data.push({
+                    category: currentCategory,
+                    name: cells[0].textContent.trim(),
+                    unit: cells[1].textContent.trim(),
+                    qty: cells[3].textContent.trim(),
+                    reorder: cells[4].textContent.trim().replace('≤', '').trim(),
+                    status: cells[5].textContent.trim()
+                });
+            }
+        });
+        return data;
+    }
+
+    /* ── Download PDF ── */
+    function downloadPDF() {
+        document.getElementById('reportMenu').classList.remove('show');
+        document.getElementById('reportDropdownBtn').classList.remove('open');
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('landscape', 'mm', 'a4');
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('en-PH', { year:'numeric', month:'long', day:'numeric' });
+        const timeStr = now.toLocaleTimeString('en-PH', { hour:'2-digit', minute:'2-digit' });
+
+        // Header
+        doc.setFillColor(93, 64, 55);
+        doc.rect(0, 0, 297, 32, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(18);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Le Maison de Yelo Lane', 15, 15);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Inventory Stock Level Report', 15, 23);
+        doc.text(`Generated: ${dateStr} at ${timeStr}`, 297 - 15, 15, { align: 'right' });
+
+        // Stats summary
+        const totalEl = document.querySelector('.stat-value[style*="primary"]');
+        const lowEl = document.querySelector('.stat-value[style*="danger"]');
+        const healthEl = document.querySelector('.stat-value[style*="warning"]');
+        const totalItems = totalEl ? totalEl.textContent.trim() : '{{ total_items }}';
+        const lowStock = lowEl ? lowEl.textContent.trim() : '{{ low_stock }}';
+        const healthPct = healthEl ? healthEl.textContent.trim() : '';
+
+        doc.setTextColor(93, 64, 55);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Total Ingredients: ${totalItems}   |   Low Stock Alerts: ${lowStock}   |   Stock Health: ${healthPct}`, 15, 40);
+
+        // Table
+        const data = getReportData();
+        const tableRows = data.map(d => [d.category, d.name, d.unit, d.qty, d.reorder, d.status]);
+
+        doc.autoTable({
+            startY: 46,
+            head: [['Category', 'Ingredient', 'Unit', 'Qty', 'Reorder At', 'Status']],
+            body: tableRows,
+            theme: 'grid',
+            headStyles: {
+                fillColor: [93, 64, 55],
+                textColor: 255,
+                fontStyle: 'bold',
+                fontSize: 8.5
+            },
+            bodyStyles: { fontSize: 8, textColor: [60, 60, 60] },
+            alternateRowStyles: { fillColor: [250, 246, 242] },
+            columnStyles: {
+                0: { cellWidth: 35, fontStyle: 'bold', textColor: [93, 64, 55] },
+                5: { halign: 'center' }
+            },
+            didParseCell: function(data) {
+                if (data.section === 'body' && data.column.index === 5) {
+                    const val = data.cell.raw || '';
+                    if (val.includes('Low')) {
+                        data.cell.styles.textColor = [198, 40, 40];
+                        data.cell.styles.fontStyle = 'bold';
+                    } else if (val.includes('OK')) {
+                        data.cell.styles.textColor = [46, 125, 50];
+                    }
+                }
+            },
+            margin: { left: 15, right: 15 }
+        });
+
+        // Footer
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(7);
+            doc.setTextColor(150);
+            doc.text(`Page ${i} of ${pageCount}`, 297 - 15, 200, { align: 'right' });
+            doc.text('Le Maison Inventory System — Auto-generated Report', 15, 200);
+        }
+
+        doc.save(`Inventory_Report_${now.toISOString().slice(0,10)}.pdf`);
+    }
+
+    /* ── Download Excel (CSV) ── */
+    function downloadExcel() {
+        document.getElementById('reportMenu').classList.remove('show');
+        document.getElementById('reportDropdownBtn').classList.remove('open');
+
+        const data = getReportData();
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('en-PH', { year:'numeric', month:'long', day:'numeric' });
+
+        let csv = '\uFEFF'; // BOM for Excel UTF-8 compat
+        csv += 'Le Maison de Yelo Lane - Inventory Stock Level Report\r\n';
+        csv += `Generated: ${dateStr}\r\n`;
+        csv += '\r\n';
+        csv += 'Category,Ingredient,Unit,Stock Qty,Reorder Level,Status\r\n';
+
+        data.forEach(d => {
+            const row = [
+                `"${d.category}"`,
+                `"${d.name}"`,
+                `"${d.unit}"`,
+                d.qty,
+                d.reorder,
+                `"${d.status}"`
+            ].join(',');
+            csv += row + '\r\n';
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `Inventory_Report_${now.toISOString().slice(0,10)}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
 
 
     // Refresh inventory every 5 mins instead of 1 to allow form entry
