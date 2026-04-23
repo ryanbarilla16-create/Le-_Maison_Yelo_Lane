@@ -202,6 +202,89 @@ def _portal_reset_password(portal_name, login_url_name):
 
 
 # ══════════════════════════════════════════════════════════════════
+# ── UNIFIED STAFF LOGIN (/staff/login) ────────────────────────────
+# ══════════════════════════════════════════════════════════════════
+
+ALL_STAFF_ROLES = ['CASHIER', 'STAFF', 'KITCHEN', 'INVENTORY_STAFF', 'INVENTORY', 'ADMIN']
+
+def _get_dashboard_for_role(role):
+    """Return the correct dashboard URL name based on user role."""
+    role_upper = (role or '').upper()
+    if role_upper in ('CASHIER', 'STAFF'):
+        return 'cashier_portal.cashier_dashboard'
+    elif role_upper == 'KITCHEN':
+        return 'kitchen_portal.kitchen_dashboard'
+    elif role_upper in ('INVENTORY_STAFF', 'INVENTORY'):
+        return 'inventory_portal.inventory_dashboard'
+    elif role_upper == 'ADMIN':
+        return 'admin.overview'
+    return 'cashier_portal.staff_login'
+
+@cashier_bp.route('/staff/login', methods=['GET', 'POST'])
+def staff_login():
+    # If already logged in as staff, redirect to their dashboard
+    if current_user.is_authenticated and current_user.role and current_user.role.upper() in ALL_STAFF_ROLES:
+        return redirect(url_for(_get_dashboard_for_role(current_user.role)))
+
+    if request.method == 'POST':
+        user = _authenticate_portal(
+            request.form.get('email'),
+            request.form.get('password'),
+            ALL_STAFF_ROLES
+        )
+        if user:
+            role_upper = user.role.upper()
+            if role_upper in ('CASHIER', 'STAFF'):
+                session['logged_in_portal'] = 'cashier'
+            elif role_upper == 'KITCHEN':
+                session['logged_in_portal'] = 'kitchen'
+            elif role_upper in ('INVENTORY_STAFF', 'INVENTORY'):
+                session['logged_in_portal'] = 'inventory'
+            else:
+                session['logged_in_portal'] = 'admin'
+
+            login_user(user)
+            return redirect(url_for(_get_dashboard_for_role(user.role)))
+        flash('Invalid email, password, or insufficient permissions.', 'error')
+    return render_template('staff/login.html')
+
+
+# ── Unified Staff Forgot Password ──
+@cashier_bp.route('/staff/forgot-password', methods=['GET', 'POST'])
+def staff_forgot_password():
+    result = _portal_forgot_password('Staff', ALL_STAFF_ROLES, 'cashier_portal.staff_login', 'cashier_portal.staff_verify_otp')
+    if result:
+        return result
+    return render_template('portal_auth/forgot_password.html', portal='Staff', portal_color='#5D4037',
+                           form_action=url_for('cashier_portal.staff_forgot_password'),
+                           login_url=url_for('cashier_portal.staff_login'))
+
+@cashier_bp.route('/staff/verify-otp/<int:user_id>', methods=['GET', 'POST'])
+def staff_verify_otp(user_id):
+    result = _portal_verify_otp('Staff', user_id, 'cashier_portal.staff_forgot_password', 'cashier_portal.staff_reset_password', 'cashier_portal.staff_login')
+    if isinstance(result, dict):
+        return render_template('portal_auth/verify_otp.html', portal='Staff', portal_color='#5D4037',
+                               user=result['user'], cooldown_remaining=result['cooldown_remaining'],
+                               verify_action=url_for('cashier_portal.staff_verify_otp', user_id=user_id),
+                               resend_action=url_for('cashier_portal.staff_resend_otp', user_id=user_id),
+                               login_url=url_for('cashier_portal.staff_login'))
+    return result
+
+@cashier_bp.route('/staff/resend-otp/<int:user_id>', methods=['POST'])
+def staff_resend_otp(user_id):
+    return _portal_resend_otp('Staff', user_id, 'cashier_portal.staff_forgot_password', 'cashier_portal.staff_verify_otp')
+
+@cashier_bp.route('/staff/reset-password', methods=['GET', 'POST'])
+def staff_reset_password():
+    result = _portal_reset_password('Staff', 'cashier_portal.staff_login')
+    if result:
+        return result
+    return render_template('portal_auth/reset_password.html', portal='Staff', portal_color='#5D4037',
+                           form_action=url_for('cashier_portal.staff_reset_password'),
+                           login_url=url_for('cashier_portal.staff_login'))
+
+
+# ══════════════════════════════════════════════════════════════════
 # ── Cashier Portal ────────────────────────────────────────────────
 # ══════════════════════════════════════════════════════════════════
 
@@ -210,22 +293,13 @@ CASHIER_ROLES = ['CASHIER', 'STAFF', 'ADMIN']
 @cashier_bp.route('/cashier/login', methods=['GET', 'POST'])
 @cashier_bp.route('/staff/cashier/login', methods=['GET', 'POST'])
 def cashier_login():
-    if current_user.is_authenticated and current_user.role in CASHIER_ROLES:
-        return redirect(url_for('cashier_portal.cashier_dashboard'))
-        
-    if request.method == 'POST':
-        user = _authenticate_portal(request.form.get('email'), request.form.get('password'), CASHIER_ROLES)
-        if user:
-            session['logged_in_portal'] = 'cashier'
-            login_user(user)
-            return redirect(url_for('cashier_portal.cashier_dashboard'))
-        flash('Invalid credentials or insufficient permissions for Cashier Portal.', 'error')
-    return render_template('cashier/login.html')
+    # Redirect to unified staff login
+    return redirect(url_for('cashier_portal.staff_login'))
 
 @cashier_bp.route('/staff/cashier')
 def cashier_dashboard():
     if not current_user.is_authenticated or current_user.role not in CASHIER_ROLES:
-        return redirect(url_for('cashier_portal.cashier_login'))
+        return redirect(url_for('cashier_portal.staff_login'))
     
     # Required by templates/cashier/dashboard.html: 
     # active_orders (count), completed_today (count), unpaid_orders (count), orders (list)
@@ -249,7 +323,7 @@ def cashier_dashboard():
 @cashier_bp.route('/staff/cashier/walkin-order')
 def cashier_walkin_order():
     if not current_user.is_authenticated or current_user.role not in CASHIER_ROLES:
-        return redirect(url_for('cashier_portal.cashier_login'))
+        return redirect(url_for('cashier_portal.staff_login'))
     items = MenuItem.query.filter_by(is_available=True, is_deleted=False).order_by(MenuItem.category, MenuItem.name).all()
     categories = sorted(set(i.category for i in items))
     return render_template('cashier/walkin_order.html', items=items, categories=categories)
@@ -257,7 +331,7 @@ def cashier_walkin_order():
 @cashier_bp.route('/staff/cashier/billing')
 def cashier_billing():
     if not current_user.is_authenticated or current_user.role not in CASHIER_ROLES:
-        return redirect(url_for('cashier_portal.cashier_login'))
+        return redirect(url_for('cashier_portal.staff_login'))
 
     status_filter = request.args.get('status', 'UNPAID')
     page = request.args.get('page', 1, type=int)
@@ -298,7 +372,7 @@ def cashier_billing():
 @cashier_bp.route('/staff/cashier/history')
 def cashier_orders_history():
     if not current_user.is_authenticated or current_user.role not in CASHIER_ROLES:
-        return redirect(url_for('cashier_portal.cashier_login'))
+        return redirect(url_for('cashier_portal.staff_login'))
     
     page = request.args.get('page', 1, type=int)
     orders_pg = Order.query.order_by(Order.created_at.desc()).paginate(page=page, per_page=20)
@@ -310,7 +384,7 @@ def cashier_orders_history():
 @cashier_bp.route('/staff/cashier/chats')
 def cashier_chats():
     if not current_user.is_authenticated or current_user.role not in CASHIER_ROLES:
-        return redirect(url_for('cashier_portal.cashier_login'))
+        return redirect(url_for('cashier_portal.staff_login'))
     from models import ChatMessage
     from sqlalchemy import func
     subquery = db.session.query(
@@ -329,23 +403,23 @@ def cashier_logout():
 @cashier_bp.route('/cashier/forgot-password', methods=['GET', 'POST'])
 @cashier_bp.route('/staff/cashier/forgot-password', methods=['GET', 'POST'])
 def cashier_forgot_password():
-    result = _portal_forgot_password('Cashier', CASHIER_ROLES, 'cashier_portal.cashier_login', 'cashier_portal.cashier_verify_otp')
+    result = _portal_forgot_password('Cashier', CASHIER_ROLES, 'cashier_portal.staff_login', 'cashier_portal.cashier_verify_otp')
     if result:
         return result
     return render_template('portal_auth/forgot_password.html', portal='Cashier', portal_color='#16A085',
                            form_action=url_for('cashier_portal.cashier_forgot_password'),
-                           login_url=url_for('cashier_portal.cashier_login'))
+                           login_url=url_for('cashier_portal.staff_login'))
 
 @cashier_bp.route('/cashier/verify-otp/<int:user_id>', methods=['GET', 'POST'])
 @cashier_bp.route('/staff/cashier/verify-otp/<int:user_id>', methods=['GET', 'POST'])
 def cashier_verify_otp(user_id):
-    result = _portal_verify_otp('Cashier', user_id, 'cashier_portal.cashier_forgot_password', 'cashier_portal.cashier_reset_password', 'cashier_portal.cashier_login')
+    result = _portal_verify_otp('Cashier', user_id, 'cashier_portal.cashier_forgot_password', 'cashier_portal.cashier_reset_password', 'cashier_portal.staff_login')
     if isinstance(result, dict):
         return render_template('portal_auth/verify_otp.html', portal='Cashier', portal_color='#16A085',
                                user=result['user'], cooldown_remaining=result['cooldown_remaining'],
                                verify_action=url_for('cashier_portal.cashier_verify_otp', user_id=user_id),
                                resend_action=url_for('cashier_portal.cashier_resend_otp', user_id=user_id),
-                               login_url=url_for('cashier_portal.cashier_login'))
+                               login_url=url_for('cashier_portal.staff_login'))
     return result
 
 @cashier_bp.route('/cashier/resend-otp/<int:user_id>', methods=['POST'])
@@ -354,12 +428,12 @@ def cashier_resend_otp(user_id):
 
 @cashier_bp.route('/cashier/reset-password', methods=['GET', 'POST'])
 def cashier_reset_password():
-    result = _portal_reset_password('Cashier', 'cashier_portal.cashier_login')
+    result = _portal_reset_password('Cashier', 'cashier_portal.staff_login')
     if result:
         return result
     return render_template('portal_auth/reset_password.html', portal='Cashier', portal_color='#16A085',
                            form_action=url_for('cashier_portal.cashier_reset_password'),
-                           login_url=url_for('cashier_portal.cashier_login'))
+                           login_url=url_for('cashier_portal.staff_login'))
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -371,22 +445,13 @@ KITCHEN_ROLES = ['KITCHEN', 'ADMIN', 'CASHIER']
 @kitchen_bp.route('/kitchen/login', methods=['GET', 'POST'])
 @kitchen_bp.route('/staff/kitchen/login', methods=['GET', 'POST'])
 def kitchen_login():
-    if current_user.is_authenticated and current_user.role in KITCHEN_ROLES:
-        return redirect(url_for('kitchen_portal.kitchen_dashboard'))
-        
-    if request.method == 'POST':
-        user = _authenticate_portal(request.form.get('email'), request.form.get('password'), KITCHEN_ROLES)
-        if user:
-            session['logged_in_portal'] = 'kitchen'
-            login_user(user)
-            return redirect(url_for('kitchen_portal.kitchen_dashboard'))
-        flash('Invalid credentials or insufficient permissions for Kitchen Portal.', 'error')
-    return render_template('kitchen/login.html')
+    # Redirect to unified staff login
+    return redirect(url_for('cashier_portal.staff_login'))
 
 @kitchen_bp.route('/staff/kitchen')
 def kitchen_dashboard():
     if not current_user.is_authenticated or current_user.role not in KITCHEN_ROLES:
-        return redirect(url_for('kitchen_portal.kitchen_login'))
+        return redirect(url_for('cashier_portal.staff_login'))
         
     try:
         from sqlalchemy.orm import selectinload
@@ -409,7 +474,7 @@ def kitchen_dashboard():
 @kitchen_bp.route('/staff/kitchen/reservations')
 def kitchen_reservations():
     if not current_user.is_authenticated or current_user.role not in KITCHEN_ROLES:
-        return redirect(url_for('kitchen_portal.kitchen_login'))
+        return redirect(url_for('cashier_portal.staff_login'))
         
     try:
         from sqlalchemy.orm import selectinload
@@ -506,7 +571,7 @@ def kitchen_update_order(order_id):
 @kitchen_bp.route('/staff/kitchen/pantry')
 def kitchen_pantry():
     if not current_user.is_authenticated or current_user.role not in KITCHEN_ROLES:
-        return redirect(url_for('kitchen_portal.kitchen_login'))
+        return redirect(url_for('cashier_portal.staff_login'))
     
     from itertools import groupby
     ingredients = Ingredient.query.order_by(Ingredient.category, Ingredient.name).all()
@@ -521,7 +586,7 @@ def kitchen_pantry():
 @kitchen_bp.route('/staff/kitchen/recipes')
 def kitchen_recipes():
     if not current_user.is_authenticated or current_user.role not in KITCHEN_ROLES:
-        return redirect(url_for('kitchen_portal.kitchen_login'))
+        return redirect(url_for('cashier_portal.staff_login'))
     
     from itertools import groupby
     all_menu_items = MenuItem.query.filter_by(is_deleted=False).order_by(MenuItem.category, MenuItem.name).all()
@@ -539,7 +604,7 @@ def kitchen_recipes():
 @kitchen_bp.route('/staff/kitchen/pantry/update', methods=['POST'])
 def kitchen_update_pantry():
     if not current_user.is_authenticated or current_user.role not in KITCHEN_ROLES:
-        return redirect(url_for('kitchen_portal.kitchen_login'))
+        return redirect(url_for('cashier_portal.staff_login'))
     
     ing_id = request.form.get('ingredient_id', type=int)
     new_qty = request.form.get('kitchen_qty', type=float)
@@ -556,7 +621,7 @@ def kitchen_update_pantry():
 @kitchen_bp.route('/staff/kitchen/pantry/emergency-fill', methods=['POST'])
 def kitchen_emergency_fill():
     if not current_user.is_authenticated or current_user.role not in KITCHEN_ROLES:
-        return redirect(url_for('kitchen_portal.kitchen_login'))
+        return redirect(url_for('cashier_portal.staff_login'))
         
     all_ings = Ingredient.query.all()
     for ing in all_ings:
@@ -578,23 +643,23 @@ def kitchen_logout():
 @kitchen_bp.route('/kitchen/forgot-password', methods=['GET', 'POST'])
 @kitchen_bp.route('/staff/kitchen/forgot-password', methods=['GET', 'POST'])
 def kitchen_forgot_password():
-    result = _portal_forgot_password('Kitchen', KITCHEN_ROLES, 'kitchen_portal.kitchen_login', 'kitchen_portal.kitchen_verify_otp')
+    result = _portal_forgot_password('Kitchen', KITCHEN_ROLES, 'cashier_portal.staff_login', 'kitchen_portal.kitchen_verify_otp')
     if result:
         return result
     return render_template('portal_auth/forgot_password.html', portal='Kitchen', portal_color='#C62828',
                            form_action=url_for('kitchen_portal.kitchen_forgot_password'),
-                           login_url=url_for('kitchen_portal.kitchen_login'))
+                           login_url=url_for('cashier_portal.staff_login'))
 
 @kitchen_bp.route('/kitchen/verify-otp/<int:user_id>', methods=['GET', 'POST'])
 @kitchen_bp.route('/staff/kitchen/verify-otp/<int:user_id>', methods=['GET', 'POST'])
 def kitchen_verify_otp(user_id):
-    result = _portal_verify_otp('Kitchen', user_id, 'kitchen_portal.kitchen_forgot_password', 'kitchen_portal.kitchen_reset_password', 'kitchen_portal.kitchen_login')
+    result = _portal_verify_otp('Kitchen', user_id, 'kitchen_portal.kitchen_forgot_password', 'kitchen_portal.kitchen_reset_password', 'cashier_portal.staff_login')
     if isinstance(result, dict):
         return render_template('portal_auth/verify_otp.html', portal='Kitchen', portal_color='#C62828',
                                user=result['user'], cooldown_remaining=result['cooldown_remaining'],
                                verify_action=url_for('kitchen_portal.kitchen_verify_otp', user_id=user_id),
                                resend_action=url_for('kitchen_portal.kitchen_resend_otp', user_id=user_id),
-                               login_url=url_for('kitchen_portal.kitchen_login'))
+                               login_url=url_for('cashier_portal.staff_login'))
     return result
 
 @kitchen_bp.route('/kitchen/resend-otp/<int:user_id>', methods=['POST'])
@@ -603,12 +668,12 @@ def kitchen_resend_otp(user_id):
 
 @kitchen_bp.route('/kitchen/reset-password', methods=['GET', 'POST'])
 def kitchen_reset_password():
-    result = _portal_reset_password('Kitchen', 'kitchen_portal.kitchen_login')
+    result = _portal_reset_password('Kitchen', 'cashier_portal.staff_login')
     if result:
         return result
     return render_template('portal_auth/reset_password.html', portal='Kitchen', portal_color='#C62828',
                            form_action=url_for('kitchen_portal.kitchen_reset_password'),
-                           login_url=url_for('kitchen_portal.kitchen_login'))
+                           login_url=url_for('cashier_portal.staff_login'))
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -620,22 +685,13 @@ INVENTORY_ROLES = ['INVENTORY_STAFF', 'INVENTORY', 'ADMIN']
 @inventory_bp.route('/inventory/login', methods=['GET', 'POST'])
 @inventory_bp.route('/staff/inventory/login', methods=['GET', 'POST'])
 def inventory_login():
-    if current_user.is_authenticated and current_user.role in INVENTORY_ROLES:
-        return redirect(url_for('inventory_portal.inventory_dashboard'))
-        
-    if request.method == 'POST':
-        user = _authenticate_portal(request.form.get('email'), request.form.get('password'), INVENTORY_ROLES)
-        if user:
-            session['logged_in_portal'] = 'inventory'
-            login_user(user)
-            return redirect(url_for('inventory_portal.inventory_dashboard'))
-        flash('Invalid credentials or insufficient permissions for Inventory Portal.', 'error')
-    return render_template('inventory/login.html')
+    # Redirect to unified staff login
+    return redirect(url_for('cashier_portal.staff_login'))
 
 @inventory_bp.route('/staff/inventory')
 def inventory_dashboard():
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
-        return redirect(url_for('inventory_portal.inventory_login'))
+        return redirect(url_for('cashier_portal.staff_login'))
         
     all_ingredients = Ingredient.query.order_by(Ingredient.category, Ingredient.name).all()
     total_items = len(all_ingredients)
@@ -660,7 +716,7 @@ def inventory_dashboard():
 @inventory_bp.route('/staff/inventory/recipes')
 def inventory_recipes():
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
-        return redirect(url_for('inventory_portal.inventory_login'))
+        return redirect(url_for('cashier_portal.staff_login'))
     
     from itertools import groupby
     all_menu_items = MenuItem.query.filter_by(is_deleted=False).order_by(MenuItem.category, MenuItem.name).all()
@@ -678,7 +734,7 @@ def inventory_recipes():
 @inventory_bp.route('/staff/inventory/batches')
 def inventory_ingredient_batches():
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
-        return redirect(url_for('inventory_portal.inventory_login'))
+        return redirect(url_for('cashier_portal.staff_login'))
     
     from datetime import date
     from sqlalchemy.orm import selectinload
@@ -716,7 +772,7 @@ def inventory_ingredient_batches():
 @inventory_bp.route('/staff/inventory/batches/add', methods=['POST'])
 def inventory_add_ingredient_batch():
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
-        return redirect(url_for('inventory_portal.inventory_login'))
+        return redirect(url_for('cashier_portal.staff_login'))
         
     ing_id = request.form.get('ingredient_id', type=int)
     batch_qty = request.form.get('batch_qty', type=float)
@@ -749,7 +805,7 @@ def inventory_add_ingredient_batch():
 @inventory_bp.route('/staff/inventory/full')
 def inventory_full():
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
-        return redirect(url_for('inventory_portal.inventory_login'))
+        return redirect(url_for('cashier_portal.staff_login'))
     
     # We fetch all ingredients to allow for instant client-side filtering as requested
     all_ingredients = Ingredient.query.order_by(Ingredient.category, Ingredient.name).all()
@@ -768,7 +824,7 @@ def inventory_full():
 @inventory_bp.route('/staff/inventory/suppliers')
 def inventory_suppliers():
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
-        return redirect(url_for('inventory_portal.inventory_login'))
+        return redirect(url_for('cashier_portal.staff_login'))
     
     from collections import defaultdict
     suppliers_list = Supplier.query.order_by(Supplier.name).all()
@@ -800,7 +856,7 @@ def inventory_suppliers():
 @inventory_bp.route('/staff/inventory/ingredients/add', methods=['POST'])
 def inventory_add_ingredient():
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
-        return redirect(url_for('inventory_portal.inventory_login'))
+        return redirect(url_for('cashier_portal.staff_login'))
     
     name = request.form.get('name', '').strip()
     unit = request.form.get('unit', 'grams')
@@ -837,7 +893,7 @@ def inventory_add_ingredient():
 @inventory_bp.route('/staff/inventory/suppliers/add', methods=['POST'])
 def inventory_add_supplier():
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
-        return redirect(url_for('inventory_portal.inventory_login'))
+        return redirect(url_for('cashier_portal.staff_login'))
         
     name = request.form.get('name', '').strip()
     contact_person = request.form.get('contact_person', '').strip()
@@ -864,7 +920,7 @@ def inventory_add_supplier():
 @inventory_bp.route('/staff/inventory/ingredients/restock/<int:ing_id>', methods=['POST'])
 def inventory_restock(ing_id):
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
-        return redirect(url_for('inventory_portal.inventory_login'))
+        return redirect(url_for('cashier_portal.staff_login'))
     
     ing = Ingredient.query.get_or_404(ing_id)
     add_qty = request.form.get('add_qty', 0, type=float)
@@ -877,7 +933,7 @@ def inventory_restock(ing_id):
 @inventory_bp.route('/staff/inventory/ingredients/waste/add', methods=['POST'])
 def inventory_add_waste():
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
-        return redirect(url_for('inventory_portal.inventory_login'))
+        return redirect(url_for('cashier_portal.staff_login'))
         
     ing_id = request.form.get('ingredient_id', type=int)
     qty = request.form.get('quantity_wasted', type=float)
@@ -913,7 +969,7 @@ def inventory_add_waste():
 @inventory_bp.route('/staff/inventory/waste')
 def inventory_waste_records():
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
-        return redirect(url_for('inventory_portal.inventory_login'))
+        return redirect(url_for('cashier_portal.staff_login'))
     
     waste_records_list = WasteRecord.query.order_by(WasteRecord.created_at.desc()).limit(100).all()
     return render_template('inventory/waste.html', 
@@ -924,7 +980,7 @@ def inventory_waste_records():
 def inventory_stock_requests():
     from routes.admin import stock_requests
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
-        return redirect(url_for('inventory_portal.inventory_login'))
+        return redirect(url_for('cashier_portal.staff_login'))
     return stock_requests()
 
 @inventory_bp.route('/staff/inventory/audit')
@@ -1009,23 +1065,23 @@ def inventory_logout():
 @inventory_bp.route('/inventory/forgot-password', methods=['GET', 'POST'])
 @inventory_bp.route('/staff/inventory/forgot-password', methods=['GET', 'POST'])
 def inventory_forgot_password():
-    result = _portal_forgot_password('Inventory', INVENTORY_ROLES, 'inventory_portal.inventory_login', 'inventory_portal.inventory_verify_otp')
+    result = _portal_forgot_password('Inventory', INVENTORY_ROLES, 'cashier_portal.staff_login', 'inventory_portal.inventory_verify_otp')
     if result:
         return result
     return render_template('portal_auth/forgot_password.html', portal='Inventory', portal_color='#2E7D32',
                            form_action=url_for('inventory_portal.inventory_forgot_password'),
-                           login_url=url_for('inventory_portal.inventory_login'))
+                           login_url=url_for('cashier_portal.staff_login'))
 
 @inventory_bp.route('/inventory/verify-otp/<int:user_id>', methods=['GET', 'POST'])
 @inventory_bp.route('/staff/inventory/verify-otp/<int:user_id>', methods=['GET', 'POST'])
 def inventory_verify_otp(user_id):
-    result = _portal_verify_otp('Inventory', user_id, 'inventory_portal.inventory_forgot_password', 'inventory_portal.inventory_reset_password', 'inventory_portal.inventory_login')
+    result = _portal_verify_otp('Inventory', user_id, 'inventory_portal.inventory_forgot_password', 'inventory_portal.inventory_reset_password', 'cashier_portal.staff_login')
     if isinstance(result, dict):
         return render_template('portal_auth/verify_otp.html', portal='Inventory', portal_color='#2E7D32',
                                user=result['user'], cooldown_remaining=result['cooldown_remaining'],
                                verify_action=url_for('inventory_portal.inventory_verify_otp', user_id=user_id),
                                resend_action=url_for('inventory_portal.inventory_resend_otp', user_id=user_id),
-                               login_url=url_for('inventory_portal.inventory_login'))
+                               login_url=url_for('cashier_portal.staff_login'))
     return result
 
 @inventory_bp.route('/inventory/resend-otp/<int:user_id>', methods=['POST'])
@@ -1034,12 +1090,12 @@ def inventory_resend_otp(user_id):
 
 @inventory_bp.route('/inventory/reset-password', methods=['GET', 'POST'])
 def inventory_reset_password():
-    result = _portal_reset_password('Inventory', 'inventory_portal.inventory_login')
+    result = _portal_reset_password('Inventory', 'cashier_portal.staff_login')
     if result:
         return result
     return render_template('portal_auth/reset_password.html', portal='Inventory', portal_color='#2E7D32',
                            form_action=url_for('inventory_portal.inventory_reset_password'),
-                           login_url=url_for('inventory_portal.inventory_login'))
+                           login_url=url_for('cashier_portal.staff_login'))
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -1092,7 +1148,7 @@ def _handle_profile_post(user):
 @kitchen_bp.route('/staff/kitchen/profile', methods=['GET', 'POST'])
 def kitchen_profile():
     if not current_user.is_authenticated or current_user.role not in KITCHEN_ROLES:
-        return redirect(url_for('kitchen_portal.kitchen_login'))
+        return redirect(url_for('cashier_portal.staff_login'))
     
     if request.method == 'POST':
         _handle_profile_post(current_user)
@@ -1120,7 +1176,7 @@ def kitchen_profile():
 @inventory_bp.route('/staff/inventory/profile', methods=['GET', 'POST'])
 def inventory_profile():
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
-        return redirect(url_for('inventory_portal.inventory_login'))
+        return redirect(url_for('cashier_portal.staff_login'))
     
     if request.method == 'POST':
         _handle_profile_post(current_user)
@@ -1150,7 +1206,7 @@ def inventory_profile():
 @cashier_bp.route('/staff/cashier/profile', methods=['GET', 'POST'])
 def cashier_profile():
     if not current_user.is_authenticated or current_user.role not in CASHIER_ROLES:
-        return redirect(url_for('cashier_portal.cashier_login'))
+        return redirect(url_for('cashier_portal.staff_login'))
     
     if request.method == 'POST':
         _handle_profile_post(current_user)
