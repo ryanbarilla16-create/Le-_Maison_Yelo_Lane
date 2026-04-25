@@ -660,25 +660,7 @@
             </ul>
         </div>
 
-        <!-- PORTALS -->
-        {% if current_user.role|upper == 'ADMIN' %}
-        <div class="sidebar-group-title collapsible-trigger" onclick="toggleSidebarGroup(this, 'portalsGroup')"
-            style="margin-top: 0.5rem;">
-            <span>Portals</span>
-            <i class="fas fa-chevron-down ms-auto arrow-icon" style="opacity: 1.0;"></i>
-        </div>
-        <div id="portalsGroup" class="collapsible-content">
-            <ul class="sidebar-nav">
-                <li><a href="{{ url_for('inventory_portal.inventory_dashboard') }}"><i
-                            class="fas fa-boxes-stacked"></i><span class="sidebar-label">Inventory Portal</span></a>
-                </li>
-                <li><a href="{{ url_for('cashier_portal.cashier_dashboard') }}"><i
-                            class="fas fa-shopping-bag"></i><span class="sidebar-label">Cashier Portal</span></a></li>
-                <li><a href="{{ url_for('kitchen_portal.kitchen_dashboard') }}"><i
-                            class="fas fa-fire-burner"></i><span class="sidebar-label">Kitchen Portal</span></a></li>
-            </ul>
-        </div>
-        {% endif %}
+
 
         <!-- SYSTEM -->
         {% if current_user.role|upper == 'ADMIN' %}
