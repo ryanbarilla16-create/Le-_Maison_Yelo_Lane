@@ -8,26 +8,7 @@
 {% block profile_url %}{{ url_for('inventory_portal.inventory_profile') }}{% endblock %}
 
 {% block sidebar_nav %}
-    <div class="nav-section-label">Workspace</div>
-    <a class="nav-item" href="{{ url_for('inventory_portal.inventory_dashboard') }}">
-        <i class="fas fa-boxes-stacked"></i> Stock Levels
-    </a>
-    <a class="nav-item" href="{{ url_for('inventory_portal.inventory_full') }}">
-        <i class="fas fa-warehouse"></i> Full Inventory
-    </a>
-    <a class="nav-item" href="{{ url_for('inventory_portal.inventory_suppliers') }}">
-        <i class="fas fa-truck"></i> Suppliers
-    </a>
-    <a class="nav-item" href="{{ url_for('inventory_portal.inventory_waste_records') }}">
-        <i class="fas fa-trash-can"></i> Waste Log
-    </a>
-    <a class="nav-item" href="{{ url_for('inventory_portal.inventory_stock_requests') }}">
-        <i class="fas fa-file-invoice"></i> Stock Requests
-    </a>
-    <div class="nav-section-label">Reference</div>
-    <a class="nav-item active" href="{{ url_for('inventory_portal.inventory_recipes') }}">
-        <i class="fas fa-utensils"></i> Menu Recipes
-    </a>
+    {% include "includes/inventory_sidebar.html" %}
 {% endblock %}
 
 {% block page_title %}Menu Items & Recipes{% endblock %}

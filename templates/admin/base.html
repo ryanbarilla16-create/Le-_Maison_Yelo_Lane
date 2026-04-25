@@ -527,7 +527,7 @@
             <i class="fas fa-coffee"></i>
             <span class="brand-text">
                 {% if current_user.role|upper in ['CASHIER', 'STAFF'] %}Le Maison POS
-                {% elif current_user.role|upper in ['INVENTORY_STAFF', 'INVENTORY', 'ADMIN'] %}Le Maison Inventory
+                {% elif current_user.role|upper in ['INVENTORY_STAFF', 'INVENTORY'] %}Le Maison Inventory
                 {% elif current_user.role|upper == 'KITCHEN' %}Le Maison Kitchen
                 {% elif current_user.role|upper == 'RIDER' %}Le Maison Deliveries
                 {% else %}Le Maison Admin{% endif %}
@@ -621,11 +621,7 @@
                             class="fas fa-paper-plane"></i><span class="sidebar-label">Stock Requests</span></a></li>
                 {% endif %}
 
-                {% if current_user.role|upper == 'ADMIN' %}
-                <li><a href="{{ url_for('admin.kitchen_pantry') }}"
-                        class="{% if request.endpoint == 'admin.kitchen_pantry' %}active{% endif %}"><i
-                            class="fas fa-box-open"></i><span class="sidebar-label">Kitchen Pantry</span></a></li>
-                {% endif %}
+
 
                 {% if current_user.role|upper in ['ADMIN', 'RIDER'] %}
                 <li><a href="{{ url_for('admin.deliveries') }}"
@@ -633,7 +629,7 @@
                             class="fas fa-truck"></i><span class="sidebar-label">Deliveries</span></a></li>
                 {% endif %}
 
-                {% if current_user.role|upper in ['INVENTORY_STAFF', 'INVENTORY', 'ADMIN'] %}
+                {% if current_user.role|upper in ['INVENTORY_STAFF', 'INVENTORY'] %}
                 <li><a href="{{ url_for('inventory_portal.inventory_dashboard') }}"
                         class="{% if request.endpoint == 'inventory_portal.inventory_dashboard' %}active{% endif %}"><i
                             class="fas fa-boxes-stacked"></i><span class="sidebar-label">Inventory Master</span></a>
@@ -663,6 +659,26 @@
                 {% endif %}
             </ul>
         </div>
+
+        <!-- PORTALS -->
+        {% if current_user.role|upper == 'ADMIN' %}
+        <div class="sidebar-group-title collapsible-trigger" onclick="toggleSidebarGroup(this, 'portalsGroup')"
+            style="margin-top: 0.5rem;">
+            <span>Portals</span>
+            <i class="fas fa-chevron-down ms-auto arrow-icon" style="opacity: 1.0;"></i>
+        </div>
+        <div id="portalsGroup" class="collapsible-content">
+            <ul class="sidebar-nav">
+                <li><a href="{{ url_for('inventory_portal.inventory_dashboard') }}"><i
+                            class="fas fa-boxes-stacked"></i><span class="sidebar-label">Inventory Portal</span></a>
+                </li>
+                <li><a href="{{ url_for('cashier_portal.cashier_dashboard') }}"><i
+                            class="fas fa-shopping-bag"></i><span class="sidebar-label">Cashier Portal</span></a></li>
+                <li><a href="{{ url_for('kitchen_portal.kitchen_dashboard') }}"><i
+                            class="fas fa-fire-burner"></i><span class="sidebar-label">Kitchen Portal</span></a></li>
+            </ul>
+        </div>
+        {% endif %}
 
         <!-- SYSTEM -->
         {% if current_user.role|upper == 'ADMIN' %}

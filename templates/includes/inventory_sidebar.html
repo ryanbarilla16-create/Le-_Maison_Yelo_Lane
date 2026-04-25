@@ -1,0 +1,40 @@
+<div class="nav-section-label" onclick="toggleNavGroup(this, 'group-workspace')">
+    <span>Workspace</span>
+    <i class="fas fa-chevron-down toggle-icon"></i>
+</div>
+<div id="group-workspace" class="nav-group">
+    <a class="nav-item {% if request.endpoint == 'inventory_portal.inventory_dashboard' %}active{% endif %}" href="{{ url_for('inventory_portal.inventory_dashboard') }}">
+        <i class="fas fa-boxes-stacked"></i> Stock Levels
+    </a>
+    <a class="nav-item {% if request.endpoint == 'inventory_portal.inventory_full' %}active{% endif %}" href="{{ url_for('inventory_portal.inventory_full') }}">
+        <i class="fas fa-warehouse"></i> Full Inventory
+    </a>
+    <a class="nav-item {% if request.endpoint == 'admin.kitchen_pantry' %}active{% endif %}" href="{{ url_for('admin.kitchen_pantry') }}">
+        <i class="fas fa-box-open"></i> Kitchen Pantry
+    </a>
+    <a class="nav-item {% if request.endpoint == 'inventory_portal.inventory_suppliers' %}active{% endif %}" href="{{ url_for('inventory_portal.inventory_suppliers') }}">
+        <i class="fas fa-truck"></i> Suppliers
+    </a>
+    <a class="nav-item {% if request.endpoint == 'inventory_portal.inventory_waste_records' %}active{% endif %}" href="{{ url_for('inventory_portal.inventory_waste_records') }}">
+        <i class="fas fa-trash-can"></i> Waste Log
+    </a>
+    <a class="nav-item {% if request.endpoint == 'inventory_portal.inventory_stock_requests' %}active{% endif %}" href="{{ url_for('inventory_portal.inventory_stock_requests') }}">
+        <i class="fas fa-file-invoice"></i> Stock Requests
+    </a>
+    <a class="nav-item {% if request.endpoint == 'inventory_portal.inventory_ingredient_batches' %}active{% endif %}" href="{{ url_for('inventory_portal.inventory_ingredient_batches') }}">
+        <i class="fas fa-layer-group"></i> FIFO Batches
+    </a>
+    <a class="nav-item {% if request.endpoint == 'inventory_portal.inventory_audit' %}active{% endif %}" href="{{ url_for('inventory_portal.inventory_audit') }}">
+        <i class="fas fa-history"></i> Audit History
+    </a>
+</div>
+
+<div class="nav-section-label" onclick="toggleNavGroup(this, 'group-reference')">
+    <span>Reference</span>
+    <i class="fas fa-chevron-down toggle-icon"></i>
+</div>
+<div id="group-reference" class="nav-group">
+    <a class="nav-item {% if request.endpoint == 'inventory_portal.inventory_recipes' %}active{% endif %}" href="{{ url_for('inventory_portal.inventory_recipes') }}">
+        <i class="fas fa-utensils"></i> Menu Recipes
+    </a>
+</div>
