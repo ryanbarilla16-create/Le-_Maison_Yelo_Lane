@@ -1,0 +1,189 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Guest Reviews{% endblock %}
+
+{% block content %}
+<!-- Cache busting CSS -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/homepage.css') }}?v=2.6">
+
+<style>
+    /* Premium Reviews UI Overrides */
+    .reviews-hero {
+        position: relative;
+        background: linear-gradient(rgba(45, 30, 26, 0.8), rgba(45, 30, 26, 0.8)), 
+                    url('https://images.unsplash.com/photo-1550966841-3ee4ad6c10d8?q=80&w=1500&auto=format&fit=crop');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+        padding: 160px 0 100px;
+        text-align: center;
+    }
+    
+    .reviews-hero h1 {
+        font-family: 'Playfair Display', serif;
+        font-weight: 900;
+        color: #fff;
+        font-size: clamp(2.5rem, 8vw, 4rem);
+        margin-bottom: 1.5rem;
+        letter-spacing: -1px;
+    }
+    
+    .reviews-hero p {
+        color: rgba(255,255,255,0.85);
+        font-size: 1.15rem;
+        max-width: 650px;
+        margin: 0 auto;
+        line-height: 1.6;
+    }
+
+    .reviews-container {
+        background: #fdfaf7;
+        padding: 80px 0;
+    }
+
+    .review-card {
+        background: #fff;
+        border-radius: 24px;
+        padding: 35px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        border: 1px solid rgba(139, 99, 75, 0.06);
+        box-shadow: 0 10px 30px rgba(62, 39, 35, 0.03);
+        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    }
+
+    .review-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 25px 50px rgba(62, 39, 35, 0.1);
+        border-color: #c9a96e;
+    }
+
+    .review-stars {
+        color: #c9a96e;
+        font-size: 0.9rem;
+        margin-bottom: 20px;
+    }
+
+    .review-text {
+        font-family: 'Inter', sans-serif;
+        color: #5D4037;
+        font-style: italic;
+        line-height: 1.8;
+        font-size: 1.05rem;
+        margin-bottom: 25px;
+        flex-grow: 1;
+    }
+
+    .review-author {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-top: auto;
+        padding-top: 20px;
+        border-top: 1px solid rgba(0,0,0,0.04);
+    }
+
+    .author-avatar {
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(135deg, #3E2723, #5D4037);
+        color: #fff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 1.2rem;
+    }
+
+    .author-name {
+        font-weight: 800;
+        color: #3E2723;
+        margin: 0;
+        font-size: 0.95rem;
+    }
+
+    .review-date {
+        font-size: 0.75rem;
+        color: #A1887F;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Floating Review Badge */
+    .total-reviews-pill {
+        display: inline-block;
+        background: rgba(201, 169, 110, 0.15);
+        color: #c9a96e;
+        padding: 6px 20px;
+        border-radius: 50px;
+        font-weight: 700;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        margin-bottom: 20px;
+        letter-spacing: 1px;
+    }
+</style>
+
+<main>
+    <!-- Hero Section -->
+    <section class="reviews-hero">
+        <div class="container">
+            <div class="total-reviews-pill" data-aos="fade-down">Client Testimonials</div>
+            <h1 data-aos="fade-up">Words from Our <br><span>Cherished Guests</span></h1>
+            <p data-aos="fade-up" data-aos-delay="150">Every review is a story of a shared moment, a flavor discovered, and a memory made at Le Maison de Yelo Lane.</p>
+        </div>
+    </section>
+
+    <!-- Reviews Grid -->
+    <section class="reviews-container">
+        <div class="container">
+            {% if approved_reviews %}
+            <div class="row g-4 justify-content-center">
+                {% for review in approved_reviews %}
+                <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="{{ (loop.index0 % 3) * 100 }}">
+                    <div class="review-card">
+                        <div class="review-stars">
+                            {% for _ in range(review.rating) %}<i class="fas fa-star"></i>{% endfor %}
+                            {% for _ in range(5 - review.rating) %}<i class="far fa-star"></i>{% endfor %}
+                        </div>
+                        <p class="review-text">"{{ review.comment }}"</p>
+                        <div class="review-author">
+                            <div class="author-avatar">{{ review.user.first_name[:1] }}</div>
+                            <div>
+                                <p class="author-name">{{ review.user.first_name }} {{ review.user.last_name[:1] }}.</p>
+                                <span class="review-date">
+                                    {{ review.created_at.strftime('%B %d, %Y') if review.created_at else 'Verified Guest' }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-quote-left fa-3x mb-4" style="color: #c9a96e; opacity: 0.2;"></i>
+                <h3 style="color: #3E2723; font-family: 'Playfair Display', serif;">No reviews yet</h3>
+                <p style="color: #A1887F;">Be the first to leave a review after your next visit!</p>
+                <a href="{{ url_for('main.menu_page') }}" class="btn-hero filled mt-3 d-inline-block">Back to Menu</a>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+</main>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Force AOS initialization on this page
+    if (typeof AOS !== 'undefined') {
+        AOS.init({
+            duration: 1000,
+            easing: 'ease-out-back',
+            once: true
+        });
+    }
+});
+</script>
+{% endblock %}

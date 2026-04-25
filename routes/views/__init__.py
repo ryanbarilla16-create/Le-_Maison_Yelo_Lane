@@ -187,7 +187,7 @@ def reviews_page():
     approved_reviews = Review.query.filter_by(status='APPROVED').order_by(Review.rating.desc(), Review.created_at.desc()).all()
 
     bestsellers = MenuItem.query.filter_by(category='Best Sellers', is_available=True, is_deleted=False).limit(8).all()
-    return render_template('public/index.html', title="Reviews", site=site, menu_items=menu_items, categories=categories, approved_reviews=approved_reviews, bestsellers=bestsellers)
+    return render_template('public/reviews_page.html', site=site, approved_reviews=approved_reviews)
 
 @main_bp.route('/pages/<page_name>')
 def static_page(page_name):

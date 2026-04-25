@@ -210,10 +210,7 @@
             <li class="nav-item"><a class="navTxt" href="{{ url_for('main.index') }}">HOME</a></li>
             <li class="nav-item"><a class="navTxt" href="{{ url_for('main.menu_page') }}">MENU</a></li>
             <li class="nav-item"><a class="navTxt" href="{{ url_for('main.about_page') }}">ABOUT</a></li>
-            <li class="nav-item"><a class="navTxt" href="{{ url_for('main.contact_page') }}">CONTACT</a></li>
-            {% if not current_user.is_authenticated or current_user.role == 'ADMIN' %}
             <li class="nav-item"><a class="navTxt" href="{{ url_for('main.reviews_page') }}">REVIEWS</a></li>
-            {% endif %}
         </ul>
 
         <ul class="nav nav-right ms-auto d-md-flex d-none align-items-center" style="gap: 12px;">
@@ -327,10 +324,7 @@
                 <a href="{{ url_for('main.about_page') }}"><i class="fas fa-info-circle"></i> <span
                         class="nav-text">About</span></a>
             </li>
-            <li id="mobile-background-icons">
-                <a href="{{ url_for('main.contact_page') }}"><i class="fas fa-envelope"></i> <span
-                        class="nav-text">Contact</span></a>
-            </li>
+
             <li id="mobile-background-icons">
                 <a href="{{ url_for('main.reviews_page') }}"><i class="fas fa-star"></i> <span
                         class="nav-text">Reviews</span></a>

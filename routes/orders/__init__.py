@@ -237,69 +237,86 @@ def checkout():
     for oi in order_items:
         oi.order_id = new_order.id
         db.session.add(oi)
-        
-    db.session.commit()
     
-    # Remove checked out items from cart
-    for item_id in items_to_checkout:
-        del cart[item_id]
-    session['cart'] = cart
-    session.modified = True
-    
+    # ── COUNTER PAYMENT: commit immediately ──
     if payment_method == 'COUNTER':
+        db.session.commit()
+        
+        # Remove checked out items from cart
+        for item_id in items_to_checkout:
+            del cart[item_id]
+        session['cart'] = cart
+        session.modified = True
+        
         msg = "Order placed successfully! Please pay at the counter." if dining_option != 'DELIVERY' else "Order placed successfully! Please prepare exact payment upon delivery."
         flash(msg, "success")
         return redirect(url_for('main.index'))
     
-    # Generate Xendit Invoice
+    # ── ONLINE PAYMENT: only commit if Xendit invoice succeeds ──
     from flask import current_app
     xendit_secret_key = current_app.config.get('XENDIT_SECRET_KEY')
-    if xendit_secret_key and xendit_secret_key.strip() not in ('add_your_xendit_secret_key_here', ''):
-        api_key_b64 = base64.b64encode(f"{xendit_secret_key}:".encode('utf-8')).decode('utf-8')
-        headers = {
-            'Authorization': f'Basic {api_key_b64}',
-            'Content-Type': 'application/json'
-        }
-        
-        # Build invoice payload
-        success_url = url_for('main.payment_success', order_id=new_order.id, _external=True)
-        failure_url = url_for('main.payment_failed', order_id=new_order.id, _external=True)
-        
-        payload = {
-            'external_id': f"order-{new_order.id}-{int(get_ph_time().timestamp())}",
-            'amount': float(total),
-            'payer_email': current_user.email,
-            'description': f"Order #{new_order.id} from Le Maison",
-            'success_redirect_url': success_url,
-            'failure_redirect_url': failure_url,
-            'currency': 'PHP',
-            'customer': {
-                'given_names': current_user.first_name,
-                'surname': current_user.last_name,
-                'email': current_user.email
-            },
-            'payment_methods': ['GCASH', 'PAYMAYA']
-        }
-        
-        try:
-            response = requests.post('https://api.xendit.co/v2/invoices', json=payload, headers=headers)
-            if response.status_code == 200:
-                invoice_data = response.json()
-                new_order.xendit_invoice_url = invoice_data.get('invoice_url')
-                new_order.xendit_invoice_id = invoice_data.get('id')
-                db.session.commit()
-                
-                return redirect(new_order.xendit_invoice_url)
-            else:
-                flash(f"Failed to generate payment link: {response.json().get('message')}", "danger")
-        except Exception as e:
-            flash("An error occurred while connecting to the payment gateway.", "danger")
-            print("Xendit Error:", e)
-    else:
-        # Fallback if no valid API key is present
-        flash("Order placed successfully! Note: Payment gateway not configured. We'll contact you for payment.", "warning")
-
-    return redirect(url_for('main.index'))
+    
+    if not xendit_secret_key or xendit_secret_key.strip() in ('add_your_xendit_secret_key_here', ''):
+        # No Xendit key configured — rollback, don't create order
+        db.session.rollback()
+        flash("Online payment is currently unavailable. Please choose 'Pay at Counter' instead.", "danger")
+        return redirect(url_for('main.view_cart'))
+    
+    # Xendit key exists — try to create invoice
+    api_key_b64 = base64.b64encode(f"{xendit_secret_key}:".encode('utf-8')).decode('utf-8')
+    headers = {
+        'Authorization': f'Basic {api_key_b64}',
+        'Content-Type': 'application/json'
+    }
+    
+    # Build invoice payload
+    success_url = url_for('main.payment_success', order_id=new_order.id, _external=True)
+    failure_url = url_for('main.payment_failed', order_id=new_order.id, _external=True)
+    
+    payload = {
+        'external_id': f"order-{new_order.id}-{int(get_ph_time().timestamp())}",
+        'amount': float(total),
+        'payer_email': current_user.email,
+        'description': f"Order #{new_order.id} from Le Maison",
+        'success_redirect_url': success_url,
+        'failure_redirect_url': failure_url,
+        'currency': 'PHP',
+        'customer': {
+            'given_names': current_user.first_name,
+            'surname': current_user.last_name,
+            'email': current_user.email
+        },
+        'payment_methods': ['GCASH', 'PAYMAYA']
+    }
+    
+    try:
+        response = requests.post('https://api.xendit.co/v2/invoices', json=payload, headers=headers)
+        if response.status_code == 200:
+            invoice_data = response.json()
+            new_order.xendit_invoice_url = invoice_data.get('invoice_url')
+            new_order.xendit_invoice_id = invoice_data.get('id')
+            db.session.commit()
+            
+            # Only clear cart after successful payment link creation
+            for item_id in items_to_checkout:
+                del cart[item_id]
+            session['cart'] = cart
+            session.modified = True
+            
+            return redirect(new_order.xendit_invoice_url)
+        else:
+            # Xendit rejected the request — rollback order
+            db.session.rollback()
+            error_msg = response.json().get('message', 'Unknown error')
+            print(f"Xendit API Error {response.status_code}: {error_msg}")
+            flash(f"Payment gateway error: {error_msg}. Your order was NOT placed. Please try again.", "danger")
+            return redirect(url_for('main.view_cart'))
+    except Exception as e:
+        # Network/connection error — rollback order
+        db.session.rollback()
+        print("Xendit Connection Error:", e)
+        flash("Could not connect to the payment gateway. Your order was NOT placed. Please try again or choose 'Pay at Counter'.", "danger")
+        return redirect(url_for('main.view_cart'))
 
 @main_bp.route('/payment-success/<int:order_id>')
 @login_required
