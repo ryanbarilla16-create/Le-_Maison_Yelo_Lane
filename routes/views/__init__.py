@@ -12,7 +12,7 @@ import random
 def _get_menu_items_for_menu_page():
     return (
         MenuItem.query.options(
-            load_only(MenuItem.id, MenuItem.name, MenuItem.price, MenuItem.category, MenuItem.image_url, MenuItem.is_available)
+            load_only(MenuItem.id, MenuItem.name, MenuItem.price, MenuItem.category, MenuItem.image_url, MenuItem.is_available, MenuItem.description)
         )
         .filter(MenuItem.is_deleted == False)
         .order_by(MenuItem.category, MenuItem.name)
@@ -41,7 +41,7 @@ def _get_featured_items_cached():
 @main_bp.route('/')
 def index():
     site = load_site_settings()
-    menu_items = MenuItem.query.filter_by(is_deleted=False).limit(4).all()
+    menu_items = MenuItem.query.filter_by(is_deleted=False, is_available=True).all()
     categories = db.session.query(
         MenuItem.category,
         func.count(MenuItem.id).label('count'),
@@ -90,7 +90,7 @@ def index():
 
     from models import Review
     approved_reviews = Review.query.filter_by(status='APPROVED').order_by(Review.rating.desc(), Review.created_at.desc()).limit(30).all()
-    bestsellers = MenuItem.query.filter_by(category='Best Sellers', is_available=True, is_deleted=False).limit(8).all()
+    bestsellers = MenuItem.query.filter_by(category='Best Sellers', is_available=True, is_deleted=False).limit(6).all()
 
     return render_template('public/index.html', menu_items=menu_items, site=site, categories=categories, approved_reviews=approved_reviews, bestsellers=bestsellers)
 

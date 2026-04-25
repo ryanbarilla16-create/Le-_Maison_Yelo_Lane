@@ -3,448 +3,340 @@
 {% block title %}Home{% endblock %}
 
 {% block content %}
-<style>
-    /* Premium Button Hover Override */
-    .btn-premium {
-        background: linear-gradient(135deg, #5D4037 0%, #795548 100%) !important;
-        transition: all 0.3s ease !important;
-        border: none !important;
-        box-shadow: 0 4px 14px rgba(93, 64, 55, 0.25) !important;
-    }
-
-    .btn-premium:hover {
-        transform: translateY(-3px) !important;
-        background: linear-gradient(135deg, #3E2723 0%, #5D4037 100%) !important;
-        /* Darker on hover */
-        box-shadow: 0 8px 24px rgba(93, 64, 55, 0.35) !important;
-        color: #fff !important;
-    }
-
-    .star-neon {
-        color: #FFD700 !important;
-        /* Neon Yellow/Gold stars */
-        text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
-    }
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/homepage.css') }}?v=2.5">
 <main>
-    <!-- ═══ HERO 1: Full-Width Cinematic Banner ═══ -->
-    <section
-        style="position: relative; width: 100vw; max-width: 100vw; height: 100vh; min-height: 600px; overflow: hidden; margin-top: -65px; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw;">
-        <!-- Background Image and Gradient Overlay -->
-        <div style="position: absolute; inset: 0; z-index: 0; background-color: #0c0c0c;">
-            <div
-                style="position: absolute; inset: 0; background-image: url('https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=75&w=1600&auto=format&fit=crop'); background-size: cover; background-position: right center; opacity: 0.95;">
-            </div>
-            <!-- Dark gradient on the left, fading to transparent on the right -->
-            <div
-                style="position: absolute; inset: 0; background: linear-gradient(90deg, rgba(12,12,12,0.95) 0%, rgba(12,12,12,0.85) 40%, rgba(12,12,12,0) 100%);">
-            </div>
-        </div>
 
-        <!-- Left-aligned Content Overlay -->
-        <div
-            style="position: absolute; inset: 0; z-index: 1; display: flex; align-items: center; justify-content: flex-start; padding-left: 8%; padding-right: 2rem;">
-            <div style="text-align: left; max-width: 650px;">
-                <h1
-                    style="font-family: 'Georgia', serif; font-size: 4.5rem; font-weight: 800; color: #ffffff; letter-spacing: -0.5px; margin-bottom: 1.25rem; line-height: 1.1; text-shadow: 2px 2px 10px rgba(0,0,0,0.6);">
-                    Good food, great company.</h1>
-                <p
-                    style="font-family: 'Inter', sans-serif; font-size: 1.25rem; color: #e0e0e0; font-weight: 400; margin-bottom: 3rem; text-shadow: 1px 1px 5px rgba(0,0,0,0.8); line-height: 1.6; max-width: 550px;">
-                    Discover a thoughtfully crafted menu designed to bring you and your <span
-                        style="font-style: italic; color: #a17860;">famille</span> together.</p>
-                <a href="{{ url_for('main.menu_page') }}" class="btn-premium hero-btn"
-                    style="display: inline-block; padding: 1.1rem 3.5rem; color: #ffffff; text-decoration: none; border-radius: 50px; font-size: 1.05rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;">
-                    ORDER NOW
-                </a>
+    <!-- ═══ HERO SLIDER (Owl Carousel) ═══ -->
+    <section class="lm-hero">
+        <div class="owl-carousel owl-theme home-slider">
+            <!-- Slide 1 -->
+            <div class="slider-item" style="background-image: url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=70&w=1500&auto=format&fit=crop');">
+                <div class="overlay"></div>
+                <div class="slider-text">
+                    <div>
+                        <h1 data-aos="fade-up">Experience Premium<br>French Dining</h1>
+                        <p data-aos="fade-up" data-aos-delay="200">Discover a thoughtfully crafted menu designed to bring you and your famille together at Le Maison de Yelo Lane.</p>
+                        <div data-aos="fade-up" data-aos-delay="400">
+                            <a href="{{ url_for('main.menu_page') }}" class="btn-hero filled">Order Now</a>
+                            <a href="{{ url_for('main.menu_page') }}" class="btn-hero">View Menu</a>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-        <!-- Scroll Indicator -->
-        <div
-            style="position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%); z-index: 2; text-align: center; animation: bounce 2s infinite;">
-            <i class="fas fa-chevron-down" style="color: rgba(139, 99, 75, 0.6); font-size: 1.5rem;"></i>
+            <!-- Slide 2 -->
+            <div class="slider-item" style="background-image: url('https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=70&w=1500&auto=format&fit=crop');">
+                <div class="overlay"></div>
+                <div class="slider-text">
+                    <div>
+                        <h1>Good Food,<br>Great Company</h1>
+                        <p>From signature lattes to artisan pastries, every dish carries a story of passion and tradition.</p>
+                        <div>
+                            {% if current_user.is_authenticated %}
+                            <a href="{{ url_for('main.reserve') }}" class="btn-hero filled" onclick="clearReservationSession()">Book a Table</a>
+                            {% else %}
+                            <a href="javascript:void(0)" onclick="$('#termsModal').modal('show'); window.authIntent = 'signup';" class="btn-hero filled">Join Now</a>
+                            {% endif %}
+                            <a href="{{ url_for('main.about_page') }}" class="btn-hero">About Us</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Slide 3 -->
+            <div class="slider-item" style="background-image: url('{{ site.hero2.image_url }}');">
+                <div class="overlay"></div>
+                <div class="slider-text">
+                    <div>
+                        <h1>{{ site.hero2.title1 }}<br>{{ site.hero2.title2 }}</h1>
+                        <p>{{ site.hero2.description }}</p>
+                        <div>
+                            <a href="{{ url_for('main.menu_page') }}" class="btn-hero filled">Explore Menu</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
-    <!-- ═══ HERO 2: Split Layout (Drift into Joy) ═══ -->
-    <div class="row align-items-center mb-5 mx-0 mx-md-4 mt-5"
-        style="background-color: rgba(255, 255, 255, 0.95); border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
-        <div class="col-md-6 p-5 text-md-start text-center">
-            <p class="text-uppercase fw-bold mb-1" style="color: #8B634B; letter-spacing: 2px;">{{
-                site.hero2.title1 }}</p>
-            <h2
-                style="font-family: 'Georgia', serif; font-size: 3.5rem; color: var(--text-main); font-weight: bold; line-height: 1.2;">
-                {{ site.hero2.title2|replace('\n', '<br>')|safe }}</h2>
-            <p class="mt-4 mb-5 text-muted" style="font-size: 1.1rem; max-width: 450px;">
-                {{ site.hero2.description }}
-            </p>
-            {% if current_user.is_authenticated %}
-            <a href="{{ url_for('main.reserve') }}" class="btn btn-dark rounded-pill px-5 py-2 fw-bold"
-                style="background: linear-gradient(135deg, #5D4037, #795548); border: none; box-shadow: 0 4px 14px rgba(93, 64, 55, 0.25);">Book
-                a Table</a>
-            {% else %}
-            <a href="{{ url_for('main.signup') }}"
-                class="btn btn-dark rounded-pill px-5 py-2 fw-bold btn-premium">Discover the Flavors</a>
-            {% endif %}
-        </div>
-        <div class="col-md-6 p-0 d-none d-md-block">
-            <img loading="lazy" decoding="async" src="{{ site.hero2.image_url }}" class="img-fluid w-100 h-100"
-                style="object-fit: cover; min-height: 500px;">
-        </div>
-    </div>
-
-    <!-- ═══ BEST SELLERS SHOWCASE ═══ -->
-    <section class="mx-0 mx-md-4 mt-5 mb-5">
-        <div class="text-center mb-5">
-            <p class="text-uppercase fw-bold mb-1"
-                style="color: var(--primary-color); letter-spacing: 3px; font-size: 0.85rem;">Customer Favorites</p>
-            <h2 style="font-family: 'Georgia', serif; font-size: 2.5rem; color: var(--text-main); font-weight: bold;">
-                Best Sellers</h2>
-        </div>
-
-        <div
-            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 2rem; padding: 0 0.5rem; align-items: stretch;">
-            {% for item in bestsellers %}
-            <a href="{{ url_for('main.menu_page') }}" class="bestseller-card"
-                style="text-decoration: none; color: inherit; display: flex; flex-direction: column; background: transparent; border: none; box-shadow: none; cursor: pointer;">
-
-                {% if item.image_url %}
-                <div
-                    style="position: relative; padding-top: 130%; overflow: hidden; border-radius: 0; background: #f8f9fa;">
-                    <img loading="lazy" decoding="async" src="{{ item.image_url }}" alt="{{ item.name }}"
-                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s;"
-                        onmouseover="this.style.transform='scale(1.08)';" onmouseout="this.style.transform='scale(1)';">
-                    <div
-                        style="position: absolute; top: 12px; left: 12px; background: rgba(139,99,75,0.9); color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
-                        <i class="fas fa-fire me-1"></i>Best Seller
+    <!-- ═══ QUICK INFO BAR ═══ -->
+    <section class="lm-info-bar">
+        <div class="container-fluid px-md-5">
+            <div class="row align-items-center">
+                <div class="col-md-4 col-6">
+                    <div class="info-item"><i class="fas fa-phone-alt"></i><div><strong>+63 912 345 6789</strong><br><small>Call us for reservations</small></div></div>
+                </div>
+                <div class="col-md-4 col-6">
+                    <div class="info-item"><i class="fas fa-map-marker-alt"></i><div><strong>Yelo Lane, Gen. Taino St.</strong><br><small>Pagsanjan, Laguna</small></div></div>
+                </div>
+                <div class="col-md-4 d-none d-md-flex justify-content-end">
+                    <div class="info-item"><i class="fas fa-clock"></i><div><strong>Open Daily</strong><br><small>8:00 AM – 10:00 PM</small></div>
+                    </div>
+                    <div class="social-icons ms-4 d-flex align-items-center">
+                        <a href="#"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
                     </div>
                 </div>
-                {% else %}
-                <div
-                    style="position: relative; padding-top: 130%; background: linear-gradient(135deg, #8b634b, #a17860); border-radius: 0; display: flex; align-items: center; justify-content: center;">
-                    <i class="fas fa-utensils"
-                        style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 3rem; color: rgba(255,255,255,0.3);"></i>
-                </div>
-                {% endif %}
+            </div>
+        </div>
+    </section>
 
-                <div style="padding: 1rem 0; display: flex; flex-direction: column;">
-                    <h4
-                        style="font-family: 'Georgia', serif; font-weight: 700; font-size: 1.15rem; color: var(--text-main); margin-bottom: 0.3rem;">
-                        {{ item.name }}
-                    </h4>
-                    <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <span
-                            style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 1.1rem; color: #443127;">₱{{
-                            '%.2f'|format(item.price) }}</span>
-                        <span class="fw-bold" style="color: #8B634B; font-size: 0.85rem;">View <i
-                                class="fas fa-arrow-right ms-1"></i></span>
+    <!-- ═══ WELCOME / ABOUT SECTION ═══ -->
+    <section class="lm-section lm-welcome light" style="background: #fff;">
+        <div class="container-fluid px-md-5">
+            <div class="row align-items-center g-5">
+                <div class="col-md-6" data-aos="fade-right">
+                    <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=75&w=900&auto=format&fit=crop" alt="Le Maison interior" class="img-fluid" style="border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.15); width: 100%; max-height: 500px; object-fit: cover;">
+                </div>
+                <div class="col-md-6 welcome-text" data-aos="fade-left">
+                    <p style="color: #c9a96e; text-transform: uppercase; letter-spacing: 3px; font-weight: 700; font-size: 0.8rem;">Welcome to</p>
+                    <h2>Le Maison de <span>Yelo Lane</span></h2>
+                    <p>From humble beginnings on Yelo Lane to becoming Pagsanjan's beloved dining destination, every dish we serve carries a story of passion, tradition, and French-inspired artistry.</p>
+                    <p>Whether it's a romantic dinner, a family celebration, or a casual coffee date — we've prepared the perfect ambiance just for you.</p>
+                    <a href="{{ url_for('main.about_page') }}" class="btn-hero filled" style="display: inline-block; margin-top: 1rem;">Learn More</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ OUR SERVICES ═══ -->
+    <section class="lm-section lm-services light">
+        <div class="container-fluid px-md-5">
+            <div class="section-heading" data-aos="fade-up">
+                <h2 style="color: #1a1a1a;">Our Services</h2>
+                <p style="color: #888;">Bringing you the finest dining experience in Pagsanjan, Laguna</p>
+            </div>
+            <div class="row justify-content-center g-4">
+                <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
+                    <div class="lm-service-card">
+                        <div class="icon-wrap"><i class="fas fa-utensils"></i></div>
+                        <h5>Quality Dishes</h5>
+                        <p>From our ingredients down to the preparation, we make sure you're enjoying quality dishes served hot and fresh.</p>
                     </div>
                 </div>
-            </a>
+                <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
+                    <div class="lm-service-card">
+                        <div class="icon-wrap"><i class="fas fa-truck"></i></div>
+                        <h5>Fast Delivery</h5>
+                        <p>Order from anywhere in Pagsanjan and surrounding areas. We deliver your favorites right to your doorstep.</p>
+                    </div>
+                </div>
+                <div class="col-md-4" data-aos="fade-up" data-aos-delay="300">
+                    <div class="lm-service-card">
+                        <div class="icon-wrap"><i class="fas fa-coffee"></i></div>
+                        <h5>Signature Blends</h5>
+                        <p>Our artisanal coffee and French-inspired recipes are crafted with love to create an unforgettable experience.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ MENU GRID (SMALL BOXES) ═══ -->
+    <section class="lm-section lm-menu-section">
+        <div class="section-heading" data-aos="fade-up">
+            <h2 style="color:#fff;">Hot Menu Items</h2>
+            <p style="color:rgba(255,255,255,0.5);">Discover our most popular dishes crafted with the finest ingredients</p>
+        </div>
+        <div class="lm-menu-grid" data-aos="fade-up" data-aos-delay="100">
+            {% for item in bestsellers[:6] %}
+            <div class="lm-menu-card">
+                <div class="img-wrap">
+                    {% if item.image_url %}
+                    <img loading="lazy" src="{{ item.image_url }}" alt="{{ item.name }}">
+                    {% else %}
+                    <div style="width:100%;height:100%;background:linear-gradient(135deg,#3E2723,#5D4037);display:flex;align-items:center;justify-content:center;">
+                        <i class="fas fa-utensils" style="font-size:2rem;color:rgba(139,99,75,0.4);"></i>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="menu-text">
+                    <h6>{{ item.name }}</h6>
+                    <p>{{ item.description[:80] + '...' if item.description and item.description|length > 80 else (item.description or 'Far far away, behind the word mountains, far from the countries Vokalia and Consonantia.') }}</p>
+                    <div class="price-wrap">
+                        <span class="price">₱{{ '%.2f'|format(item.price) }}</span>
+                        <a href="{{ url_for('main.menu_page') }}" class="btn-order">Order</a>
+                    </div>
+                </div>
+            </div>
             {% else %}
-            <!-- Fallback if no best sellers -->
-            <div class="text-center py-5" style="grid-column: 1 / -1;">
-                <i class="fas fa-utensils"
-                    style="font-size: 3rem; color: rgba(139,99,75,0.2); margin-bottom: 1rem;"></i>
-                <p class="text-muted">Our best sellers are being prepared. Check back soon!</p>
+            <div style="grid-column: 1/-1; text-align: center; padding: 3rem;">
+                <i class="fas fa-utensils" style="font-size: 2rem; color: rgba(201,169,110,0.3); margin-bottom: 1rem;"></i>
+                <p style="color: rgba(255,255,255,0.5);">Our best sellers are being prepared. Check back soon!</p>
             </div>
             {% endfor %}
         </div>
-
-        <div class="text-center mt-5">
-            <a href="{{ url_for('main.menu_page') }}" class="btn btn-dark rounded-pill px-5 py-3 fw-bold btn-premium"
-                style="font-size: 1rem; width: 100%; max-width: 800px;">
-                <i class="fas fa-book-open me-2"></i>View Other Menu
-            </a>
+        <div class="text-center mt-5" data-aos="fade-up">
+            <a href="{{ url_for('main.menu_page') }}" class="btn-hero filled" style="display: inline-block;">View Full Menu</a>
         </div>
     </section>
 
-    <!-- ═══ CONTENT CARDS ═══ -->
-    <div class="row mt-5 mb-5 mx-0 mx-md-4 g-4 z-1 align-items-stretch">
-        <!-- Column Card 1 -->
-        <div class="col-12 col-lg-6 px-lg-3 d-flex">
-            <div class="card flex-fill w-100 border-0 flex-md-row"
-                style="background-color: rgba(255,255,255,0.95); border-radius: 12px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.05);">
-                <div class="col-md-5 p-0 d-flex" style="min-height: 300px;">
-                    <img loading="lazy" decoding="async" src="{{ site.card1.image_url }}" class="img-fluid w-100"
-                        style="object-fit: cover; min-height: 100%;">
-                </div>
-                <div class="card-body col-md-7 p-5 d-flex flex-column justify-content-center text-center">
-                    <h3 class="card-title fw-bold mb-4" style="font-family: 'Georgia', serif; color: var(--text-main);">
-                        {{ site.card1.title }}</h3>
-                    <p class="card-text text-muted mb-4">{{ site.card1.description }}</p>
-                    <div><a href="{{ url_for('main.menu_page') }}" class="btn btn-dark rounded-pill px-5 py-2 fw-bold"
-                            style="background: linear-gradient(135deg, #5D4037, #795548); border: none; box-shadow: 0 4px 14px rgba(93, 64, 55, 0.25);">Discover
-                            More</a></div>
-                </div>
+
+
+    <!-- ═══ GALLERY ═══ -->
+    <section class="lm-section lm-gallery" style="padding: 5rem 0 0 0;">
+        <div class="container">
+            <div class="section-heading" data-aos="fade-up">
+                <h2 style="color: #fff;">The Gallery</h2>
+                <p style="color: rgba(255,255,255,0.6);">A glimpse into our kitchen and dining experience</p>
             </div>
         </div>
-
-        <!-- Column Card 2 -->
-        <div class="col-12 col-lg-6 px-lg-3 d-flex">
-            <div class="card flex-fill w-100 border-0 flex-md-row"
-                style="background-color: rgba(255,255,255,0.95); border-radius: 12px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.05);">
-                <div class="col-md-5 p-0 order-md-2 d-flex" style="min-height: 300px;">
-                    <img loading="lazy" decoding="async" src="{{ site.card2.image_url }}" class="img-fluid w-100"
-                        style="object-fit: cover; min-height: 100%;">
-                </div>
-                <div class="card-body col-md-7 p-5 d-flex flex-column justify-content-center text-center order-md-1">
-                    <h3 class="card-title fw-bold mb-4" style="font-family: 'Georgia', serif; color: var(--text-main);">
-                        {{ site.card2.title }}</h3>
-                    <p class="card-text text-muted mb-4">{{ site.card2.description }}</p>
-                    <div><a href="{{ url_for('main.menu_page') }}"
-                            class="btn btn-dark rounded-pill px-5 py-2 fw-bold btn-premium">Discover More</a></div>
-                </div>
+        <div class="gallery-grid">
+            <div class="gallery-item" data-aos="fade-up" data-aos-delay="0">
+                <img loading="lazy" src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=60&w=600&auto=format&fit=crop" alt="Fine dining">
+                <div class="gallery-overlay"><i class="fas fa-search-plus"></i></div>
+            </div>
+            <div class="gallery-item" data-aos="fade-up" data-aos-delay="50">
+                <img loading="lazy" src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=60&w=600&auto=format&fit=crop" alt="Restaurant ambiance">
+                <div class="gallery-overlay"><i class="fas fa-search-plus"></i></div>
+            </div>
+            <div class="gallery-item" data-aos="fade-up" data-aos-delay="100">
+                <img loading="lazy" src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=60&w=600&auto=format&fit=crop" alt="Dining hall">
+                <div class="gallery-overlay"><i class="fas fa-search-plus"></i></div>
+            </div>
+            <div class="gallery-item" data-aos="fade-up" data-aos-delay="150">
+                <img loading="lazy" src="https://images.unsplash.com/photo-1551218808-94e220e084d2?q=60&w=600&auto=format&fit=crop" alt="Chef preparing">
+                <div class="gallery-overlay"><i class="fas fa-search-plus"></i></div>
+            </div>
+            <div class="gallery-item" data-aos="fade-up" data-aos-delay="200">
+                <img loading="lazy" src="https://images.unsplash.com/photo-1559339352-11d035aa65de?q=60&w=600&auto=format&fit=crop" alt="Plated dish">
+                <div class="gallery-overlay"><i class="fas fa-search-plus"></i></div>
+            </div>
+            <div class="gallery-item" data-aos="fade-up" data-aos-delay="250">
+                <img loading="lazy" src="https://images.unsplash.com/photo-1497935586351-b67a49e012bf?q=60&w=600&auto=format&fit=crop" alt="Coffee and pastry">
+                <div class="gallery-overlay"><i class="fas fa-search-plus"></i></div>
+            </div>
+            <div class="gallery-item" data-aos="fade-up" data-aos-delay="300">
+                <img loading="lazy" src="https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=60&w=600&auto=format&fit=crop" alt="Latte art">
+                <div class="gallery-overlay"><i class="fas fa-search-plus"></i></div>
+            </div>
+            <div class="gallery-item" data-aos="fade-up" data-aos-delay="350">
+                <img loading="lazy" src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=60&w=600&auto=format&fit=crop" alt="Cafe interior">
+                <div class="gallery-overlay"><i class="fas fa-search-plus"></i></div>
             </div>
         </div>
-    </div>
+    </section>
 
-    <!-- ═══ WHY DINE WITH US ═══ -->
-    <section class="py-5 mx-0 mx-md-4 mb-5"
-        style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.03);">
-        <div class="container pb-4">
-            <h2 class="text-center mb-5"
-                style="font-family: 'Georgia', serif; font-size: 2.5rem; color: var(--text-main);">Why dine with us</h2>
-            <div class="row g-4 text-center px-lg-4">
-                <!-- Feature 1 -->
-                <div class="col-md-3">
-                    <div class="mb-4" style="color: #8B634B; font-size: 3.5rem;">
-                        <i class="fas fa-utensils"></i>
+    <!-- ═══ COUNTER / STATS ═══ -->
+    <section class="lm-section lm-counter" style="position: relative;">
+        <div class="overlay"></div>
+        <div class="container-fluid px-md-5" style="position: relative; z-index: 1;">
+            <div class="row g-4 justify-content-center" id="counterSection">
+                <div class="col-6 col-md-3" data-aos="fade-up" data-aos-delay="100">
+                    <div class="lm-counter-item">
+                        <div class="icon-wrap"><i class="fas fa-coffee"></i></div>
+                        <div class="counter-number" data-count="5">0</div>
+                        <div class="counter-label">Years of Service</div>
                     </div>
-                    <h5
-                        style="font-family: 'Georgia', serif; color: var(--text-main); font-weight: bold; font-size: 1.15rem;">
-                        Exceptional food experience</h5>
-                    <p class="text-muted mt-3" style="font-size: 0.9rem; line-height: 1.6;">From our ingredients down to
-                        the preparation (shout out to our chefs!), we make sure that you're enjoying quality dishes,
-                        served hot.</p>
                 </div>
-                <!-- Feature 2 -->
-                <div class="col-md-3">
-                    <div class="mb-4" style="color: #8B634B; font-size: 3.5rem;">
-                        <i class="fas fa-concierge-bell"></i>
+                <div class="col-6 col-md-3" data-aos="fade-up" data-aos-delay="200">
+                    <div class="lm-counter-item">
+                        <div class="icon-wrap"><i class="fas fa-award"></i></div>
+                        <div class="counter-number" data-count="50">0</div>
+                        <div class="counter-label">Signature Dishes</div>
                     </div>
-                    <h5
-                        style="font-family: 'Georgia', serif; color: var(--text-main); font-weight: bold; font-size: 1.15rem;">
-                        Accommodating staff</h5>
-                    <p class="text-muted mt-3" style="font-size: 0.9rem; line-height: 1.6;">Our staff are trained to
-                        provide excellent service to make your stay a pleasant one every single time.</p>
                 </div>
-                <!-- Feature 3 -->
-                <div class="col-md-3">
-                    <div class="mb-4" style="color: #8B634B; font-size: 3.5rem;">
-                        <i class="fas fa-seedling"></i>
+                <div class="col-6 col-md-3" data-aos="fade-up" data-aos-delay="300">
+                    <div class="lm-counter-item">
+                        <div class="icon-wrap"><i class="fas fa-smile"></i></div>
+                        <div class="counter-number" data-count="10000">0</div>
+                        <div class="counter-label">Happy Customers</div>
                     </div>
-                    <h5
-                        style="font-family: 'Georgia', serif; color: var(--text-main); font-weight: bold; font-size: 1.15rem;">
-                        Varied food offerings</h5>
-                    <p class="text-muted mt-3" style="font-size: 0.9rem; line-height: 1.6;">Discover something new with
-                        each visit, ensuring a delightful experience for every taste and craving.</p>
                 </div>
-                <!-- Feature 4 -->
-                <div class="col-md-3">
-                    <div class="mb-4" style="color: #8B634B; font-size: 3.5rem;">
-                        <i class="fas fa-coffee"></i>
+                <div class="col-6 col-md-3" data-aos="fade-up" data-aos-delay="400">
+                    <div class="lm-counter-item">
+                        <div class="icon-wrap"><i class="fas fa-user-tie"></i></div>
+                        <div class="counter-number" data-count="20">0</div>
+                        <div class="counter-label">Staff Members</div>
                     </div>
-                    <h5
-                        style="font-family: 'Georgia', serif; color: var(--text-main); font-weight: bold; font-size: 1.15rem;">
-                        Great ambiance</h5>
-                    <p class="text-muted mt-3" style="font-size: 0.9rem; line-height: 1.6;">Did we mention that our cafe
-                        has a French flair? Enjoy a feel-good, cozy ambiance while taking Insta-worthy photos!</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- ═══ REVIEWS / TESTIMONIALS ═══ -->
-    <section class="py-5" style="background-color: #ffffff; color: var(--text-main);">
-        <div class="container text-center py-4">
-            <h2 class="mb-5" style="font-family: 'Georgia', serif; font-size: 2.5rem; color: var(--text-main);">What Our
-                Guests Say</h2>
-            <div class="row justify-content-center g-4 px-lg-4">
-                {% if approved_reviews %}
-                {% for review in approved_reviews[:2] %}
-                <div class="col-md-5">
-                    <div class="p-5 text-start"
-                        style="background: #ffffff; border-radius: 12px; height: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.06); border: 1px solid rgba(139, 99, 75,0.08);">
-                        <div style="color: #8B634B; margin-bottom: 1.25rem; font-size: 1.1rem;">
-                            {% for _ in range(review.rating) %}
-                            <i class="fas fa-star star-neon"></i>
+    <!-- ═══ TABBED MENU (FULL MENU) ═══ -->
+    <section class="lm-section lm-tab-menu-wrapper">
+        <div class="container-fluid p-0">
+            <div class="row g-0">
+                <div class="col-lg-4">
+                    <div class="lm-tab-menu-img" style="background-image: url('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=1000&auto=format&fit=crop');" data-aos="fade-right"></div>
+                </div>
+                <div class="col-lg-8">
+                    <div class="lm-tab-content-area" data-aos="fade-up">
+                        
+                        <!-- Nav Pills -->
+                        <ul class="nav nav-pills lm-nav-pills" id="menu-pills-tab" role="tablist">
+                            {% for cat in categories[:3] %}
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link {% if loop.first %}active{% endif %}" id="pills-{{ cat.category|replace(' ', '-') }}-tab" data-bs-toggle="pill" data-bs-target="#pills-{{ cat.category|replace(' ', '-') }}" type="button" role="tab" aria-selected="{{ 'true' if loop.first else 'false' }}">
+                                    {{ cat.category }}
+                                </button>
+                            </li>
+                            {% endfor %}
+                        </ul>
+
+                        <!-- Tab Content -->
+                        <div class="tab-content" id="menu-pills-tabContent">
+                            {% for cat in categories[:3] %}
+                            <div class="tab-pane fade {% if loop.first %}show active{% endif %}" id="pills-{{ cat.category|replace(' ', '-') }}" role="tabpanel">
+                                <div class="row">
+                                    {% set cat_items = menu_items | selectattr('category', 'equalto', cat.category) | list %}
+                                    {% for item in cat_items[:3] %}
+                                    <div class="col-md-4">
+                                        <div class="lm-tab-item" data-aos="fade-up" data-aos-delay="{{ loop.index0 * 100 }}">
+                                            {% if item.image_url %}
+                                            <img src="{{ item.image_url }}" alt="{{ item.name }}" class="img-circle">
+                                            {% else %}
+                                            <div class="img-circle" style="background:#3E2723; display:flex; align-items:center; justify-content:center;">
+                                                <i class="fas fa-utensils" style="color:#c9a96e; font-size: 2rem;"></i>
+                                            </div>
+                                            {% endif %}
+                                            <h5>{{ item.name }}</h5>
+                                            <p>{{ item.description[:70] + '...' if item.description and item.description|length > 70 else (item.description or 'Far far away, behind the word mountains, far from the countries Vokalia and Consonantia.') }}</p>
+                                            <span class="price">₱{{ '%.2f'|format(item.price) }}</span>
+                                            <a href="{{ url_for('main.menu_page') }}" class="btn-add">Add to cart</a>
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    <div class="col-12 text-center text-white-50 py-4">No items available in this category yet.</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
                             {% endfor %}
                         </div>
-                        <p style="font-style: italic; font-size: 1.05rem; line-height: 1.7; color: var(--text-muted);">
-                            "{{ review.comment }}"</p>
-                        <hr style="border-color: rgba(139, 99, 75,0.1); margin: 1.5rem 0;">
-                        <div class="d-flex align-items-center">
-                            <div
-                                style="width: 45px; height: 45px; border-radius: 50%; background-color: var(--primary-color); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 1rem;">
-                                {{ review.user.first_name[:1] }}{{ review.user.last_name[:1] }}</div>
-                            <div>
-                                <h6 style="color: var(--text-main); font-weight: bold; margin: 0; font-size: 1rem;">
-                                    {{ review.user.first_name }} {{ review.user.last_name[:1] }}.</h6>
-                                <span style="font-size: 0.8rem; color: var(--text-muted);">Verified Customer</span>
-                            </div>
+
+                        <!-- See More Button -->
+                        <div class="text-center mt-5" data-aos="fade-up">
+                            <a href="{{ url_for('main.menu_page') }}" class="btn-hero filled" style="display: inline-block;">See More</a>
                         </div>
+
                     </div>
                 </div>
-                {% endfor %}
-                {% else %}
-                <div class="col-md-5">
-                    <div class="p-5 text-start"
-                        style="background: #ffffff; border-radius: 12px; height: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.06); border: 1px solid rgba(139, 99, 75,0.08);">
-                        <div class="star-neon" style="margin-bottom: 1.25rem; font-size: 1.1rem;">
-                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i
-                                class="fas fa-star"></i><i class="fas fa-star"></i>
-                        </div>
-                        <p style="font-style: italic; font-size: 1.05rem; line-height: 1.7; color: var(--text-muted);">
-                            "The best and most authentic French cuisine in Pagsanjan. The ambiance is breathtaking and
-                            the staff treats you like family. A must-visit!"</p>
-                        <hr style="border-color: rgba(139, 99, 75,0.1); margin: 1.5rem 0;">
-                        <div class="d-flex align-items-center">
-                            <div
-                                style="width: 45px; height: 45px; border-radius: 50%; background-color: var(--primary-color); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 1rem;">
-                                M</div>
-                            <div>
-                                <h6 style="color: var(--text-main); font-weight: bold; margin: 0; font-size: 1rem;">
-                                    Maria S.</h6>
-                                <span style="font-size: 0.8rem; color: var(--text-muted);">Local Guide</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-5">
-                    <div class="p-5 text-start"
-                        style="background: #ffffff; border-radius: 12px; height: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.06); border: 1px solid rgba(139, 99, 75,0.08);">
-                        <div class="star-neon" style="margin-bottom: 1.25rem; font-size: 1.1rem;">
-                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i
-                                class="fas fa-star"></i><i class="fas fa-star"></i>
-                        </div>
-                        <p style="font-style: italic; font-size: 1.05rem; line-height: 1.7; color: var(--text-muted);">
-                            "Exquisite from start to finish. The Signature Yelo Latte is out of this world. Highly
-                            recommend booking a table early on weekends!"</p>
-                        <hr style="border-color: rgba(139, 99, 75,0.1); margin: 1.5rem 0;">
-                        <div class="d-flex align-items-center">
-                            <div
-                                style="width: 45px; height: 45px; border-radius: 50%; background-color: var(--primary-color); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 1rem;">
-                                J</div>
-                            <div>
-                                <h6 style="color: var(--text-main); font-weight: bold; margin: 0; font-size: 1rem;">
-                                    Jonathan D.</h6>
-                                <span style="font-size: 0.8rem; color: var(--text-muted);">Coffee Enthusiast</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-            <div class="mt-5 pt-3">
-                <a href="{{ url_for('main.reviews_page') }}"
-                    class="btn text-white rounded-pill px-5 py-3 fw-bold btn-premium"
-                    style="width: 100%; max-width: 600px;">Read all reviews</a>
             </div>
         </div>
     </section>
 
-    <!-- ═══ SECONDARY CONTENT: Our Culinary Journey ═══ -->
-    <section class="py-5 mx-0 mx-md-4 mt-5 mb-5">
-        <div class="container">
-            <div class="text-center mb-5">
-                <p class="text-uppercase fw-bold mb-1"
-                    style="color: var(--primary-color); letter-spacing: 3px; font-size: 0.85rem;">Our Story</p>
-                <h2
-                    style="font-family: 'Georgia', serif; font-size: 2.5rem; color: var(--text-main); font-weight: bold;">
-                    A Culinary Journey</h2>
-                <p class="text-muted mx-auto mt-3" style="max-width: 600px; font-size: 1rem; line-height: 1.7;">
-                    From humble beginnings on Yelo Lane to becoming Pagsanjan's beloved dining destination, every dish
-                    we serve carries a story of passion, tradition, and French-inspired artistry.
-                </p>
-            </div>
-
-            <!-- Staggered Gallery Grid -->
+    <!-- ═══ CONTACT / MAP ═══ -->
+    <section class="lm-section lm-contact">
+        <div class="container-fluid px-md-5">
             <div class="row g-4 align-items-stretch">
-                <!-- Left Column: Tall Image -->
-                <div class="col-md-5 d-flex">
-                    <div
-                        style="border-radius: 20px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.1); position: relative; width: 100%;">
-                        <img loading="lazy" decoding="async"
-                            src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=1200&auto=format&fit=crop"
-                            alt="Fine dining experience"
-                            style="width: 100%; height: 100%; min-height: 480px; object-fit: cover; display: block; transition: transform 0.6s ease;"
-                            onmouseover="this.style.transform='scale(1.03)';"
-                            onmouseout="this.style.transform='scale(1)';">
-                        <div
-                            style="position: absolute; bottom: 0; left: 0; right: 0; padding: 2rem; background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);">
-                            <p
-                                style="color: #fff; font-family: 'Georgia', serif; font-size: 1.3rem; margin: 0; font-weight: bold;">
-                                Crafted with Love</p>
-                            <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; margin: 0.25rem 0 0;">Every
-                                plate tells our story</p>
-                        </div>
+                <div class="col-md-6" data-aos="fade-right">
+                    <div class="map-wrap">
+                        <iframe src="https://maps.google.com/maps?q=Le%20Maison%20de%20Yelo%20Lane,%20General%20Taino%20Street,%20Pagsanjan,%20Laguna,%20Philippines&t=&z=16&ie=UTF8&iwloc=&output=embed" allowfullscreen="" loading="lazy"></iframe>
                     </div>
                 </div>
-
-                <!-- Right Column: Two Stacked Images + Stats -->
-                <div class="col-md-7 d-flex flex-column">
-                    <div class="row g-3 mb-3" style="flex: 1;">
-                        <div class="col-6 d-flex">
-                            <div
-                                style="border-radius: 20px; overflow: hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.08); width: 100%;">
-                                <img loading="lazy" decoding="async"
-                                    src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=800&auto=format&fit=crop"
-                                    alt="Restaurant ambiance"
-                                    style="width: 100%; height: 100%; min-height: 220px; object-fit: cover; display: block; transition: transform 0.6s ease;"
-                                    onmouseover="this.style.transform='scale(1.05)';"
-                                    onmouseout="this.style.transform='scale(1)';">
-                            </div>
-                        </div>
-                        <div class="col-6 d-flex">
-                            <div
-                                style="border-radius: 20px; overflow: hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.08); width: 100%;">
-                                <img loading="lazy" decoding="async"
-                                    src="https://images.unsplash.com/photo-1551218808-94e220e084d2?q=80&w=800&auto=format&fit=crop"
-                                    alt="Chef preparing food"
-                                    style="width: 100%; height: 100%; min-height: 220px; object-fit: cover; display: block; transition: transform 0.6s ease;"
-                                    onmouseover="this.style.transform='scale(1.05)';"
-                                    onmouseout="this.style.transform='scale(1)';">
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Stats Bar -->
-                    <div class="d-flex justify-content-around align-items-center py-4 px-3"
-                        style="background: #ffffff; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 1px solid rgba(139, 99, 75, 0.08); flex-shrink: 0;">
-                        <div class="text-center">
-                            <h3
-                                style="font-family: 'Georgia', serif; font-size: 2rem; color: var(--primary-color); margin: 0; font-weight: 800;">
-                                5+</h3>
-                            <p
-                                style="color: var(--text-muted); font-size: 0.75rem; margin: 0.2rem 0 0; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
-                                Years of Service</p>
-                        </div>
-                        <div style="width: 1px; height: 45px; background: rgba(139, 99, 75, 0.15);"></div>
-                        <div class="text-center">
-                            <h3
-                                style="font-family: 'Georgia', serif; font-size: 2rem; color: var(--primary-color); margin: 0; font-weight: 800;">
-                                50+</h3>
-                            <p
-                                style="color: var(--text-muted); font-size: 0.75rem; margin: 0.2rem 0 0; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
-                                Signature Dishes</p>
-                        </div>
-                        <div style="width: 1px; height: 45px; background: rgba(139, 99, 75, 0.15);"></div>
-                        <div class="text-center">
-                            <h3
-                                style="font-family: 'Georgia', serif; font-size: 2rem; color: var(--primary-color); margin: 0; font-weight: 800;">
-                                10K+</h3>
-                            <p
-                                style="color: var(--text-muted); font-size: 0.75rem; margin: 0.2rem 0 0; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
-                                Happy Guests</p>
-                        </div>
-                        <div style="width: 1px; height: 45px; background: rgba(139, 99, 75, 0.15);"
-                            class="d-none d-md-block"></div>
-                        <div class="text-center d-none d-md-block">
-                            <h3
-                                style="font-family: 'Georgia', serif; font-size: 2rem; color: var(--primary-color); margin: 0; font-weight: 800;">
-                                4.9</h3>
-                            <p
-                                style="color: var(--text-muted); font-size: 0.75rem; margin: 0.2rem 0 0; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
-                                Average Rating</p>
+                <div class="col-md-6" data-aos="fade-left">
+                    <div class="contact-form">
+                        <h3>Contact Us</h3>
+                        <form>
+                            <div class="mb-3"><input type="text" class="form-control" placeholder="Your Name"></div>
+                            <div class="mb-3"><input type="email" class="form-control" placeholder="Your Email"></div>
+                            <div class="mb-3"><textarea class="form-control" rows="4" placeholder="Your Message" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 4px; resize: none;"></textarea></div>
+                            <button type="button" class="btn-submit" onclick="alert('Thank you! We will get back to you soon.')">Send Message</button>
+                        </form>
+                        <div class="mt-4 pt-3" style="border-top: 1px solid rgba(255,255,255,0.1);">
+                            <div class="d-flex align-items-center gap-3 mb-2"><i class="fas fa-map-marker-alt" style="color: #c9a96e;"></i><span style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">Yelo Lane, General Taino Street, Pagsanjan, Laguna</span></div>
+                            <div class="d-flex align-items-center gap-3 mb-2"><i class="fas fa-phone" style="color: #c9a96e;"></i><span style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">+63 912 345 6789</span></div>
+                            <div class="d-flex align-items-center gap-3"><i class="fas fa-envelope" style="color: #c9a96e;"></i><span style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">hello@lemaison.com</span></div>
                         </div>
                     </div>
                 </div>
@@ -452,165 +344,67 @@
         </div>
     </section>
 
-    <!-- ═══ MAP & LOCATION ═══ -->
-    <section class="py-5 mx-0 mx-md-4 mt-5 mb-5">
-        <div class="container-fluid px-lg-5">
-            <div class="row g-0 rounded-4 overflow-hidden"
-                style="box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 1px solid rgba(139, 99, 75,0.08);">
-                <div class="col-md-6 d-flex flex-column justify-content-center p-5 text-dark"
-                    style="background-color: #ffffff;">
-                    <h2 class="mb-4" style="font-family: 'Georgia', serif; font-size: 2.5rem; color: var(--text-main);">
-                        Visit Le Maison</h2>
 
-                    <div class="d-flex align-items-start mb-4">
-                        <i class="fas fa-map-marker-alt mt-1 me-3"
-                            style="font-size: 1.5rem; color: var(--primary-color);"></i>
-                        <div>
-                            <h5 style="font-weight: bold; margin-bottom: 0.25rem; color: var(--text-main);">Our Location
-                            </h5>
-                            <p style="color: var(--text-muted); margin: 0;">Yelo Lane, General Taino
-                                Street<br>Pagsanjan, Laguna, Philippines</p>
-                        </div>
-                    </div>
 
-                    <div class="d-flex align-items-start mb-4">
-                        <i class="fas fa-clock mt-1 me-3" style="font-size: 1.5rem; color: var(--primary-color);"></i>
-                        <div>
-                            <h5 style="font-weight: bold; margin-bottom: 0.25rem; color: var(--text-main);">Opening
-                                Hours</h5>
-                            <p style="color: var(--text-muted); margin: 0;">Monday - Sunday<br>8:00 AM - 10:00 PM</p>
-                        </div>
-                    </div>
-
-                    <div class="d-flex align-items-start mb-4">
-                        <i class="fas fa-phone mt-1 me-3" style="font-size: 1.5rem; color: var(--primary-color);"></i>
-                        <div>
-                            <h5 style="font-weight: bold; margin-bottom: 0.25rem; color: var(--text-main);">Contact Us
-                            </h5>
-                            <p style="color: var(--text-muted); margin: 0;">+63 (912) 345-6789<br>hello@lemaison.com</p>
-                        </div>
-                    </div>
-
-                    <div class="mt-3">
-                        <a href="{{ url_for('main.reserve') }}"
-                            class="btn rounded-pill px-5 py-3 fw-bold text-white btn-premium"
-                            style="font-size: 1rem; width: 100%; display: inline-block;">Book
-                            a Table</a>
-                    </div>
-                </div>
-                <!-- Google Maps Embed -->
-                <div class="col-md-6 p-0" style="min-height: 400px;">
-                    <iframe
-                        src="https://maps.google.com/maps?q=Le%20Maison%20de%20Yelo%20Lane,%20General%20Taino%20Street,%20Pagsanjan,%20Laguna,%20Philippines&t=&z=16&ie=UTF8&iwloc=&output=embed"
-                        width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"
-                        referrerpolicy="no-referrer-when-downgrade">
-                    </iframe>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ═══ CALL TO ACTION ═══ -->
-    <section
-        style="position: relative; width: 100vw; max-width: 100vw; overflow: hidden; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw;">
-        <!-- Background -->
-        <div style="position: absolute; inset: 0; z-index: 0;">
-            <div
-                style="position: absolute; inset: 0; background-image: url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=75&w=1600&auto=format&fit=crop'); background-size: cover; background-position: center;">
-            </div>
-            <div
-                style="position: absolute; inset: 0; background: linear-gradient(135deg, rgba(62,39,35,0.92) 0%, rgba(93,64,55,0.88) 50%, rgba(62,39,35,0.92) 100%);">
-            </div>
-        </div>
-
-        <!-- Content -->
-        <div style="position: relative; z-index: 1; text-align: center; padding: 6rem 2rem;">
-            <div style="max-width: 700px; margin: 0 auto;">
-                <div
-                    style="display: inline-block; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 50px; padding: 0.5rem 1.5rem; margin-bottom: 1.5rem;">
-                    <span
-                        style="color: rgba(255,255,255,0.85); font-size: 0.8rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;"><i
-                            class="fas fa-calendar-alt me-2"></i>Reserve Your Experience</span>
-                </div>
-                <h2
-                    style="font-family: 'Georgia', serif; font-size: 3.2rem; color: #ffffff; font-weight: 800; line-height: 1.15; margin-bottom: 1.5rem; text-shadow: 0 2px 20px rgba(0,0,0,0.3);">
-                    Your Table Awaits at<br>
-                    <span style="color: #a17860;">Le Maison</span>
-                </h2>
-                <p
-                    style="color: rgba(255,255,255,0.7); font-size: 1.15rem; line-height: 1.7; margin-bottom: 2.5rem; max-width: 550px; margin-left: auto; margin-right: auto;">
-                    Whether it's a romantic dinner, a family celebration, or a casual coffee date — we've prepared the
-                    perfect ambiance just for you.
-                </p>
-                <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center align-items-center">
-                    {% if current_user.is_authenticated %}
-                    <a href="{{ url_for('main.reserve') }}"
-                        class="btn rounded-pill px-5 py-3 fw-bold text-white shadow-lg"
-                        onclick="clearReservationSession()"
-                        style="background: linear-gradient(135deg, #8b634b 0%, #a17860 100%); font-size: 1.05rem; letter-spacing: 1px; border: none; min-width: 260px; transition: all 0.3s ease;"
-                        onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 30px rgba(139, 99, 75, 0.4)';"
-                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)';">
-                        <i class="fas fa-calendar-check me-2"></i>Book a Table Now
-                    </a>
-                    <a href="{{ url_for('main.menu_page') }}" class="btn rounded-pill px-5 py-3 fw-bold"
-                        style="background: transparent; color: #ffffff; font-size: 1.05rem; letter-spacing: 1px; border: 2px solid rgba(255,255,255,0.3); min-width: 260px; transition: all 0.3s ease;"
-                        onmouseover="this.style.borderColor='rgba(255,255,255,0.6)'; this.style.background='rgba(255,255,255,0.08)'; this.style.transform='translateY(-3px)';"
-                        onmouseout="this.style.borderColor='rgba(255,255,255,0.3)'; this.style.background='transparent'; this.style.transform='translateY(0)';">
-                        <i class="fas fa-utensils me-2"></i>Explore Menu
-                    </a>
-                    {% else %}
-                    <a href="javascript:void(0)" onclick="$('#termsModal').modal('show'); window.authIntent = 'signup';"
-                        class="btn rounded-pill px-5 py-3 fw-bold text-white shadow-lg"
-                        style="background: linear-gradient(135deg, #8b634b 0%, #a17860 100%); font-size: 1.05rem; letter-spacing: 1px; border: none; min-width: 260px; transition: all 0.3s ease;"
-                        onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 30px rgba(139, 99, 75, 0.4)';"
-                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)';">
-                        <i class="fas fa-user-plus me-2"></i>Join Le Maison
-                    </a>
-                    <a href="{{ url_for('main.menu_page') }}" class="btn rounded-pill px-5 py-3 fw-bold"
-                        style="background: transparent; color: #ffffff; font-size: 1.05rem; letter-spacing: 1px; border: 2px solid rgba(255,255,255,0.3); min-width: 260px; transition: all 0.3s ease;"
-                        onmouseover="this.style.borderColor='rgba(255,255,255,0.6)'; this.style.background='rgba(255,255,255,0.08)'; this.style.transform='translateY(-3px)';"
-                        onmouseout="this.style.borderColor='rgba(255,255,255,0.3)'; this.style.background='transparent'; this.style.transform='translateY(0)';">
-                        <i class="fas fa-utensils me-2"></i>View Our Menu
-                    </a>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </section>
 </main>
 
-<style>
-    @keyframes bounce {
+<!-- ═══ HOMEPAGE SCRIPTS ═══ -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Wait for jQuery and libraries
+    var initInterval = setInterval(function() {
+        if (typeof jQuery !== 'undefined' && typeof AOS !== 'undefined') {
+            clearInterval(initInterval);
+            initHomepage();
+        }
+    }, 100);
 
-        0%,
-        20%,
-        50%,
-        80%,
-        100% {
-            transform: translateX(-50%) translateY(0);
+    function initHomepage() {
+        // Initialize AOS
+        AOS.init({ duration: 800, easing: 'slide', delay: 0, once: true });
+
+        // Initialize Owl Carousel
+        if ($.fn.owlCarousel) {
+            $('.home-slider').owlCarousel({
+                items: 1, loop: true, autoplay: true, autoplayTimeout: 5000,
+                autoplayHoverPause: true, nav: false, dots: true,
+                animateOut: 'fadeOut', animateIn: 'fadeIn',
+                smartSpeed: 1000, mouseDrag: true, touchDrag: true
+            });
         }
 
-        40% {
-            transform: translateX(-50%) translateY(-12px);
+        // Counter animation with Waypoints
+        var counted = false;
+        function startCounter() {
+            if (counted) return;
+            counted = true;
+            $('.counter-number').each(function() {
+                var $this = $(this), target = parseInt($this.attr('data-count'));
+                var duration = 2000, start = 0, startTime = null;
+                function animate(timestamp) {
+                    if (!startTime) startTime = timestamp;
+                    var progress = Math.min((timestamp - startTime) / duration, 1);
+                    var eased = 1 - Math.pow(1 - progress, 3);
+                    $this.text(Math.floor(eased * target).toLocaleString() + (target >= 1000 ? '+' : '+'));
+                    if (progress < 1) requestAnimationFrame(animate);
+                }
+                requestAnimationFrame(animate);
+            });
         }
 
-        60% {
-            transform: translateX(-50%) translateY(-6px);
+        // Waypoints fallback — use IntersectionObserver if Waypoints not loaded
+        var counterEl = document.getElementById('counterSection');
+        if (counterEl) {
+            if (typeof Waypoint !== 'undefined') {
+                new Waypoint({ element: counterEl, handler: function() { startCounter(); }, offset: '90%' });
+            } else {
+                var observer = new IntersectionObserver(function(entries) {
+                    entries.forEach(function(entry) { if (entry.isIntersecting) { startCounter(); observer.disconnect(); } });
+                }, { threshold: 0.3 });
+                observer.observe(counterEl);
+            }
         }
     }
-
-    .bestseller-card img {
-        transition: transform 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
-    }
-
-    .bestseller-card:hover img {
-        transform: scale(1.08) !important;
-    }
-
-    /* Target specific hero link hover instead of all section links */
-    .hero-btn:hover {
-        background: #d4a862 !important;
-        color: #1a1a1a !important;
-    }
-</style>
+});
+</script>
 {% endblock %}

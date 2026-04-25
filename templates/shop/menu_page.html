@@ -77,53 +77,7 @@
                 </div>
             </div>
 
-            <!-- Availability Section -->
-            <div class="filter-section">
-                <div class="filter-title-wrap" onclick="this.parentElement.classList.toggle('collapsed')">
-                    <h5 class="filter-title">Availability</h5>
-                    <i class="fas fa-chevron-down filter-arrow"></i>
-                </div>
-                <div class="filter-content">
-                    <label class="filter-checkbox-item">
-                        <input type="checkbox" id="filterInStock" checked onchange="applyFilters()">
-                        <span class="filter-label">In stock</span>
-                        <span class="filter-count">({{ menu_items|selectattr('is_available', 'equalto',
-                            true)|list|length
-                            }})</span>
-                    </label>
-                    <label class="filter-checkbox-item">
-                        <input type="checkbox" id="filterOutOfStock" checked onchange="applyFilters()">
-                        <span class="filter-label">Out of stock</span>
-                        <span class="filter-count">({{ menu_items|selectattr('is_available', 'equalto',
-                            false)|list|length
-                            }})</span>
-                    </label>
-                </div>
-            </div>
 
-            <!-- Price Section -->
-            <div class="filter-section">
-                <div class="filter-title-wrap" onclick="this.parentElement.classList.toggle('collapsed')">
-                    <h5 class="filter-title">Price</h5>
-                    <i class="fas fa-chevron-down filter-arrow"></i>
-                </div>
-                <div class="filter-content">
-                    <div class="price-range-inputs">
-                        <div class="price-input-box">
-                            <span>₱</span>
-                            <input type="number" id="priceFrom" placeholder="From" onchange="applyFilters()">
-                        </div>
-                        <div class="price-input-box">
-                            <span>₱</span>
-                            <input type="number" id="priceTo" placeholder="To" onchange="applyFilters()">
-                        </div>
-                    </div>
-                    <div class="mt-4">
-                        <button class="btn w-100 text-white fw-bold" onclick="resetFilters()"
-                            style="background: #8B634B; border-radius: 6px; padding: 0.6rem;">Clear Filters</button>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 
