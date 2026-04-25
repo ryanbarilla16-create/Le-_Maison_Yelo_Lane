@@ -30,8 +30,7 @@
 
                 <div class="d-flex align-items-center justify-content-start mb-4">
                     <input type="checkbox" id="agreeTermsCheckbox"
-                        style="width: 18px !important; height: 18px !important; margin: 0; margin-right: 12px; cursor: pointer; flex-shrink: 0; accent-color: #8B634B;"
-                        onchange="document.getElementById('proceedAuthBtn').disabled = !this.checked">
+                        style="width: 18px !important; height: 18px !important; margin: 0; margin-right: 12px; cursor: pointer; flex-shrink: 0; accent-color: #8B634B;">
                     <label class="form-check-label text-dark fw-bold mb-0" for="agreeTermsCheckbox"
                         style="cursor: pointer; font-size: 0.95rem;">
                         I have read and agree to the Terms & Conditions
@@ -39,7 +38,7 @@
                 </div>
 
                 <button id="proceedAuthBtn" class="btn w-100 rounded-pill py-3 fw-bold text-white shadow"
-                    style="background: linear-gradient(135deg, #5D4037, #795548); border: none; transition: all 0.3s ease; cursor: not-allowed;" disabled
+                    style="background: linear-gradient(135deg, #5D4037, #795548); border: none; transition: all 0.3s ease; cursor: not-allowed; opacity: 0.6;" disabled
                     onclick="proceedToAuth()"
                     onmouseover="if(!this.disabled) { this.style.transform='translateY(-2px)'; this.style.background='linear-gradient(135deg, #3E2723, #5D4037)'; this.style.boxShadow='0 8px 20px rgba(93, 64, 55, 0.3)'; }"
                     onmouseout="if(!this.disabled) { this.style.transform='translateY(0)'; this.style.background='linear-gradient(135deg, #5D4037, #795548)'; this.style.boxShadow='0 4px 14px rgba(93, 64, 55, 0.25)'; }">
@@ -68,9 +67,12 @@
         btn.style.cursor = 'not-allowed';
     });
 
-    // Handle button opacity on checkbox change
+    // Handle button state on checkbox change
     document.getElementById('agreeTermsCheckbox').addEventListener('change', function() {
-        document.getElementById('proceedAuthBtn').style.opacity = this.checked ? '1' : '0.6';
+        const btn = document.getElementById('proceedAuthBtn');
+        btn.disabled = !this.checked;
+        btn.style.opacity = this.checked ? '1' : '0.6';
+        btn.style.cursor = this.checked ? 'pointer' : 'not-allowed';
     });
 </script>
 
