@@ -275,9 +275,16 @@ def send_email(to_email, subject, html_content):
             try:
                 from sendgrid import SendGridAPIClient
                 from sendgrid.helpers.mail import Mail as SGMail
+                
+                # Handle Flask-Mail tuple format (name, email)
+                if isinstance(sender, tuple) and len(sender) == 2:
+                    sg_sender = (sender[1], sender[0]) # SendGrid expects (email, name)
+                else:
+                    sg_sender = sender
+
                 sg = SendGridAPIClient(sendgrid_api_key)
                 msg = SGMail(
-                    from_email=sender,
+                    from_email=sg_sender,
                     to_emails=to_email,
                     subject=subject,
                     html_content=html_content
