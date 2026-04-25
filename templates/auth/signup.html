@@ -98,25 +98,43 @@
                             maxlength="20" required value="{{ request.form.get('username', '') }}">
                     </div>
                     <div class="col-12 col-md-6">
+                        <select name="gender" id="gender" class="form-control rounded-3 p-3 border-opacity-50" required>
+                            <option value="" disabled {% if not request.form.get('gender') %}selected{% endif %}>Select Gender</option>
+                            <option value="Male" {% if request.form.get('gender') == 'Male' %}selected{% endif %}>Male</option>
+                            <option value="Female" {% if request.form.get('gender') == 'Female' %}selected{% endif %}>Female</option>
+                            <option value="Other" {% if request.form.get('gender') == 'Other' %}selected{% endif %}>Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-12 col-md-6">
                         {% set today = get_ph_time().date() %}
                         {% set min_date = (today.year - 80) ~ "-01-01" %}
                         {% set max_date = today.strftime('%Y-%m-%d') %}
                         <div class="position-relative">
                             <input type="date" id="birthday" name="birthday"
                                 class="form-control rounded-3 p-3 border-opacity-50" required min="{{ min_date }}"
-                                max="{{ max_date }}" value="{{ request.form.get('birthday', '') }}" title="Birthday">
+                                max="{{ max_date }}" value="{{ request.form.get('birthday', '') }}" title="Birthday" onchange="calculateAndSetAge()">
                         </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <input type="number" id="age" name="age"
+                            class="form-control rounded-3 p-3 border-opacity-50" placeholder="Age" readonly
+                            value="{{ request.form.get('age', '') }}">
                     </div>
                 </div>
 
                 <div class="row g-2 mb-4">
-                    <div class="col-12 col-md-6 position-relative">
-                        <input type="password" id="password" name="password"
-                            class="form-control rounded-3 p-3 border-opacity-50 password-input" placeholder="Password"
-                            minlength="6" required oninput="checkStrength()">
-                        <i class="fas fa-eye text-muted toggle-password"
-                            onclick="togglePasswordVisibility('password', this)"
-                            style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); cursor: pointer; color: #b38b6d !important;"></i>
+                    <div class="col-12 col-md-6">
+                        <div class="position-relative">
+                            <input type="password" id="password" name="password"
+                                class="form-control rounded-3 p-3 border-opacity-50 password-input" placeholder="Password"
+                                minlength="6" required oninput="checkStrength()">
+                            <i class="fas fa-eye text-muted toggle-password"
+                                onclick="togglePasswordVisibility('password', this)"
+                                style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); cursor: pointer; color: #b38b6d !important;"></i>
+                        </div>
                         <div class="password-strength mt-1"
                             style="height: 3px; background: rgba(139, 99, 75, 0.2); border-radius: 2px; overflow: hidden;">
                             <div id="strength-bar" class="strength-bar h-100" style="width: 0%; transition: 0.3s ease;">
@@ -126,13 +144,15 @@
                             style="font-size: 0.70rem; color: #8b634b; display: none; text-align: right;">Password
                             Strength</div>
                     </div>
-                    <div class="col-12 col-md-6 position-relative">
-                        <input type="password" id="confirm_password" name="confirm_password"
-                            class="form-control rounded-3 p-3 border-opacity-50 password-input"
-                            placeholder="Confirm Password" required>
-                        <i class="fas fa-eye text-muted toggle-password"
-                            onclick="togglePasswordVisibility('confirm_password', this)"
-                            style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); cursor: pointer; color: #b38b6d !important;"></i>
+                    <div class="col-12 col-md-6">
+                        <div class="position-relative">
+                            <input type="password" id="confirm_password" name="confirm_password"
+                                class="form-control rounded-3 p-3 border-opacity-50 password-input"
+                                placeholder="Confirm Password" required>
+                            <i class="fas fa-eye text-muted toggle-password"
+                                onclick="togglePasswordVisibility('confirm_password', this)"
+                                style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); cursor: pointer; color: #b38b6d !important;"></i>
+                        </div>
                     </div>
                 </div>
 
@@ -326,7 +346,27 @@
                 this.style.border = '';
             });
         }
+        
+        // Initial age calculation if birthday is already set
+        calculateAndSetAge();
     });
+
+    function calculateAndSetAge() {
+        const birthdayStr = document.getElementById('birthday').value;
+        if (!birthdayStr) {
+            document.getElementById('age').value = '';
+            return;
+        }
+        
+        const bday = new Date(birthdayStr);
+        const today = new Date();
+        let age = today.getFullYear() - bday.getFullYear();
+        const m = today.getMonth() - bday.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < bday.getDate())) {
+            age--;
+        }
+        document.getElementById('age').value = age >= 0 ? age : 0;
+    }
 
     function showFieldError(fieldId, msg) {
         const input = document.getElementById(fieldId);

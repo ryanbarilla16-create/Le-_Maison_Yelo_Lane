@@ -17,6 +17,8 @@ class User(db.Model, UserMixin):
     birthday = db.Column(db.Date, nullable=True)
     password_hash = db.Column(db.String(256), nullable=False)
     profile_picture_url = db.Column(db.String(500), nullable=True)
+    age = db.Column(db.Integer, nullable=True)
+    gender = db.Column(db.String(20), nullable=True)
     
     # Status and Roles
     status = db.Column(db.String(20), default='PENDING') # PENDING, ACTIVE, REJECTED

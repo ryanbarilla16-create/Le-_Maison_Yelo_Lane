@@ -77,6 +77,8 @@ def signup():
         password = request.form.get('password', '')
         confirm_password = request.form.get('confirm_password', '')
         terms = request.form.get('terms')
+        gender = request.form.get('gender', '').strip()
+        age_val = request.form.get('age', '')
 
         if not all([first_name, last_name, username, email, phone_number, birthday_str, password, confirm_password, terms]):
             flash("All required fields must be filled and terms accepted.", "danger")
@@ -121,7 +123,8 @@ def signup():
 
         new_user = User(
             first_name=first_name, middle_name=middle_name, last_name=last_name,
-            username=username, email=email, phone_number=phone_number, birthday=birthday, status='PENDING'
+            username=username, email=email, phone_number=phone_number, birthday=birthday, 
+            status='PENDING', gender=gender, age=int(age_val) if age_val else None
         )
         new_user.set_password(password)
         
