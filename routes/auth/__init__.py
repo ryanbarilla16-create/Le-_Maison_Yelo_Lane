@@ -163,12 +163,9 @@ def signup():
         </div>
         """
         
-        app_obj = current_app._get_current_object()
-        threading.Thread(
-            target=_send_email_async_worker,
-            args=(app_obj, email, 'Le Maison Yelo Lane - Your OTP Verification Code', html_msg),
-            daemon=True,
-        ).start()
+        # Send OTP via Gmail (Sync for debugging)
+        from utils import send_email
+        send_email(email, 'Le Maison Yelo Lane - Your OTP Verification Code', html_msg)
         flash(f"An OTP has been created and is being sent to {email}. Please check your inbox.", "success")
         
         return redirect(url_for('main.verify_otp', user_id=new_user.id))
@@ -246,12 +243,9 @@ def resend_otp(user_id):
     </div>
     """
     
-    app_obj = current_app._get_current_object()
-    threading.Thread(
-        target=_send_email_async_worker,
-        args=(app_obj, user.email, 'Le Maison Yelo Lane - Your New OTP Code', html_msg),
-        daemon=True,
-    ).start()
+    # Send OTP via Gmail (Sync for debugging)
+    from utils import send_email
+    send_email(user.email, 'Le Maison Yelo Lane - Your New OTP Code', html_msg)
     flash(f"A new OTP has been created and is being sent to {user.email}. Please check your inbox.", "success")
     
     return redirect(url_for('main.verify_otp', user_id=user.id))
@@ -306,12 +300,9 @@ def social_auth():
                 </div>
             </div>
             """
-            app_obj = current_app._get_current_object()
-            threading.Thread(
-                target=_send_email_async_worker,
-                args=(app_obj, user.email, 'Verify your account', html_msg),
-                daemon=True,
-            ).start()
+            # Send OTP (Sync for debugging)
+            from utils import send_email
+            send_email(user.email, 'Verify your account', html_msg)
             flash(f"Please verify your account. An OTP was sent to {user.email}.", "info")
             return jsonify({"success": True, "redirect": url_for('main.verify_otp', user_id=user.id)})
 
@@ -368,12 +359,9 @@ def social_auth():
         </div>
     </div>
     """
-    app_obj = current_app._get_current_object()
-    threading.Thread(
-        target=_send_email_async_worker,
-        args=(app_obj, email, 'Verify your account', html_msg),
-        daemon=True,
-    ).start()
+    # Send OTP (Sync for debugging)
+    from utils import send_email
+    send_email(email, 'Verify your account', html_msg)
     
     flash(f"Account created via {provider}! An OTP has been sent to {email}. Please verify to continue.", "info")
     return jsonify({"success": True, "redirect": url_for('main.verify_otp', user_id=new_user.id)})
@@ -462,12 +450,9 @@ def forgot_password():
         </div>
         """
         
-        app_obj = current_app._get_current_object()
-        threading.Thread(
-            target=_send_email_async_worker,
-            args=(app_obj, email, 'Le Maison Yelo Lane - Password Reset Code', html_msg),
-            daemon=True,
-        ).start()
+        # Send OTP (Sync for debugging)
+        from utils import send_email
+        send_email(email, 'Le Maison Yelo Lane - Password Reset Code', html_msg)
         flash(f"An OTP has been created and is being sent to {email}. Please check your inbox.", "success")
             
         session['reset_user_id'] = user.id
@@ -551,12 +536,9 @@ def resend_reset_otp(user_id):
         </div>
         """
         
-        app_obj = current_app._get_current_object()
-        threading.Thread(
-            target=_send_email_async_worker,
-            args=(app_obj, user.email, 'Le Maison Yelo Lane - New Password Reset Code', html_msg),
-            daemon=True,
-        ).start()
+        # Send OTP (Sync for debugging)
+        from utils import send_email
+        send_email(user.email, 'Le Maison Yelo Lane - New Password Reset Code', html_msg)
         flash(f"A new OTP has been created and is being sent to {user.email}. Please check your inbox.", "success")
             
         return redirect(url_for('main.verify_reset_otp', user_id=user.id))
