@@ -527,7 +527,7 @@
             <i class="fas fa-coffee"></i>
             <span class="brand-text">
                 {% if current_user.role|upper in ['CASHIER', 'STAFF'] %}Le Maison POS
-                {% elif current_user.role|upper in ['INVENTORY_STAFF', 'INVENTORY'] %}Le Maison Inventory
+                {% elif current_user.role|upper in ['INVENTORY_STAFF', 'INVENTORY', 'ADMIN'] %}Le Maison Inventory
                 {% elif current_user.role|upper == 'KITCHEN' %}Le Maison Kitchen
                 {% elif current_user.role|upper == 'RIDER' %}Le Maison Deliveries
                 {% else %}Le Maison Admin{% endif %}
@@ -633,7 +633,7 @@
                             class="fas fa-truck"></i><span class="sidebar-label">Deliveries</span></a></li>
                 {% endif %}
 
-                {% if current_user.role|upper in ['INVENTORY_STAFF', 'INVENTORY'] %}
+                {% if current_user.role|upper in ['INVENTORY_STAFF', 'INVENTORY', 'ADMIN'] %}
                 <li><a href="{{ url_for('inventory_portal.inventory_dashboard') }}"
                         class="{% if request.endpoint == 'inventory_portal.inventory_dashboard' %}active{% endif %}"><i
                             class="fas fa-boxes-stacked"></i><span class="sidebar-label">Inventory Master</span></a>

@@ -208,7 +208,7 @@ def admin_login():
         if role_upper == 'CASHIER':
             return redirect(url_for('admin.orders'))
         elif role_upper in ['INVENTORY_STAFF', 'INVENTORY']:
-            return redirect(url_for('admin.inventory'))
+            return redirect(url_for('inventory_portal.inventory_dashboard'))
         elif role_upper == 'KITCHEN':
             return redirect(url_for('admin.kitchen_view'))
         elif role_upper == 'RIDER':
@@ -226,7 +226,7 @@ def admin_login():
             if role_upper == 'CASHIER':
                 return redirect(url_for('admin.orders'))
             elif role_upper in ['INVENTORY_STAFF', 'INVENTORY']:
-                return redirect(url_for('admin.inventory'))
+                return redirect(url_for('inventory_portal.inventory_dashboard'))
             elif role_upper == 'KITCHEN':
                 return redirect(url_for('admin.kitchen_view'))
             elif role_upper == 'RIDER':
@@ -1377,185 +1377,47 @@ def update_reservation(res_id):
     flash(f"Reservation #{res.id} updated to {new_status}.", "success")
     return redirect(url_for('admin.reservations'))
 
-# ─── INVENTORY ───────────────────────────────────
-@admin_bp.route('/inventory')
-@login_required
-@admin_required
-def inventory():
-    page_items = request.args.get('page_items', 1, type=int)
-    page_ingredients = request.args.get('page_ingredients', 1, type=int)
-    
-    # Counts using SQL instead of Python loops
-    total_items = MenuItem.query.count()
-    out_of_stock = MenuItem.query.filter_by(is_available=False).count()
-    total_ingredients = Ingredient.query.count()
-    low_stock_count = db.session.query(func.count(Ingredient.id)).filter(Ingredient.stock_qty <= Ingredient.reorder_level).scalar()
-    
-    today = date.today()
-    seven_days_later = today + timedelta(days=7)
-    expiring_soon_count = db.session.query(func.count(Ingredient.id)).filter(
-        Ingredient.expiration_date.between(today, seven_days_later)
-    ).scalar()
-    
-    # Filters
-    q_ing = request.args.get('q_ing', '').strip()
+# REDUNDANT: Admin inventory is now handled via inventory_portal.inventory_dashboard
+# @admin_bp.route('/inventory')
+# @login_required
+# @admin_required
+# def inventory():
+#     ...
+#     cats_by_sup = defaultdict(list)
+#     for s_id, cat in sup_mappings:
+#         cats_by_sup[s_id].append(cat)
+# 
+#     for sup in all_suppliers:
+#         sup.supplied_menu_categories = cats_by_sup.get(sup.id, [])
+# 
+#     return render_template('admin/inventory.html', 
+#         grouped_items=grouped_items, 
+#         total_items=total_items, 
+#         out_of_stock=out_of_stock, 
+#         ingredients=ingredients_paginated,
+#         grouped_ingredients=grouped_ingredients,
+#         suppliers=all_suppliers, 
+#         menu_categories=menu_categories,
+#         low_stock_count=low_stock_count,
+#         expiring_soon_count=expiring_soon_count,
+#         total_ingredients=total_ingredients,
+#         all_ingredients_raw=all_ingredients_raw,
+#         today=today)
 
-    # Fetch all ingredients
-    ingredients_query = Ingredient.query
-    if q_ing:
-        ingredients_query = ingredients_query.filter(Ingredient.name.ilike(f'%{q_ing}%'))
-
-    ingredients_query = ingredients_query.order_by(Ingredient.category, Ingredient.name)
-    all_ingredients = ingredients_query.all()
-    
-    # ⚡ OPTIMIZED: Fetch all mappings in a single query instead of a loop
-    ing_ids = [ing.id for ing in all_ingredients]
-    mappings = (
-        db.session.query(MenuItemIngredient.ingredient_id, MenuItem.category)
-        .join(MenuItem, MenuItem.id == MenuItemIngredient.menu_item_id)
-        .filter(MenuItemIngredient.ingredient_id.in_(ing_ids))
-        .distinct()
-        .all()
-    )
-    from collections import defaultdict
-    cats_by_ing = defaultdict(list)
-    for i_id, cat in mappings:
-        cats_by_ing[i_id].append(cat)
-    
-    for ing in all_ingredients:
-        ing.mapped_menu_categories = cats_by_ing.get(ing.id, [])
-
-    # Get unique menu categories for the dropdown
-    menu_categories = [r[0] for r in db.session.query(MenuItem.category).filter(MenuItem.is_deleted == False).distinct().order_by(MenuItem.category).all()]
-
-    # Fetch all Menu Items for grouping
-    all_menu_items = MenuItem.query.filter_by(is_deleted=False).order_by(MenuItem.category, MenuItem.name).all()
-    
-    # Group menu items by category (ensure sorted for groupby)
-    grouped_items = {}
-    for category, group in groupby(all_menu_items, lambda x: x.category or 'General'):
-        grouped_items[category] = list(group)
-    
-    # Group ingredients by category
-    grouped_ingredients = {}
-    for category, group in groupby(all_ingredients, lambda x: x.category or 'General'):
-        grouped_ingredients[category] = list(group)
-    
-    # Logic for ingredients pagination
-    ingredients_paginated = ingredients_query.paginate(page=page_ingredients, per_page=20)
-    
-    # Fetch suppliers and map their menu category specialties (optimized)
-    all_suppliers = _get_suppliers_cached()
-    all_ingredients_raw = _get_all_ingredients_raw_cached()
-    
-    # ⚡ OPTIMIZED: Bulk fetch supplier specialties
-    sup_ids = [s.id for s in all_suppliers]
-    sup_mappings = (
-        db.session.query(Ingredient.supplier_id, MenuItem.category)
-        .join(MenuItemIngredient, MenuItemIngredient.ingredient_id == Ingredient.id)
-        .join(MenuItem, MenuItem.id == MenuItemIngredient.menu_item_id)
-        .filter(Ingredient.supplier_id.in_(sup_ids))
-        .distinct()
-        .all()
-    )
-    cats_by_sup = defaultdict(list)
-    for s_id, cat in sup_mappings:
-        cats_by_sup[s_id].append(cat)
-
-    for sup in all_suppliers:
-        sup.supplied_menu_categories = cats_by_sup.get(sup.id, [])
-
-    return render_template('admin/inventory.html', 
-        grouped_items=grouped_items, 
-        total_items=total_items, 
-        out_of_stock=out_of_stock, 
-        ingredients=ingredients_paginated,
-        grouped_ingredients=grouped_ingredients,
-        suppliers=all_suppliers, 
-        menu_categories=menu_categories,
-        low_stock_count=low_stock_count,
-        expiring_soon_count=expiring_soon_count,
-        total_ingredients=total_ingredients,
-        all_ingredients_raw=all_ingredients_raw,
-        today=today)
-
-@admin_bp.route('/inventory/generate-po')
-@login_required
-@admin_required
-def generate_purchase_order():
-    # Filter in SQL (fast) instead of loading all ingredients into Python
-    low_stock = (
-        Ingredient.query.options(selectinload(Ingredient.supplier))
-        .filter(Ingredient.stock_qty <= Ingredient.reorder_level)
-        .order_by(Ingredient.name.asc())
-        .all()
-    )
-    
-    if not low_stock:
-        flash("No ingredients are currently low on stock.", "info")
-        return redirect(url_for('admin.inventory'))
-        
-    from fpdf import FPDF
-    import io
-    from datetime import datetime
-    
-    class PDF(FPDF):
-        def header(self):
-            self.set_font('Arial', 'B', 15)
-            self.cell(0, 10, 'Le Maison Yelo Lane - Purchase Order', 0, 1, 'C')
-            self.set_font('Arial', '', 10)
-            self.cell(0, 10, f'Generated on: {datetime.now().strftime("%Y-%m-%d %H:%M")}', 0, 1, 'C')
-            self.ln(10)
-            
-        def footer(self):
-            self.set_y(-15)
-            self.set_font('Arial', 'I', 8)
-            self.cell(0, 10, f'Page {self.page_no()}', 0, 0, 'C')
-
-    pdf = PDF()
-    pdf.add_page()
-    pdf.set_font('Arial', 'B', 12)
-    
-    # Group by supplier
-    suppliers = {}
-    for ing in low_stock:
-        s_name = ing.supplier.name if ing.supplier else "No Supplier Assigned"
-        if s_name not in suppliers:
-            suppliers[s_name] = []
-        suppliers[s_name].append(ing)
-        
-    for s_name, items in suppliers.items():
-        pdf.set_text_color(139, 69, 19) # Brown
-        pdf.cell(0, 10, f'Supplier: {s_name}', 0, 1)
-        pdf.set_text_color(0, 0, 0)
-        pdf.set_font('Arial', 'B', 10)
-        pdf.cell(80, 8, 'Ingredient', 1)
-        pdf.cell(40, 8, 'Current Stock', 1)
-        pdf.cell(40, 8, 'Reorder Level', 1)
-        pdf.cell(30, 8, 'UnitCost', 1)
-        pdf.ln()
-        
-        pdf.set_font('Arial', '', 10)
-        for ing in items:
-            pdf.cell(80, 8, ing.name, 1)
-            pdf.cell(40, 8, f"{ing.stock_qty} {ing.unit}", 1)
-            pdf.cell(40, 8, f"{ing.reorder_level} {ing.unit}", 1)
-            pdf.cell(30, 8, f"P{ing.cost_per_unit}", 1)
-            pdf.ln()
-        pdf.ln(5)
-        
-    output = io.BytesIO()
-    pdf_out = pdf.output(dest='S')
-    output.write(pdf_out)
-    output.seek(0)
-    
-    from flask import send_file
-    return send_file(
-        output,
-        mimetype='application/pdf',
-        as_attachment=True,
-        download_name=f'Purchase_Order_{datetime.now().strftime("%Y%m%d")}.pdf'
-    )
+#         pdf.ln(5)
+#         
+#     output = io.BytesIO()
+#     pdf_out = pdf.output(dest='S')
+#     output.write(pdf_out)
+#     output.seek(0)
+#     
+#     from flask import send_file
+#     return send_file(
+#         output,
+#         mimetype='application/pdf',
+#         as_attachment=True,
+#         download_name=f'Purchase_Order_{datetime.now().strftime("%Y%m%d")}.pdf'
+#     )
 
 @admin_bp.route('/inventory/toggle/<int:item_id>', methods=['POST'])
 @login_required
@@ -1568,7 +1430,7 @@ def toggle_stock(item_id):
     item.is_available = not item.is_available
     db.session.commit()
     flash(f"Stock status toggled for {item.name}.", "success")
-    return redirect(url_for('admin.inventory'))
+    return redirect(url_for('inventory_portal.inventory_dashboard'))
 
 # ─── KITCHEN VIEW ─────────────────────────────────────
 @admin_bp.route('/kitchen')
@@ -2736,71 +2598,11 @@ def _sync_supplier_catalog(supplier_id):
         db.session.commit()
 
 # ─── INGREDIENT MANAGEMENT ──────────────────────────
-@admin_bp.route('/ingredients/add', methods=['POST'])
-@login_required
-@admin_required
-def add_ingredient():
-    name = request.form.get('name', '').strip()
-    unit = request.form.get('unit', '').strip()
-    stock_qty = request.form.get('stock_qty', 0, type=float)
-    reorder_level = request.form.get('reorder_level', 10, type=float)
-    cost_per_unit = request.form.get('cost_per_unit', 0, type=float)
-    supplier_id = request.form.get('supplier_id', type=int)
-    exp_date_str = request.form.get('expiration_date')
-    expiration_date = None
-    if exp_date_str:
-        try:
-            expiration_date = datetime.strptime(exp_date_str, '%Y-%m-%d').date()
-        except: pass
-
-    if not name or not unit:
-        flash('Ingredient name and unit are required.', 'danger')
-        return redirect(url_for('admin.inventory', tab='ingredients'))
-    
-    category = request.form.get('category', 'General').strip()
-    
-    ing = Ingredient(
-        name=name, unit=unit, stock_qty=stock_qty, 
-        reorder_level=reorder_level, cost_per_unit=cost_per_unit, 
-        category=category,
-        supplier_id=supplier_id if supplier_id else None,
-        expiration_date=expiration_date
-    )
-    db.session.add(ing)
-    db.session.flush() # Get ID before logging
-    
-    if stock_qty > 0:
-        log_inventory_change(ing.id, 'ADD', stock_qty, 0, "Initial stock on creation")
-    
-    db.session.commit()
-    
-    # Sync supplier catalog
-    if supplier_id:
-        _sync_supplier_catalog(supplier_id)
-        
-    log_audit('CREATE', 'Ingredient', ing.id, f'Added new ingredient: {name}')
-    flash(f'Ingredient "{name}" added successfully!', 'success')
-    return redirect(url_for('admin.inventory', tab='ingredients'))
-
-@admin_bp.route('/ingredients/update/<int:ing_id>', methods=['POST'])
-@login_required
-@admin_required
-def update_ingredient(ing_id):
-    ing = Ingredient.query.get_or_404(ing_id)
-    old_supplier_id = ing.supplier_id
-    ing.name = request.form.get('name', ing.name).strip()
-    ing.unit = request.form.get('unit', ing.unit).strip()
-    ing.stock_qty = request.form.get('stock_qty', float(ing.stock_qty), type=float)
-    ing.reorder_level = request.form.get('reorder_level', float(ing.reorder_level), type=float)
-    ing.cost_per_unit = request.form.get('cost_per_unit', float(ing.cost_per_unit), type=float)
-    ing.category = request.form.get('category', ing.category or 'General').strip()
-    exp_date_str = request.form.get('expiration_date', '').strip()
-    ing.expiration_date = date.fromisoformat(exp_date_str) if exp_date_str else None
-    supplier_id = request.form.get('supplier_id', type=int)
-    ing.supplier_id = supplier_id if supplier_id else None
-    db.session.commit()
-
-    # Sync supplier catalogs (both old and new)
+# @admin_bp.route('/ingredients/add', methods=['POST'])
+# @login_required
+# @admin_required
+# def add_ingredient():
+#     ...
     if supplier_id:
         _sync_supplier_catalog(supplier_id)
     if old_supplier_id and old_supplier_id != supplier_id:
@@ -2832,23 +2634,8 @@ def update_ingredient(ing_id):
     flash(f'Ingredient "{ing.name}" updated!', 'success')
     return redirect(url_for('admin.inventory', tab='ingredients'))
 
-@admin_bp.route('/ingredients/delete/<int:ing_id>', methods=['POST'])
-@login_required
-@admin_required
-def delete_ingredient(ing_id):
-    ing = Ingredient.query.get_or_404(ing_id)
-    MenuItemIngredient.query.filter_by(ingredient_id=ing_id).delete()
-    sup_id = ing.supplier_id
-    db.session.delete(ing)
-    db.session.commit()
-    
-    # Sync supplier catalog after deletion
-    if sup_id:
-        _sync_supplier_catalog(sup_id)
-        
-    log_audit('DELETE', 'Ingredient', ing_id, f'Deleted ingredient: {ing.name}')
-    flash(f'Ingredient "{ing.name}" deleted.', 'success')
-    return redirect(url_for('admin.inventory', tab='ingredients'))
+# @admin_bp.route('/ingredients/delete/<int:ing_id>', methods=['POST'])
+# ...
 
 @admin_bp.route('/ingredients/bulk-delete', methods=['POST'])
 @login_required
@@ -2958,9 +2745,9 @@ def waste_ingredient(ing_id):
         flash('Invalid quantity.', 'danger')
     return redirect(url_for('admin.inventory', tab='ingredients'))
 
-@admin_bp.route('/inventory/audit-logs')
-@login_required
-@admin_required
+# @admin_bp.route('/inventory/audit-logs')
+# @login_required
+# @admin_required
 def inventory_audit_logs():
     page = request.args.get('page', 1, type=int)
     from models import InventoryLog
@@ -3002,7 +2789,7 @@ def add_recipe_ingredient(item_id):
     quantity_needed = request.form.get('quantity_needed', type=float)
     if not ingredient_id or not quantity_needed:
         flash('Please select an ingredient and specify the quantity.', 'danger')
-        return redirect(url_for('admin.inventory'))
+        return redirect(url_for('inventory_portal.inventory_dashboard'))
     existing = MenuItemIngredient.query.filter_by(menu_item_id=item_id, ingredient_id=ingredient_id).first()
     if existing:
         existing.quantity_needed = quantity_needed
@@ -3015,7 +2802,7 @@ def add_recipe_ingredient(item_id):
     _sync_single_item_availability(item_id)
     
     flash('Recipe updated!', 'success')
-    return redirect(url_for('admin.inventory'))
+    return redirect(url_for('inventory_portal.inventory_dashboard'))
 
 @admin_bp.route('/recipe/remove/<int:link_id>', methods=['POST'])
 @login_required
@@ -3030,7 +2817,7 @@ def remove_recipe_ingredient(link_id):
     _sync_single_item_availability(menu_item_id)
     
     flash('Ingredient removed from recipe.', 'success')
-    return redirect(url_for('admin.inventory'))
+    return redirect(url_for('inventory_portal.inventory_dashboard'))
 
 # ─── AVAILABILITY SYNC HELPERS ───────────────────────
 def _sync_single_item_availability(item_id):
@@ -3263,9 +3050,9 @@ def add_ingredient_batch():
     return redirect(url_for('admin.ingredient_batches'))
 
 # ─── INVENTORY AUDIT HISTORY ──────────────────────────────────────
-@admin_bp.route('/inventory/audit', methods=['GET'])
-@login_required
-@admin_required
+# @admin_bp.route('/inventory/audit', methods=['GET'])
+# @login_required
+# @admin_required
 def inventory_audit():
     ing_filter = request.args.get('ingredient_id', type=int)
     action_filter = request.args.get('action', '')

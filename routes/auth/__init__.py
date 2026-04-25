@@ -322,7 +322,7 @@ def social_auth():
         role_upper = user.role.upper() if user.role else ''
         if role_upper == 'ADMIN': redir_url = url_for('admin.overview')
         elif role_upper in ['CASHIER', 'STAFF']: redir_url = url_for('admin.orders')
-        elif role_upper in ['INVENTORY_STAFF', 'INVENTORY']: redir_url = url_for('admin.inventory')
+        elif role_upper in ['INVENTORY_STAFF', 'INVENTORY']: redir_url = url_for('inventory_portal.inventory_dashboard')
         elif role_upper == 'KITCHEN': redir_url = url_for('admin.kitchen_view')
         elif role_upper == 'RIDER': redir_url = url_for('admin.deliveries')
             
@@ -401,7 +401,7 @@ def login():
             elif role_upper in ['CASHIER', 'STAFF']:
                 return redirect(url_for('admin.orders'))
             elif role_upper in ['INVENTORY_STAFF', 'INVENTORY']:
-                return redirect(url_for('admin.inventory'))
+                return redirect(url_for('inventory_portal.inventory_dashboard'))
             elif role_upper == 'KITCHEN':
                 return redirect(url_for('admin.kitchen_view'))
             elif role_upper == 'RIDER':
