@@ -282,18 +282,20 @@ def send_email(to_email, subject, html_content):
                     subject=subject,
                     html_content=html_content
                 )
-                sg.send(msg)
-                print(f"✅ Email sent via SendGrid to {to_email}")
-                return True
+                response = sg.send(msg)
+                if response.status_code in (200, 201, 202):
+                    print(f"✅ Email sent via SendGrid to {to_email}")
+                    return True
+                else:
+                    print(f"❌ SendGrid error {response.status_code}: {response.body}")
             except Exception as e:
-                print(f"❌ SendGrid error: {e}")
-                import traceback
-                traceback.print_exc()
+                print(f"❌ SendGrid exception: {str(e)}")
+                if hasattr(e, 'body'):
+                    print(f"❌ SendGrid error body: {e.body}")
         
         # Fallback to Flask-Mail (e.g. Gmail SMTP)
         try:
             from flask_mail import Message
-            # Use 'mail' key in current_app.extensions
             mail = current_app.extensions.get('mail')
             if mail:
                 msg = Message(
@@ -306,16 +308,12 @@ def send_email(to_email, subject, html_content):
                 print(f"✅ Email sent via Flask-Mail fallback to {to_email}")
                 return True
             else:
-                print("❌ Flask-Mail extension not found in current_app.extensions.")
+                print("❌ Flask-Mail extension not found.")
         except Exception as e:
-            print(f"❌ Flask-Mail error: {e}")
-            import traceback
-            traceback.print_exc()
+            print(f"❌ Flask-Mail error: {str(e)}")
             
     except Exception as e:
-        print(f"❌ Critical error in send_email: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"❌ Critical error in send_email: {str(e)}")
         
     return False
 
