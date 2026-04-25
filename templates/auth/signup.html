@@ -60,17 +60,17 @@
             <form method="POST" action="{{ url_for('main.signup') }}" onsubmit="return validateForm()">
 
                 <div class="row g-2 mb-3">
-                    <div class="col-12 col-md-4">
+                    <div class="col-12 col-md-4 form-field-wrapper">
                         <input type="text" id="first_name" name="first_name"
                             class="form-control rounded-3 p-3 border-opacity-50" placeholder="First Name" required
                             value="{{ request.form.get('first_name', '') }}">
                     </div>
-                    <div class="col-12 col-md-4">
+                    <div class="col-12 col-md-4 form-field-wrapper">
                         <input type="text" id="middle_name" name="middle_name"
                             class="form-control rounded-3 p-3 border-opacity-50" placeholder="Middle (Opt)"
                             value="{{ request.form.get('middle_name', '') }}">
                     </div>
-                    <div class="col-12 col-md-4">
+                    <div class="col-12 col-md-4 form-field-wrapper">
                         <input type="text" id="last_name" name="last_name"
                             class="form-control rounded-3 p-3 border-opacity-50" placeholder="Last Name" required
                             value="{{ request.form.get('last_name', '') }}">
@@ -78,26 +78,26 @@
                 </div>
 
                 <div class="row g-2 mb-3">
-                    <div class="col-12 col-md-6">
+                    <div class="col-12 col-md-6 form-field-wrapper">
                         <input type="email" id="email" name="email" class="form-control rounded-3 p-3 border-opacity-50"
                             placeholder="Email Address" required value="{{ request.form.get('email', '') }}">
                     </div>
-                    <div class="col-12 col-md-6 position-relative">
-                        <input type="text" id="phone_number" name="phone_number"
-                            class="form-control rounded-3 p-3 border-opacity-50" placeholder="Phone (09xxxxxxxxx)"
-                            required maxlength="11" value="{{ request.form.get('phone_number', '') }}">
-                        <div id="phoneError" class="text-danger small mt-1 position-absolute"
-                            style="display: none; padding-left: 5px; font-size: 0.75rem;">Invalid phone number</div>
+                    <div class="col-12 col-md-6 form-field-wrapper">
+                        <div class="position-relative">
+                            <input type="text" id="phone_number" name="phone_number"
+                                class="form-control rounded-3 p-3 border-opacity-50" placeholder="Phone (09xxxxxxxxx)"
+                                required maxlength="11" value="{{ request.form.get('phone_number', '') }}">
+                        </div>
                     </div>
                 </div>
 
                 <div class="row g-2 mb-3">
-                    <div class="col-12 col-md-6">
+                    <div class="col-12 col-md-6 form-field-wrapper">
                         <input type="text" id="username" name="username"
                             class="form-control rounded-3 p-3 border-opacity-50" placeholder="Username" minlength="5"
                             maxlength="20" required value="{{ request.form.get('username', '') }}">
                     </div>
-                    <div class="col-12 col-md-6">
+                    <div class="col-12 col-md-6 form-field-wrapper">
                         <select name="gender" id="gender" class="form-control rounded-3 p-3 border-opacity-50" required>
                             <option value="" disabled {% if not request.form.get('gender') %}selected{% endif %}>Select Gender</option>
                             <option value="Male" {% if request.form.get('gender') == 'Male' %}selected{% endif %}>Male</option>
@@ -107,8 +107,8 @@
                     </div>
                 </div>
 
-                <div class="row g-2 mb-3">
-                    <div class="col-12 col-md-6">
+                <div class="row g-2 mb-2">
+                    <div class="col-12 col-md-6 form-field-wrapper">
                         {% set today = get_ph_time().date() %}
                         {% set min_date = (today.year - 80) ~ "-01-01" %}
                         {% set max_date = today.strftime('%Y-%m-%d') %}
@@ -118,7 +118,7 @@
                                 max="{{ max_date }}" value="{{ request.form.get('birthday', '') }}" title="Birthday" onchange="calculateAndSetAge()">
                         </div>
                     </div>
-                    <div class="col-12 col-md-6">
+                    <div class="col-12 col-md-6 form-field-wrapper">
                         <input type="number" id="age" name="age"
                             class="form-control rounded-3 p-3 border-opacity-50" placeholder="Age" readonly
                             value="{{ request.form.get('age', '') }}">
@@ -126,7 +126,7 @@
                 </div>
 
                 <div class="row g-2 mb-4">
-                    <div class="col-12 col-md-6">
+                    <div class="col-12 col-md-6 form-field-wrapper">
                         <div class="position-relative">
                             <input type="password" id="password" name="password"
                                 class="form-control rounded-3 p-3 border-opacity-50 password-input" placeholder="Password"
@@ -144,7 +144,7 @@
                             style="font-size: 0.70rem; color: #8b634b; display: none; text-align: right;">Password
                             Strength</div>
                     </div>
-                    <div class="col-12 col-md-6">
+                    <div class="col-12 col-md-6 form-field-wrapper">
                         <div class="position-relative">
                             <input type="password" id="confirm_password" name="confirm_password"
                                 class="form-control rounded-3 p-3 border-opacity-50 password-input"
@@ -254,7 +254,7 @@
     }
 
     .password-input {
-        padding-right: 2.5rem !important;
+        padding-right: 3.5rem !important;
     }
 
     .toggle-password {
@@ -262,6 +262,7 @@
         padding: 0.5rem;
         border-radius: 50%;
         transition: background 0.2s ease, color 0.2s ease;
+        z-index: 10;
     }
 
     .toggle-password:hover {
@@ -311,6 +312,24 @@
     /* Form validation error styling */
     input.is-invalid {
         border-color: #dc3545 !important;
+        background-image: none !important; /* Hide default validation icons */
+    }
+    
+    .form-field-wrapper {
+        min-height: 85px;
+        position: relative;
+    }
+    
+    .text-danger.small {
+        font-weight: 500;
+        margin-top: 4px;
+    }
+
+    /* Date picker indicator fix */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+        cursor: pointer;
+        padding: 5px;
+        filter: sepia(50%) saturate(100%) hue-rotate(330deg); /* Match theme */
     }
 </style>
 
@@ -337,13 +356,11 @@
         }
 
         const phoneInput = document.getElementById('phone_number');
-        const phoneError = document.getElementById('phoneError');
 
         if (phoneInput) {
             phoneInput.addEventListener('input', function (e) {
                 this.value = this.value.replace(/[^0-9]/g, '');
-                phoneError.style.display = 'none';
-                this.style.border = '';
+                clearErrors(); // Clear errors when typing
             });
         }
         
@@ -371,19 +388,22 @@
     function showFieldError(fieldId, msg) {
         const input = document.getElementById(fieldId);
         if (!input) return;
+        
+        let container = input.closest('.form-field-wrapper');
+        if (!container) container = input.parentElement;
+
         let errorDiv = document.getElementById(fieldId + '-error');
         if (!errorDiv) {
             errorDiv = document.createElement('div');
             errorDiv.id = fieldId + '-error';
             errorDiv.className = 'text-danger small mt-1';
             errorDiv.style.paddingLeft = '5px';
-            errorDiv.style.fontSize = '0.8rem';
-            input.parentElement.appendChild(errorDiv);
+            errorDiv.style.fontSize = '0.75rem';
+            container.appendChild(errorDiv);
         }
         errorDiv.textContent = msg;
         errorDiv.style.display = 'block';
         input.classList.add('is-invalid');
-        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
     function clearErrors() {
