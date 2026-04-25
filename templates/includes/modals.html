@@ -30,7 +30,8 @@
 
                 <div class="d-flex align-items-center justify-content-start mb-4">
                     <input type="checkbox" id="agreeTermsCheckbox"
-                        style="width: 18px !important; height: 18px !important; margin: 0; margin-right: 12px; cursor: pointer; flex-shrink: 0; accent-color: #8B634B;">
+                        style="width: 18px !important; height: 18px !important; margin: 0; margin-right: 12px; cursor: pointer; flex-shrink: 0; accent-color: #8B634B;"
+                        onchange="toggleTermsButton(this)">
                     <label class="form-check-label text-dark fw-bold mb-0" for="agreeTermsCheckbox"
                         style="cursor: pointer; font-size: 0.95rem;">
                         I have read and agree to the Terms & Conditions
@@ -50,8 +51,21 @@
 </div>
 
 <script>
+    function toggleTermsButton(checkbox) {
+        const btn = document.getElementById('proceedAuthBtn');
+        if (!btn) return;
+        btn.disabled = !checkbox.checked;
+        btn.style.opacity = checkbox.checked ? '1' : '0.6';
+        btn.style.cursor = checkbox.checked ? 'pointer' : 'not-allowed';
+    }
+
     function proceedToAuth() {
-        $('#termsModal').modal('hide');
+        const modalEl = document.getElementById('termsModal');
+        if (modalEl) {
+            const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            modal.hide();
+        }
+
         if (window.authIntent === 'login') {
             window.location.href = "{{ url_for('main.login') }}";
         } else if (window.authIntent === 'signup') {
@@ -59,20 +73,27 @@
         }
     }
 
-    // Reset checkbox on close
-    $('#termsModal').on('hidden.bs.modal', function () {
-        document.getElementById('agreeTermsCheckbox').checked = false;
-        const btn = document.getElementById('proceedAuthBtn');
-        btn.disabled = true;
-        btn.style.cursor = 'not-allowed';
-    });
+    document.addEventListener('DOMContentLoaded', function() {
+        const modalEl = document.getElementById('termsModal');
+        if (modalEl) {
+            modalEl.addEventListener('hidden.bs.modal', function () {
+                const checkbox = document.getElementById('agreeTermsCheckbox');
+                const btn = document.getElementById('proceedAuthBtn');
+                if (checkbox) checkbox.checked = false;
+                if (btn) {
+                    btn.disabled = true;
+                    btn.style.cursor = 'not-allowed';
+                    btn.style.opacity = '0.6';
+                }
+            });
+        }
 
-    // Handle button state on checkbox change
-    document.getElementById('agreeTermsCheckbox').addEventListener('change', function() {
-        const btn = document.getElementById('proceedAuthBtn');
-        btn.disabled = !this.checked;
-        btn.style.opacity = this.checked ? '1' : '0.6';
-        btn.style.cursor = this.checked ? 'pointer' : 'not-allowed';
+        const checkbox = document.getElementById('agreeTermsCheckbox');
+        if (checkbox) {
+            checkbox.addEventListener('change', function() {
+                toggleTermsButton(this);
+            });
+        }
     });
 </script>
 
