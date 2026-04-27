@@ -146,7 +146,7 @@
             <div class="stat-label">Total Ingredients</div>
             <div class="glow-line glow-green"></div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" onclick="filterLowStockOnly()" style="cursor:pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
             <div class="icon-wrap icon-red"><i class="fas fa-triangle-exclamation"></i></div>
             <div class="stat-value" style="color:var(--danger);">{{ low_stock }}</div>
             <div class="stat-label">Low Stock Alerts</div>
@@ -164,7 +164,12 @@
         <div class="section-header" style="flex-wrap: wrap; gap: 15px;">
             <h2><i class="fas fa-list" style="color:var(--primary);margin-right:8px;"></i>Ingredient Stock Levels</h2>
             <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-                <select id="ingredientCategoryFilter" onchange="filterIngredients(this.value)" style="padding:6px 10px; border-radius:8px; border:1px solid rgba(93,64,55,0.2); font-size:0.85rem; background:white;">
+                <div style="position:relative;">
+                    <i class="fas fa-search" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:0.8rem;"></i>
+                    <input type="text" id="dashboardSearch" placeholder="Search ingredient..." oninput="applyDashboardFilter()" 
+                           style="padding:6px 12px 6px 35px; border-radius:8px; border:1px solid rgba(93,64,55,0.2); font-size:0.85rem; width:200px;">
+                </div>
+                <select id="ingredientCategoryFilter" onchange="applyDashboardFilter()" style="padding:6px 10px; border-radius:8px; border:1px solid rgba(93,64,55,0.2); font-size:0.85rem; background:white;">
                     <option value="ALL">All Categories</option>
                     {% for cat in grouped_ingredients.keys() %}
                     <option value="{{ cat|replace(' ', '-')|lower }}">{{ cat }}</option>
@@ -221,8 +226,9 @@
                     <td colspan="7" style="padding:10px 16px; font-weight:700; color:var(--primary); text-transform:uppercase; font-size:0.8rem; letter-spacing:1px;">{{ category }}</td>
                 </tr>
                 {% for ing in items %}
-                {% set pct = [(ing.stock_qty / (ing.reorder_level * 3) * 100)|int, 100]|min if ing.reorder_level and ing.reorder_level > 0 else 50 %}
-                {% set is_low = ing.stock_qty <= ing.reorder_level %}
+                {% set pct = [(ing.stock_qty|float / (ing.reorder_level|float) * 100)|int, 100]|min if ing.reorder_level and ing.reorder_level|float > 0 else 50 %}
+                {% set is_critical = ing.stock_qty|float <= (ing.reorder_level|float * 0.5) %}
+                {% set is_running_low = (ing.stock_qty|float <= ing.reorder_level|float) and not is_critical %}
                 <tr class="ing-row" data-cat="{{ category|replace(' ', '-')|lower }}">
                     <td class="ingredient-name">{{ ing.name }}</td>
                     <td><span class="tag-unit">{{ ing.unit }}</span></td>
@@ -231,19 +237,21 @@
                             <div class="stock-bar">
                                 <div class="stock-bar-fill"
                                     style="width:{{ pct }}%;
-                                    background:{{ 'linear-gradient(90deg,#c62828,#ef9a9a)' if is_low else 'linear-gradient(90deg,#2e7d32,#81c784)' }};"></div>
+                                    background:{{ 'linear-gradient(90deg,#c62828,#ef9a9a)' if is_critical else ('linear-gradient(90deg,#e65100,#ffb74d)' if is_running_low else 'linear-gradient(90deg,#2e7d32,#81c784)') }};"></div>
                             </div>
                         </div>
                     </td>
-                    <td class="stock-qty" style="color:{{ 'var(--danger)' if is_low else 'var(--primary)' }};">
+                    <td class="stock-qty" style="color:{{ 'var(--danger)' if is_critical else ('var(--warning)' if is_running_low else 'var(--primary)') }};">
                         {{ ing.stock_qty|float|round(1) }}
                     </td>
                     <td style="color:var(--muted); font-size:0.82rem;">≤ {{ ing.reorder_level|float|round(1) }}</td>
                     <td>
-                        {% if is_low %}
-                        <span class="alert-low"><i class="fas fa-triangle-exclamation" style="font-size:0.65rem;"></i> Low Stock</span>
+                        {% if is_critical %} 
+                            <span class="alert-low" style="background: rgba(198, 40, 40, 0.1); color: #c62828;"><i class="fas fa-triangle-exclamation" style="font-size:0.65rem;"></i> Critical</span>
+                        {% elif is_running_low %} 
+                            <span class="alert-low" style="background: rgba(230, 81, 0, 0.1); color: #e65100;"><i class="fas fa-exclamation-circle" style="font-size:0.65rem;"></i> Running Low</span>
                         {% else %}
-                        <span class="alert-ok"><i class="fas fa-check" style="font-size:0.65rem;"></i> OK</span>
+                            <span class="alert-ok"><i class="fas fa-check" style="font-size:0.65rem;"></i> OK</span>
                         {% endif %}
                     </td>
                     <td style="text-align:center;">
@@ -257,7 +265,7 @@
                                 <i class="fas fa-trash-can"></i>
                             </button>
                             <button class="btn-action" title="Edit" style="background: rgba(93,64,55,0.1); color: var(--primary);"
-                                    onclick="openEditModal('{{ ing.id }}', '{{ ing.name|e }}', '{{ ing.category|e }}', '{{ ing.reorder_level }}')">
+                                    onclick="openEditModal('{{ ing.id }}', '{{ ing.name|e }}', '{{ ing.category|e }}', '{{ ing.reorder_level }}', '{{ ing.stock_qty }}')">
                                 <i class="fas fa-edit"></i>
                             </button>
                         </div>
@@ -427,6 +435,11 @@
                         <label>Reorder Level</label>
                         <input type="number" name="reorder_level" id="edit_reorder_level" step="0.01" required>
                     </div>
+                    <div class="form-group">
+                        <label>Stock Quantity (Warehouse)</label>
+                        <input type="number" name="stock_qty" id="edit_stock_qty" step="0.01" required 
+                               style="border: 1.5px solid #d7ccc8; background: #fffaf5;">
+                    </div>
                 </div>
                 <div class="modal-footer-custom">
                     <button type="button" class="btn-secondary" onclick="closeModal('editIngredientModal')">Cancel</button>
@@ -467,40 +480,60 @@
         openModal('wasteModal');
     }
 
-    function openEditModal(id, name, category, reorderLevel) {
+    function openEditModal(id, name, category, reorderLevel, currentQty) {
         const form = document.getElementById('editIngredientForm');
         form.action = `/staff/inventory/ingredients/edit/${id}`;
         
         document.getElementById('edit_name').value = name;
         document.getElementById('edit_category').value = category || 'General';
         document.getElementById('edit_reorder_level').value = reorderLevel;
+        document.getElementById('edit_stock_qty').value = currentQty || 0;
         
         openModal('editIngredientModal');
     }
 
-    function filterIngredients(category) {
+    function applyDashboardFilter() {
+        const category = document.getElementById('ingredientCategoryFilter').value;
+        const searchQ = document.getElementById('dashboardSearch').value.toLowerCase();
         const rows = document.querySelectorAll('.ing-row');
         const headers = document.querySelectorAll('.ing-category-header');
-        let visibleCount = 0;
-
-        rows.forEach(row => {
-            if (category === 'ALL' || row.dataset.cat === category) {
-                row.style.display = '';
-                visibleCount++;
-            } else {
-                row.style.display = 'none';
-            }
-        });
+        let totalVisible = 0;
 
         headers.forEach(header => {
-            if (category === 'ALL' || header.dataset.cat === category) {
-                header.style.display = '';
-            } else {
-                header.style.display = 'none';
-            }
+            const catId = header.dataset.cat;
+            let anyInCat = false;
+            let catVisibleCount = 0;
+
+            rows.forEach(row => {
+                if (row.dataset.cat === catId) {
+                    const text = row.textContent.toLowerCase();
+                    const matchesCat = (category === 'ALL' || row.dataset.cat === category);
+                    const matchesSearch = text.includes(searchQ);
+
+                    if (matchesCat && matchesSearch) {
+                        row.style.display = '';
+                        anyInCat = true;
+                        catVisibleCount++;
+                        totalVisible++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                }
+            });
+            header.style.display = anyInCat ? '' : 'none';
         });
 
-        document.getElementById('ingredientCountPill').innerText = `${visibleCount} items shown`;
+        document.getElementById('ingredientCountPill').innerText = `${totalVisible} items shown`;
+    }
+
+    function filterLowStockOnly() {
+        // Clear category and search for "main" or "%" to trigger the status filter
+        document.getElementById('ingredientCategoryFilter').value = 'ALL';
+        document.getElementById('dashboardSearch').value = 'main'; // Matches "Low Main" and "Critical Main"
+        applyDashboardFilter();
+        
+        // Scroll to the list
+        document.querySelector('.section-card').scrollIntoView({ behavior: 'smooth' });
     }
 
     /* ═══════════════════════════════════════════

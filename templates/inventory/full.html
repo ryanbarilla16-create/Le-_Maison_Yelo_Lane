@@ -160,14 +160,19 @@
                 <td style="color:var(--muted); font-weight: 600;">{{ ing.unit }}</td>
                 <td style="font-weight: 600;">{{ ing.reorder_level }}</td>
                 <td>
-                    {% if ing.stock_qty|float <= ing.reorder_level|float %}
-                        <span class="pill" style="background:rgba(198,40,40,0.1); color:var(--danger); border: 1px solid rgba(198,40,40,0.1);">CRITICAL</span>
+                    {% set is_critical = ing.stock_qty|float <= (ing.reorder_level|float * 0.5) %}
+                    {% set is_running_low = (ing.stock_qty|float <= ing.reorder_level|float) and not is_critical %}
+                    
+                    {% if is_critical %}
+                        <span class="pill" style="background:rgba(198,40,40,0.1); color:var(--danger); border: 1px solid rgba(198,40,40,0.1);"><i class="fas fa-triangle-exclamation"></i> CRITICAL</span>
+                    {% elif is_running_low %}
+                        <span class="pill" style="background:rgba(230,81,0,0.1); color:#e65100; border: 1px solid rgba(230,81,0,0.1);"><i class="fas fa-exclamation-circle"></i> RUNNING LOW</span>
                     {% else %}
-                        <span class="pill" style="background:rgba(46,125,50,0.1); color:var(--success); border: 1px solid rgba(46,125,50,0.1);">OPTIMAL</span>
+                        <span class="pill" style="background:rgba(46,125,50,0.1); color:var(--success); border: 1px solid rgba(46,125,50,0.1);"><i class="fas fa-check-circle"></i> OPTIMAL</span>
                     {% endif %}
                 </td>
                 <td>
-                    <button class="btn-primary" onclick="openEditModal('{{ ing.id }}', '{{ ing.name|e }}', '{{ ing.category|e }}', '{{ ing.reorder_level }}')" style="padding: 6px 12px; font-size: 0.75rem; border-radius: 8px; background: #5d4037;">
+                    <button class="btn-primary" onclick="openEditModal('{{ ing.id }}', '{{ ing.name|e }}', '{{ ing.category|e }}', '{{ ing.reorder_level }}', '{{ ing.stock_qty }}')" style="padding: 6px 12px; font-size: 0.75rem; border-radius: 8px; background: #5d4037;">
                         <i class="fas fa-edit"></i> Edit
                     </button>
                 </td>
@@ -269,6 +274,10 @@
                     <label>Reorder Level</label>
                     <input type="number" name="reorder_level" id="edit_reorder_level" step="0.01" required>
                 </div>
+                <div class="form-group">
+                    <label>Stock Quantity</label>
+                    <input type="number" name="stock_qty" id="edit_stock_qty" step="0.01" required>
+                </div>
             </div>
             <div class="modal-footer-custom">
                 <button type="button" class="btn-secondary" onclick="closeModal('editIngredientModal')">Cancel</button>
@@ -288,13 +297,14 @@
         document.getElementById(id).style.display = 'none';
     }
     
-    function openEditModal(id, name, category, reorderLevel) {
+    function openEditModal(id, name, category, reorderLevel, currentQty) {
         const form = document.getElementById('editIngredientForm');
         form.action = `/staff/inventory/ingredients/edit/${id}`;
         
         document.getElementById('edit_name').value = name;
         document.getElementById('edit_category').value = category || 'General';
         document.getElementById('edit_reorder_level').value = reorderLevel;
+        document.getElementById('edit_stock_qty').value = currentQty || 0;
         
         openModal('editIngredientModal');
     }

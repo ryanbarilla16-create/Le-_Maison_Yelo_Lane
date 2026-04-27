@@ -440,8 +440,10 @@
                                         <span class="badge-status badge-pending" style="color: #bfa045; background: #fdfaf0; border: 1px solid #eadeb9;" title="Kitchen is empty but bodega has stock. Request stock now."><i class="fas fa-exclamation-circle me-1"></i>Restock Kitchen</span>
                                     {% elif ing.kitchen_qty|float <= 0 and ing.stock_qty|float <= 0 %} 
                                         <span class="badge-status badge-rejected" style="box-shadow: 0 2px 5px rgba(220,53,69,0.15);" title="Totally out of stock in both Kitchen and Bodega."><i class="fas fa-times-circle me-1"></i>SOLD OUT</span>
+                                    {% elif ing.stock_qty|float <= (ing.reorder_level|float * 0.5) %} 
+                                        <span class="badge-status badge-rejected" style="background: rgba(198, 40, 40, 0.1); color: #c62828;"><i class="fas fa-triangle-exclamation me-1"></i>Critical Main</span>
                                     {% elif ing.stock_qty|float <= ing.reorder_level|float %} 
-                                        <span class="badge-status badge-warning" style="background: rgba(243, 156, 18, 0.1); color: #d68910;"><i class="fas fa-exclamation-triangle me-1"></i>Low Main</span>
+                                        <span class="badge-status badge-warning" style="background: rgba(230, 81, 0, 0.1); color: #e65100;"><i class="fas fa-exclamation-circle me-1"></i>Low Main</span>
                                     {% else %}
                                         <span class="badge-status badge-active" style="background: rgba(40, 167, 69, 0.08); color: #1e7e34;"><i class="fas fa-check-circle me-1"></i>Active</span>
                                     {% endif %}
@@ -1446,7 +1448,7 @@
         // Auto-filter Low Stock from Stat Card click
         const urlParamsInner = new URLSearchParams(window.location.search);
         if (urlParamsInner.get('filter') === 'low_stock' && ingSearch) {
-            ingSearch.value = 'low stock';
+            ingSearch.value = 'main';
             applyInstantInventoryFilter();
         }
     })();

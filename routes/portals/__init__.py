@@ -900,6 +900,7 @@ def inventory_edit_ingredient(ing_id):
     name = request.form.get('name', '').strip()
     category = request.form.get('category', 'General')
     reorder_level = request.form.get('reorder_level', 0, type=float)
+    stock_qty = request.form.get('stock_qty', type=float)
     
     if not name:
         flash('Ingredient name is required.', 'danger')
@@ -908,6 +909,8 @@ def inventory_edit_ingredient(ing_id):
     ing.name = name
     ing.category = category
     ing.reorder_level = reorder_level
+    if stock_qty is not None:
+        ing.stock_qty = stock_qty
     
     db.session.commit()
     flash(f'Changes saved for "{name}".', 'success')
@@ -1008,8 +1011,27 @@ def inventory_stock_requests():
 
 @inventory_bp.route('/staff/inventory/audit')
 def inventory_audit():
-    from routes.admin import inventory_audit
-    return inventory_audit()
+    if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        return redirect(url_for('cashier_portal.staff_login'))
+        
+    from models import InventoryLog, Ingredient
+    
+    ing_filter = request.args.get('ingredient_id', type=int)
+    action_filter = request.args.get('action', '')
+    query = InventoryLog.query
+    if ing_filter:
+        query = query.filter_by(ingredient_id=ing_filter)
+    if action_filter:
+        query = query.filter_by(action=action_filter)
+    logs = query.order_by(InventoryLog.created_at.desc()).limit(200).all()
+    ingredients = Ingredient.query.order_by(Ingredient.name).limit(500).all()
+    
+    return render_template('inventory/audit.html', 
+                           logs=logs, 
+                           ingredients=ingredients,
+                           ing_filter=ing_filter, 
+                           action_filter=action_filter,
+                           portal_name=f"{current_user.first_name} {current_user.last_name}")
 
 @inventory_bp.route('/staff/inventory/suppliers/<int:sup_id>/ingredients')
 def supplier_ingredients_api(sup_id):

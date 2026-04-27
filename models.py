@@ -300,3 +300,20 @@ class StockRequest(db.Model):
     requested_by = db.relationship('User', foreign_keys=[requested_by_id], backref=db.backref('stock_requests_made', lazy=True))
     fulfilled_by = db.relationship('User', foreign_keys=[fulfilled_by_id], backref=db.backref('stock_requests_fulfilled', lazy=True))
 
+# ── CONTACT MESSAGES ──────────────────────────────────────────────
+class ContactMessage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    first_name = db.Column(db.String(50), nullable=False)
+    last_name = db.Column(db.String(50), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    phone_number = db.Column(db.String(20), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    is_read = db.Column(db.Boolean, default=False)
+    is_replied = db.Column(db.Boolean, default=False)
+    reply_message = db.Column(db.Text, nullable=True)
+    replied_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=get_ph_time)
+    replied_at = db.Column(db.DateTime, nullable=True)
+
+    replied_by = db.relationship('User', backref=db.backref('contact_replies', lazy=True))
+

@@ -1,0 +1,325 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<style>
+    /* Premium UI Additions for Contact Messages */
+    .premium-card {
+        background: #ffffff;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(139, 99, 75, 0.08);
+        border: 1px solid rgba(139, 99, 75, 0.1);
+        overflow: hidden;
+    }
+    
+    .premium-header {
+        background: linear-gradient(135deg, rgba(139, 99, 75, 0.03), rgba(93, 64, 55, 0.05));
+        border-bottom: 1px solid rgba(139, 99, 75, 0.1);
+        padding: 1.5rem 2rem;
+    }
+
+    .table-premium th {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: #8B634B;
+        font-weight: 800;
+        border-bottom: 2px solid rgba(139, 99, 75, 0.1);
+        padding: 1.2rem 1rem;
+    }
+
+    .table-premium td {
+        padding: 1.2rem 1rem;
+        vertical-align: middle;
+        border-bottom: 1px solid rgba(139, 99, 75, 0.05);
+        color: #5D4037;
+    }
+
+    .table-premium tbody tr {
+        transition: all 0.3s ease;
+    }
+
+    .table-premium tbody tr:hover {
+        background: rgba(139, 99, 75, 0.02);
+        transform: translateY(-1px);
+    }
+
+    .avatar-premium {
+        width: 45px;
+        height: 45px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #8B634B, #5D4037);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 1.1rem;
+        box-shadow: 0 4px 10px rgba(93, 64, 55, 0.2);
+    }
+
+    .msg-snippet {
+        background: #faf6f1;
+        padding: 10px 15px;
+        border-radius: 12px;
+        border: 1px solid rgba(139, 99, 75, 0.1);
+        font-size: 0.85rem;
+        color: #6D4C41;
+        max-width: 280px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .badge-pending {
+        background: #fffbeb;
+        color: #d97706;
+        border: 1px solid #fde68a;
+        padding: 6px 14px;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+
+    .badge-replied {
+        background: #ecfdf5;
+        color: #059669;
+        border: 1px solid #a7f3d0;
+        padding: 6px 14px;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+
+    .btn-view-reply {
+        background: #fff;
+        color: #8B634B;
+        border: 1px solid #8B634B;
+        padding: 6px 16px;
+        border-radius: 50px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        transition: all 0.3s ease;
+    }
+
+    .btn-view-reply:hover {
+        background: #8B634B;
+        color: #fff;
+        box-shadow: 0 4px 12px rgba(139, 99, 75, 0.2);
+    }
+
+    /* Modal Styling */
+    .modal-content-premium {
+        border-radius: 24px;
+        border: none;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+        overflow: hidden;
+    }
+
+    .modal-header-premium {
+        background: linear-gradient(135deg, #5D4037, #3E2723);
+        color: #fff;
+        padding: 1.5rem 2rem;
+        border: none;
+    }
+    
+    .modal-header-premium .btn-close {
+        filter: invert(1) grayscale(100%) brightness(200%);
+    }
+
+    .msg-bubble {
+        background: #faf6f1;
+        border-left: 4px solid #8B634B;
+        padding: 1.5rem;
+        border-radius: 0 16px 16px 0;
+        margin-bottom: 1.5rem;
+    }
+
+    .reply-bubble {
+        background: #f0fdf4;
+        border-left: 4px solid #059669;
+        padding: 1.5rem;
+        border-radius: 0 16px 16px 0;
+    }
+
+    .reply-input {
+        background: #fdfbf9;
+        border: 2px solid rgba(139, 99, 75, 0.15);
+        border-radius: 16px;
+        padding: 1rem;
+        color: #3E2723;
+        transition: all 0.3s ease;
+    }
+
+    .reply-input:focus {
+        background: #fff;
+        border-color: #8B634B;
+        box-shadow: 0 0 0 4px rgba(139, 99, 75, 0.1);
+        outline: none;
+    }
+
+    .btn-send-reply {
+        background: linear-gradient(135deg, #8B634B, #5D4037);
+        color: #fff;
+        border: none;
+        padding: 10px 24px;
+        border-radius: 50px;
+        font-weight: 700;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(139, 99, 75, 0.3);
+    }
+
+    .btn-send-reply:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(139, 99, 75, 0.4);
+        color: #fff;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h3 mb-1" style="font-family: 'Playfair Display', serif; font-weight: 800; color: #3E2723;">Contact Messages</h2>
+        <p class="text-muted small mb-0" style="font-weight: 500;">Manage inquiries and connect with your guests.</p>
+    </div>
+</div>
+
+<div class="premium-card">
+    <div class="premium-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-bold text-uppercase" style="color: #5D4037; letter-spacing: 1px;"><i class="fas fa-inbox me-2"></i> Inbox Overview</h6>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-premium align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Sender Profile</th>
+                        <th>Contact Details</th>
+                        <th>Message Preview</th>
+                        <th>Received On</th>
+                        <th>Status</th>
+                        <th class="text-end pe-4">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for msg in messages %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-premium me-3">
+                                    {{ msg.first_name[0]|upper }}{{ msg.last_name[0]|upper }}
+                                </div>
+                                <div>
+                                    <div class="fw-bold" style="font-size: 0.95rem;">{{ msg.first_name }} {{ msg.last_name }}</div>
+                                    <div class="small text-muted" style="font-size: 0.75rem;">Guest Inquiry</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="fw-bold" style="font-size: 0.85rem;"><i class="fas fa-envelope text-muted me-2"></i>{{ msg.email }}</div>
+                            <div class="small text-muted mt-1"><i class="fas fa-phone me-2"></i>{{ msg.phone_number }}</div>
+                        </td>
+                        <td>
+                            <div class="msg-snippet" title="{{ msg.message }}">
+                                "{{ msg.message }}"
+                            </div>
+                        </td>
+                        <td>
+                            <div class="fw-bold" style="font-size: 0.85rem;">{{ msg.created_at.strftime('%b %d, %Y') }}</div>
+                            <div class="small text-muted">{{ msg.created_at.strftime('%I:%M %p') }}</div>
+                        </td>
+                        <td>
+                            {% if msg.is_replied %}
+                                <span class="badge-replied"><i class="fas fa-check-circle me-1"></i> Replied</span>
+                            {% else %}
+                                <span class="badge-pending"><i class="fas fa-clock me-1"></i> Pending</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <button class="btn-view-reply" data-bs-toggle="modal" data-bs-target="#msgModal{{ msg.id }}">
+                                <i class="fas fa-reply me-1"></i> Reply
+                            </button>
+                        </td>
+                    </tr>
+
+                    <!-- Premium View/Reply Modal -->
+                    <div class="modal fade" id="msgModal{{ msg.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-lg modal-dialog-centered">
+                            <div class="modal-content modal-content-premium">
+                                <div class="modal-header modal-header-premium">
+                                    <div>
+                                        <h5 class="modal-title fw-bold mb-0" style="font-family: 'Playfair Display', serif; font-size: 1.4rem;">Inquiry from {{ msg.first_name }}</h5>
+                                        <small style="color: rgba(255,255,255,0.7);">Received {{ msg.created_at.strftime('%B %d, %Y at %I:%M %p') }}</small>
+                                    </div>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body p-4 p-md-5">
+                                    
+                                    <!-- Sender Contact Info Bar -->
+                                    <div class="d-flex flex-wrap gap-4 mb-4 pb-3 border-bottom">
+                                        <div>
+                                            <small class="text-muted fw-bold text-uppercase d-block mb-1" style="font-size: 0.65rem; letter-spacing: 1px;">Email Address</small>
+                                            <a href="mailto:{{ msg.email }}" class="fw-bold text-decoration-none" style="color: #8B634B;"><i class="fas fa-envelope me-2"></i>{{ msg.email }}</a>
+                                        </div>
+                                        <div>
+                                            <small class="text-muted fw-bold text-uppercase d-block mb-1" style="font-size: 0.65rem; letter-spacing: 1px;">Phone Number</small>
+                                            <span class="fw-bold" style="color: #5D4037;"><i class="fas fa-phone me-2"></i>{{ msg.phone_number }}</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- The Message -->
+                                    <small class="text-muted fw-bold text-uppercase d-block mb-2" style="font-size: 0.7rem; letter-spacing: 1px;">Original Message</small>
+                                    <div class="msg-bubble">
+                                        <p class="mb-0" style="white-space: pre-wrap; font-size: 0.95rem; line-height: 1.6;">{{ msg.message }}</p>
+                                    </div>
+
+                                    {% if msg.is_replied %}
+                                    <small class="text-muted fw-bold text-uppercase d-block mb-2 mt-4" style="font-size: 0.7rem; letter-spacing: 1px;">Our Response</small>
+                                    <div class="reply-bubble">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="avatar-circle bg-success text-white me-2" style="width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem;">
+                                                <i class="fas fa-check"></i>
+                                            </div>
+                                            <span class="fw-bold text-success" style="font-size: 0.85rem;">Replied by {{ msg.replied_by.first_name }}</span>
+                                            <span class="ms-auto text-muted" style="font-size: 0.75rem;">{{ msg.replied_at.strftime('%b %d, %Y %I:%M %p') }}</span>
+                                        </div>
+                                        <p class="mb-0 text-dark" style="white-space: pre-wrap; font-size: 0.95rem; line-height: 1.6;">{{ msg.reply_message }}</p>
+                                    </div>
+                                    {% else %}
+                                    <form action="{{ url_for('admin.reply_contact_message', msg_id=msg.id) }}" method="POST" class="mt-4 pt-2">
+                                        <div class="mb-4">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <label class="form-label fw-bold mb-0 text-uppercase" style="font-size: 0.7rem; letter-spacing: 1px; color: #5D4037;">Compose Reply</label>
+                                                <span class="badge bg-light text-muted border"><i class="fas fa-paper-plane me-1"></i>Sent via Email</span>
+                                            </div>
+                                            <textarea class="form-control reply-input" name="reply_message" rows="5" required placeholder="Type your professional response here..."></textarea>
+                                        </div>
+                                        <div class="d-flex justify-content-end gap-2">
+                                            <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" style="color: #6D4C41;" data-bs-dismiss="modal">Cancel</button>
+                                            <button type="submit" class="btn-send-reply">
+                                                Send Reply <i class="fas fa-arrow-right ms-2"></i>
+                                            </button>
+                                        </div>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <div style="padding: 3rem 0;">
+                                <div style="width: 80px; height: 80px; background: rgba(139, 99, 75, 0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+                                    <i class="fas fa-envelope-open text-muted" style="font-size: 2rem; opacity: 0.5;"></i>
+                                </div>
+                                <h5 class="fw-bold" style="color: #3E2723;">No Messages Yet</h5>
+                                <p class="text-muted mb-0">Inquiries submitted through the Contact Us form will appear here.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

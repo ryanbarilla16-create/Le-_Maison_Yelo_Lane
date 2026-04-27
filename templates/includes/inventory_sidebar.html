@@ -9,9 +9,7 @@
     <a class="nav-item {% if request.endpoint == 'inventory_portal.inventory_full' %}active{% endif %}" href="{{ url_for('inventory_portal.inventory_full') }}">
         <i class="fas fa-warehouse"></i> Full Inventory
     </a>
-    <a class="nav-item {% if request.endpoint == 'admin.kitchen_pantry' %}active{% endif %}" href="{{ url_for('admin.kitchen_pantry') }}">
-        <i class="fas fa-box-open"></i> Kitchen Pantry
-    </a>
+
     <a class="nav-item {% if request.endpoint == 'inventory_portal.inventory_suppliers' %}active{% endif %}" href="{{ url_for('inventory_portal.inventory_suppliers') }}">
         <i class="fas fa-truck"></i> Suppliers
     </a>

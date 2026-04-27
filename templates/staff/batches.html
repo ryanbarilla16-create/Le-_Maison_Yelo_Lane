@@ -119,7 +119,10 @@
 <!-- Modal -->
 <div id="staffAddBatchModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center;">
     <div style="background: white; border-radius: 20px; width: 400px; padding: 30px;">
-        <h2 style="margin-bottom: 20px;">Receive Stock</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="margin: 0;">Receive Stock</h2>
+            <button type="button" onclick="document.getElementById('staffAddBatchModal').style.display='none'" style="background: none; border: none; font-size: 1.8rem; cursor: pointer; color: #bcaaa4; line-height: 1; padding: 0;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#bcaaa4'">&times;</button>
+        </div>
         <form method="POST" action="{{ url_for('inventory_portal.inventory_add_ingredient_batch') }}">
             <select name="ingredient_id" required class="select-premium" style="width: 100%; margin-bottom: 15px;">
                 <option value="">Select Ingredient...</option>

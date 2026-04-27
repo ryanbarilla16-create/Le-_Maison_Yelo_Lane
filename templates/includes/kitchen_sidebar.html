@@ -1,0 +1,28 @@
+<div class="nav-section-label" onclick="toggleNavGroup(this, 'group-workspace')">
+    <span>Workspace</span>
+    <i class="fas fa-chevron-down toggle-icon"></i>
+</div>
+<div id="group-workspace" class="nav-group">
+    <a class="nav-item {% if request.endpoint == 'kitchen_portal.kitchen_dashboard' %}active{% endif %}" href="{{ url_for('kitchen_portal.kitchen_dashboard') }}">
+        <i class="fas fa-fire"></i> Order Board
+    </a>
+    <a class="nav-item {% if request.endpoint == 'kitchen_portal.kitchen_reservations' %}active{% endif %}" href="{{ url_for('kitchen_portal.kitchen_reservations') }}">
+        <i class="fas fa-calendar-check"></i> Event Pre-Orders
+    </a>
+    <a class="nav-item {% if request.endpoint == 'kitchen_portal.kitchen_pantry' %}active{% endif %}" href="{{ url_for('kitchen_portal.kitchen_pantry') }}">
+        <i class="fas fa-archive"></i> Kitchen Pantry
+    </a>
+</div>
+
+<div class="nav-section-label" onclick="toggleNavGroup(this, 'group-reference')">
+    <span>Reference</span>
+    <i class="fas fa-chevron-down toggle-icon"></i>
+</div>
+<div id="group-reference" class="nav-group">
+    <a class="nav-item {% if request.endpoint == 'kitchen_portal.kitchen_recipes' %}active{% endif %}" href="{{ url_for('kitchen_portal.kitchen_recipes') }}">
+        <i class="fas fa-utensils"></i> Menu Recipes
+    </a>
+    <a class="nav-item {% if request.endpoint == 'kitchen_portal.kitchen_stock_requests' %}active{% endif %}" href="{{ url_for('kitchen_portal.kitchen_stock_requests') }}">
+        <i class="fas fa-file-invoice"></i> Stock Requests
+    </a>
+</div>

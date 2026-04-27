@@ -656,6 +656,9 @@
                 <li><a href="{{ url_for('admin.reviews') }}"
                         class="{% if request.endpoint == 'admin.reviews' %}active{% endif %}"><i
                             class="fas fa-star-half-alt"></i><span class="sidebar-label">Reviews</span></a></li>
+                <li><a href="{{ url_for('admin.contact_messages') }}"
+                        class="{% if request.endpoint == 'admin.contact_messages' %}active{% endif %}"><i
+                            class="fas fa-envelope-open-text"></i><span class="sidebar-label">Contact Messages</span></a></li>
                 {% endif %}
             </ul>
         </div>

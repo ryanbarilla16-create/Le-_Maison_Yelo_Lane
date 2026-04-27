@@ -2598,11 +2598,50 @@ def _sync_supplier_catalog(supplier_id):
         db.session.commit()
 
 # ─── INGREDIENT MANAGEMENT ──────────────────────────
-# @admin_bp.route('/ingredients/add', methods=['POST'])
-# @login_required
-# @admin_required
-# def add_ingredient():
-#     ...
+@admin_bp.route('/ingredients/update/<int:ing_id>', methods=['POST'])
+@login_required
+@admin_required
+def update_ingredient(ing_id):
+    ing = Ingredient.query.get_or_404(ing_id)
+    old_supplier_id = ing.supplier_id
+
+    # Update basic fields from form
+    name = request.form.get('name', '').strip()
+    if name:
+        ing.name = name
+    unit = request.form.get('unit')
+    if unit:
+        ing.unit = unit
+    category = request.form.get('category')
+    if category:
+        ing.category = category
+
+    # Stock quantity (the key field for threshold testing)
+    new_stock = request.form.get('stock_qty', type=float)
+    if new_stock is not None:
+        ing.stock_qty = new_stock
+
+    reorder_level = request.form.get('reorder_level', type=float)
+    if reorder_level is not None:
+        ing.reorder_level = reorder_level
+
+    cost_per_unit = request.form.get('cost_per_unit', type=float)
+    if cost_per_unit is not None:
+        ing.cost_per_unit = cost_per_unit
+
+    supplier_id = request.form.get('supplier_id', type=int)
+    ing.supplier_id = supplier_id if supplier_id else None
+
+    expiration_date_str = request.form.get('expiration_date')
+    if expiration_date_str:
+        try:
+            ing.expiration_date = datetime.strptime(expiration_date_str, '%Y-%m-%d')
+        except (ValueError, TypeError):
+            pass
+
+    db.session.commit()
+
+    # Sync supplier catalogs
     if supplier_id:
         _sync_supplier_catalog(supplier_id)
     if old_supplier_id and old_supplier_id != supplier_id:
@@ -2632,7 +2671,7 @@ def _sync_supplier_catalog(supplier_id):
         })
 
     flash(f'Ingredient "{ing.name}" updated!', 'success')
-    return redirect(url_for('admin.inventory', tab='ingredients'))
+    return redirect(url_for('inventory_portal.inventory_dashboard'))
 
 # @admin_bp.route('/ingredients/delete/<int:ing_id>', methods=['POST'])
 # ...
@@ -3050,9 +3089,9 @@ def add_ingredient_batch():
     return redirect(url_for('admin.ingredient_batches'))
 
 # ─── INVENTORY AUDIT HISTORY ──────────────────────────────────────
-# @admin_bp.route('/inventory/audit', methods=['GET'])
-# @login_required
-# @admin_required
+@admin_bp.route('/inventory/audit', methods=['GET'])
+@login_required
+@admin_required
 def inventory_audit():
     ing_filter = request.args.get('ingredient_id', type=int)
     action_filter = request.args.get('action', '')
@@ -3491,3 +3530,96 @@ def voucher_delete(voucher_id):
     log_audit('DELETE', 'Voucher', voucher_id, f'Deleted voucher {code}')
     flash(f"Voucher '{code}' deleted.", "success")
     return redirect(url_for('admin.vouchers'))
+
+# ─── CONTACT MESSAGES MANAGEMENT ───────────────────
+@admin_bp.route('/contact-messages')
+@login_required
+@admin_required
+def contact_messages():
+    """List all contact us messages"""
+    from models import ContactMessage
+    messages = ContactMessage.query.order_by(ContactMessage.created_at.desc()).all()
+    
+    # mark all as read when admin visits the page
+    has_unread = False
+    for m in messages:
+        if not m.is_read:
+            m.is_read = True
+            has_unread = True
+            
+    if has_unread:
+        db.session.commit()
+
+    return render_template('admin/contact_messages.html', messages=messages)
+
+@admin_bp.route('/contact-messages/reply/<int:msg_id>', methods=['POST'])
+@login_required
+@admin_required
+def reply_contact_message(msg_id):
+    """Reply to a contact us message via email"""
+    from models import ContactMessage
+    from utils import send_email, get_ph_time
+    from flask import request
+    
+    message = ContactMessage.query.get_or_404(msg_id)
+    reply_text = request.form.get('reply_message', '').strip()
+    
+    if reply_text:
+        # Send email
+        subject = "Re: Your Contact Us Message to Le Maison Yelo Lane"
+        
+        # Use HTML formatting so it displays correctly and elegantly in email clients
+        body = f"""
+        <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
+            <!-- Header -->
+            <div style="background-color: #3E2723; padding: 25px; text-align: center;">
+                <h2 style="color: #c9a96e; margin: 0; font-family: Georgia, serif; font-weight: normal; letter-spacing: 1px;">Le Maison Yelo Lane</h2>
+            </div>
+            
+            <!-- Body -->
+            <div style="padding: 30px; color: #4a4a4a; line-height: 1.6;">
+                <h3 style="color: #3E2723; margin-top: 0; font-size: 20px;">Hello {message.first_name},</h3>
+                
+                <p>Thank you for reaching out to us. We appreciate you taking the time to write to Le Maison Yelo Lane.</p>
+                
+                <!-- Our Reply -->
+                <div style="background-color: #f0fdf4; border-left: 4px solid #059669; padding: 15px 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
+                    <p style="margin: 0; color: #065f46; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; margin-bottom: 8px;">Our Response</p>
+                    <p style="margin: 0; color: #1f2937; white-space: pre-wrap;">{reply_text}</p>
+                </div>
+                
+                <!-- Original Message Snippet -->
+                <div style="background-color: #f9f9f9; padding: 15px 20px; border-radius: 8px; margin-top: 30px;">
+                    <p style="margin: 0; color: #888888; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; margin-bottom: 8px;">Your Original Message</p>
+                    <p style="margin: 0; color: #666666; font-style: italic; white-space: pre-wrap;">"{message.message}"</p>
+                </div>
+                
+                <p style="margin-top: 30px; margin-bottom: 0;">Warm regards,<br>
+                <strong style="color: #3E2723;">The Le Maison Yelo Lane Team</strong></p>
+            </div>
+            
+            <!-- Footer -->
+            <div style="background-color: #f5f5f5; padding: 15px; text-align: center; border-top: 1px solid #eeeeee;">
+                <p style="margin: 0; color: #888888; font-size: 12px;">Yelo Lane, General Taino Street, Pagsanjan, Laguna</p>
+            </div>
+        </div>
+        """
+        try:
+            send_email(message.email, subject, body)
+            
+            # Update DB
+            message.is_replied = True
+            message.reply_message = reply_text
+            message.replied_by_id = current_user.id
+            message.replied_at = get_ph_time()
+            db.session.commit()
+            
+            flash('Reply sent successfully to ' + message.email, 'success')
+            log_audit('UPDATE', 'ContactMessage', message.id, f'Replied to message from {message.email}')
+        except Exception as e:
+            flash(f'Failed to send email: {str(e)}', 'danger')
+            db.session.rollback()
+    else:
+        flash('Reply message cannot be empty.', 'danger')
+        
+    return redirect(url_for('admin.contact_messages'))

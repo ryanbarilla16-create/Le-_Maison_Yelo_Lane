@@ -357,7 +357,37 @@ def static_page(page_name):
     
     return render_template('public/generic_page.html', title=title, site=site, content=content)
 
-@main_bp.route('/contact')
+@main_bp.route('/contact', methods=['GET', 'POST'])
 def contact_page():
     site = load_site_settings()
+    from flask import request, flash, redirect, url_for, jsonify
+    from models import db, ContactMessage
+
+    if request.method == 'POST':
+        first_name = request.form.get('first_name')
+        last_name = request.form.get('last_name')
+        email = request.form.get('email')
+        phone_number = request.form.get('phone_number')
+        message = request.form.get('message')
+
+        new_message = ContactMessage(
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            phone_number=phone_number,
+            message=message
+        )
+        db.session.add(new_message)
+        db.session.commit()
+        
+        # Check if it's an AJAX request
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({
+                'success': True,
+                'message': 'Your message has been sent successfully! We will get back to you soon.'
+            })
+        
+        flash('Your message has been sent successfully! We will get back to you soon.', 'success')
+        return redirect(url_for('main.contact_page'))
+
     return render_template('public/contact_page.html', site=site)
