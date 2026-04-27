@@ -22,88 +22,192 @@
 {% endblock %}
 
 {% block content %}
-<div class="filter-bar">
-    <form method="GET" action="{{ url_for('inventory_portal.inventory_audit') }}" class="row g-3 align-items-end">
-        <div class="col-md-4">
-            <label class="form-label" style="font-size: 0.85rem; color: var(--muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Filter by Ingredient</label>
-            <select name="ingredient_id" class="select-premium">
-                <option value="">All Ingredients</option>
-                {% for ing in ingredients %}
-                <option value="{{ ing.id }}" {% if ing_filter == ing.id %}selected{% endif %}>{{ ing.name }}</option>
-                {% endfor %}
-            </select>
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="section-card" style="padding: 24px;">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 style="font-weight: 700; color: #3E2723; margin: 0;">
+                    <i class="fas fa-filter me-2" style="color: #D4A862;"></i> Filter Records
+                </h5>
+                {% if ing_filter or action_filter %}
+                <a href="{{ url_for('inventory_portal.inventory_audit') }}" class="btn-staff-sm" style="background: rgba(139,99,75,0.08); color: var(--primary); text-decoration: none; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 600;">
+                    <i class="fas fa-times me-1"></i> Clear All Filters
+                </a>
+                {% endif %}
+            </div>
+
+            <form method="GET" action="{{ url_for('inventory_portal.inventory_audit') }}" class="row g-3">
+                <div class="col-md-5">
+                    <label class="form-label-small">Ingredient</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-box-open"></i>
+                        <select name="ingredient_id" class="form-select-premium">
+                            <option value="">— Show All Ingredients —</option>
+                            {% for ing in ingredients %}
+                            <option value="{{ ing.id }}" {% if ing_filter == ing.id %}selected{% endif %}>{{ ing.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label-small">Type of Action</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-bolt"></i>
+                        <select name="action" class="form-select-premium">
+                            <option value="">— Show All Actions —</option>
+                            <option value="ADD" {% if action_filter == 'ADD' %}selected{% endif %}>Stock Addition (+)</option>
+                            <option value="DEDUCT" {% if action_filter == 'DEDUCT' %}selected{% endif %}>Stock Deduction (-)</option>
+                            <option value="SPOILED" {% if action_filter == 'SPOILED' %}selected{% endif %}>Wasted / Spoiled</option>
+                            <option value="EXPIRED" {% if action_filter == 'EXPIRED' %}selected{% endif %}>Expired Items</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn-staff-primary w-100">
+                        Apply Filter
+                    </button>
+                </div>
+            </form>
         </div>
-        <div class="col-md-3">
-            <label class="form-label" style="font-size: 0.85rem; color: var(--muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Filter by Action</label>
-            <select name="action" class="select-premium">
-                <option value="">All Actions</option>
-                <option value="ADD" {% if action_filter == 'ADD' %}selected{% endif %}>Stock Addition</option>
-                <option value="DEDUCT" {% if action_filter == 'DEDUCT' %}selected{% endif %}>Stock Deduction</option>
-                <option value="SPOILED" {% if action_filter == 'SPOILED' %}selected{% endif %}>Spoiled/Wasted</option>
-                <option value="EXPIRED" {% if action_filter == 'EXPIRED' %}selected{% endif %}>Expired</option>
-            </select>
-        </div>
-        <div class="col-md-2">
-            <button type="submit" class="btn-staff w-100" style="padding: 10px 16px;"><i class="fas fa-filter me-2"></i> Filter</button>
-        </div>
-        <div class="col-md-2">
-            <a href="{{ url_for('inventory_portal.inventory_audit') }}" class="btn-staff w-100 text-center" style="background: #e0d6cf; color: var(--primary); padding: 10px 16px;">Reset</a>
-        </div>
-    </form>
+    </div>
 </div>
 
 <div class="section-card">
-    <table>
-        <thead>
-            <tr>
-                <th>Timestamp</th>
-                <th>Staff/User</th>
-                <th>Action</th>
-                <th>Ingredient</th>
-                <th>Change</th>
-                <th>New Stock Limit</th>
-                <th>Reason/Notes</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for log in logs %}
-            <tr>
-                <td style="color: var(--muted); font-size: 0.85rem;">{{ log.created_at.strftime('%m/%d/%Y %I:%M %p') }}</td>
-                <td>
-                    {% if log.user %}
-                    <strong>{{ log.user.first_name }} {{ log.user.last_name }}</strong><br>
-                    <span style="font-size: 0.75rem; color: var(--muted);">{{ log.user.role }}</span>
-                    {% else %}
-                    <span style="color: var(--muted);">System Automated</span>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if log.action == 'ADD' %}
-                    <span class="pill" style="background: #e8f5e9; color: #2e7d32;"><i class="fas fa-plus me-1"></i> ADD</span>
-                    {% elif log.action == 'DEDUCT' %}
-                    <span class="pill" style="background: rgba(139,99,75,0.1); color: var(--primary);"><i class="fas fa-minus me-1"></i> DEDUCT</span>
-                    {% elif log.action in ['SPOILED', 'EXPIRED'] %}
-                    <span class="pill" style="background: #ffebee; color: #c62828;"><i class="fas fa-trash me-1"></i> {{ log.action }}</span>
-                    {% else %}
-                    <span class="pill" style="background: #f5f5f5; color: #666;">{{ log.action }}</span>
-                    {% endif %}
-                </td>
-                <td style="font-weight: 600;">{{ log.ingredient.name }}</td>
-                <td style="font-weight: bold; font-size: 1.1rem; {% if log.action == 'ADD' %}color: #2e7d32;{% else %}color: #c62828;{% endif %}">
-                    {% if log.action == 'ADD' %}+{% else %}-{% endif %}{{ log.quantity }} <span style="font-size: 0.8rem; font-weight: normal;">{{ log.ingredient.unit }}</span>
-                </td>
-                <td style="color: var(--muted);">{{ log.new_stock }} {{ log.ingredient.unit }}</td>
-                <td style="font-style: italic; color: var(--muted);">{{ log.reason or '--' }}</td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="7" style="text-align: center; padding: 40px; color: var(--muted);">
-                    <i class="fas fa-search mb-3" style="font-size: 2rem; opacity: 0.3; display: block;"></i>
-                    No audit logs found for the given filters.
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-header-info">
+        <div class="d-flex align-items-center gap-2">
+            <span class="status-dot"></span>
+            <span style="font-size: 0.85rem; font-weight: 600; color: var(--muted);">
+                {% if ing_filter %}
+                    {% set active_ing = ingredients|selectattr('id', 'equalto', ing_filter)|first %}
+                    Showing logs for <span style="color: var(--primary);">{{ active_ing.name if active_ing else 'Selected Ingredient' }}</span>
+                {% elif action_filter %}
+                    Showing all <span style="color: var(--primary);">{{ action_filter }}</span> records
+                {% else %}
+                    Showing all recent activity
+                {% endif %}
+            </span>
+        </div>
+        <span style="font-size: 0.75rem; color: var(--muted);">{{ logs|length }} records found</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table-staff">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Ingredient</th>
+                    <th>Action</th>
+                    <th>Change</th>
+                    <th>Resulting Stock</th>
+                    <th>Authorized By</th>
+                    <th>Reason / Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td>
+                        <div class="d-flex flex-column">
+                            <span style="font-weight: 600; color: #3E2723;">{{ log.created_at.strftime('%I:%M %p') }}</span>
+                            <span style="font-size: 0.72rem; color: #8d6e63;">{{ log.created_at.strftime('%b %d, %Y') }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="ing-icon-mini">{{ log.ingredient.name[0] | upper }}</div>
+                            <span style="font-weight: 600;">{{ log.ingredient.name }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        {% if log.action == 'ADD' %}
+                            <span class="badge-staff bg-success-light text-success"><i class="fas fa-plus-circle me-1"></i> ADDED</span>
+                        {% elif log.action == 'DEDUCT' %}
+                            <span class="badge-staff bg-warning-light text-warning"><i class="fas fa-minus-circle me-1"></i> DEDUCTED</span>
+                        {% elif log.action in ['SPOILED', 'EXPIRED', 'WASTE'] %}
+                            <span class="badge-staff bg-danger-light text-danger"><i class="fas fa-trash-alt me-1"></i> {{ log.action }}</span>
+                        {% else %}
+                            <span class="badge-staff bg-light text-dark">{{ log.action }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-weight: 700; font-size: 0.95rem; {% if log.action == 'ADD' %}color: #2e7d32;{% else %}color: #c62828;{% endif %}">
+                        {% if log.action == 'ADD' %}+{% else %}-{% endif %}{{ log.quantity|float|round(2) }} 
+                        <small style="font-weight: normal; font-size: 0.75rem;">{{ log.ingredient.unit }}</small>
+                    </td>
+                    <td>
+                        <span style="background: #f8f9fa; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 0.85rem;">
+                            {{ log.new_stock|float|round(2) }} <small style="font-weight: normal;">{{ log.ingredient.unit }}</small>
+                        </span>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="staff-avatar-mini">{{ log.user.first_name[0] if log.user else 'S' }}</div>
+                            <div class="d-flex flex-column">
+                                <span style="font-size: 0.82rem; font-weight: 600;">{{ log.user.first_name ~ ' ' ~ log.user.last_name if log.user else 'System' }}</span>
+                                <span style="font-size: 0.65rem; color: var(--muted);">{{ log.user.role if log.user else 'Automated' }}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td style="max-width: 200px;">
+                        <span style="font-style: italic; color: #6d4c41; font-size: 0.82rem;">{{ log.reason or '--' }}</span>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="empty-state-container">
+                        <div class="empty-state-content">
+                            <div class="empty-icon-wrap">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <h5>No Logs Found</h5>
+                            <p>We couldn't find any inventory activity matching your filters.</p>
+                            {% if ing_filter or action_filter %}
+                            <a href="{{ url_for('inventory_portal.inventory_audit') }}" class="btn-staff-outline mt-2">
+                                Clear Filters and Show All
+                            </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
+
+<style>
+    .form-label-small { font-size: 0.72rem; font-weight: 700; color: #8d6e63; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; display: block; }
+    .input-with-icon { position: relative; }
+    .input-with-icon i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #D4A862; font-size: 0.9rem; z-index: 5; }
+    .form-select-premium { 
+        width: 100%; padding: 12px 12px 12px 40px; border-radius: 12px; border: 1px solid #e0d6cf;
+        background-color: #fff; font-size: 0.88rem; font-weight: 600; color: #3E2723; appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%238d6e63' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C2.185 5.355 2.398 5 2.793 5h9.414c.395 0 .608.355.342.658l-4.796 5.482a.503.503 0 0 1-.746 0z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat; background-position: right 14px center; background-size: 12px; transition: all 0.2s;
+    }
+    .form-select-premium:focus { border-color: #D4A862; box-shadow: 0 0 0 4px rgba(212, 168, 98, 0.1); outline: none; }
+    
+    .btn-staff-primary { background: linear-gradient(135deg, #5D4037, #3E2723); color: #fff; border: none; padding: 12px; border-radius: 12px; font-weight: 700; font-size: 0.88rem; transition: all 0.3s; }
+    .btn-staff-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(62, 39, 35, 0.2); }
+
+    .table-header-info { padding: 16px 20px; background: rgba(93,64,55,0.02); border-bottom: 1px solid rgba(0,0,0,0.04); display: flex; justify-content: space-between; align-items: center; }
+    .status-dot { width: 8px; height: 8px; background: #D4A862; border-radius: 50%; display: inline-block; animation: pulse 2s infinite; }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+
+    .table-staff { width: 100%; border-collapse: collapse; }
+    .table-staff th { padding: 14px 20px; font-size: 0.72rem; font-weight: 700; color: #8d6e63; text-transform: uppercase; letter-spacing: 1px; text-align: left; background: #fff; }
+    .table-staff td { padding: 16px 20px; border-bottom: 1px solid rgba(0,0,0,0.03); font-size: 0.88rem; vertical-align: middle; }
+    
+    .ing-icon-mini { width: 32px; height: 32px; background: #efebe9; color: #5d4037; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.8rem; margin-right: 12px; }
+    .staff-avatar-mini { width: 28px; height: 28px; background: #D4A862; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.7rem; }
+    
+    .badge-staff { padding: 4px 10px; border-radius: 6px; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.5px; }
+    .bg-success-light { background: #e8f5e9; } .bg-warning-light { background: #fff3e0; } .bg-danger-light { background: #ffebee; }
+    
+    .empty-state-container { padding: 80px 20px !important; text-align: center; }
+    .empty-icon-wrap { width: 64px; height: 64px; background: #fdfaf8; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: #e0d6cf; font-size: 1.8rem; }
+    .empty-state-content h5 { font-family: 'Playfair Display', serif; font-weight: 700; color: #3E2723; margin-bottom: 8px; }
+    .empty-state-content p { color: #8d6e63; font-size: 0.88rem; margin-bottom: 20px; }
+    .btn-staff-outline { display: inline-block; padding: 8px 20px; border: 1.5px solid #D4A862; color: #D4A862; border-radius: 10px; text-decoration: none; font-weight: 700; font-size: 0.8rem; transition: all 0.2s; }
+    .btn-staff-outline:hover { background: #D4A862; color: #fff; }
+</style>
 {% endblock %}

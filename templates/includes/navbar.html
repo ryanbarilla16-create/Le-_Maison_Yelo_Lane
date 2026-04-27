@@ -202,8 +202,9 @@
     class="navbar main-nav fixed-top navbar-expand-md {{ 'navbar-transparent' if (request.endpoint == 'main.index' or request.path == '/') else 'nav-scrolled nav-always-solid' if (request.endpoint == 'main.login' or request.endpoint == 'main.signup' or '/login' in request.path or '/signup' in request.path) else 'nav-scrolled' }}">
     <div class="container-fluid px-md-5">
         <a class="navBrand" href="{{ url_for('main.index') }}">
-            <i class="fas fa-coffee" style="color: #8B634B;"></i>
-            <span>Le Maison Yelo Lane</span>
+            <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Logo" 
+                 style="height: 48px; width: 48px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.2); box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+            <span class="d-none d-sm-inline">Le Maison Yelo Lane</span>
         </a>
 
         <ul class="nav nav-left me-auto d-md-flex d-none align-items-center ms-4">

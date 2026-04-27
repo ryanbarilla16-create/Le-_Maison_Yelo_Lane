@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <title>Staff Login | Le Maison</title>
     <meta content='width=device-width, initial-scale=1.0, shrink-to-fit=no' name='viewport' />
-    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon"/>
+    <link rel="icon" href="{{ url_for('static', filename='images/logo.jpg') }}" type="image/jpeg"/>
 
     <!-- Fonts and icons -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -355,6 +355,8 @@
             <div class="deco-circle deco-3"></div>
 
             <div class="brand-content">
+                <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Logo" 
+                     style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid rgba(255,255,255,0.2); margin-bottom: 1.5rem; box-shadow: 0 8px 25px rgba(0,0,0,0.2);">
                 <h1 class="brand-title">Le Maison</h1>
                 <p class="brand-subtitle">Staff Portal</p>
                 <div style="width: 60px; height: 2px; background: rgba(255,255,255,0.2); margin: 1.5rem auto 2rem;"></div>
