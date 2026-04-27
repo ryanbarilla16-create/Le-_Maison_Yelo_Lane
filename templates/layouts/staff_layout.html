@@ -400,11 +400,34 @@
     </style>
 
     <script>
+        // IMMEDIATE KILL SWITCH: Siguradong tago ang loader pagka-load ng page
+        (function() {
+            const loader = document.getElementById('global-loader');
+            if (loader) {
+                loader.style.display = 'none';
+                loader.style.opacity = '0';
+            }
+        })();
+
+        let loaderTimeout;
+
         function showGlobalLoader() {
             const loader = document.getElementById('global-loader');
             if (loader) {
                 loader.style.display = 'flex';
-                loader.style.opacity = '1';
+                setTimeout(() => { loader.style.opacity = '1'; }, 10);
+                
+                // SAFETY TIMEOUT: 10 seconds safety
+                clearTimeout(loaderTimeout);
+                loaderTimeout = setTimeout(hideGlobalLoader, 10000);
+            }
+        }
+
+        function hideGlobalLoader() {
+            const loader = document.getElementById('global-loader');
+            if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => { loader.style.display = 'none'; }, 200);
             }
         }
 
@@ -427,17 +450,20 @@
                 !link.getAttribute('onclick') &&
                 !link.target &&
                 link.hostname === window.location.hostname &&
+                link.href.split('#')[0] !== window.location.href.split('#')[0] &&
                 !e.ctrlKey && !e.metaKey) {
                 
                 showGlobalLoader();
             }
         });
 
-        // 3. Hide if user comes back via back button
+        // 3. Hide on Page Show (Back Button)
         window.addEventListener('pageshow', function(event) {
-            const loader = document.getElementById('global-loader');
-            if (loader) loader.style.display = 'none';
+            hideGlobalLoader();
         });
+
+        // 4. Hide on DOM Loaded (Safety)
+        document.addEventListener('DOMContentLoaded', hideGlobalLoader);
     </script>
 
     <aside class="sidebar">
