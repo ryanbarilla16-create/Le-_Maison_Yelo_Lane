@@ -362,6 +362,87 @@
 </head>
 
 <body>
+    <!-- GLOBAL LOADER OVERLAY (ULTRA ELEGANT) -->
+    <div id="global-loader" style="display: none; position: fixed; inset: 0; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 99999; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.4s ease;">
+        <div class="loader-inner text-center" style="transform: translateY(-20px);">
+            <div class="logo-wrapper" style="position: relative; margin-bottom: 30px; display: inline-block;">
+                <img src="{{ url_for('static', filename='images/logo.jpg') }}" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 5px solid #fff; box-shadow: 0 15px 45px rgba(93, 64, 55, 0.25); animation: floatLogo 3s ease-in-out infinite;">
+                <div class="spinner-ring" style="position: absolute; inset: -10px; border: 3px solid transparent; border-top-color: #8B634B; border-radius: 50%; animation: spin 1.2s linear infinite;"></div>
+            </div>
+            <h4 style="font-family: 'Playfair Display', serif; font-weight: 900; color: #3E2723; margin-bottom: 8px; letter-spacing: 1px;">Le Maison Yelo Lane</h4>
+            <div class="loading-dots">
+                <span style="font-size: 0.75rem; font-weight: 700; color: #8B634B; letter-spacing: 3px; text-transform: uppercase;">Entering Portal</span>
+                <span class="dot-animation">...</span>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        @keyframes floatLogo {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .dot-animation {
+            display: inline-block;
+            animation: dots 1.5s infinite;
+            width: 20px;
+            text-align: left;
+        }
+        @keyframes dots {
+            0% { content: ''; }
+            33% { content: '.'; }
+            66% { content: '..'; }
+            100% { content: '...'; }
+        }
+    </style>
+
+    <script>
+        function showGlobalLoader() {
+            const loader = document.getElementById('global-loader');
+            if (loader) {
+                loader.style.display = 'flex';
+                loader.style.opacity = '1';
+            }
+        }
+
+        // 1. Show on Form Submissions
+        document.addEventListener('submit', function(e) {
+            const form = e.target;
+            if (form && form.checkValidity && form.checkValidity()) {
+                showGlobalLoader();
+            }
+        });
+
+        // 2. Show on Link Clicks (Navigation)
+        document.addEventListener('click', function(e) {
+            const link = e.target.closest('a');
+            if (link && 
+                link.href && 
+                !link.href.startsWith('javascript:') && 
+                !link.href.startsWith('#') &&
+                !link.getAttribute('data-bs-toggle') &&
+                !link.getAttribute('onclick') &&
+                !link.target &&
+                link.hostname === window.location.hostname &&
+                !e.ctrlKey && !e.metaKey) {
+                
+                showGlobalLoader();
+            }
+        });
+
+        // 3. Hide if user comes back via back button
+        window.addEventListener('pageshow', function(event) {
+            const loader = document.getElementById('global-loader');
+            if (loader) loader.style.display = 'none';
+        });
+    </script>
 
     <aside class="sidebar">
         <div class="sidebar-brand d-flex align-items-center gap-3" style="padding: 20px 24px;">
