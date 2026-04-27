@@ -400,38 +400,38 @@
     </style>
 
     <script>
-        // REAL-TIME KILL SWITCH: Instant tago agad bago pa mag-load ang content
-        (function() {
+        // FOOLPROOF KILL SWITCH
+        function forceHideLoader() {
             const loader = document.getElementById('global-loader');
             if (loader) {
-                loader.style.display = 'none';
-                loader.style.opacity = '0';
+                loader.style.display = 'none !important';
+                loader.setAttribute('style', 'display: none !important; opacity: 0 !important;');
             }
-        })();
+        }
+        
+        // Execute immediately
+        forceHideLoader();
 
         let loaderTimeout;
 
         function showGlobalLoader() {
             const loader = document.getElementById('global-loader');
             if (loader) {
+                loader.removeAttribute('style');
                 loader.style.display = 'flex';
-                // Mas mabilis na fade-in para snappy
-                requestAnimationFrame(() => {
-                    loader.style.opacity = '1';
-                });
+                loader.style.position = 'fixed';
+                loader.style.inset = '0';
+                loader.style.background = 'rgba(255, 255, 255, 0.7)';
+                loader.style.backdropFilter = 'blur(15px)';
+                loader.style.zIndex = '99999';
+                loader.style.flexDirection = 'column';
+                loader.style.alignItems = 'center';
+                loader.style.justifyContent = 'center';
+                loader.style.opacity = '1';
                 
                 // Safety timeout
                 clearTimeout(loaderTimeout);
-                loaderTimeout = setTimeout(hideGlobalLoader, 8000);
-            }
-        }
-
-        function hideGlobalLoader() {
-            const loader = document.getElementById('global-loader');
-            if (loader) {
-                // INSTANT HIDE: Wala nang fade-out para sabay sila sa paglipat ng page
-                loader.style.display = 'none';
-                loader.style.opacity = '0';
+                loaderTimeout = setTimeout(forceHideLoader, 5000); // 5 seconds max
             }
         }
 
@@ -443,30 +443,23 @@
             }
         });
 
-        // 2. Show on Link Clicks (Navigation)
-        document.addEventListener('click', function(e) {
-            const link = e.target.closest('a');
-            if (link && 
-                link.href && 
-                !link.href.startsWith('javascript:') && 
-                !link.href.startsWith('#') &&
-                !link.getAttribute('data-bs-toggle') &&
-                !link.getAttribute('onclick') &&
-                !link.target &&
-                link.hostname === window.location.hostname &&
-                link.href.split('#')[0] !== window.location.href.split('#')[0] &&
-                !e.ctrlKey && !e.metaKey) {
-                
-                showGlobalLoader();
-            }
+        // 2. Show on actual page unload (Navigation)
+        window.addEventListener('beforeunload', function() {
+            showGlobalLoader();
         });
 
-        // 3. Force Hide on Page Load / Back Button
-        window.addEventListener('pageshow', function(event) {
-            hideGlobalLoader();
-        });
-        document.addEventListener('DOMContentLoaded', hideGlobalLoader);
-        window.addEventListener('load', hideGlobalLoader);
+        // 3. Hide on load events
+        window.addEventListener('pageshow', forceHideLoader);
+        document.addEventListener('DOMContentLoaded', forceHideLoader);
+        window.addEventListener('load', forceHideLoader);
+
+        // 4. Aggressive hide if document is already complete
+        const hideInterval = setInterval(() => {
+            if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                forceHideLoader();
+                clearInterval(hideInterval);
+            }
+        }, 50);
     </script>
 
     <aside class="sidebar">
