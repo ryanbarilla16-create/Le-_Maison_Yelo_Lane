@@ -400,7 +400,7 @@
     </style>
 
     <script>
-        // IMMEDIATE KILL SWITCH: Siguradong tago ang loader pagka-load ng page
+        // REAL-TIME KILL SWITCH: Instant tago agad bago pa mag-load ang content
         (function() {
             const loader = document.getElementById('global-loader');
             if (loader) {
@@ -415,19 +415,23 @@
             const loader = document.getElementById('global-loader');
             if (loader) {
                 loader.style.display = 'flex';
-                setTimeout(() => { loader.style.opacity = '1'; }, 10);
+                // Mas mabilis na fade-in para snappy
+                requestAnimationFrame(() => {
+                    loader.style.opacity = '1';
+                });
                 
-                // SAFETY TIMEOUT: 10 seconds safety
+                // Safety timeout
                 clearTimeout(loaderTimeout);
-                loaderTimeout = setTimeout(hideGlobalLoader, 10000);
+                loaderTimeout = setTimeout(hideGlobalLoader, 8000);
             }
         }
 
         function hideGlobalLoader() {
             const loader = document.getElementById('global-loader');
             if (loader) {
+                // INSTANT HIDE: Wala nang fade-out para sabay sila sa paglipat ng page
+                loader.style.display = 'none';
                 loader.style.opacity = '0';
-                setTimeout(() => { loader.style.display = 'none'; }, 200);
             }
         }
 
@@ -457,13 +461,12 @@
             }
         });
 
-        // 3. Hide on Page Show (Back Button)
+        // 3. Force Hide on Page Load / Back Button
         window.addEventListener('pageshow', function(event) {
             hideGlobalLoader();
         });
-
-        // 4. Hide on DOM Loaded (Safety)
         document.addEventListener('DOMContentLoaded', hideGlobalLoader);
+        window.addEventListener('load', hideGlobalLoader);
     </script>
 
     <aside class="sidebar">
