@@ -2267,6 +2267,60 @@ def api_delete_user(user_id):
         return jsonify({'success': False, 'message': f'Error deleting account: {str(e)}'}), 500
 
 # ═══ VOUCHER VALIDATION API ═══
+@api_bp.route('/delivery/areas', methods=['GET'])
+def api_delivery_areas():
+    """Return active delivery areas with barangays and coordinates."""
+    from models import DeliveryArea
+    areas = DeliveryArea.query.filter_by(is_active=True).order_by(DeliveryArea.municipality.asc()).all()
+    result = {}
+    coords = {}
+    for a in areas:
+        result[a.municipality] = a.barangays_list()
+        if a.lat and a.lng:
+            coords[a.municipality] = [a.lat, a.lng]
+    return jsonify({'areas': result, 'coordinates': coords})
+
+@api_bp.route('/vouchers/available', methods=['GET'])
+def api_available_vouchers():
+    """Return active vouchers for the dropdown in cart (no sensitive data exposed)."""
+    from utils import get_ph_time
+    now = get_ph_time()
+    vouchers = Voucher.query.filter_by(is_active=True).all()
+    result = []
+    for v in vouchers:
+        # Skip exhausted / not-yet-valid / expired
+        if v.times_used >= v.max_uses:
+            continue
+        if v.valid_from and now < v.valid_from:
+            continue
+        if v.valid_until and now > v.valid_until:
+            continue
+        result.append({
+            'code': v.code,
+            'discount_type': v.discount_type,
+            'discount_value': float(v.discount_value),
+            'min_order_amount': float(v.min_order_amount),
+        })
+    return jsonify(result)
+
+@api_bp.route('/voucher/status/<code>', methods=['GET'])
+def api_voucher_status(code):
+    """Lightweight real-time check: is this voucher still valid?"""
+    code = code.strip().upper()
+    voucher = Voucher.query.filter_by(code=code).first()
+    if not voucher:
+        return jsonify({'valid': False, 'reason': 'deleted'})
+    if not voucher.is_active:
+        return jsonify({'valid': False, 'reason': 'paused'})
+    if voucher.times_used >= voucher.max_uses:
+        return jsonify({'valid': False, 'reason': 'exhausted'})
+    now = get_ph_time()
+    if voucher.valid_from and now < voucher.valid_from:
+        return jsonify({'valid': False, 'reason': 'not_yet_valid'})
+    if voucher.valid_until and now > voucher.valid_until:
+        return jsonify({'valid': False, 'reason': 'expired'})
+    return jsonify({'valid': True})
+
 @api_bp.route('/voucher/apply', methods=['POST'])
 def api_apply_voucher():
     """Validate and apply a voucher code"""

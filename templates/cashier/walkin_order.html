@@ -87,7 +87,8 @@
                                 <div style="height: 140px; overflow: hidden; position: relative; flex-shrink: 0;">
                                     {% if info.image %}
                                     <img loading="lazy" decoding="async" src="{{ info.image }}" class="w-100 h-100 category-img"
-                                        style="object-fit: cover; transition: transform 0.6s ease;" alt="{{ cat_name }}">
+                                        style="object-fit: cover; transition: transform 0.6s ease;" alt="{{ cat_name }}"
+                                        onerror="this.style.display='none';this.parentNode.innerHTML='<div style=\'width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(139,99,75,0.05);\'><i class=\'fas fa-utensils fa-2x\' style=\'color:rgba(139,99,75,0.2);\'></i></div>'">
                                     {% else %}
                                     <div class="w-100 h-100 d-flex align-items-center justify-content-center"
                                         style="background: rgba(139, 99, 75, 0.05);">
@@ -130,7 +131,8 @@
                                         <img loading="lazy" decoding="async" src="{{ item.image_url }}" class="w-100 h-100"
                                             style="object-fit: cover; transition: transform 0.6s ease;"
                                             onmouseover="this.style.transform='scale(1.08)'"
-                                            onmouseout="this.style.transform='scale(1)'">
+                                            onmouseout="this.style.transform='scale(1)'"
+                                            onerror="this.style.display='none';this.parentNode.innerHTML='<div style=\'width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(139,99,75,0.05);\'><i class=\'fas fa-utensils fa-2x\' style=\'color:rgba(139,99,75,0.2);\'></i></div>'">
                                     </div>
                                     {% else %}
                                     <div style="height: 150px; background: rgba(139, 99, 75, 0.05); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">

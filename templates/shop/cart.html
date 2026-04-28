@@ -203,11 +203,29 @@
     }
 
     .qty-val {
-        width: 36px;
+        width: 44px;
+        height: 36px;
         text-align: center;
         font-weight: 800;
         font-size: 1rem;
         color: #4E342E;
+        border: 1.5px solid rgba(139, 99, 75, 0.3);
+        border-radius: 8px;
+        background: #fff;
+        padding: 0;
+        -moz-appearance: textfield;
+    }
+
+    .qty-val::-webkit-outer-spin-button,
+    .qty-val::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    .qty-val:focus {
+        outline: none;
+        border-color: #8B634B;
+        box-shadow: 0 0 0 3px rgba(139, 99, 75, 0.1);
     }
 
     .cartItem-subtotal {
@@ -248,7 +266,21 @@
         padding: 2.2rem;
         position: sticky;
         top: 100px;
+        max-height: calc(100vh - 120px);
+        overflow-y: auto;
+        overflow-x: hidden;
     }
+
+    .cartSummary.delivery-mode {
+        position: relative !important;
+        top: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+    }
+
+    .cartSummary::-webkit-scrollbar { width: 4px; }
+    .cartSummary::-webkit-scrollbar-track { background: transparent; }
+    .cartSummary::-webkit-scrollbar-thumb { background: rgba(139,99,75,0.2); border-radius: 10px; }
 
     .cartSummary h5 {
         font-family: 'Playfair Display', serif;
@@ -415,6 +447,9 @@
             display: none;
         }
     }
+
+    .voucher-list-item:hover { background: rgba(139,99,75,0.04); }
+    .voucher-list-item:last-child { border-bottom: none !important; }
 </style>
 
 <div class="cartPage">
@@ -427,8 +462,8 @@
     <div class="cartGrid">
         <div class="left-column">
             <div class="cart-controls d-flex justify-content-between align-items-center mb-3 px-2">
-                <div class="d-flex align-items-center gap-2" style="cursor:pointer;" onclick="document.getElementById('selectAllCheckbox').click();">
-                    <input class="custom-checkbox" type="checkbox" id="selectAllCheckbox" onclick="event.stopPropagation();">
+                <div class="d-flex align-items-center gap-2">
+                    <input class="custom-checkbox" type="checkbox" id="selectAllCheckbox">
                     <label class="fw-bold mb-0" for="selectAllCheckbox" style="cursor:pointer; color: #8b634b; font-size: 1rem;">
                         Select All Items
                     </label>
@@ -467,7 +502,10 @@
                             <button type="submit" class="qty-btn" {{ 'disabled' if c_item.quantity <=1 }}><i
                                     class="fas fa-minus"></i></button>
                         </form>
-                        <div class="qty-val" id="qty-{{ c_item.item.id }}">{{ c_item.quantity }}</div>
+                        <input type="number" class="qty-val" id="qty-{{ c_item.item.id }}"
+                            value="{{ c_item.quantity }}" min="1" max="20"
+                            data-item-id="{{ c_item.item.id }}"
+                            data-update-url="{{ url_for('main.update_cart', item_id=c_item.item.id) }}">
                         <form action="{{ url_for('main.update_cart', item_id=c_item.item.id) }}" method="POST"
                             class="qty-update-form" style="margin:0;">
                             <input type="hidden" name="cart_action" value="increment">
@@ -503,12 +541,48 @@
             </div>
 
             <div class="voucher-section mb-4 mt-4 pb-3" style="border-bottom: 1px dashed rgba(139, 99, 75, 0.2);">
-                <label class="form-label mb-2" style="font-size: 0.85rem; font-weight: 600;"><i class="fas fa-ticket-alt me-1" style="color:var(--primary-color);"></i> Apply Voucher Code</label>
-                <div class="input-group input-group-sm">
-                    <input type="text" id="voucherCodeInput" class="form-control" placeholder="Enter code" style="border-radius: 8px 0 0 8px; border: 1px solid var(--border-color); text-transform: uppercase;">
-                    <button class="btn" type="button" id="applyVoucherBtn" style="background: var(--primary-color); color: white; border-radius: 0 8px 8px 0; font-weight: 600;">Apply</button>
-                    <button class="btn btn-outline-danger" type="button" id="removeVoucherBtn" style="display: none; border-radius: 0 8px 8px 0; font-weight: 600;">Remove</button>
+                <label class="form-label mb-2" style="font-size: 0.85rem; font-weight: 700; color: #5D4037;">
+                    <i class="fas fa-ticket-alt me-1" style="color:#8B634B;"></i> Voucher / Promo Code
+                </label>
+
+                <!-- Applied state (hidden by default) -->
+                <div id="voucherAppliedBar" style="display:none; background: #f0f4ef; border: 1.5px solid #b5d1b0; border-radius: 10px; padding: 0.65rem 1rem; display: none; align-items: center; justify-content: space-between; gap: 0.5rem;">
+                    <div style="display:flex; align-items:center; gap:0.5rem;">
+                        <i class="fas fa-check-circle" style="color:#577551; font-size:1rem;"></i>
+                        <span id="voucherAppliedLabel" style="font-weight:700; font-size:0.85rem; color:#3a5c38;"></span>
+                    </div>
+                    <button type="button" id="removeVoucherBtn" style="background:none; border:none; color:#C62828; font-size:0.75rem; font-weight:700; cursor:pointer; padding:0;">
+                        <i class="fas fa-times me-1"></i>Remove
+                    </button>
                 </div>
+
+                <!-- Picker (shown when no voucher applied) -->
+                <div id="voucherPickerWrap">
+                    <div class="input-group input-group-sm mb-2">
+                        <input type="text" id="voucherCodeInput" class="form-control"
+                            placeholder="Enter or select a code"
+                            style="border-radius: 8px 0 0 8px; border: 1px solid var(--border-color); text-transform: uppercase; font-weight: 600;">
+                        <button class="btn" type="button" id="applyVoucherBtn"
+                            style="background: #8B634B; color: white; border-radius: 0 8px 8px 0; font-weight: 700; font-size: 0.82rem; padding: 0 1rem;">
+                            Apply
+                        </button>
+                    </div>
+
+                    <!-- Voucher list dropdown -->
+                    <div id="voucherListWrap" style="display:none; border: 1.5px solid rgba(139,99,75,0.15); border-radius: 12px; overflow: hidden; margin-top: 4px; background: #fff; box-shadow: 0 8px 24px rgba(139,99,75,0.08);">
+                        <div style="padding: 0.6rem 1rem; background: rgba(139,99,75,0.04); border-bottom: 1px solid rgba(139,99,75,0.1); font-size: 0.72rem; font-weight: 700; color: #8B634B; text-transform: uppercase; letter-spacing: 0.5px;">
+                            Available Vouchers
+                        </div>
+                        <div id="voucherListItems" style="max-height: 220px; overflow-y: auto;"></div>
+                    </div>
+
+                    <button type="button" id="toggleVoucherListBtn"
+                        style="background: none; border: none; color: #8B634B; font-size: 0.78rem; font-weight: 700; cursor: pointer; padding: 4px 0; display: flex; align-items: center; gap: 4px;">
+                        <i class="fas fa-tag me-1"></i> View available vouchers
+                        <i class="fas fa-chevron-down" id="voucherListChevron" style="font-size:0.65rem; transition: transform 0.2s;"></i>
+                    </button>
+                </div>
+
                 <div id="voucherMessage" class="mt-2" style="font-size: 0.8rem; display: none;"></div>
             </div>
 
@@ -533,12 +607,7 @@
                             <div class="col-6">
                                 <select id="select_municipality" class="form-select form-select-sm"
                                     style="border-radius: 8px; border: 1px solid var(--border-color);">
-                                    <option value="">Municipality</option>
-                                    <option value="Santa Cruz">Santa Cruz</option>
-                                    <option value="Pila">Pila</option>
-                                    <option value="Victoria">Victoria</option>
-                                    <option value="Lumban">Lumban</option>
-                                    <option value="Magdalena">Magdalena</option>
+                                    <option value="">Loading areas...</option>
                                 </select>
                             </div>
                             <div class="col-6">
@@ -553,7 +622,13 @@
                             placeholder="e.g. 123 Main St, Near Plaza..."
                             style="border-radius: 10px; border: 1px solid var(--border-color); resize: none;"></textarea>
 
-                        <label class="form-label mt-2" style="font-size: 0.85rem;">Pin Exact Location (Optional)</label>
+                        <label class="form-label mt-2" style="font-size: 0.85rem; display:flex; justify-content:space-between; align-items:center;">
+                            <span>Pin Exact Location <span style="color:#A1887F;font-weight:400;">(Optional)</span></span>
+                            <button type="button" id="useCurrentLocBtn"
+                                style="background:rgba(139,99,75,0.08);border:1px solid rgba(139,99,75,0.2);color:#8B634B;border-radius:50px;padding:3px 10px;font-size:0.72rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;">
+                                <i class="fas fa-crosshairs"></i> Use My Location
+                            </button>
+                        </label>
                         <div id="delivery_map"
                             style="height: 200px; border-radius: 10px; border: 1px solid var(--border-color); margin-bottom: 0.5rem; z-index: 1;">
                         </div>
@@ -605,14 +680,45 @@
 
             // --- Delivery & Map Management ---
             let map, marker, mapInitialized = false, deliveryAllowed = false;
-            const locationData = {
-                'Santa Cruz': ['Alipit', 'Bagong Bayan', 'Bubukal', 'Calios', 'Duhat', 'Gatid', 'Giling-Giling', 'Labuin', 'Malinao', 'Matalatala', 'Oogong', 'Pagsawitan', 'Palanas', 'Poblacion I', 'Poblacion II', 'Poblacion III', 'Poblacion IV', 'Poblacion V', 'San Jose', 'San Juan', 'San Nicolas', 'San Pablo Norte', 'San Pablo Sur', 'Santisima Cruz', 'Santo Angel Central', 'Santo Angel Norte', 'Santo Angel Sur'],
-                'Pila': ['Aplaya', 'Bagong Pook', 'Bukal', 'Bulilan Sur', 'Concepcion', 'Labuin', 'Linga', 'Masico', 'Mojon', 'Pansol', 'Pinagbayanan', 'Poblacion', 'San Antonio', 'San Miguel', 'Santa Clara Norte', 'Santa Clara Sur', 'Tubuan'],
-                'Victoria': ['Banca-banca', 'Daniw', 'Masapang', 'Nanhaya', 'Pagalangan', 'San Francisco', 'San Roque', 'San Nicolas', 'Santa Cruz'],
-                'Lumban': ['Bagong Silang', 'Balimbingan', 'Balubad', 'Caliraya', 'Concepcion', 'Luwac', 'Maracta', 'Maytalang I', 'Maytalang II', 'Primeiro Distrito', 'Salac', 'Santo Niño', 'Segundo Distrito', 'Talahib', 'Talongue', 'Wawa'],
-                'Magdalena': ['Alipit', 'Baanan', 'Balanac', 'Bucal', 'Buenavista', 'Bungkol', 'Burol', 'Capayapaan', 'Cigaras', 'Halayhayin', 'Ibabang Atingay', 'Ibabang Butnong', 'Ilayang Atingay', 'Ilayang Butnong', 'Ilog', 'Malaking Ambling', 'Mali-mali', 'Mamatid', 'Poblacion', 'Sabang', 'Salaking', 'San Antonio', 'San Francisco', 'Tipunan']
-            };
-            const townCoordinates = { 'Santa Cruz': [14.2833, 121.4167], 'Pila': [14.2333, 121.3667], 'Victoria': [14.2250, 121.3283], 'Lumban': [14.2981, 121.4608], 'Magdalena': [14.2000, 121.4333] };
+            // Load delivery areas from API
+            let areasLoaded = false;
+
+            function loadDeliveryAreas(callback) {
+                if (areasLoaded) { if (callback) callback(); return; }
+                fetch('/api/delivery/areas')
+                    .then(r => {
+                        if (!r.ok) throw new Error('HTTP ' + r.status);
+                        return r.json();
+                    })
+                    .then(data => {
+                        console.log('Delivery areas loaded:', data);
+                        locationData = data.areas || {};
+                        townCoordinates = data.coordinates || {};
+                        areasLoaded = true;
+                        populateMunicipalitySelect();
+                        if (callback) callback();
+                    }).catch(err => {
+                        console.error('Delivery areas fetch failed:', err);
+                        const sel = document.getElementById('select_municipality');
+                        if (sel) sel.innerHTML = '<option value="">Could not load areas</option>';
+                    });
+            }
+
+            function populateMunicipalitySelect() {
+                const sel = document.getElementById('select_municipality');
+                if (!sel) return;
+                const prev = sel.value;
+                sel.innerHTML = '<option value="">Municipality</option>';
+                Object.keys(locationData).sort().forEach(muni => {
+                    const opt = document.createElement('option');
+                    opt.value = opt.textContent = muni;
+                    sel.appendChild(opt);
+                });
+                if (prev && locationData[prev]) sel.value = prev;
+            }
+
+            // Pre-load on page ready
+            loadDeliveryAreas();
 
             function initMap() {
                 if (mapInitialized) return;
@@ -622,7 +728,46 @@
                 marker = L.marker([14.2833, 121.4167], { draggable: true }).addTo(map);
                 marker.on('dragend', validateForm);
                 map.on('click', e => { marker.setLatLng(e.latlng); validateForm(); });
+                // Force size recalculation after render
+                setTimeout(() => map.invalidateSize(), 100);
             }
+
+            // Use Current Location button
+            document.getElementById('useCurrentLocBtn').addEventListener('click', function() {
+                const btn = this;
+                if (!navigator.geolocation) {
+                    if (window.showToast) window.showToast('warning', 'Geolocation is not supported by your browser.');
+                    return;
+                }
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Locating...';
+                btn.disabled = true;
+                navigator.geolocation.getCurrentPosition(
+                    function(pos) {
+                        const lat = pos.coords.latitude, lng = pos.coords.longitude;
+                        if (!mapInitialized) initMap();
+                        map.setView([lat, lng], 16);
+                        if (marker) marker.setLatLng([lat, lng]);
+                        else marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+                        marker.on('dragend', validateForm);
+                        validateForm();
+                        btn.innerHTML = '<i class="fas fa-check"></i> Located';
+                        btn.style.background = 'rgba(87,117,81,0.12)';
+                        btn.style.color = '#577551';
+                        setTimeout(() => {
+                            btn.innerHTML = '<i class="fas fa-crosshairs"></i> Use My Location';
+                            btn.style.background = '';
+                            btn.style.color = '';
+                            btn.disabled = false;
+                        }, 2000);
+                    },
+                    function() {
+                        btn.innerHTML = '<i class="fas fa-crosshairs"></i> Use My Location';
+                        btn.disabled = false;
+                        if (window.showToast) window.showToast('warning', 'Could not get your location. Please allow location access.');
+                    },
+                    { timeout: 8000 }
+                );
+            });
 
             // --- UI Update Helpers ---
             let appliedDiscountAmount = 0;
@@ -661,6 +806,7 @@
             function revalidateVoucher() {
                 if (!appliedVoucherCode) {
                     refreshTotalsDisplay();
+                    renderVoucherList(); // refresh eligibility badges
                     return;
                 }
                 const msg = document.getElementById('voucherMessage');
@@ -740,11 +886,154 @@
             }
 
             // --- Voucher UI Event Listeners ---
+            let voucherPollInterval = null;
+            let availableVouchers = [];
+
+            // Load available vouchers from API
+            function loadAvailableVouchers() {
+                fetch('/api/vouchers/available')
+                    .then(r => r.json())
+                    .then(data => {
+                        availableVouchers = data;
+                        renderVoucherList();
+                    }).catch(() => {});
+            }
+
+            function renderVoucherList() {
+                const container = document.getElementById('voucherListItems');
+                if (!container) return;
+                if (availableVouchers.length === 0) {
+                    container.innerHTML = `<div style="padding:1rem; text-align:center; color:#A1887F; font-size:0.8rem;">No vouchers available right now.</div>`;
+                    return;
+                }
+                container.innerHTML = availableVouchers.map(v => {
+                    const eligible = currentBaseTotal >= v.min_order_amount;
+                    const discLabel = v.discount_type === 'PERCENT'
+                        ? `${v.discount_value}% OFF`
+                        : `₱${v.discount_value.toLocaleString(undefined,{minimumFractionDigits:2})} OFF`;
+                    const minLabel = v.min_order_amount > 0
+                        ? `Min. spend ₱${v.min_order_amount.toLocaleString(undefined,{minimumFractionDigits:2})}`
+                        : 'No minimum spend';
+                    const shortfall = v.min_order_amount > 0 && !eligible
+                        ? `<div style="font-size:0.68rem;color:#e65100;margin-top:2px;"><i class="fas fa-exclamation-circle me-1"></i>Add ₱${(v.min_order_amount - currentBaseTotal).toLocaleString(undefined,{minimumFractionDigits:2})} more to use</div>`
+                        : '';
+                    return `
+                        <div class="voucher-list-item ${eligible ? '' : 'voucher-ineligible'}"
+                             onclick="${eligible ? `selectVoucher('${v.code}')` : ''}"
+                             style="padding:0.85rem 1rem; border-bottom:1px solid rgba(139,99,75,0.07); cursor:${eligible ? 'pointer' : 'default'}; transition: background 0.15s; ${eligible ? '' : 'opacity:0.55;'}">
+                            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:0.5rem;">
+                                <div>
+                                    <div style="font-weight:800; font-size:0.88rem; color:#3E2723; letter-spacing:0.5px; font-family:'Playfair Display',serif;">${v.code}</div>
+                                    <div style="font-size:0.75rem; color:#8B634B; margin-top:2px;">${minLabel}</div>
+                                    ${shortfall}
+                                </div>
+                                <div style="background:${eligible ? '#f0f4ef' : '#f5f5f5'}; color:${eligible ? '#577551' : '#999'}; border:1px solid ${eligible ? '#dce5d9' : '#e0e0e0'}; border-radius:50px; padding:0.25rem 0.7rem; font-size:0.75rem; font-weight:800; white-space:nowrap; flex-shrink:0;">
+                                    ${discLabel}
+                                </div>
+                            </div>
+                        </div>`;
+                }).join('');
+            }
+
+            function selectVoucher(code) {
+                document.getElementById('voucherCodeInput').value = code;
+                closeVoucherList();
+                document.getElementById('applyVoucherBtn').click();
+            }
+
+            function openVoucherList() {
+                loadAvailableVouchers();
+                document.getElementById('voucherListWrap').style.display = 'block';
+                document.getElementById('voucherListChevron').style.transform = 'rotate(180deg)';
+            }
+
+            function closeVoucherList() {
+                document.getElementById('voucherListWrap').style.display = 'none';
+                document.getElementById('voucherListChevron').style.transform = 'rotate(0deg)';
+            }
+
+            document.getElementById('toggleVoucherListBtn').addEventListener('click', function() {
+                const wrap = document.getElementById('voucherListWrap');
+                if (wrap.style.display === 'none' || wrap.style.display === '') {
+                    openVoucherList();
+                } else {
+                    closeVoucherList();
+                }
+            });
+
+            // Re-render list when total changes (eligibility may change)
+            const _origRevalidate = window._origRevalidate;
+
+            function startVoucherPoll(code) {
+                stopVoucherPoll();
+                voucherPollInterval = setInterval(() => checkVoucherStillValid(code), 5000);
+            }
+
+            function stopVoucherPoll() {
+                if (voucherPollInterval) { clearInterval(voucherPollInterval); voucherPollInterval = null; }
+            }
+
+            function checkVoucherStillValid(code) {
+                fetch('/api/voucher/status/' + encodeURIComponent(code))
+                    .then(r => r.json())
+                    .then(data => {
+                        if (!data.valid) {
+                            invalidateAppliedVoucher(data.reason);
+                        }
+                    }).catch(() => {});
+            }
+
+            function invalidateAppliedVoucher(reason) {
+                stopVoucherPoll();
+                appliedVoucherCode = null;
+                appliedDiscountAmount = 0;
+                document.getElementById('checkout_voucher_code').value = '';
+
+                // Reset voucher UI
+                document.getElementById('voucherAppliedBar').style.display = 'none';
+                document.getElementById('voucherPickerWrap').style.display = 'block';
+
+                const reasonMap = {
+                    'deleted':        'This voucher has been removed and is no longer available.',
+                    'paused':         'This voucher has been paused by the admin. Please try again later.',
+                    'exhausted':      'This voucher has reached its usage limit.',
+                    'expired':        'This voucher has expired.',
+                    'not_yet_valid':  'This voucher is not yet active.',
+                };
+                const msg = reasonMap[reason] || 'This voucher is no longer valid.';
+                const msgEl = document.getElementById('voucherMessage');
+                msgEl.innerHTML = `<span class="text-danger"><i class="fas fa-exclamation-triangle me-1"></i>${msg}</span>`;
+                msgEl.style.display = 'block';
+
+                let banner = document.getElementById('voucherInvalidBanner');
+                if (!banner) {
+                    banner = document.createElement('div');
+                    banner.id = 'voucherInvalidBanner';
+                    banner.style.cssText = 'background:#fff3cd;border:1px solid #ffc107;border-radius:10px;padding:0.75rem 1rem;margin-bottom:1rem;font-size:0.82rem;font-weight:600;color:#856404;display:flex;align-items:center;gap:0.5rem;';
+                    const submitBtn = document.querySelector('.cartSubmit');
+                    submitBtn.parentNode.insertBefore(banner, submitBtn);
+                }
+                banner.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Voucher removed — please re-apply or proceed without one.`;
+                banner.style.display = 'flex';
+
+                const submitBtn = document.querySelector('.cartSubmit');
+                if (submitBtn) { submitBtn.disabled = true; submitBtn.style.opacity = '0.5'; }
+
+                setTimeout(() => {
+                    if (banner) banner.style.display = 'none';
+                    if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = '1'; }
+                    validateForm();
+                }, 6000);
+
+                refreshTotalsDisplay();
+                if (window.showToast) window.showToast('warning', msg);
+            }
+
             document.getElementById('applyVoucherBtn').addEventListener('click', function() {
-                const code = document.getElementById('voucherCodeInput').value.trim();
+                const code = document.getElementById('voucherCodeInput').value.trim().toUpperCase();
                 const msg = document.getElementById('voucherMessage');
                 if (!code) return;
-                
+
                 if (currentBaseTotal === 0) {
                     msg.innerHTML = `<span class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>Please select items first.</span>`;
                     msg.style.display = 'block';
@@ -753,16 +1042,10 @@
 
                 this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
-                fetch('/api/voucher/apply', { 
-                    method: 'POST', 
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({
-                        code: code,
-                        order_total: currentBaseTotal
-                    })
+                fetch('/api/voucher/apply', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    body: JSON.stringify({ code: code, order_total: currentBaseTotal })
                 })
                 .then(r => r.json()).then(data => {
                     this.innerHTML = 'Apply';
@@ -770,35 +1053,45 @@
                         appliedVoucherCode = code;
                         appliedDiscountAmount = parseFloat(data.discount);
                         document.getElementById('checkout_voucher_code').value = code;
-                        document.getElementById('discount_label').innerText = `(${code.toUpperCase()})`;
-                        
-                        msg.innerHTML = `<span class="text-success"><i class="fas fa-check-circle me-1"></i>${data.message}</span>`;
-                        msg.style.display = 'block';
-                        
-                        this.style.display = 'none';
-                        document.getElementById('removeVoucherBtn').style.display = 'block';
-                        document.getElementById('voucherCodeInput').readOnly = true;
+                        document.getElementById('discount_label').innerText = `(${code})`;
+
+                        // Show applied bar
+                        const discLabel = data.discount_type === 'PERCENT'
+                            ? `${data.discount_value}% OFF`
+                            : `₱${parseFloat(data.discount_value).toLocaleString(undefined,{minimumFractionDigits:2})} OFF`;
+                        document.getElementById('voucherAppliedLabel').innerHTML =
+                            `<i class="fas fa-tag me-1"></i>${code} — <strong>${discLabel}</strong> applied`;
+                        document.getElementById('voucherAppliedBar').style.display = 'flex';
+                        document.getElementById('voucherPickerWrap').style.display = 'none';
+
+                        msg.style.display = 'none';
+                        closeVoucherList();
+
+                        const banner = document.getElementById('voucherInvalidBanner');
+                        if (banner) banner.style.display = 'none';
+
+                        startVoucherPoll(code);
                         refreshTotalsDisplay();
                     } else {
                         msg.innerHTML = `<span class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>${data.message}</span>`;
                         msg.style.display = 'block';
                     }
-                }).catch(() => {
-                    this.innerHTML = 'Apply';
-                });
+                }).catch(() => { this.innerHTML = 'Apply'; });
             });
 
             document.getElementById('removeVoucherBtn').addEventListener('click', function() {
+                stopVoucherPoll();
                 appliedVoucherCode = null;
                 appliedDiscountAmount = 0;
                 document.getElementById('checkout_voucher_code').value = '';
                 document.getElementById('voucherMessage').style.display = 'none';
-                this.style.display = 'none';
-                document.getElementById('applyVoucherBtn').style.display = 'block';
-                const inp = document.getElementById('voucherCodeInput');
-                inp.readOnly = false;
-                inp.value = '';
+                document.getElementById('voucherAppliedBar').style.display = 'none';
+                document.getElementById('voucherPickerWrap').style.display = 'block';
+                document.getElementById('voucherCodeInput').value = '';
+                const banner = document.getElementById('voucherInvalidBanner');
+                if (banner) banner.style.display = 'none';
                 refreshTotalsDisplay();
+                renderVoucherList(); // refresh eligibility
             });
 
             // --- Event Listeners: Checkboxes ---
@@ -861,9 +1154,32 @@
             document.querySelectorAll('input[name="dining_option"]').forEach(r => {
                 r.addEventListener('change', function () {
                     const isDel = this.value === 'DELIVERY';
-                    document.getElementById('delivery_fields').style.display = isDel ? 'block' : 'none';
-                    if (isDel) setTimeout(() => { if (!map) initMap(); else map.invalidateSize(); }, 200);
-                    recalculateCheckedTotal(); // Re-validate everything including checkbox presence
+                    const deliveryFields = document.getElementById('delivery_fields');
+                    const summary = document.querySelector('.cartSummary');
+
+                    deliveryFields.style.display = isDel ? 'block' : 'none';
+
+                    // Switch summary between sticky (non-delivery) and relative (delivery)
+                    // so the full delivery form is visible without clipping
+                    if (summary) {
+                        if (isDel) {
+                            summary.classList.add('delivery-mode');
+                        } else {
+                            summary.classList.remove('delivery-mode');
+                        }
+                    }
+
+                    if (isDel) {
+                        loadDeliveryAreas();
+                        setTimeout(function() {
+                            if (!mapInitialized) {
+                                initMap();
+                            } else if (map) {
+                                map.invalidateSize();
+                            }
+                        }, 250);
+                    }
+                    recalculateCheckedTotal();
                     validateForm();
                     const ad = document.getElementById('delivery_address');
                     if (ad) ad.required = isDel;
@@ -903,29 +1219,31 @@
                         if (data.status === 'success') {
                             // Update quantity display
                             var qtyEl = document.getElementById('qty-' + rowId);
-                            if (qtyEl) qtyEl.innerText = data.new_quantity;
+                            if (qtyEl) qtyEl.value = data.new_quantity;
 
                             // Update subtotal display
                             var subEl = document.getElementById('subtotal-' + rowId);
                             if (subEl) subEl.innerText = data.item_subtotal;
 
-                            // Update grand total based on visible DOM elements plus the update!
+                            // Update grand total & voucher
                             recalculateCheckedTotal();
 
                             // Update cart badge in navbar
                             updateCartBadge(data.cart_count);
 
-                            // Re-enable buttons with correct disabled state
+                            // Update decrement button disabled state
                             var currQty = parseInt(data.new_quantity) || 1;
                             row.querySelectorAll('.qty-update-form').forEach(function(f) {
                                 var btn = f.querySelector('.qty-btn');
                                 var actionInput = f.querySelector('input[name="cart_action"]');
                                 if (btn && actionInput) {
                                     var isDec = actionInput.value === 'decrement';
-                                    btn.disabled = (isDec && currQty <= 1);
-                                    btn.style.opacity = (isDec && currQty <= 1) ? '0.5' : '1';
+                                    var isInc = actionInput.value === 'increment';
+                                    if (isDec) { btn.disabled = currQty <= 1; btn.style.opacity = currQty <= 1 ? '0.5' : '1'; }
+                                    if (isInc) { btn.disabled = currQty >= 20; btn.style.opacity = currQty >= 20 ? '0.5' : '1'; }
                                 }
                             });
+                            if (data.capped && window.showToast) window.showToast('warning', 'Maximum of 20 per item allowed.');
                         } else {
                             // If server returned non-success, reload
                             window.location.reload();
@@ -942,6 +1260,62 @@
                             window.showToast('danger', 'Failed to update quantity. Please try again.');
                         }
                     });
+                });
+            });
+
+            // --- Event Listeners: Quantity Input (Direct Typing) ---
+            function cartQtySetByInput(input) {
+                var qty = parseInt(input.value);
+                if (isNaN(qty) || qty < 1) { qty = 1; }
+                if (qty > 20) {
+                    qty = 20;
+                    if (window.showToast) window.showToast('warning', 'Maximum of 20 per item allowed.');
+                }
+                input.value = qty;
+                var itemId = input.dataset.itemId;
+                var url = input.dataset.updateUrl;
+                var row = input.closest('.cartItem');
+                var formData = new FormData();
+                formData.append('cart_action', 'set');
+                formData.append('quantity', qty);
+                fetch(url, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                }).then(function(r) { return r.json(); }).then(function(data) {
+                    if (data.status === 'success') {
+                        input.value = data.new_quantity;
+                        var subEl = document.getElementById('subtotal-' + itemId);
+                        if (subEl) subEl.innerText = data.item_subtotal;
+                        recalculateCheckedTotal();
+                        updateCartBadge(data.cart_count);
+                        if (data.capped && window.showToast) window.showToast('warning', 'Maximum of 20 per item allowed.');
+                        // Update decrement button state
+                        var currQty = parseInt(data.new_quantity) || 1;
+                        if (row) {
+                            row.querySelectorAll('.qty-update-form').forEach(function(f) {
+                                var btn = f.querySelector('.qty-btn');
+                                var actionInput = f.querySelector('input[name="cart_action"]');
+                                if (btn && actionInput) {
+                                    var isDec = actionInput.value === 'decrement';
+                                    var isInc = actionInput.value === 'increment';
+                                    if (isDec) { btn.disabled = currQty <= 1; btn.style.opacity = currQty <= 1 ? '0.5' : '1'; }
+                                    if (isInc) { btn.disabled = currQty >= 20; btn.style.opacity = currQty >= 20 ? '0.5' : '1'; }
+                                }
+                            });
+                        }
+                    }
+                }).catch(function() {
+                    if (window.showToast) window.showToast('danger', 'Failed to update quantity.');
+                });
+            }
+
+            document.querySelectorAll('.qty-val').forEach(function(input) {
+                input.addEventListener('change', function() { cartQtySetByInput(this); });
+                input.addEventListener('blur',   function() { cartQtySetByInput(this); });
+                // Prevent form submit on Enter, just blur instead
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') { e.preventDefault(); this.blur(); }
                 });
             });
 
@@ -972,7 +1346,10 @@
                         opt.value = opt.textContent = b;
                         selBrgy.appendChild(opt);
                     });
-                    if (map && townCoordinates[muni]) map.flyTo(townCoordinates[muni], 14);
+                    if (map && townCoordinates[muni]) {
+                        map.flyTo(townCoordinates[muni], 14);
+                        if (marker) marker.setLatLng(townCoordinates[muni]);
+                    }
                 } else selBrgy.disabled = true;
                 validateForm();
             });
@@ -982,6 +1359,12 @@
             refreshTotalsDisplay();
             const co = document.querySelector('input[name="dining_option"]:checked');
             if (co && co.value === 'DELIVERY') co.dispatchEvent(new Event('change'));
+
+            // Load vouchers on init
+            loadAvailableVouchers();
+
+            // Stop voucher poll on page leave
+            window.addEventListener('beforeunload', stopVoucherPoll);
         });
     </script>
     {% else %}

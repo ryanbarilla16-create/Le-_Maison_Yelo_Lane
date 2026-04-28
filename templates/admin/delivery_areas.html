@@ -1,0 +1,337 @@
+{% extends "admin/base.html" %}
+{% block title %}Delivery Areas{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 style="font-family:'Georgia',serif;color:var(--text-main);font-size:2rem;font-weight:bold;margin:0;">
+        <i class="fas fa-map-marker-alt me-2"></i>Delivery Areas
+    </h1>
+    <button class="btn-admin-primary px-4 py-2" onclick="openAddModal()"
+        style="border-radius:10px;border:none;font-weight:700;font-size:0.85rem;">
+        <i class="fas fa-plus me-1"></i> Add Area
+    </button>
+</div>
+
+<style>
+    .da-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:1.5rem; }
+    .da-card { background:#fff; border-radius:16px; border:1px solid rgba(139,99,75,0.1); box-shadow:0 8px 25px rgba(0,0,0,0.03); transition:all 0.3s; position:relative; overflow:hidden; }
+    .da-card:hover { transform:translateY(-3px); box-shadow:0 12px 35px rgba(139,99,75,0.08); }
+    .da-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:8px; background:linear-gradient(180deg,#8B634B,#5D4037); }
+    .da-body { padding:1.25rem 1.25rem 1.25rem 1.75rem; }
+    .da-muni { font-family:'Playfair Display',serif; font-weight:900; font-size:1.2rem; color:#3E2723; margin:0 0 4px; }
+    .da-coords { font-size:0.72rem; color:#a48c7e; font-weight:600; margin-bottom:0.75rem; }
+    .da-brgys { font-size:0.78rem; color:#6D4C41; line-height:1.6; max-height:80px; overflow:hidden; position:relative; }
+    .da-brgys.expanded { max-height:none; }
+    .da-brgys-fade { position:absolute; bottom:0; left:0; right:0; height:30px; background:linear-gradient(transparent,#fff); pointer-events:none; }
+    .da-footer { display:flex; justify-content:space-between; align-items:center; padding:0.75rem 1.25rem 0.75rem 1.75rem; border-top:1px dashed rgba(139,99,75,0.1); }
+    .da-badge-active { background:#f0f4ef; color:#577551; border:1px solid #dce5d9; padding:0.25rem 0.75rem; border-radius:50px; font-size:0.72rem; font-weight:800; }
+    .da-badge-inactive { background:#f5f5f5; color:#757575; border:1px solid #e0e0e0; padding:0.25rem 0.75rem; border-radius:50px; font-size:0.72rem; font-weight:800; }
+    .da-actions { display:flex; gap:0.4rem; }
+    .da-btn { width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:none; cursor:pointer; font-size:0.75rem; transition:all 0.2s; }
+    .da-btn-edit { background:#fdf6e9; color:#c2934d; border:1px solid #f6e6cd; }
+    .da-btn-edit:hover { background:#faeccd; }
+    .da-btn-toggle { background:#e8f5e9; color:#388e3c; border:1px solid #c8e6c9; }
+    .da-btn-toggle:hover { background:#c8e6c9; }
+    .da-btn-delete { background:#f8f3f0; color:#8a4a41; border:1px solid #eed7d3; }
+    .da-btn-delete:hover { background:#eed7d3; }
+    /* Modal */
+    .da-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:3000; display:none; align-items:center; justify-content:center; }
+    .da-modal-overlay.show { display:flex; }
+    .da-modal { background:#fdfaf7; border-radius:20px; width:100%; max-width:560px; max-height:90vh; overflow-y:auto; box-shadow:0 30px 80px rgba(0,0,0,0.2); }
+    .da-modal-header { background:linear-gradient(135deg,#5D4037,#8B634B); padding:1.25rem 1.5rem; border-radius:20px 20px 0 0; display:flex; justify-content:space-between; align-items:center; }
+    .da-modal-body { padding:1.5rem; }
+    .da-label { font-size:0.78rem; font-weight:700; color:#5D4037; text-transform:uppercase; letter-spacing:0.4px; margin-bottom:5px; display:block; }
+    .da-input { border:1.5px solid rgba(139,99,75,0.2)!important; border-radius:10px!important; font-size:0.9rem; color:#3E2723; background:#fff!important; padding:0.55rem 0.85rem; width:100%; transition:border-color 0.2s; }
+    .da-input:focus { border-color:#8B634B!important; outline:none; box-shadow:0 0 0 3px rgba(139,99,75,0.1)!important; }
+    .da-textarea { resize:vertical; min-height:100px; }
+    #mapPreview { height:220px; border-radius:12px; border:1.5px solid rgba(139,99,75,0.2); margin-top:0.5rem; }
+</style>
+
+<div class="da-grid" id="daGrid">
+    {% for area in areas %}
+    <div class="da-card" id="da-card-{{ area.id }}">
+        <div class="da-body">
+            <div class="d-flex justify-content-between align-items-start">
+                <h3 class="da-muni">{{ area.municipality }}</h3>
+                <span class="da-badge-{{ 'active' if area.is_active else 'inactive' }}" id="da-badge-{{ area.id }}">
+                    {{ 'Active' if area.is_active else 'Inactive' }}
+                </span>
+            </div>
+            {% if area.lat and area.lng %}
+            <div class="da-coords"><i class="fas fa-map-pin me-1"></i>{{ "%.4f"|format(area.lat) }}, {{ "%.4f"|format(area.lng) }}</div>
+            {% endif %}
+            <div class="da-brgys" id="da-brgys-{{ area.id }}">
+                {{ area.barangays_list()|join(', ') }}
+                <div class="da-brgys-fade" id="da-fade-{{ area.id }}"></div>
+            </div>
+            <button type="button" onclick="toggleBrgys({{ area.id }})" id="da-expand-{{ area.id }}"
+                style="background:none;border:none;color:#8B634B;font-size:0.72rem;font-weight:700;cursor:pointer;padding:4px 0 0;">
+                Show all {{ area.barangays_list()|length }} barangays ▾
+            </button>
+        </div>
+        <div class="da-footer">
+            <span style="font-size:0.75rem;color:#a48c7e;font-weight:600;">
+                <i class="fas fa-map-marker-alt me-1"></i>{{ area.barangays_list()|length }} barangays
+            </span>
+            <div class="da-actions">
+                <button class="da-btn da-btn-edit" title="Edit"
+                    data-id="{{ area.id }}"
+                    data-muni="{{ area.municipality }}"
+                    data-brgys="{{ area.barangays_list()|tojson|e }}"
+                    data-lat="{{ area.lat or '' }}"
+                    data-lng="{{ area.lng or '' }}"
+                    onclick="openEditFromBtn(this)">
+                    <i class="fas fa-pen"></i>
+                </button>
+                <button class="da-btn da-btn-toggle" title="Toggle Active" id="da-toggle-{{ area.id }}"
+                    onclick="toggleArea({{ area.id }}, this)">
+                    <i class="fas fa-{{ 'pause' if area.is_active else 'play' }}"></i>
+                </button>
+                <button class="da-btn da-btn-delete" title="Delete"
+                    data-id="{{ area.id }}"
+                    data-name="{{ area.municipality }}"
+                    onclick="deleteAreaFromBtn(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div id="da-empty" style="grid-column:1/-1;text-align:center;padding:4rem 2rem;background:#fff;border-radius:20px;border:1px dashed rgba(139,99,75,0.2);">
+        <i class="fas fa-map-marked-alt" style="font-size:3rem;color:rgba(139,99,75,0.2);margin-bottom:1rem;display:block;"></i>
+        <h3 style="font-family:'Playfair Display',serif;color:#3E2723;">No delivery areas yet</h3>
+        <p style="color:#8D6E63;">Click "Add Area" to configure your first delivery zone.</p>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="da-modal-overlay" id="daModalOverlay">
+    <div class="da-modal">
+        <div class="da-modal-header">
+            <h5 class="text-white fw-bold mb-0" id="daModalTitle" style="font-size:1.1rem;">
+                <i class="fas fa-map-marker-alt me-2"></i> Add Delivery Area
+            </h5>
+            <button type="button" onclick="closeModal()" style="background:none;border:none;color:#fff;font-size:1.2rem;cursor:pointer;line-height:1;">×</button>
+        </div>
+        <div class="da-modal-body">
+            <form id="daForm" method="POST">
+                <input type="hidden" id="daAreaId" value="">
+
+                <div class="mb-3">
+                    <label class="da-label">Municipality / City Name</label>
+                    <input type="text" id="daMunicipality" name="municipality" class="da-input" placeholder="e.g. Pagsanjan" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="da-label">Barangays <span style="font-weight:400;text-transform:none;color:#a48c7e;">(one per line or comma-separated)</span></label>
+                    <textarea id="daBarangays" name="barangays" class="da-input da-textarea"
+                        placeholder="Poblacion&#10;San Antonio&#10;San Miguel&#10;..."></textarea>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-6">
+                        <label class="da-label">Latitude <span style="font-weight:400;text-transform:none;color:#a48c7e;">(for map pin)</span></label>
+                        <input type="number" id="daLat" name="lat" class="da-input" step="0.0001" placeholder="e.g. 14.2833">
+                    </div>
+                    <div class="col-6">
+                        <label class="da-label">Longitude</label>
+                        <input type="number" id="daLng" name="lng" class="da-input" step="0.0001" placeholder="e.g. 121.4167">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="da-label">Pin on Map <span style="font-weight:400;text-transform:none;color:#a48c7e;">(click to set coordinates)</span></label>
+                    <div id="mapPreview"></div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-3">
+                    <button type="button" onclick="closeModal()"
+                        style="background:transparent;border:1.5px solid rgba(139,99,75,0.25);color:#8B634B;border-radius:50px;padding:0.55rem 1.4rem;font-weight:700;font-size:0.85rem;cursor:pointer;">
+                        Cancel
+                    </button>
+                    <button type="submit" id="daSubmitBtn"
+                        style="background:linear-gradient(135deg,#8B634B,#5D4037);color:#fff;border:none;border-radius:50px;padding:0.55rem 1.6rem;font-weight:800;font-size:0.85rem;cursor:pointer;box-shadow:0 6px 18px rgba(93,64,55,0.25);">
+                        <i class="fas fa-save me-1"></i> Save Area
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    let modalMap = null, modalMarker = null;
+
+    function openEditFromBtn(btn) {
+        const id   = btn.dataset.id;
+        const muni = btn.dataset.muni;
+        const lat  = btn.dataset.lat  !== '' ? parseFloat(btn.dataset.lat)  : null;
+        const lng  = btn.dataset.lng  !== '' ? parseFloat(btn.dataset.lng)  : null;
+        let brgys  = [];
+        try { brgys = JSON.parse(btn.dataset.brgys); } catch(e) { brgys = []; }
+        openEditModal(id, muni, brgys, lat, lng);
+    }
+
+    function deleteAreaFromBtn(btn) {
+        const id   = btn.dataset.id;
+        const name = btn.dataset.name;
+        deleteArea(id, name, btn);
+    }
+
+    function openAddModal() {
+        document.getElementById('daModalTitle').innerHTML = '<i class="fas fa-plus me-2"></i> Add Delivery Area';
+        document.getElementById('daForm').action = '/admin/delivery-areas/add';
+        document.getElementById('daAreaId').value = '';
+        document.getElementById('daMunicipality').value = '';
+        document.getElementById('daBarangays').value = '';
+        document.getElementById('daLat').value = '';
+        document.getElementById('daLng').value = '';
+        document.getElementById('daModalOverlay').classList.add('show');
+        setTimeout(function() { initModalMap(null, null); }, 300);
+    }
+
+    function openEditModal(id, muni, brgys, lat, lng) {
+        document.getElementById('daModalTitle').innerHTML = '<i class="fas fa-pen me-2"></i> Edit Delivery Area';
+        document.getElementById('daForm').action = '/admin/delivery-areas/' + id + '/edit';
+        document.getElementById('daAreaId').value = id;
+        document.getElementById('daMunicipality').value = muni;
+        document.getElementById('daBarangays').value = Array.isArray(brgys) ? brgys.join('\n') : brgys;
+        document.getElementById('daLat').value = (lat !== null && lat !== undefined) ? lat : '';
+        document.getElementById('daLng').value = (lng !== null && lng !== undefined) ? lng : '';
+        document.getElementById('daModalOverlay').classList.add('show');
+        setTimeout(function() { initModalMap(lat, lng); }, 300);
+    }
+
+    function closeModal() {
+        document.getElementById('daModalOverlay').classList.remove('show');
+        if (modalMap) {
+            try { modalMap.remove(); } catch(e) {}
+            modalMap = null;
+            modalMarker = null;
+        }
+        // Clear the mapPreview container so Leaflet can reinitialize cleanly
+        document.getElementById('mapPreview').innerHTML = '';
+    }
+
+    function initModalMap(lat, lng) {
+        // Destroy existing map instance first
+        if (modalMap) {
+            try { modalMap.remove(); } catch(e) {}
+            modalMap = null;
+            modalMarker = null;
+        }
+        document.getElementById('mapPreview').innerHTML = '';
+
+        const centerLat = (lat !== null && lat !== undefined && !isNaN(lat)) ? parseFloat(lat) : 14.2833;
+        const centerLng = (lng !== null && lng !== undefined && !isNaN(lng)) ? parseFloat(lng) : 121.4167;
+
+        try {
+            modalMap = L.map('mapPreview').setView([centerLat, centerLng], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap'
+            }).addTo(modalMap);
+
+            if (lat !== null && lat !== undefined && !isNaN(lat) && lng !== null && lng !== undefined && !isNaN(lng)) {
+                modalMarker = L.marker([parseFloat(lat), parseFloat(lng)], { draggable: true }).addTo(modalMap);
+                modalMarker.on('dragend', updateCoordsFromMarker);
+            }
+
+            modalMap.on('click', function(e) {
+                if (modalMarker) modalMap.removeLayer(modalMarker);
+                modalMarker = L.marker(e.latlng, { draggable: true }).addTo(modalMap);
+                modalMarker.on('dragend', updateCoordsFromMarker);
+                document.getElementById('daLat').value = e.latlng.lat.toFixed(6);
+                document.getElementById('daLng').value = e.latlng.lng.toFixed(6);
+            });
+
+            // Force size recalculation
+            setTimeout(function() { if (modalMap) modalMap.invalidateSize(); }, 100);
+        } catch(e) {
+            console.error('Map init error:', e);
+        }
+    }
+
+    function updateCoordsFromMarker() {
+        const ll = modalMarker.getLatLng();
+        document.getElementById('daLat').value = ll.lat.toFixed(6);
+        document.getElementById('daLng').value = ll.lng.toFixed(6);
+    }
+
+    // Sync lat/lng inputs → move marker
+    ['daLat','daLng'].forEach(function(id) {
+        document.getElementById(id).addEventListener('input', function() {
+            const lat = parseFloat(document.getElementById('daLat').value);
+            const lng = parseFloat(document.getElementById('daLng').value);
+            if (!isNaN(lat) && !isNaN(lng) && modalMap) {
+                if (modalMarker) modalMap.removeLayer(modalMarker);
+                modalMarker = L.marker([lat, lng], { draggable: true }).addTo(modalMap);
+                modalMarker.on('dragend', updateCoordsFromMarker);
+                modalMap.setView([lat, lng], 13);
+            }
+        });
+    });
+
+    function toggleBrgys(id) {
+        const el = document.getElementById('da-brgys-' + id);
+        const fade = document.getElementById('da-fade-' + id);
+        const btn = document.getElementById('da-expand-' + id);
+        el.classList.toggle('expanded');
+        if (el.classList.contains('expanded')) {
+            fade.style.display = 'none';
+            btn.textContent = 'Show less ▴';
+        } else {
+            fade.style.display = 'block';
+            btn.textContent = btn.textContent.replace('▴','▾');
+        }
+    }
+
+    function toggleArea(id, btn) {
+        fetch('/admin/delivery-areas/' + id + '/toggle', { method: 'POST' })
+            .then(r => r.json()).then(data => {
+                const badge = document.getElementById('da-badge-' + id);
+                const icon = btn.querySelector('i');
+                if (data.is_active) {
+                    badge.className = 'da-badge-active';
+                    badge.textContent = 'Active';
+                    icon.className = 'fas fa-pause';
+                    btn.title = 'Disable';
+                } else {
+                    badge.className = 'da-badge-inactive';
+                    badge.textContent = 'Inactive';
+                    icon.className = 'fas fa-play';
+                    btn.title = 'Enable';
+                }
+            });
+    }
+
+    function deleteArea(id, name, btn) {
+        if (!confirm('Delete delivery area "' + name + '"? This cannot be undone.')) return;
+        const card = btn.closest('.da-card');
+        card.style.transition = 'all 0.3s';
+        card.style.opacity = '0';
+        card.style.transform = 'scale(0.9)';
+        fetch('/admin/delivery-areas/' + id + '/delete', { method: 'POST' })
+            .then(r => r.json()).then(() => {
+                setTimeout(() => {
+                    card.remove();
+                    if (!document.querySelector('.da-card')) {
+                        document.getElementById('daGrid').innerHTML = `
+                            <div style="grid-column:1/-1;text-align:center;padding:4rem 2rem;background:#fff;border-radius:20px;border:1px dashed rgba(139,99,75,0.2);">
+                                <i class="fas fa-map-marked-alt" style="font-size:3rem;color:rgba(139,99,75,0.2);margin-bottom:1rem;display:block;"></i>
+                                <h3 style="font-family:'Playfair Display',serif;color:#3E2723;">No delivery areas</h3>
+                            </div>`;
+                    }
+                }, 300);
+            });
+    }
+
+    // Close modal on overlay click
+    document.getElementById('daModalOverlay').addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+    });
+</script>
+
+{% endblock %}

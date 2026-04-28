@@ -317,3 +317,21 @@ class ContactMessage(db.Model):
 
     replied_by = db.relationship('User', backref=db.backref('contact_replies', lazy=True))
 
+
+# ── DELIVERY AREAS ────────────────────────────────────────────────────────────
+class DeliveryArea(db.Model):
+    id         = db.Column(db.Integer, primary_key=True)
+    municipality = db.Column(db.String(100), nullable=False, unique=True)
+    barangays  = db.Column(db.Text, nullable=False)   # JSON array stored as text
+    lat        = db.Column(db.Float, nullable=True)
+    lng        = db.Column(db.Float, nullable=True)
+    is_active  = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=get_ph_time)
+    updated_at = db.Column(db.DateTime, default=get_ph_time, onupdate=get_ph_time)
+
+    def barangays_list(self):
+        import json
+        try:
+            return json.loads(self.barangays)
+        except Exception:
+            return []

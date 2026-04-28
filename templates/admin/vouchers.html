@@ -316,62 +316,322 @@
 
 <!-- Add Voucher Modal -->
 <div class="modal fade" id="addVoucherModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <form action="{{ url_for('admin.voucher_add') }}" method="POST">
-            <div class="modal-content" style="border-radius: 16px; border: none;">
-                <div class="modal-header border-0" style="background: linear-gradient(135deg, #8b634b, #8b634b); border-radius: 16px 16px 0 0;">
-                    <h5 class="modal-title text-white fw-bold"><i class="fas fa-ticket-alt me-2"></i> Create New Voucher</h5>
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 560px;">
+        <form action="{{ url_for('admin.voucher_add') }}" method="POST" id="voucherForm" novalidate>
+            <div class="modal-content" style="border-radius: 20px; border: none; box-shadow: 0 30px 80px rgba(0,0,0,0.15); overflow: hidden;">
+
+                <!-- Header -->
+                <div class="modal-header border-0 px-4 pt-4 pb-3" style="background: linear-gradient(135deg, #5D4037 0%, #8B634B 100%);">
+                    <div>
+                        <h5 class="modal-title text-white fw-bold mb-0" style="font-size: 1.2rem; letter-spacing: 0.3px;">
+                            <i class="fas fa-ticket-alt me-2"></i> Create New Voucher
+                        </h5>
+                        <p class="text-white mb-0" style="font-size: 0.78rem; opacity: 0.75; margin-top: 2px;">Fill in the details below to generate a promo code</p>
+                    </div>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body p-4">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Voucher Code</label>
-                        <input type="text" name="code" class="form-control rounded-pill" placeholder="e.g. WELCOME20" required style="text-transform: uppercase;">
+
+                <div class="modal-body px-4 py-4" style="background: #fdfaf7;">
+
+                    <!-- Voucher Code -->
+                    <div class="vf-group mb-3">
+                        <label class="vf-label">Voucher Code</label>
+                        <div class="input-group">
+                            <input type="text" name="code" id="voucherCodeInput" class="vf-input form-control"
+                                placeholder="e.g. WELCOME20" required maxlength="30"
+                                style="text-transform: uppercase; border-radius: 10px 0 0 10px !important; border-right: none;">
+                            <button type="button" class="vf-gen-btn" onclick="generateVoucherCode()" title="Auto-generate code">
+                                <i class="fas fa-magic me-1"></i> Generate
+                            </button>
+                        </div>
+                        <div class="vf-hint">Letters and numbers only. Max 30 characters.</div>
                     </div>
-                    <div class="row mb-3">
+
+                    <!-- Discount Type + Value -->
+                    <div class="row g-3 mb-3">
                         <div class="col-6">
-                            <label class="form-label fw-bold">Discount Type</label>
-                            <select name="discount_type" class="form-select rounded-pill">
+                            <label class="vf-label">Discount Type</label>
+                            <select name="discount_type" id="discountType" class="vf-input form-select" onchange="updateDiscountHint()">
                                 <option value="PERCENT">Percentage (%)</option>
                                 <option value="FIXED">Fixed Amount (₱)</option>
                             </select>
                         </div>
                         <div class="col-6">
-                            <label class="form-label fw-bold">Discount Value</label>
-                            <input type="number" name="discount_value" class="form-control rounded-pill" step="0.01" min="1" required>
+                            <label class="vf-label">Discount Value</label>
+                            <input type="number" name="discount_value" id="discountValue" class="vf-input form-control"
+                                step="0.01" min="1" required placeholder="e.g. 15">
+                            <div class="vf-hint" id="discountHint">Max 80% off per transaction.</div>
                         </div>
                     </div>
-                    <div class="row mb-3">
+
+                    <!-- Min Order + Max Uses -->
+                    <div class="row g-3 mb-3">
                         <div class="col-6">
-                            <label class="form-label fw-bold">Min Order Amount</label>
-                            <input type="number" name="min_order_amount" class="form-control rounded-pill" value="0" step="0.01" min="0">
+                            <label class="vf-label">Min Order Amount <span class="vf-optional">(₱)</span></label>
+                            <input type="number" name="min_order_amount" class="vf-input form-control"
+                                value="0" step="0.01" min="0" max="99999" placeholder="0">
+                            <div class="vf-hint">0 means no minimum. Max ₱99,999.</div>
                         </div>
                         <div class="col-6">
-                            <label class="form-label fw-bold">Max Uses</label>
-                            <input type="number" name="max_uses" class="form-control rounded-pill" value="100" min="1">
-                        </div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-6">
-                            <label class="form-label fw-bold">Valid From</label>
-                            <input type="date" name="valid_from" class="form-control rounded-pill">
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label fw-bold">Valid Until</label>
-                            <input type="date" name="valid_until" class="form-control rounded-pill">
+                            <label class="vf-label">Max Uses</label>
+                            <input type="number" name="max_uses" class="vf-input form-control"
+                                value="50" min="1" max="10000" placeholder="50">
+                            <div class="vf-hint">Min 1 use required.</div>
                         </div>
                     </div>
+
+                    <!-- Validity Dates -->
+                    <div class="vf-date-section mb-1">
+                        <div class="vf-date-label"><i class="far fa-calendar-alt me-1"></i> Validity Period</div>
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <label class="vf-label">Valid From</label>
+                                <input type="date" name="valid_from" id="validFrom" class="vf-input form-control" onchange="updateValidUntilMin()">
+                            </div>
+                            <div class="col-6">
+                                <label class="vf-label">Valid Until</label>
+                                <input type="date" name="valid_until" id="validUntil" class="vf-input form-control">
+                                <div class="vf-hint">Max 1 month from start date.</div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
-                <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn text-white rounded-pill px-4 fw-bold" style="background: #8b634b;">Create Voucher</button>
+
+                <!-- Footer -->
+                <div class="modal-footer border-0 px-4 pb-4 pt-2" style="background: #fdfaf7; gap: 0.75rem;">
+                    <button type="button" class="vf-btn-cancel" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="vf-btn-submit" id="voucherSubmitBtn">
+                        <i class="fas fa-plus me-1"></i> Create Voucher
+                    </button>
                 </div>
             </div>
         </form>
     </div>
 </div>
+
+<style>
+    .vf-label {
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: #5D4037;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        margin-bottom: 5px;
+        display: block;
+    }
+    .vf-optional { font-weight: 400; text-transform: none; color: #a48c7e; }
+    .vf-input {
+        border: 1.5px solid rgba(139, 99, 75, 0.2) !important;
+        border-radius: 10px !important;
+        font-size: 0.9rem;
+        color: #3E2723;
+        background: #fff !important;
+        padding: 0.55rem 0.85rem;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .vf-input:focus {
+        border-color: #8B634B !important;
+        box-shadow: 0 0 0 3px rgba(139, 99, 75, 0.12) !important;
+        outline: none;
+    }
+    .vf-hint {
+        font-size: 0.72rem;
+        color: #a48c7e;
+        margin-top: 4px;
+    }
+    .vf-gen-btn {
+        background: linear-gradient(135deg, #8B634B, #5D4037);
+        color: #fff;
+        border: none;
+        border-radius: 0 10px 10px 0 !important;
+        padding: 0 1rem;
+        font-size: 0.8rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: opacity 0.2s;
+        white-space: nowrap;
+    }
+    .vf-gen-btn:hover { opacity: 0.88; }
+    .vf-date-section {
+        background: rgba(139, 99, 75, 0.04);
+        border: 1px dashed rgba(139, 99, 75, 0.2);
+        border-radius: 12px;
+        padding: 1rem;
+    }
+    .vf-date-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #8B634B;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        margin-bottom: 0.75rem;
+    }
+    .vf-btn-cancel {
+        background: transparent;
+        border: 1.5px solid rgba(139, 99, 75, 0.25);
+        color: #8B634B;
+        border-radius: 50px;
+        padding: 0.6rem 1.6rem;
+        font-weight: 700;
+        font-size: 0.88rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .vf-btn-cancel:hover { background: rgba(139, 99, 75, 0.06); }
+    .vf-btn-submit {
+        background: linear-gradient(135deg, #8B634B, #5D4037);
+        color: #fff;
+        border: none;
+        border-radius: 50px;
+        padding: 0.6rem 1.8rem;
+        font-weight: 800;
+        font-size: 0.88rem;
+        cursor: pointer;
+        transition: all 0.25s;
+        box-shadow: 0 6px 18px rgba(93, 64, 55, 0.25);
+    }
+    .vf-btn-submit:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(93, 64, 55, 0.3); }
+    .vf-input.is-invalid { border-color: #e53935 !important; }
+    .vf-error-msg { font-size: 0.72rem; color: #e53935; margin-top: 4px; display: none; }
+    .vf-error-msg.show { display: block; }
+</style>
+
+<script>
+    // ── Auto-generate voucher code ──────────────────────────────
+    function generateVoucherCode() {
+        const prefixes = ['PROMO', 'SAVE', 'DEAL', 'ENJOY', 'TREAT', 'FEAST', 'YELO', 'MAISON'];
+        const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+        const suffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+        document.getElementById('voucherCodeInput').value = prefix + suffix;
+    }
+
+    // ── Update discount hint based on type ─────────────────────
+    function updateDiscountHint() {
+        const type = document.getElementById('discountType').value;
+        const hint = document.getElementById('discountHint');
+        const input = document.getElementById('discountValue');
+        if (type === 'PERCENT') {
+            hint.textContent = 'Max 80% off per transaction.';
+            input.max = 80;
+            input.placeholder = 'e.g. 15';
+        } else {
+            hint.textContent = 'Cannot exceed the cheapest item price.';
+            input.removeAttribute('max');
+            input.placeholder = 'e.g. 50';
+        }
+    }
+
+    // ── Set min/max date for Valid From (today → today+30 days) ──
+    function setDateConstraints() {
+        const today = new Date();
+        const maxFrom = new Date(today);
+        maxFrom.setDate(maxFrom.getDate() + 30);
+        const todayStr   = today.toISOString().split('T')[0];
+        const maxFromStr = maxFrom.toISOString().split('T')[0];
+        const fromInput  = document.getElementById('validFrom');
+        fromInput.min = todayStr;
+        fromInput.max = maxFromStr;
+        // If a value is already set and out of range, clear it
+        if (fromInput.value && (fromInput.value < todayStr || fromInput.value > maxFromStr)) {
+            fromInput.value = '';
+        }
+        // Also update until constraints in case validFrom already has a value
+        updateValidUntilMin();
+    }
+
+    // ── Update Valid Until min/max when Valid From changes ─────
+    function updateValidUntilMin() {
+        const fromVal    = document.getElementById('validFrom').value;
+        const untilInput = document.getElementById('validUntil');
+        if (!fromVal) {
+            untilInput.min = '';
+            untilInput.max = '';
+            return;
+        }
+        const fromDate = new Date(fromVal);
+        // Min: day after valid_from
+        const minUntil = new Date(fromDate);
+        minUntil.setDate(minUntil.getDate() + 1);
+        // Max: 30 days from valid_from
+        const maxUntil = new Date(fromDate);
+        maxUntil.setDate(maxUntil.getDate() + 30);
+        untilInput.min = minUntil.toISOString().split('T')[0];
+        untilInput.max = maxUntil.toISOString().split('T')[0];
+        // Clear until if it's now out of range
+        if (untilInput.value && (untilInput.value < untilInput.min || untilInput.value > untilInput.max)) {
+            untilInput.value = '';
+        }
+    }
+
+    // ── Client-side validation before submit ───────────────────
+    document.getElementById('voucherForm').addEventListener('submit', function(e) {
+        let valid = true;
+        const code = document.getElementById('voucherCodeInput').value.trim();
+        const type = document.getElementById('discountType').value;
+        const val = parseFloat(document.getElementById('discountValue').value);
+        const maxUses = parseInt(document.querySelector('[name="max_uses"]').value);
+        const minOrder = parseFloat(document.querySelector('[name="min_order_amount"]').value);
+
+        if (!code) { valid = false; showFieldError('voucherCodeInput', 'Voucher code is required.'); }
+        else clearFieldError('voucherCodeInput');
+
+        if (isNaN(val) || val <= 0) {
+            valid = false; showFieldError('discountValue', 'Must be greater than 0.');
+        } else if (type === 'PERCENT' && val > 80) {
+            valid = false; showFieldError('discountValue', 'Percentage cannot exceed 80%.');
+        } else {
+            clearFieldError('discountValue');
+        }
+
+        if (isNaN(maxUses) || maxUses < 1) {
+            valid = false;
+            const el = document.querySelector('[name="max_uses"]');
+            el.classList.add('is-invalid');
+        } else {
+            document.querySelector('[name="max_uses"]').classList.remove('is-invalid');
+        }
+
+        if (!isNaN(minOrder) && minOrder < 0) {
+            valid = false;
+            document.querySelector('[name="min_order_amount"]').classList.add('is-invalid');
+        } else if (!isNaN(minOrder) && minOrder > 99999) {
+            valid = false;
+            document.querySelector('[name="min_order_amount"]').classList.add('is-invalid');
+        } else {
+            document.querySelector('[name="min_order_amount"]').classList.remove('is-invalid');
+        }
+
+        if (!valid) e.preventDefault();
+    });
+
+    function showFieldError(id, msg) {
+        const el = document.getElementById(id);
+        el.classList.add('is-invalid');
+        let err = el.parentElement.querySelector('.vf-error-msg');
+        if (!err) { err = document.createElement('div'); err.className = 'vf-error-msg'; el.parentElement.appendChild(err); }
+        err.textContent = msg;
+        err.classList.add('show');
+    }
+    function clearFieldError(id) {
+        const el = document.getElementById(id);
+        el.classList.remove('is-invalid');
+        const err = el.parentElement.querySelector('.vf-error-msg');
+        if (err) err.classList.remove('show');
+    }
+
+    // ── Init on page load ──────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', function() {
+        setDateConstraints();
+        updateDiscountHint();
+        // Force uppercase on code input
+        document.getElementById('voucherCodeInput').addEventListener('input', function() {
+            this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        });
+    });
+</script>
+
+
+
+
 {% endblock %}
-
-
-
-

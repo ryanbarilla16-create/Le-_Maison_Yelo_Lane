@@ -211,7 +211,8 @@
                                  data-real-src="{{ item.image_url or url_for('static', filename='images/placeholder-food.jpg') }}"
                                  alt="{{ item.name }}" 
                                  class="menu-item-img"
-                                 loading="lazy">
+                                 loading="lazy"
+                                 onerror="if(!this.dataset.err){this.dataset.err=1;this.src='/static/images/placeholder-food.jpg';}">
                             <div class="menu-item-info">
                                 <div>
                                     <h4 class="menu-item-name">{{ item.name }}</h4>

@@ -779,6 +779,9 @@
                 <li><a href="{{ url_for('admin.vouchers') }}"
                         class="{% if request.endpoint == 'admin.vouchers' %}active{% endif %}"><i
                             class="fas fa-ticket-alt"></i><span class="sidebar-label">Vouchers</span></a></li>
+                <li><a href="{{ url_for('admin.delivery_areas') }}"
+                        class="{% if request.endpoint == 'admin.delivery_areas' %}active{% endif %}"><i
+                            class="fas fa-map-marker-alt"></i><span class="sidebar-label">Delivery Areas</span></a></li>
                 <li><a href="{{ url_for('admin.audit_logs') }}"
                         class="{% if request.endpoint == 'admin.audit_logs' %}active{% endif %}"><i
                             class="fas fa-clipboard-list"></i><span class="sidebar-label">Audit Logs</span></a></li>

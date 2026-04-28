@@ -36,6 +36,7 @@ def add_to_cart(item_id):
 
     quantity = int(request.form.get('quantity', 1))
     cart = session.get('cart', {})
+    MAX_QTY = 20
     
     item_id_str = str(item_id)
     menu_item = MenuItem.query.get(item_id)
@@ -48,9 +49,9 @@ def add_to_cart(item_id):
         return redirect(url_for('main.menu_page'))
 
     if item_id_str in cart:
-        cart[item_id_str] += quantity
+        cart[item_id_str] = min(cart[item_id_str] + quantity, MAX_QTY)
     else:
-        cart[item_id_str] = quantity
+        cart[item_id_str] = min(quantity, MAX_QTY)
         
     session['cart'] = cart
     session.modified = True
@@ -65,15 +66,20 @@ def add_to_cart(item_id):
 
 @main_bp.route('/cart/update/<int:item_id>', methods=['POST'])
 def update_cart(item_id):
+    MAX_QTY = 20
     cart = session.get('cart', {})
     item_id_str = str(item_id)
     
     if item_id_str in cart:
         action = request.form.get('cart_action')
         if action == 'increment':
-            cart[item_id_str] += 1
+            if cart[item_id_str] < MAX_QTY:
+                cart[item_id_str] += 1
         elif action == 'decrement' and cart[item_id_str] > 1:
             cart[item_id_str] -= 1
+        elif action == 'set':
+            new_qty = int(request.form.get('quantity', 1))
+            cart[item_id_str] = max(1, min(new_qty, MAX_QTY))
         
         session['cart'] = cart
         session.modified = True
@@ -97,7 +103,8 @@ def update_cart(item_id):
                 "cart_count": total_items, 
                 "new_quantity": cart[item_id_str],
                 "item_subtotal": f"₱{new_subtotal:,.2f}",
-                "grand_total": f"₱{grand_total:,.2f}"
+                "grand_total": f"₱{grand_total:,.2f}",
+                "capped": cart[item_id_str] >= MAX_QTY
             }
             
     return redirect(url_for('main.view_cart'))

@@ -31,6 +31,21 @@
         {% endwith %}
 
         <style>
+            /* ── Image Error Fallback ── */
+            .img-error-wrap {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                background: linear-gradient(135deg, #f5ede8, #ede0d8);
+                color: rgba(139, 99, 75, 0.35);
+                width: 100%;
+                height: 100%;
+                border-radius: inherit;
+            }
+            .img-error-wrap i { font-size: 1.8rem; }
+            .img-error-wrap span { font-size: 0.65rem; font-weight: 700; margin-top: 6px; letter-spacing: 0.5px; text-transform: uppercase; }
+
             /* ── Mini Cart Sidebar ── */
             .mini-cart-drawer {
                 position: fixed;
@@ -97,7 +112,7 @@
                 display: grid;
                 grid-template-columns: 24px 60px 1fr auto;
                 gap: 1rem;
-                align-items: center;
+                align-items: start;
                 padding: 1rem 0;
                 border-bottom: 1px dashed rgba(139, 99, 75, 0.12);
             }
@@ -132,6 +147,62 @@
                 font-size: 0.75rem;
                 color: #A1887F;
                 margin-top: 2px;
+            }
+
+            /* ── Quantity Controls in Mini Cart ── */
+            .m-qty-ctrl {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                margin-top: 6px;
+            }
+
+            .m-qty-btn {
+                width: 26px;
+                height: 26px;
+                border-radius: 50%;
+                border: 1.5px solid #8B634B;
+                background: transparent;
+                color: #8B634B;
+                font-size: 1rem;
+                font-weight: 700;
+                line-height: 1;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: background 0.2s, color 0.2s;
+                padding: 0;
+            }
+
+            .m-qty-btn:hover {
+                background: #8B634B;
+                color: #fff;
+            }
+
+            .m-qty-input {
+                width: 42px;
+                height: 26px;
+                text-align: center;
+                border: 1.5px solid rgba(139, 99, 75, 0.3);
+                border-radius: 6px;
+                font-size: 0.82rem;
+                font-weight: 700;
+                color: #4E342E;
+                background: #fff;
+                padding: 0;
+                -moz-appearance: textfield;
+            }
+
+            .m-qty-input::-webkit-outer-spin-button,
+            .m-qty-input::-webkit-inner-spin-button {
+                -webkit-appearance: none;
+                margin: 0;
+            }
+
+            .m-qty-input:focus {
+                outline: none;
+                border-color: #8B634B;
             }
 
             .m-cart-total {
@@ -378,15 +449,21 @@
 
                         data.items.forEach(item => {
                             html += `
-                                <div class="m-cart-item">
+                                <div class="m-cart-item" id="mci-${item.id}">
                                     <input type="checkbox" class="m-item-check" value="${item.id}" onchange="updateMiniCheckoutBtn()" style="accent-color: #8B634B;">
-                                    <img src="${item.image_url || '/static/images/placeholder.png'}" class="m-cart-img" onerror="this.src='https://placehold.co/100x100?text=Food'">
+                                    <img src="${item.image_url || '/static/images/placeholder.png'}" class="m-cart-img" onerror="if(!this.dataset.err){this.dataset.err=1;this.style.display='none';var d=document.createElement('div');d.className='img-error-wrap m-cart-img';d.innerHTML='<i class=\'fas fa-utensils\'></i>';this.parentNode.insertBefore(d,this);}">
                                     <div class="m-cart-info">
                                         <h6>${item.name}</h6>
                                         <p>₱${item.price.toFixed(2)}</p>
-                                        <div class="m-cart-qty">Qty: ${item.quantity}</div>
+                                        <div class="m-qty-ctrl">
+                                            <button class="m-qty-btn" onclick="miniQtyChange(${item.id}, 'decrement')">−</button>
+                                            <input type="number" class="m-qty-input" id="mqty-${item.id}" value="${item.quantity}" min="1" max="20"
+                                                onchange="miniQtySet(${item.id}, this.value)"
+                                                onblur="miniQtySet(${item.id}, this.value)">
+                                            <button class="m-qty-btn" id="mqty-inc-${item.id}" onclick="miniQtyChange(${item.id}, 'increment')" ${item.quantity >= 20 ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}>+</button>
+                                        </div>
                                     </div>
-                                    <div style="font-weight: 800; color: #4E342E; font-size: 0.9rem;">₱${item.subtotal.toFixed(2)}</div>
+                                    <div class="m-item-subtotal" id="msub-${item.id}" style="font-weight: 800; color: #4E342E; font-size: 0.9rem;">₱${item.subtotal.toFixed(2)}</div>
                                 </div>
                             `;
                         });
@@ -460,7 +537,82 @@
             }
         };
 
+        function miniQtyChange(itemId, action) {
+            const input = document.getElementById('mqty-' + itemId);
+            const currVal = parseInt(input.value) || 1;
+            if (action === 'increment' && currVal >= 20) {
+                if (window.showToast) window.showToast('warning', 'Maximum of 20 per item allowed.');
+                return;
+            }
+            const formData = new FormData();
+            formData.append('cart_action', action);
+            fetch('/cart/update/' + itemId, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            }).then(r => r.json()).then(data => {
+                if (data.status === 'success') {
+                    input.value = data.new_quantity;
+                    const newQty = parseInt(data.new_quantity) || 1;
+                    const subEl = document.getElementById('msub-' + itemId);
+                    if (subEl) subEl.innerText = data.item_subtotal;
+                    document.getElementById('miniCartTotal').innerText = '₱' + parseFloat(data.grand_total.replace(/[₱,]/g, '')).toLocaleString(undefined, { minimumFractionDigits: 2 });
+                    window.updateCartBadge(data.cart_count);
+                    // Update + button state
+                    const incBtn = document.getElementById('mqty-inc-' + itemId);
+                    if (incBtn) { incBtn.disabled = newQty >= 20; incBtn.style.opacity = newQty >= 20 ? '0.5' : '1'; incBtn.style.cursor = newQty >= 20 ? 'not-allowed' : 'pointer'; }
+                    if (data.capped && window.showToast) window.showToast('warning', 'Maximum of 20 per item allowed.');
+                }
+            });
+        }
 
+        function miniQtySet(itemId, value) {
+            let qty = parseInt(value);
+            if (isNaN(qty) || qty < 1) qty = 1;
+            if (qty > 20) {
+                qty = 20;
+                if (window.showToast) window.showToast('warning', 'Maximum of 20 per item allowed.');
+            }
+            document.getElementById('mqty-' + itemId).value = qty;
+            const formData = new FormData();
+            formData.append('cart_action', 'set');
+            formData.append('quantity', qty);
+            fetch('/cart/update/' + itemId, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            }).then(r => r.json()).then(data => {
+                if (data.status === 'success') {
+                    const newQty = parseInt(data.new_quantity) || 1;
+                    document.getElementById('mqty-' + itemId).value = newQty;
+                    const subEl = document.getElementById('msub-' + itemId);
+                    if (subEl) subEl.innerText = data.item_subtotal;
+                    document.getElementById('miniCartTotal').innerText = '₱' + parseFloat(data.grand_total.replace(/[₱,]/g, '')).toLocaleString(undefined, { minimumFractionDigits: 2 });
+                    window.updateCartBadge(data.cart_count);
+                    const incBtn = document.getElementById('mqty-inc-' + itemId);
+                    if (incBtn) { incBtn.disabled = newQty >= 20; incBtn.style.opacity = newQty >= 20 ? '0.5' : '1'; incBtn.style.cursor = newQty >= 20 ? 'not-allowed' : 'pointer'; }
+                    if (data.capped && window.showToast) window.showToast('warning', 'Maximum of 20 per item allowed.');
+                }
+            });
+        }
+
+
+    </script>
+
+    <!-- Global image error handler — replaces broken images with a styled placeholder -->
+    <script>
+        document.addEventListener('error', function(e) {
+            const img = e.target;
+            if (img.tagName !== 'IMG' || img.dataset.errHandled) return;
+            img.dataset.errHandled = '1';
+            const wrap = document.createElement('div');
+            wrap.className = 'img-error-wrap';
+            wrap.style.width  = img.offsetWidth  ? img.offsetWidth  + 'px' : '100%';
+            wrap.style.height = img.offsetHeight ? img.offsetHeight + 'px' : '100%';
+            wrap.style.borderRadius = getComputedStyle(img).borderRadius || '8px';
+            wrap.innerHTML = '<i class="fas fa-utensils"></i><span>No Image</span>';
+            if (img.parentNode) img.parentNode.replaceChild(wrap, img);
+        }, true);
     </script>
 
     <!-- Scripts -->

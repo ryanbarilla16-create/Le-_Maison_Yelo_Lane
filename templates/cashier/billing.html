@@ -43,38 +43,109 @@
 
     /* Search */
     .billing-search { padding:8px 12px 8px 34px; border:1px solid rgba(93,64,55,0.12); border-radius:10px; font-size:0.82rem; width:240px; outline:none; transition:border 0.2s; }
-    .billing-search:focus { border-color:var(--primary); }
+    .billing-search:focus { border-color:var(--primary); }    /* Modal & Overlay */
+    .billing-overlay { 
+        position:fixed; top:0; left:0; width:100%; height:100%; 
+        background:rgba(62, 39, 35, 0.4); 
+        backdrop-filter:blur(8px); 
+        display:flex; align-items:center; justify-content:center; 
+        z-index:2000; 
+        opacity:0; visibility:hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .billing-overlay.show { opacity:1; visibility:visible; }
+    
+    .billing-modal { 
+        background:white; 
+        border-radius:28px; 
+        width:90%;
+        max-width:400px;
+        box-shadow:0 30px 70px rgba(0,0,0,0.3); 
+        overflow:hidden; 
+        transform: scale(0.9) translateY(20px);
+        transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .billing-overlay.show .billing-modal { transform: scale(1) translateY(0); }
+    
+    .modal-head { 
+        background:linear-gradient(135deg,#5D4037,#3E2723); 
+        padding:24px 28px; 
+        color:white; 
+        display:flex; 
+        align-items:center; 
+        justify-content:space-between; 
+    }
+    .modal-head h3 { margin:0; font-size:1.15rem; font-weight:800; font-family:'Playfair Display', serif; letter-spacing:0.3px; }
+    .modal-close { background:rgba(255,255,255,0.1); border:none; color:white; width:32px; height:32px; border-radius:50%; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s; }
+    .modal-close:hover { background:rgba(255,255,255,0.2); transform:rotate(90deg); }
+    
+    .modal-body-inner { padding:28px; }
+    .modal-foot { padding:20px 28px; background:#FDFBF9; border-top:1px solid rgba(139, 99, 75, 0.08); display:flex; justify-content:flex-end; gap:14px; }
 
-    /* Modal */
-    .billing-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); backdrop-filter:blur(5px); display:flex; align-items:center; justify-content:center; z-index:2000; }
-    .billing-modal { background:white; border-radius:20px; width:100%; box-shadow:0 25px 50px rgba(0,0,0,0.25); overflow:hidden; animation:slideUp 0.3s ease-out; }
-    @keyframes slideUp { from { transform:translateY(20px); opacity:0; } to { transform:translateY(0); opacity:1; } }
-    .modal-head { background:linear-gradient(135deg,#5D4037,#795548); padding:20px 24px; color:white; display:flex; align-items:center; justify-content:space-between; }
-    .modal-head h3 { margin:0; font-size:1.1rem; font-weight:700; }
-    .modal-close { background:none; border:none; color:rgba(255,255,255,0.8); font-size:1.5rem; cursor:pointer; line-height:1; }
-    .modal-close:hover { color:white; }
-    .modal-body-inner { padding:24px; }
-    .modal-foot { padding:16px 24px; background:#fafafa; border-top:1px solid rgba(0,0,0,0.05); display:flex; justify-content:flex-end; gap:12px; }
+    .modal-input { 
+        width:100%; 
+        padding:14px 18px; 
+        border:2px solid rgba(139, 99, 75, 0.12); 
+        border-radius:16px; 
+        font-size:1.2rem; 
+        font-weight:800; 
+        outline:none; 
+        transition:all 0.2s; 
+        background: #FDFBF9;
+        color: #3E2723;
+    }
+    .modal-input:focus { border-color:#8B634B; background:white; box-shadow:0 0 0 4px rgba(139, 99, 75, 0.1); }
+    .modal-input.error { border-color:#c62828; background:#fff8f8; }
+    .modal-input.readonly { background:rgba(139, 99, 75, 0.05); color:#8B634B; border-color:transparent; }
+    
+    .input-error { display:none; color:#c62828; font-size:0.8rem; font-weight:700; margin-top:8px; display:flex; align-items:center; gap:6px; }
+    .input-label { font-size:0.75rem; font-weight:800; color:#8B634B; display:block; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px; }
+    
+    .denom-btn {
+        flex: 1 1 calc(33.33% - 8px);
+        padding: 10px 8px;
+        border: 2px solid rgba(139, 99, 75, 0.1);
+        border-radius: 14px;
+        background: white;
+        color: #5D4037;
+        font-weight: 800;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .denom-btn:hover { border-color: #8B634B; background: #FAF3EF; transform: translateY(-2px); }
+    .denom-btn.active { background: #8B634B; color: white; border-color: #8B634B; box-shadow: 0 8px 15px rgba(139, 99, 75, 0.25); }
 
-    .modal-input { width:100%; padding:12px 16px; border:1px solid rgba(93,64,55,0.15); border-radius:12px; font-size:1.1rem; font-weight:700; outline:none; transition:border 0.2s; }
-    .modal-input:focus { border-color:var(--primary); }
-    .modal-input.error { border-color:#c62828; }
-    .modal-input.readonly { background:rgba(93,64,55,0.03); color:var(--primary); }
-    .input-error { display:none; color:#c62828; font-size:0.78rem; font-weight:600; margin-top:6px; }
-    .input-label { font-size:0.75rem; font-weight:700; color:var(--muted); display:block; margin-bottom:6px; }
-
-    /* Pagination (for macro output) */
-    .pagination { display:flex; justify-content:center; gap:4px; list-style:none; padding:0; margin:0; }
-    .page-item .page-link { padding:6px 12px; border:1px solid rgba(93,64,55,0.12); border-radius:8px; font-size:0.8rem; color:var(--primary); text-decoration:none; font-weight:600; transition:all 0.2s; display:inline-flex; align-items:center; }
-    .page-item.active .page-link { background:var(--primary); color:white; border-color:var(--primary); }
-    .page-item .page-link:hover { background:rgba(93,64,55,0.06); }
-    .page-item.disabled .page-link { color:var(--muted); opacity:0.5; pointer-events:none; }
-    .billing-pagination { padding:16px 20px; border-top:1px solid rgba(93,64,55,0.06); text-align:center; }
+    /* Custom Confirm Modal specific */
+    .confirm-icon-circle {
+        width: 64px; height: 64px; border-radius: 50%;
+        background: #FFF9C4; color: #FBC02D;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.8rem; margin: 0 auto 20px;
+        box-shadow: 0 10px 20px rgba(251, 192, 45, 0.15);
+    }
+    .confirm-title { font-family: 'Playfair Display', serif; font-weight: 800; font-size: 1.3rem; color: #3E2723; margin-bottom: 12px; text-align: center; }
+    .confirm-text { color: #6D4C41; font-size: 0.95rem; line-height: 1.6; text-align: center; margin-bottom: 0; }
+    
+    .btn-modal-primary { 
+        background: #8B634B; color: white; border: none; border-radius: 50px; 
+        padding: 12px 24px; font-weight: 800; cursor: pointer; transition: all 0.2s;
+        display: flex; align-items: center; gap: 8px; font-size: 0.9rem;
+    }
+    .btn-modal-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(139, 99, 75, 0.3); background: #5D4037; }
+    
+    .btn-modal-secondary {
+        background: transparent; color: #8B634B; border: 2px solid rgba(139, 99, 75, 0.2); 
+        border-radius: 50px; padding: 10px 24px; font-weight: 800; cursor: pointer; transition: all 0.2s;
+        font-size: 0.9rem;
+    }
+    .btn-modal-secondary:hover { background: rgba(139, 99, 75, 0.05); border-color: #8B634B; }
 
     @media (max-width: 768px) {
         .billing-stats { grid-template-columns: 1fr; }
         .billing-search { width: 160px; }
     }
+}
 {% endblock %}
 
 {% block content %}
@@ -234,11 +305,11 @@
     </div>
 
     <!-- SHIFT REPORT MODAL -->
-    <div id="shiftReportModal" class="billing-overlay" style="display:none;">
-        <div class="billing-modal" style="max-width:450px;">
+    <div id="shiftReportModal" class="billing-overlay">
+        <div class="billing-modal">
             <div class="modal-head">
-                <h3><i class="fas fa-file-invoice-dollar" style="margin-right:8px;"></i>End of Shift Report</h3>
-                <button class="modal-close" onclick="document.getElementById('shiftReportModal').style.display='none'">&times;</button>
+                <h3><i class="fas fa-file-invoice-dollar me-2"></i>End of Shift Report</h3>
+                <button class="modal-close" onclick="closeModal('shiftReportModal')">&times;</button>
             </div>
             <div class="modal-body-inner">
                 <p style="color:var(--muted); margin-bottom:20px; font-size:0.88rem;">Today's collection summary. Verify your cash drawer before logging out.</p>
@@ -257,43 +328,70 @@
                 </div>
             </div>
             <div class="modal-foot">
-                <button style="background:transparent; border:none; color:var(--muted); font-weight:600; cursor:pointer; padding:8px 16px;" onclick="document.getElementById('shiftReportModal').style.display='none'">Close</button>
-                <button class="btn-settle" onclick="window.print()"><i class="fas fa-print"></i> Print Report</button>
+                <button class="btn-modal-secondary" onclick="closeModal('shiftReportModal')">Close</button>
+                <button class="btn-modal-primary" onclick="window.print()"><i class="fas fa-print"></i> Print Report</button>
             </div>
         </div>
     </div>
 
     <!-- SETTLE BILL MODAL -->
-    <div id="settleBillModal" class="billing-overlay" style="display:none;">
-        <div class="billing-modal" style="max-width:400px;">
+    <div id="settleBillModal" class="billing-overlay">
+        <div class="billing-modal">
             <div class="modal-head">
-                <h3><i class="fas fa-money-bill-wave" style="margin-right:8px;"></i>Settle Bill #<span id="settleOrderId"></span></h3>
-                <button class="modal-close" onclick="document.getElementById('settleBillModal').style.display='none'">&times;</button>
+                <h3><i class="fas fa-money-bill-wave me-2"></i>Settle Bill #<span id="settleOrderId"></span></h3>
+                <button class="modal-close" onclick="closeModal('settleBillModal')">&times;</button>
             </div>
             <form id="settleBillForm" method="POST" action="">
                 <div class="modal-body-inner">
                     <input type="hidden" name="payment_status" value="PAID">
-                    <div style="text-align:center; margin-bottom:20px;">
-                        <p style="color:var(--muted); font-size:0.75rem; text-transform:uppercase; font-weight:700; margin-bottom:4px;">Amount Due</p>
-                        <h2 style="font-weight:800; color:#2e7d32; margin:0;" id="settleAmountDueDisplay">₱0.00</h2>
+                    <div style="text-align:center; margin-bottom:24px;">
+                        <p class="input-label" style="margin-bottom:4px;">Bill Amount</p>
+                        <h2 style="font-weight:800; color:#2e7d32; margin:0; font-size:2.2rem;" id="settleAmountDueDisplay">₱0.00</h2>
                         <input type="hidden" id="amountDueHidden" value="0">
                     </div>
-                    <div style="margin-bottom:16px;">
-                        <label class="input-label">Amount Tendered (₱)</label>
-                        <input type="number" step="0.01" id="amountTenderedInput" name="amount_tendered" required placeholder="0.00" class="modal-input">
-                        <div class="input-error" id="amountError">Amount must be equal or greater than the due.</div>
+                    <div style="margin-bottom:20px; text-align:center;">
+                        <label class="input-label">Select Payment Amount</label>
+
+                        <!-- Quick denomination buttons -->
+                        <div id="denomBtns" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; justify-content:center;">
+                            <button type="button" class="denom-btn" onclick="setTendered(50)">₱50</button>
+                            <button type="button" class="denom-btn" onclick="setTendered(100)">₱100</button>
+                            <button type="button" class="denom-btn" onclick="setTendered(200)">₱200</button>
+                            <button type="button" class="denom-btn" onclick="setTendered(500)">₱500</button>
+                            <button type="button" class="denom-btn" onclick="setTendered(1000)">₱1,000</button>
+                        </div>
+
+                        <input type="number" step="0.01" id="amountTenderedInput" name="amount_tendered" required placeholder="0.00" class="modal-input" style="text-align:center; font-size:1.5rem; padding:16px;">
+                        <div class="input-error" id="amountError" style="justify-content:center;">Amount must be equal or greater than the bill.</div>
                     </div>
-                    <div style="margin-bottom:8px;">
+                    <div style="margin-bottom:8px; text-align:center;">
                         <label class="input-label">Change / Sukli</label>
-                        <input type="text" id="changeAmountDisplay" readonly value="₱0.00" class="modal-input readonly">
+                        <input type="text" id="changeAmountDisplay" readonly value="₱0.00" class="modal-input readonly" style="text-align:center; border:none; background:transparent; font-size:1.8rem; color:#8B634B;">
                     </div>
                 </div>
-                <div class="modal-foot" style="justify-content:stretch;">
-                    <button type="submit" id="confirmSettleBtn" disabled class="btn-settle" style="width:100%; justify-content:center; padding:14px; font-size:0.88rem;">
+                <div class="modal-foot">
+                    <button type="submit" id="confirmSettleBtn" disabled class="btn-modal-primary" style="width:100%; justify-content:center; padding:16px;">
                         <i class="fas fa-check-circle"></i> Confirm Payment
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- CUSTOM CONFIRM MODAL (Fat-finger Check) -->
+    <div id="confirmGuardModal" class="billing-overlay">
+        <div class="billing-modal" style="max-width:380px;">
+            <div class="modal-body-inner" style="padding:40px 32px 32px;">
+                <div class="confirm-icon-circle">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h4 class="confirm-title">Large Amount Warning</h4>
+                <p class="confirm-text" id="confirmGuardMessage">Are you sure this amount is correct?</p>
+            </div>
+            <div class="modal-foot" style="justify-content:center; padding-bottom:32px; background:white; border:none;">
+                <button class="btn-modal-secondary" id="confirmGuardCancelBtn">Check Again</button>
+                <button class="btn-modal-primary" id="confirmGuardProceedBtn">Yes, Correct</button>
+            </div>
         </div>
     </div>
 {% endblock %}
@@ -305,12 +403,29 @@
 
 {% block extra_script %}
 <script>
+    // Utility to handle modal transitions
+    function openModal(id) {
+        const el = document.getElementById(id);
+        el.style.display = 'flex';
+        setTimeout(() => el.classList.add('show'), 10);
+    }
+    function closeModal(id) {
+        const el = document.getElementById(id);
+        el.classList.remove('show');
+        setTimeout(() => el.style.display = 'none', 300);
+    }
+
     // Close dropdown when clicking outside
     document.addEventListener('click', function(e) {
         const wrap = document.getElementById('reportDropdownWrap');
         if (wrap && !wrap.contains(e.target)) {
             const menu = wrap.querySelector('.report-dropdown-menu');
             if (menu) menu.classList.remove('show');
+        }
+        
+        // Close modal when clicking on overlay
+        if (e.target.classList.contains('billing-overlay')) {
+            closeModal(e.target.id);
         }
     });
     // Toggle show class
@@ -423,34 +538,170 @@
         document.getElementById('confirmSettleBtn').disabled = true;
         document.getElementById('amountError').style.display = 'none';
 
-        document.getElementById('settleBillModal').style.display = 'flex';
-        setTimeout(() => tenderedInput.focus(), 100);
+        // Reset denom button highlights
+        document.querySelectorAll('.denom-btn').forEach(b => b.classList.remove('active'));
+
+        openModal('settleBillModal');
+        setTimeout(() => tenderedInput.focus(), 400);
+    }
+
+    function setTendered(value) {
+        const input = document.getElementById('amountTenderedInput');
+        
+        // Just set the value directly - no more "intelligent" multiple calculation
+        // This prevents the "clicked 100 but got 300" confusion
+        input.value = parseFloat(value).toFixed(2);
+
+        // Highlight active button
+        document.querySelectorAll('.denom-btn').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+
+        // Trigger change calculation
+        input.dispatchEvent(new Event('input'));
     }
 
     document.getElementById('amountTenderedInput').addEventListener('input', function() {
-        const tendered = parseFloat(this.value) || 0;
-        const due = parseFloat(document.getElementById('amountDueHidden').value) || 0;
-        const btn = document.getElementById('confirmSettleBtn');
+        const raw   = this.value;
+        const due   = parseFloat(document.getElementById('amountDueHidden').value) || 0;
+        const btn   = document.getElementById('confirmSettleBtn');
         const error = document.getElementById('amountError');
         const changeDisplay = document.getElementById('changeAmountDisplay');
 
-        if (this.value === '' || tendered < due) {
+        // 1. Block 'e' notation and non-numeric characters in real-time
+        if (/[eE+\-]/.test(raw) && raw !== '') {
+            this.value = raw.replace(/[eE+\-]/g, '');
+            return;
+        }
+
+        const tendered = parseFloat(raw) || 0;
+
+        // Sync denom button active state
+        document.querySelectorAll('.denom-btn').forEach(b => {
+            const bVal = b.textContent.trim();
+            const bNum = parseFloat(bVal.replace(/[₱,]/g, ''));
+            if (!isNaN(bNum) && bNum === tendered) { b.classList.add('active'); return; }
+            b.classList.remove('active');
+        });
+
+        // 2. Empty input — reset
+        if (raw === '') {
             btn.disabled = true;
             changeDisplay.value = '₱0.00';
-            if (this.value !== '') {
-                error.style.display = 'block';
-                this.className = 'modal-input error';
-            } else {
-                error.style.display = 'none';
-                this.className = 'modal-input';
-            }
-        } else {
             error.style.display = 'none';
             this.className = 'modal-input';
+            return;
+        }
+
+        // 3. Negative or zero — block
+        if (tendered <= 0) {
+            btn.disabled = true;
+            changeDisplay.value = '₱0.00';
+            error.textContent = 'Amount must be greater than zero.';
+            error.style.display = 'block';
+            this.className = 'modal-input error';
+            return;
+        }
+
+        // 4. Less than amount due — block
+        if (tendered < due) {
+            btn.disabled = true;
+            changeDisplay.value = '₱0.00';
+            error.textContent = 'Amount must be equal or greater than the bill.';
+            error.style.display = 'block';
+            this.className = 'modal-input error';
+            return;
+        }
+
+        // 5. Fat-finger guard: more than 10× the due amount — warn but allow after custom confirm
+        if (tendered > due * 10) {
+            // Prevent multiple triggers
+            if (window._isConfirmingGuard) return;
+            window._isConfirmingGuard = true;
+            
+            const msg = `Amount Tendered (₱${tendered.toLocaleString(undefined,{minimumFractionDigits:2})}) is significantly higher than the Bill Amount (₱${due.toLocaleString(undefined,{minimumFractionDigits:2})}). Is this correct?`;
+            document.getElementById('confirmGuardMessage').textContent = msg;
+            
+            openModal('confirmGuardModal');
+            
+            const proceedBtn = document.getElementById('confirmGuardProceedBtn');
+            const cancelBtn = document.getElementById('confirmGuardCancelBtn');
+            
+            const handleProceed = () => {
+                window._isConfirmingGuard = false;
+                closeModal('confirmGuardModal');
+                calculateAndEnable();
+                cleanup();
+            };
+            
+            const handleCancel = () => {
+                window._isConfirmingGuard = false;
+                closeModal('confirmGuardModal');
+                this.value = '';
+                btn.disabled = true;
+                changeDisplay.value = '₱0.00';
+                this.className = 'modal-input';
+                cleanup();
+            };
+
+            function cleanup() {
+                proceedBtn.removeEventListener('click', handleProceed);
+                cancelBtn.removeEventListener('click', handleCancel);
+            }
+            
+            proceedBtn.addEventListener('click', handleProceed);
+            cancelBtn.addEventListener('click', handleCancel);
+            return;
+        }
+
+        calculateAndEnable();
+
+        function calculateAndEnable() {
+            error.style.display = 'none';
+            document.getElementById('amountTenderedInput').className = 'modal-input';
             btn.disabled = false;
             const change = tendered - due;
             changeDisplay.value = '₱' + change.toLocaleString(undefined, {minimumFractionDigits: 2});
         }
+    });
+
+    // Handle form submission via AJAX for JSON response support
+    document.getElementById('settleBillForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('confirmSettleBtn');
+        const originalContent = btn.innerHTML;
+        
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        
+        const formData = new FormData(this);
+        fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                location.reload(); // Refresh to show updated status
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+                const error = document.getElementById('amountError');
+                error.textContent = data.message || 'Payment failed.';
+                error.style.display = 'block';
+                document.getElementById('amountTenderedInput').className = 'modal-input error';
+            }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
+            alert('An error occurred. Please try again.');
+        });
+    });
+
+    // Block 'e', '+', '-' keys on keydown (prevents scientific notation before input fires)
+    document.getElementById('amountTenderedInput').addEventListener('keydown', function(e) {
+        if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
     });
 
     // AJAX Tab Switching

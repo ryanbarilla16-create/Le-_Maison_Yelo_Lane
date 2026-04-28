@@ -2129,22 +2129,80 @@ def update_order(order_id):
 @login_required
 @admin_required
 def update_payment_status(order_id):
+    # ── BACKEND VALIDATION ──────────────────────────────────────
+    # NEVER trust the amount_due from the frontend.
+    # Always fetch the actual total from the database.
     order = Order.query.get_or_404(order_id)
     new_payment_status = request.form.get('payment_status')
-    amount_tendered = request.form.get('amount_tendered')
-    
-    if new_payment_status in ['PAID', 'UNPAID']:
-        order.payment_status = new_payment_status
-        if new_payment_status == 'PAID' and amount_tendered:
-            order.amount_tendered = float(amount_tendered)
-            order.change_amount = float(amount_tendered) - float(order.total_amount)
-        elif new_payment_status == 'UNPAID':
-            order.amount_tendered = None
-            order.change_amount = None
-            
+
+    if new_payment_status not in ['PAID', 'UNPAID']:
+        msg = "Invalid payment status."
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': False, 'message': msg}), 400
+        flash(msg, "danger")
+        return redirect(request.headers.get("Referer") or url_for('admin.orders'))
+
+    if new_payment_status == 'PAID':
+        amount_tendered_raw = request.form.get('amount_tendered', '').strip()
+
+        # 1. Validate: must be a valid number
+        try:
+            amount_tendered = float(amount_tendered_raw)
+        except (ValueError, TypeError):
+            msg = "Invalid amount tendered. Please enter a valid number."
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'message': msg}), 400
+            flash(msg, "danger")
+            return redirect(request.headers.get("Referer") or url_for('admin.orders'))
+
+        # 2. Validate: must not be negative or zero
+        if amount_tendered <= 0:
+            msg = "Amount tendered must be greater than zero."
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'message': msg}), 400
+            flash(msg, "danger")
+            return redirect(request.headers.get("Referer") or url_for('admin.orders'))
+
+        # 3. Fetch ACTUAL amount due from DB (not from form)
+        actual_due = float(order.total_amount)
+
+        # 4. Validate: tendered must cover the actual due
+        if amount_tendered < actual_due:
+            msg = f"Amount tendered (₱{amount_tendered:,.2f}) is less than the bill amount (₱{actual_due:,.2f})."
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'message': msg}), 400
+            flash(msg, "danger")
+            return redirect(request.headers.get("Referer") or url_for('admin.orders'))
+
+        # 5. Validate: fat-finger guard — tendered must not exceed 10× the due
+        if amount_tendered > actual_due * 10:
+            msg = f"Amount tendered (₱{amount_tendered:,.2f}) seems too high for a ₱{actual_due:,.2f} bill. Please verify."
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'message': msg}), 400
+            flash(msg, "danger")
+            return redirect(request.headers.get("Referer") or url_for('admin.orders'))
+
+        # 6. Re-calculate change server-side (never trust frontend change value)
+        change_amount = round(amount_tendered - actual_due, 2)
+
+        # 7. Atomic update — only mark PAID if all checks pass
+        order.payment_status = 'PAID'
+        order.amount_tendered = amount_tendered
+        order.change_amount = change_amount
         db.session.commit()
-        flash(f"Order #{order.id} payment status marked as {new_payment_status}.", "success")
-        
+
+        flash(f"Order #{order.id} marked as PAID. Change: ₱{change_amount:,.2f}", "success")
+
+    elif new_payment_status == 'UNPAID':
+        order.payment_status = 'UNPAID'
+        order.amount_tendered = None
+        order.change_amount = None
+        db.session.commit()
+        flash(f"Order #{order.id} payment status marked as UNPAID.", "success")
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({'success': True, 'message': f"Order #{order.id} marked as PAID. Change: ₱{change_amount:,.2f}"})
+
     referrer = request.headers.get("Referer")
     if referrer:
         return redirect(referrer)
@@ -3478,16 +3536,62 @@ def voucher_add():
     valid_from_str = request.form.get('valid_from', '')
     valid_until_str = request.form.get('valid_until', '')
 
-    if not code or discount_value <= 0:
-        flash("Please provide a valid code and discount value.", "danger")
+    # ── Validation ──────────────────────────────────────────────
+    errors = []
+
+    if not code:
+        errors.append("Voucher code is required.")
+
+    if discount_value <= 0:
+        errors.append("Discount value must be greater than 0.")
+
+    if discount_type == 'PERCENT':
+        if discount_value > 80:
+            errors.append("Percentage discount cannot exceed 80%.")
+    else:  # FIXED
+        # Get the lowest menu item price as a ceiling reference
+        from models import MenuItem
+        cheapest = db.session.query(db.func.min(MenuItem.price)).filter_by(is_deleted=False, is_available=True).scalar()
+        max_fixed = float(cheapest) if cheapest else 9999
+        if discount_value >= max_fixed:
+            errors.append(f"Fixed discount (₱{discount_value:.2f}) cannot be equal to or exceed the cheapest menu item price (₱{max_fixed:.2f}). It would make items free.")
+
+    if max_uses < 1:
+        errors.append("Max uses must be at least 1.")
+
+    if min_order < 0:
+        errors.append("Minimum order amount cannot be negative.")
+    if min_order > 99999:
+        errors.append("Minimum order amount cannot exceed ₱99,999.")
+
+    now = datetime.now()
+    valid_from = None
+    valid_until = None
+
+    if valid_from_str:
+        valid_from = datetime.strptime(valid_from_str, '%Y-%m-%d')
+        if valid_from.date() < now.date():
+            errors.append("Valid From date cannot be in the past.")
+        if valid_from.date() > (now + timedelta(days=30)).date():
+            errors.append("Valid From date cannot be more than 1 month from today.")
+
+    if valid_until_str:
+        valid_until = datetime.strptime(valid_until_str, '%Y-%m-%d')
+        start = valid_from if valid_from else now
+        if valid_until <= start:
+            errors.append("Valid Until must be after the Valid From date.")
+        max_until = start + timedelta(days=30)
+        if valid_until > max_until:
+            errors.append("Valid Until cannot be more than 1 month from the start date.")
+
+    if errors:
+        for e in errors:
+            flash(e, "danger")
         return redirect(url_for('admin.vouchers'))
 
     if Voucher.query.filter_by(code=code).first():
         flash(f"Voucher code '{code}' already exists.", "danger")
         return redirect(url_for('admin.vouchers'))
-
-    valid_from = datetime.strptime(valid_from_str, '%Y-%m-%d') if valid_from_str else None
-    valid_until = datetime.strptime(valid_until_str, '%Y-%m-%d') if valid_until_str else None
 
     v = Voucher(
         code=code,
@@ -3530,6 +3634,113 @@ def voucher_delete(voucher_id):
     log_audit('DELETE', 'Voucher', voucher_id, f'Deleted voucher {code}')
     flash(f"Voucher '{code}' deleted.", "success")
     return redirect(url_for('admin.vouchers'))
+
+# ─── DELIVERY AREAS MANAGEMENT ───────────────────────────────────
+@admin_bp.route('/delivery-areas', methods=['GET'])
+@login_required
+@admin_required
+def delivery_areas():
+    from models import DeliveryArea
+    areas = DeliveryArea.query.order_by(DeliveryArea.municipality.asc()).all()
+    return render_template('admin/delivery_areas.html', areas=areas)
+
+@admin_bp.route('/delivery-areas/add', methods=['POST'])
+@login_required
+@admin_required
+def delivery_area_add():
+    import json
+    from models import DeliveryArea
+    municipality = request.form.get('municipality', '').strip().title()
+    barangays_raw = request.form.get('barangays', '').strip()
+    lat = request.form.get('lat', type=float)
+    lng = request.form.get('lng', type=float)
+
+    if not municipality:
+        flash("Municipality name is required.", "danger")
+        return redirect(url_for('admin.delivery_areas'))
+
+    if DeliveryArea.query.filter_by(municipality=municipality).first():
+        flash(f"'{municipality}' already exists.", "danger")
+        return redirect(url_for('admin.delivery_areas'))
+
+    # Parse barangays — one per line or comma-separated
+    brgys = [b.strip() for b in barangays_raw.replace('\n', ',').split(',') if b.strip()]
+    if not brgys:
+        flash("At least one barangay is required.", "danger")
+        return redirect(url_for('admin.delivery_areas'))
+
+    area = DeliveryArea(
+        municipality=municipality,
+        barangays=json.dumps(brgys),
+        lat=lat,
+        lng=lng,
+        is_active=True
+    )
+    db.session.add(area)
+    db.session.commit()
+    log_audit('CREATE', 'DeliveryArea', area.id, f'Added delivery area: {municipality}')
+    flash(f"Delivery area '{municipality}' added.", "success")
+    return redirect(url_for('admin.delivery_areas'))
+
+@admin_bp.route('/delivery-areas/<int:area_id>/edit', methods=['POST'])
+@login_required
+@admin_required
+def delivery_area_edit(area_id):
+    import json
+    from models import DeliveryArea
+    area = DeliveryArea.query.get_or_404(area_id)
+    municipality = request.form.get('municipality', '').strip().title()
+    barangays_raw = request.form.get('barangays', '').strip()
+    lat = request.form.get('lat', type=float)
+    lng = request.form.get('lng', type=float)
+
+    if not municipality:
+        flash("Municipality name is required.", "danger")
+        return redirect(url_for('admin.delivery_areas'))
+
+    # Check duplicate (excluding self)
+    dup = DeliveryArea.query.filter(DeliveryArea.municipality == municipality, DeliveryArea.id != area_id).first()
+    if dup:
+        flash(f"'{municipality}' already exists.", "danger")
+        return redirect(url_for('admin.delivery_areas'))
+
+    brgys = [b.strip() for b in barangays_raw.replace('\n', ',').split(',') if b.strip()]
+    if not brgys:
+        flash("At least one barangay is required.", "danger")
+        return redirect(url_for('admin.delivery_areas'))
+
+    area.municipality = municipality
+    area.barangays = json.dumps(brgys)
+    area.lat = lat
+    area.lng = lng
+    db.session.commit()
+    log_audit('UPDATE', 'DeliveryArea', area.id, f'Updated delivery area: {municipality}')
+    flash(f"Delivery area '{municipality}' updated.", "success")
+    return redirect(url_for('admin.delivery_areas'))
+
+@admin_bp.route('/delivery-areas/<int:area_id>/toggle', methods=['POST'])
+@login_required
+@admin_required
+def delivery_area_toggle(area_id):
+    from models import DeliveryArea
+    area = DeliveryArea.query.get_or_404(area_id)
+    area.is_active = not area.is_active
+    db.session.commit()
+    status = 'enabled' if area.is_active else 'disabled'
+    log_audit('UPDATE', 'DeliveryArea', area.id, f'Delivery area {area.municipality} {status}')
+    return {'status': 'ok', 'is_active': area.is_active}
+
+@admin_bp.route('/delivery-areas/<int:area_id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def delivery_area_delete(area_id):
+    from models import DeliveryArea
+    area = DeliveryArea.query.get_or_404(area_id)
+    name = area.municipality
+    db.session.delete(area)
+    db.session.commit()
+    log_audit('DELETE', 'DeliveryArea', area_id, f'Deleted delivery area: {name}')
+    return {'status': 'ok'}
 
 # ─── CONTACT MESSAGES MANAGEMENT ───────────────────
 @admin_bp.route('/contact-messages')
