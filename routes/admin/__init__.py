@@ -1456,262 +1456,26 @@ def toggle_stock(item_id):
 @login_required
 @admin_required
 def kitchen_view():
-    status_filter = request.args.get('status', 'ACTIVE')
-    base = (
-        Order.query.options(
-            selectinload(Order.items).selectinload(OrderItem.menu_item),
-            selectinload(Order.reservation),
-            selectinload(Order.user),
-        )
-    )
-    if status_filter == 'ACTIVE':
-        active_orders = base.filter(
-            Order.status.in_(['PENDING', 'PREPARING'])
-        ).order_by(Order.created_at.asc()).limit(80).all()
-    elif status_filter == 'COMPLETED':
-        active_orders = base.filter_by(status='COMPLETED').order_by(Order.created_at.desc()).limit(40).all()
-    elif status_filter == 'CANCELLED':
-        active_orders = base.filter_by(status='CANCELLED').order_by(Order.created_at.desc()).limit(40).all()
-    else:
-        active_orders = base.filter_by(status=status_filter).order_by(Order.created_at.asc()).limit(80).all()
-    
-    # Counts for badges
-    pending_count = Order.query.filter_by(status='PENDING').count()
-    preparing_count = Order.query.filter_by(status='PREPARING').count()
-    completed_count = Order.query.filter_by(status='COMPLETED').count()
-    cancelled_count = Order.query.filter_by(status='CANCELLED').count()
-    
-    # Calculate throughput metrics (Average Prep Time today)
-    from sqlalchemy import func
-    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-    # Compute avg prep time in SQL (avoid loading all rows)
-    avg_prep_time = 0
-    avg_seconds = db.session.query(
-        func.avg(func.extract('epoch', Order.prep_end_at - Order.prep_start_at))
-    ).filter(
-        Order.status == 'COMPLETED',
-        Order.prep_end_at >= today_start,
-        Order.prep_start_at.isnot(None),
-        Order.prep_end_at.isnot(None),
-    ).scalar()
-    if avg_seconds:
-        avg_prep_time = round((float(avg_seconds) / 60), 1)
-
-    ph_now = get_ph_time()
-
-    # 1. Separate Active Orders
-    asap_orders = []
-    for order in active_orders:
-        if not order.reservation:
-            asap_orders.append(order)
-        else:
-            # Check if reservation is within 1 hour
-            res = order.reservation
-            if res.date and res.time:
-                try:
-                    res_dt = datetime.combine(res.date, res.time)
-                    # Handle potential timezone mismatch
-                    if res_dt.tzinfo is not None: res_dt = res_dt.replace(tzinfo=None)
-                    
-                    diff = (res_dt - ph_now.replace(tzinfo=None)).total_seconds() / 60
-                    if diff <= 60:
-                        asap_orders.append(order)
-                except Exception:
-                    asap_orders.append(order) # Show anyway if comparison fails
-
-    # 2. Aggregation for Prep Summary
-    item_data = {}
-    for order in asap_orders:
-        for item in order.items:
-            if not item.menu_item: continue
-            key = item.menu_item.name
-            cat = item.menu_item.category or 'Other'
-            if key in item_data:
-                item_data[key].update({'qty': item_data[key]['qty'] + item.quantity})
-            else:
-                item_data[key] = {'qty': item.quantity, 'cat': cat}
-
-    # 3. Categorize into Stations
-    hot_kitchen, cold_kitchen, bar_station = [], [], []
-    for name, info in item_data.items():
-        cat_lower = info['cat'].lower()
-        station_item = {'name': name, 'qty': info['qty']}
-        
-        if any(kw in cat_lower for kw in ['drink', 'beverage', 'coffee', 'shake', 'juice', 'tea']):
-            bar_station.append(station_item)
-        elif any(kw in cat_lower for kw in ['dessert', 'cake', 'pastry', 'sweet', 'cheesecake', 'waffle']):
-            cold_kitchen.append(station_item)
-        else:
-            hot_kitchen.append(station_item)
-
-    # 4. Get Kitchen-side Inventory for display
-    # Show ingredients that are low in kitchen OR are used in today's menu categories
-    kitchen_ingredients = Ingredient.query.filter(
-        (Ingredient.kitchen_qty < Ingredient.reorder_level / 2) | # Alert level
-        (Ingredient.kitchen_qty > 0)
-    ).order_by(Ingredient.kitchen_qty.asc()).limit(15).all()
-
-    # Handle partial request (for soft refresh)
-    if request.args.get('partial'):
-        return render_template('admin/kitchen_partial.html', 
-            orders=active_orders, hot_kitchen=hot_kitchen, cold_kitchen=cold_kitchen,
-            bar_station=bar_station, item_count=len(item_data), status_filter=status_filter,
-            pending_count=pending_count, preparing_count=preparing_count,
-            completed_count=completed_count, cancelled_count=cancelled_count,
-            avg_prep_time=avg_prep_time, ph_now=ph_now,
-            kitchen_ingredients=kitchen_ingredients
-        )
-
-    return render_template('admin/kitchen.html', 
-        orders=active_orders,
-        hot_kitchen=hot_kitchen,
-        cold_kitchen=cold_kitchen,
-        bar_station=bar_station,
-        item_count=len(item_data),
-        status_filter=status_filter,
-        pending_count=pending_count,
-        preparing_count=preparing_count,
-        completed_count=completed_count,
-        cancelled_count=cancelled_count,
-        avg_prep_time=avg_prep_time,
-        ph_now=ph_now,
-        kitchen_ingredients=kitchen_ingredients
-    )
+    return redirect(url_for('kitchen_portal.kitchen_dashboard'))
 
 @admin_bp.route('/kitchen/pantry')
 @login_required
 @admin_required
 def kitchen_pantry():
-    """Independent view for kitchen staff to monitor all on-hand stocks and alerts."""
-    ingredients = Ingredient.query.order_by(Ingredient.category, Ingredient.name).all()
-    
-    # Group ingredients by category for the UI
-    grouped_ingredients = {}
-    
-    for category, group in groupby(ingredients, lambda x: x.category or 'General'):
-        grouped_ingredients[category] = list(group)
-        
-    return render_template('admin/kitchen_pantry.html', grouped_ingredients=grouped_ingredients, today=date.today())
+    return redirect(url_for('kitchen_portal.kitchen_dashboard'))
 
 @admin_bp.route('/kitchen/pantry/update/<int:ing_id>', methods=['POST'])
 @login_required
 @admin_required
 def kitchen_pantry_update(ing_id):
-    """Temporary dev endpoint to instantly set kitchen stock & sync menu items."""
-    ingredient = Ingredient.query.get_or_404(ing_id)
-    try:
-        new_qty = float(request.form.get('kitchen_qty', 0))
-        ingredient.kitchen_qty = max(0, new_qty)
-        _sync_single_ingredient_availability(ingredient.id)
-        db.session.commit()
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'success': True, 'new_qty': new_qty})
-        flash(f'Kitchen stock for {ingredient.name} updated to {new_qty}.', 'success')
-    except ValueError:
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'success': False, 'message': 'Invalid quantity.'})
-        flash('Invalid quantity.', 'danger')
-        
-    return redirect(url_for('admin.kitchen_pantry'))
+    return redirect(url_for('kitchen_portal.kitchen_dashboard'))
 
 @admin_bp.route('/kitchen/api/orders')
 @login_required
 @admin_required
 def kitchen_api_orders():
-    """API endpoint for auto-refresh of kitchen orders"""
-    status_filter = request.args.get('status', 'ACTIVE')
-    ph_now = get_ph_time()
-    
-    # Base query
-    base = (
-        Order.query.options(
-            selectinload(Order.items).selectinload(OrderItem.menu_item),
-            selectinload(Order.reservation),
-            selectinload(Order.user),
-        )
-    )
-    if status_filter == 'ACTIVE':
-        active_orders = base.filter(Order.status.in_(['PENDING', 'PREPARING']))
-    else:
-        active_orders = base.filter_by(status=status_filter)
-        
-    active_orders = active_orders.order_by(Order.created_at.asc()).limit(80).all()
-    
-    # Counts for badges
-    stats = {
-        'pending': Order.query.filter_by(status='PENDING').count(),
-        'preparing': Order.query.filter_by(status='PREPARING').count(),
-        'completed': Order.query.filter_by(status='COMPLETED').count(),
-        'cancelled': Order.query.filter_by(status='CANCELLED').count()
-    }
-    
-    # Station aggregation (Only for ACTIVE filter)
-    hot_kitchen, cold_kitchen, bar_station = [], [], []
-    item_data = {}
-    
-    orders_data = []
-    for order in active_orders:
-        # Check ASAP logic for station summary
-        is_asap = True
-        if order.reservation and order.reservation.date and order.reservation.time:
-            try:
-                res_dt = datetime.combine(order.reservation.date, order.reservation.time)
-                diff = (res_dt - ph_now.replace(tzinfo=None)).total_seconds() / 60
-                if diff > 60: is_asap = False
-            except: pass
-            
-        items_list = []
-        for item in order.items:
-            items_list.append({'name': item.menu_item.name, 'qty': item.quantity})
-            
-            if is_asap and status_filter == 'ACTIVE':
-                name = item.menu_item.name
-                cat = (item.menu_item.category or 'Other').lower()
-                if name in item_data:
-                    item_data[name]['qty'] += item.quantity
-                else:
-                    item_data[name] = {'qty': item.quantity, 'cat': cat}
-        
-        customer = 'Walk-in'
-        if order.user: customer = f"{order.user.first_name} {order.user.last_name}"
-        elif order.customer_name: customer = order.customer_name
-        
-        orders_data.append({
-            'id': order.id,
-            'customer': customer,
-            'status': order.status,
-            'dining_option': order.dining_option,
-            'notes': order.notes or '',
-            'items': items_list,
-            'is_reservation': bool(order.reservation),
-            'res_time': order.reservation.time.strftime('%I:%M %p') if (order.reservation and order.reservation.time) else None,
-            'guest_count': order.reservation.guest_count if order.reservation else None,
-            'table': order.reservation.table_number if order.reservation else None,
-            'created_at_utc': order.created_at.isoformat() + 'Z',
-            'created_at_str': order.created_at.strftime('%I:%M %p')
-        })
+    return jsonify({'error': 'Endpoint moved to staff portal'}), 301
 
-    # Final station categorization
-    for name, info in item_data.items():
-        s_item = {'name': name, 'qty': info['qty']}
-        c = info['cat']
-        if any(kw in c for kw in ['drink', 'beverage', 'coffee', 'shake', 'juice', 'tea']):
-            bar_station.append(s_item)
-        elif any(kw in c for kw in ['dessert', 'cake', 'pastry', 'sweet', 'cheesecake', 'waffle']):
-            cold_kitchen.append(s_item)
-        else:
-            hot_kitchen.append(s_item)
-
-    return jsonify({
-        'orders': orders_data,
-        'stats': stats,
-        'stations': {
-            'hot': hot_kitchen,
-            'cold': cold_kitchen,
-            'bar': bar_station
-        },
-        'status_filter': status_filter
-    })
 
 @admin_bp.route('/kitchen/update/<int:order_id>', methods=['POST'])
 @login_required
