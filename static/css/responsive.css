@@ -277,7 +277,7 @@ html, body {
 
     /* ── HERO SECTION 1 (Homepage) ── */
     .main-container section:first-child {
-        min-height: 85vh !important;
+        min-height: 100vh !important;
     }
 
     .main-container section:first-child h1 {

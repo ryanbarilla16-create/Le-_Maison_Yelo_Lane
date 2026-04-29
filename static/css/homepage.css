@@ -6,10 +6,29 @@ html, body { overflow-x: hidden; width: 100%; position: relative; scroll-behavio
 ::-webkit-scrollbar-thumb:hover { background: #5D4037; }
 
 /* ── HERO SLIDER ── */
-.lm-hero { position: relative; width: 100%; margin-top: -65px; overflow: hidden; }
-.lm-hero .owl-item { height: 100vh; min-height: 550px; }
-.lm-hero .slider-item { height: 100%; background-size: cover; background-position: center; position: relative; }
-.lm-hero .slider-item .overlay { position: absolute; inset: 0; background: rgba(62,39,35,0.55); }
+.lm-hero { 
+    position: relative; 
+    width: 100%; 
+    margin-top: -68px; 
+    overflow: hidden; 
+    padding: 0 !important; 
+    height: 100vh !important; 
+}
+.lm-hero .owl-carousel, 
+.lm-hero .owl-stage-outer, 
+.lm-hero .owl-stage { 
+    height: 100% !important; 
+}
+.lm-hero .owl-item { 
+    height: 100vh !important; 
+    min-height: 600px; 
+}
+.lm-hero .slider-item { 
+    height: 100% !important; 
+    background-size: cover; 
+    background-position: center; 
+    position: relative; 
+}
 .lm-hero .slider-item .slider-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; z-index: 1; }
 .lm-hero .slider-text h1 { font-family: 'Playfair Display', serif; font-size: 3.8rem; font-weight: 900; color: #fff; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1rem; text-shadow: 2px 4px 20px rgba(0,0,0,0.5); }
 .lm-hero .slider-text p { color: rgba(255,255,255,0.8); font-size: 1.1rem; max-width: 550px; margin: 0 auto 2rem; }
@@ -30,7 +49,7 @@ html, body { overflow-x: hidden; width: 100%; position: relative; scroll-behavio
 .lm-info-bar .social-icons a:hover { color: #a17860; }
 
 /* ── SECTION COMMON ── */
-.lm-section { padding: 3rem 0; width: 100%; position: relative; }
+.lm-section { padding: 5rem 0; width: 100%; position: relative; }
 .lm-section .section-heading { text-align: center; margin-bottom: 3rem; }
 .lm-section .section-heading h2 { font-family: 'Playfair Display', serif; font-size: 2.5rem; font-weight: 700; color: #3E2723; text-transform: uppercase; letter-spacing: 2px; }
 .lm-section .section-heading p { color: #8B634B; max-width: 600px; margin: 1rem auto 0; font-size: 0.95rem; }
@@ -44,7 +63,7 @@ html, body { overflow-x: hidden; width: 100%; position: relative; scroll-behavio
 .btn-hero.filled:hover { background: #5D4037; border-color: #5D4037; color: #fff; }
 
 /* ── WELCOME / ABOUT ── */
-.lm-welcome { background: #fff; }
+.lm-welcome { background: #fff; padding-top: 0 !important; }
 .lm-welcome .welcome-text h2 { font-family: 'Playfair Display', serif; font-size: 2.2rem; color: #3E2723; margin-bottom: 1rem; }
 .lm-welcome .welcome-text h2 span { color: #8B634B; }
 .lm-welcome .welcome-text p { color: #6D4C41; line-height: 1.8; font-size: 0.95rem; }
