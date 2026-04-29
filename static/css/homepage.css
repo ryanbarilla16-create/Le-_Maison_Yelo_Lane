@@ -1,10 +1,12 @@
-/* ═══════════════════════════════════════════
-   LE MAISON HOMEPAGE — PREMIUM STYLE
-   Warm brown/cream palette matching brand
-   ═══════════════════════════════════════════ */
+/* ── GLOBAL OVERFLOW FIX ── */
+html, body { overflow-x: hidden; width: 100%; position: relative; scroll-behavior: smooth; }
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #3E2723; }
+::-webkit-scrollbar-thumb { background: #8B634B; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #5D4037; }
 
 /* ── HERO SLIDER ── */
-.lm-hero { position: relative; width: 100vw; max-width: 100vw; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw; margin-top: -65px; }
+.lm-hero { position: relative; width: 100%; margin-top: -65px; overflow: hidden; }
 .lm-hero .owl-item { height: 100vh; min-height: 550px; }
 .lm-hero .slider-item { height: 100%; background-size: cover; background-position: center; position: relative; }
 .lm-hero .slider-item .overlay { position: absolute; inset: 0; background: rgba(62,39,35,0.55); }
@@ -20,7 +22,7 @@
 .lm-hero .owl-dots .owl-dot.active span { background: #8B634B; border-color: #8B634B; }
 
 /* ── INFO BAR ── */
-.lm-info-bar { background: linear-gradient(90deg, #3E2723 0%, #5D4037 100%); padding: 1.2rem 0; width: 100vw; max-width: 100vw; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw; position: relative; }
+.lm-info-bar { background: linear-gradient(90deg, #3E2723 0%, #5D4037 100%); padding: 1.2rem 0; width: 100%; position: relative; }
 .lm-info-bar .info-item { display: flex; align-items: center; gap: 12px; color: rgba(255,255,255,0.8); font-size: 0.85rem; }
 .lm-info-bar .info-item i { color: #a17860; font-size: 1.1rem; }
 .lm-info-bar .info-item strong { color: #fff; }
@@ -28,7 +30,7 @@
 .lm-info-bar .social-icons a:hover { color: #a17860; }
 
 /* ── SECTION COMMON ── */
-.lm-section { padding: 5rem 0; width: 100vw; max-width: 100vw; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw; position: relative; }
+.lm-section { padding: 3rem 0; width: 100%; position: relative; }
 .lm-section .section-heading { text-align: center; margin-bottom: 3rem; }
 .lm-section .section-heading h2 { font-family: 'Playfair Display', serif; font-size: 2.5rem; font-weight: 700; color: #3E2723; text-transform: uppercase; letter-spacing: 2px; }
 .lm-section .section-heading p { color: #8B634B; max-width: 600px; margin: 1rem auto 0; font-size: 0.95rem; }
@@ -58,9 +60,20 @@
 .lm-service-card p { color: #8D6E63; font-size: 0.85rem; line-height: 1.6; }
 
 /* ── MENU GRID (SMALL BOXES) ── */
-.lm-menu-section { background: #3E2723; padding: 5rem 0 0 0; max-width: 100vw; overflow-x: hidden; }
-.lm-menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; max-width: 100vw; margin: 0; padding: 0; }
-.lm-menu-card { position: relative; border: none; border-radius: 0; overflow: hidden; display: flex; flex-direction: row; height: 350px; }
+.lm-menu-section { background: #3E2723; padding: 3rem 0 0 0; width: 100%; overflow: hidden !important; position: relative; }
+.lm-menu-grid { 
+    display: grid; 
+    grid-template-columns: repeat(3, 1fr); 
+    gap: 0; 
+    width: 100%; 
+    margin: 0; 
+    padding: 0; 
+    overflow: hidden !important; 
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+.lm-menu-grid::-webkit-scrollbar { display: none; } /* Chrome, Safari, Opera */
+.lm-menu-card { position: relative; border: none; border-radius: 0; overflow: hidden; display: flex; flex-direction: row; height: 300px; transition: none !important; }
 .lm-menu-card:hover { transform: none; box-shadow: none; }
 .lm-menu-card .img-wrap { width: 50%; height: 100%; overflow: hidden; }
 .lm-menu-card .img-wrap img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
@@ -84,7 +97,7 @@
 }
 
 /* ── TABBED MENU (FULL MENU) ── */
-.lm-tab-menu-wrapper { padding: 0; background: #4E342E; max-width: 100vw; overflow-x: hidden; }
+.lm-tab-menu-wrapper { padding: 0; background: #4E342E; width: 100%; overflow: hidden !important; }
 .lm-tab-menu-img { background-size: cover; background-position: center center; background-repeat: no-repeat; min-height: 100%; width: 100%; display: block; }
 @media (max-width: 991px) { .lm-tab-menu-img { min-height: 400px; } }
 .lm-tab-content-area { padding: 5rem 3rem; }

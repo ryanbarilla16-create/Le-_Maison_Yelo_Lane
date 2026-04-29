@@ -217,7 +217,7 @@ def static_page(page_name):
                         <div style="background: #fff; border: 1px solid var(--border-color); padding: 1.5rem; border-radius: 12px; height: 100%;">
                             <i class="fas fa-headset fa-2x mb-3" style="color: var(--primary-color);"></i>
                             <h5>Contact Us</h5>
-                            <p class="small text-muted mb-1"><i class="fas fa-phone me-2"></i> +63 912 345 6789</p>
+                            <p class="small text-muted mb-1"><i class="fas fa-phone me-2"></i> 09988863566</p>
                             <p class="small text-muted"><i class="fas fa-envelope me-2"></i> support@lemaisonyelo.com</p>
                         </div>
                     </div>

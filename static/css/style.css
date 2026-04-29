@@ -47,9 +47,9 @@ body {
 
 .container {
     width: 100%;
-    max-width: 1200px;
+    max-width: 100%;
     margin: 0 auto;
-    padding: 2rem;
+    padding: 0 1.5rem;
     flex-grow: 1;
     display: flex;
     flex-direction: column;
@@ -397,8 +397,25 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     visibility: hidden;
     position: absolute;
     right: 0;
+}/* Full-width layout fixes */
+.container-fluid, .container {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
 }
 
+.main-container {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
 
+.navbar .container-fluid, .navbar .container {
+    padding-left: 1.5rem !important;
+    padding-right: 1.5rem !important;
+}
 
-
+@media (max-width: 767px) {
+    .navbar .container-fluid, .navbar .container {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+}

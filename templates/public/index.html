@@ -57,32 +57,10 @@
         </div>
     </section>
 
-    <!-- ═══ QUICK INFO BAR ═══ -->
-    <section class="lm-info-bar">
-        <div class="container-fluid px-md-5">
-            <div class="row align-items-center">
-                <div class="col-md-4 col-6">
-                    <div class="info-item"><i class="fas fa-phone-alt"></i><div><strong>+63 912 345 6789</strong><br><small>Call us for reservations</small></div></div>
-                </div>
-                <div class="col-md-4 col-6">
-                    <div class="info-item"><i class="fas fa-map-marker-alt"></i><div><strong>Yelo Lane, Gen. Taino St.</strong><br><small>Pagsanjan, Laguna</small></div></div>
-                </div>
-                <div class="col-md-4 d-none d-md-flex justify-content-end">
-                    <div class="info-item"><i class="fas fa-clock"></i><div><strong>Open Daily</strong><br><small>8:00 AM – 10:00 PM</small></div>
-                    </div>
-                    <div class="social-icons ms-4 d-flex align-items-center">
-                        <a href="#"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#"><i class="fab fa-instagram"></i></a>
-                        <a href="#"><i class="fab fa-twitter"></i></a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
 
     <!-- ═══ WELCOME / ABOUT SECTION ═══ -->
     <section class="lm-section lm-welcome light" style="background: #fff;">
-        <div class="container-fluid px-md-5">
+        <div class="container-fluid px-3">
             <div class="row align-items-center g-5">
                 <div class="col-md-6" data-aos="fade-right">
                     <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=75&w=900&auto=format&fit=crop" alt="Le Maison interior" class="img-fluid" style="border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.15); width: 100%; max-height: 500px; object-fit: cover;">
@@ -100,7 +78,7 @@
 
     <!-- ═══ OUR SERVICES ═══ -->
     <section class="lm-section lm-services light">
-        <div class="container-fluid px-md-5">
+        <div class="container-fluid px-3">
             <div class="section-heading" data-aos="fade-up">
                 <h2 style="color: #1a1a1a;">Our Services</h2>
                 <p style="color: #888;">Bringing you the finest dining experience in Pagsanjan, Laguna</p>
@@ -133,11 +111,11 @@
 
     <!-- ═══ MENU GRID (SMALL BOXES) ═══ -->
     <section class="lm-section lm-menu-section">
-        <div class="section-heading" data-aos="fade-up">
+        <div class="section-heading">
             <h2 style="color:#fff;">Hot Menu Items</h2>
             <p style="color:rgba(255,255,255,0.5);">Discover our most popular dishes crafted with the finest ingredients</p>
         </div>
-        <div class="lm-menu-grid" data-aos="fade-up" data-aos-delay="100">
+        <div class="lm-menu-grid">
             {% for item in bestsellers[:6] %}
             <div class="lm-menu-card">
                 <div class="img-wrap">
@@ -174,7 +152,7 @@
 
     <!-- ═══ GALLERY ═══ -->
     <section class="lm-section lm-gallery" style="padding: 5rem 0 0 0;">
-        <div class="container">
+        <div class="container-fluid p-0">
             <div class="section-heading" data-aos="fade-up">
                 <h2 style="color: #fff;">The Gallery</h2>
                 <p style="color: rgba(255,255,255,0.6);">A glimpse into our kitchen and dining experience</p>
@@ -219,7 +197,7 @@
     <!-- ═══ COUNTER / STATS ═══ -->
     <section class="lm-section lm-counter" style="position: relative;">
         <div class="overlay"></div>
-        <div class="container-fluid px-md-5" style="position: relative; z-index: 1;">
+        <div class="container-fluid px-3" style="position: relative; z-index: 1;">
             <div class="row g-4 justify-content-center" id="counterSection">
                 <div class="col-6 col-md-3" data-aos="fade-up" data-aos-delay="100">
                     <div class="lm-counter-item">
@@ -261,7 +239,7 @@
                     <div class="lm-tab-menu-img" style="background-image: url('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=1000&auto=format&fit=crop');" data-aos="fade-right"></div>
                 </div>
                 <div class="col-lg-8">
-                    <div class="lm-tab-content-area" data-aos="fade-up">
+                    <div class="lm-tab-content-area">
                         
                         <!-- Nav Pills -->
                         <ul class="nav nav-pills lm-nav-pills" id="menu-pills-tab" role="tablist">
@@ -282,7 +260,7 @@
                                     {% set cat_items = menu_items | selectattr('category', 'equalto', cat.category) | list %}
                                     {% for item in cat_items[:3] %}
                                     <div class="col-md-4">
-                                        <div class="lm-tab-item" data-aos="fade-up" data-aos-delay="{{ loop.index0 * 100 }}">
+                                        <div class="lm-tab-item">
                                             {% if item.image_url %}
                                             <img src="{{ item.image_url }}" alt="{{ item.name }}" class="img-circle">
                                             {% else %}
@@ -305,7 +283,7 @@
                         </div>
 
                         <!-- See More Button -->
-                        <div class="text-center mt-5" data-aos="fade-up">
+                        <div class="text-center mt-5">
                             <a href="{{ url_for('main.menu_page') }}" class="btn-hero filled" style="display: inline-block;">See More</a>
                         </div>
 
@@ -317,7 +295,7 @@
 
     <!-- ═══ CONTACT / MAP ═══ -->
     <section class="lm-section lm-contact">
-        <div class="container-fluid px-md-5">
+        <div class="container-fluid px-3">
             <div class="row g-4 align-items-stretch">
                 <div class="col-md-6" data-aos="fade-right">
                     <div class="map-wrap">
@@ -366,8 +344,8 @@
                         
                         <div class="mt-4 pt-3" style="border-top: 1px solid rgba(255,255,255,0.1);">
                             <div class="d-flex align-items-center gap-3 mb-2"><i class="fas fa-map-marker-alt" style="color: #c9a96e;"></i><span style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">Yelo Lane, General Taino Street, Pagsanjan, Laguna</span></div>
-                            <div class="d-flex align-items-center gap-3 mb-2"><i class="fas fa-phone" style="color: #c9a96e;"></i><span style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">+63 912 345 6789</span></div>
-                            <div class="d-flex align-items-center gap-3"><i class="fas fa-envelope" style="color: #c9a96e;"></i><span style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">hello@lemaison.com</span></div>
+                            <div class="d-flex align-items-center gap-3 mb-2"><i class="fas fa-phone" style="color: #c9a96e;"></i><span style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">09988863566</span></div>
+                            <div class="d-flex align-items-center gap-3"><i class="fas fa-envelope" style="color: #c9a96e;"></i><span style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">lemaisonyelolane9@gmail.com</span></div>
                         </div>
                     </div>
                 </div>

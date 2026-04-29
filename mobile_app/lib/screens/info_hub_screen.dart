@@ -232,7 +232,7 @@ class CustomerServicePage extends StatelessWidget {
               style: TextStyle(fontSize: 16, height: 1.5),
             ),
             const SizedBox(height: 30),
-            _contactCard(Icons.headset_mic_rounded, 'Contact Us', '+63 912 345 6789\nsupport@lemaisonyelo.com'),
+            _contactCard(Icons.headset_mic_rounded, 'Contact Us', '09988863566\nlemaisonyelolane9@gmail.com'),
             const SizedBox(height: 16),
             _contactCard(Icons.access_time_rounded, 'Operating Hours', 'Mon - Sun: 11:30 AM - 8:30 PM'),
           ],
