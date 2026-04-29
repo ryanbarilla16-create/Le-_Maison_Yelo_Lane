@@ -343,29 +343,37 @@ def cashier_billing():
     pagination = query.order_by(Order.created_at.desc()).paginate(page=page, per_page=20, error_out=False)
 
     today = get_ph_time().date()
-    stats = db.session.query(
+    # Stats for TODAY (for sales performance)
+    today_stats = db.session.query(
         Order.payment_status, Order.payment_method,
         db.func.count(Order.id), db.func.sum(Order.total_amount)
     ).filter(db.func.date(Order.created_at) == today).group_by(Order.payment_status, Order.payment_method).all()
 
+    # Stats for ALL UNPAID (for balance tracking)
+    all_unpaid_stats = db.session.query(
+        db.func.count(Order.id), db.func.sum(Order.total_amount)
+    ).filter(Order.payment_status == 'UNPAID').first()
+
     total_sales_today = 0
-    unpaid_count = 0
     cash_sales = 0
     online_sales = 0
 
-    for ps, pm, cnt, total in stats:
+    for ps, pm, cnt, total in today_stats:
         total_val = float(total or 0)
         if ps == 'PAID':
             total_sales_today += total_val
             if pm == 'COUNTER': cash_sales += total_val
             if pm == 'ONLINE': online_sales += total_val
-        if ps == 'UNPAID': unpaid_count += int(cnt or 0)
+
+    unpaid_count = int(all_unpaid_stats[0] or 0)
+    unpaid_total = float(all_unpaid_stats[1] or 0)
 
     return render_template('cashier/billing.html',
                            orders=pagination,
                            status_filter=status_filter,
                            total_sales_today=total_sales_today,
                            unpaid_count=unpaid_count,
+                           unpaid_total=unpaid_total,
                            cash_sales=cash_sales,
                            online_sales=online_sales)
 

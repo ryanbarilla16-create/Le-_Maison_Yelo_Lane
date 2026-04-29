@@ -187,7 +187,10 @@
             </div>
             <div>
                 <div class="billing-stat-label">Unpaid Bills</div>
-                <div class="billing-stat-value" id="statUnpaid">{{ unpaid_count }} <span style="font-size:0.85rem; color:var(--muted);">Orders</span></div>
+                <div class="billing-stat-value" id="statUnpaid">
+                    ₱{{ "{:,.2f}".format(unpaid_total) }}
+                    <div style="font-size:0.75rem; color:var(--muted); font-weight:600; margin-top:-4px;">{{ unpaid_count }} Pending Orders</div>
+                </div>
             </div>
         </div>
     </div>
