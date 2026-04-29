@@ -6,14 +6,16 @@
    ═══════════════════════════════════════════════════════ */
 
 /* ─── GLOBAL OVERFLOW FIX ─── */
-html, body {
+html,
+body {
     overflow-x: hidden;
 }
 
 /* ─── MOBILE MENU DRAWER ─── */
 .mobile-menu-dropdown {
     position: fixed;
-    top: 56px; /* Height of standard navbar */
+    top: 56px;
+    /* Height of standard navbar */
     left: 0;
     right: 0;
     background: rgba(139, 99, 75, 0.98);
@@ -23,8 +25,8 @@ html, body {
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .mobile-menu-dropdown.open {
@@ -37,7 +39,7 @@ html, body {
     justify-content: space-between;
     align-items: center;
     padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .mobile-drawer-brand {
@@ -49,7 +51,7 @@ html, body {
 }
 
 .mobile-drawer-close {
-    background: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.1);
     border: none;
     color: #fff;
     width: 36px;
@@ -64,12 +66,13 @@ html, body {
 }
 
 .mobile-drawer-close:hover {
-    background: rgba(255,255,255,0.2);
+    background: rgba(255, 255, 255, 0.2);
 }
 
 .nav-links-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); /* Better sizing for variable item counts */
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    /* Better sizing for variable item counts */
     gap: 10px;
     padding: 1.25rem;
     list-style: none;
@@ -77,7 +80,8 @@ html, body {
 }
 
 #mobile-background-icons {
-    background: rgba(255, 255, 255, 0.08); /* Lighter card background */
+    background: rgba(255, 255, 255, 0.08);
+    /* Lighter card background */
     border-radius: 16px;
     transition: all 0.3s ease;
     border: 1px solid rgba(255, 255, 255, 0.05);
@@ -126,7 +130,7 @@ html, body {
     text-decoration: none;
     font-weight: 700;
     font-size: 0.82rem;
-    border: 1px solid rgba(255,255,255,0.08);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     transition: all 0.3s;
 }
 
@@ -151,13 +155,13 @@ html, body {
 
 .mobile-drawer-divider {
     height: 1px;
-    background: rgba(255,255,255,0.06);
+    background: rgba(255, 255, 255, 0.06);
     margin: 0.5rem 1.5rem;
 }
 
 .mobile-drawer-user {
     padding: 1rem 1.5rem;
-    border-top: 1px solid rgba(255,255,255,0.06);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
     display: flex;
     align-items: center;
     gap: 12px;
@@ -174,7 +178,7 @@ html, body {
     justify-content: center;
     font-weight: 700;
     font-size: 0.85rem;
-    border: 2px solid rgba(255,255,255,0.15);
+    border: 2px solid rgba(255, 255, 255, 0.15);
     flex-shrink: 0;
 }
 
@@ -201,7 +205,7 @@ html, body {
 
 .mobile-drawer-user-email {
     font-size: 0.7rem;
-    color: rgba(255,255,255,0.4);
+    color: rgba(255, 255, 255, 0.4);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -219,13 +223,13 @@ html, body {
     font-size: 0.85rem;
     text-decoration: none;
     letter-spacing: 0.5px;
-    box-shadow: 0 4px 14px rgba(93,64,55,0.3);
+    box-shadow: 0 4px 14px rgba(93, 64, 55, 0.3);
     transition: all 0.2s;
 }
 
 .mobile-cta-btn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 6px 18px rgba(93,64,55,0.4);
+    box-shadow: 0 6px 18px rgba(93, 64, 55, 0.4);
 }
 
 
@@ -233,6 +237,7 @@ html, body {
    TABLET BREAKPOINT (768px - 1024px)
    ═══════════════════════════════════════ */
 @media (max-width: 1024px) {
+
     /* Navbar brand spacing */
     .navBrand span {
         font-size: 1rem !important;
@@ -256,7 +261,8 @@ html, body {
         padding: 0.6rem 0 !important;
     }
 
-    .nav-scrolled, .nav-always-solid {
+    .nav-scrolled,
+    .nav-always-solid {
         padding: 0.5rem 0 !important;
     }
 
@@ -277,7 +283,7 @@ html, body {
 
     /* ── HERO SECTION 1 (Homepage) ── */
     .main-container section:first-child {
-        min-height: 100vh !important;
+        min-height: 85vh !important;
     }
 
     .main-container section:first-child h1 {
@@ -298,20 +304,20 @@ html, body {
     }
 
     /* Hero content overlay - center on mobile */
-    .main-container section:first-child > div:nth-child(2) {
+    .main-container section:first-child>div:nth-child(2) {
         padding-left: 1.5rem !important;
         padding-right: 1.5rem !important;
         justify-content: center !important;
     }
 
-    .main-container section:first-child > div:nth-child(2) > div {
+    .main-container section:first-child>div:nth-child(2)>div {
         text-align: center !important;
         max-width: 100% !important;
     }
 
     /* Hero gradient - cover evenly on mobile */
-    .main-container section:first-child > div:first-child > div:last-child {
-        background: linear-gradient(180deg, rgba(12,12,12,0.85) 0%, rgba(12,12,12,0.6) 60%, rgba(12,12,12,0.85) 100%) !important;
+    .main-container section:first-child>div:first-child>div:last-child {
+        background: linear-gradient(180deg, rgba(12, 12, 12, 0.85) 0%, rgba(12, 12, 12, 0.6) 60%, rgba(12, 12, 12, 0.85) 100%) !important;
     }
 
 
@@ -397,7 +403,7 @@ html, body {
         font-size: 1.8rem !important;
     }
 
-    .main-container section[style*="background-color: #ffffff"] .col-md-3 > div:first-child {
+    .main-container section[style*="background-color: #ffffff"] .col-md-3>div:first-child {
         font-size: 2.5rem !important;
     }
 
@@ -673,7 +679,8 @@ html, body {
         padding: 0.9rem !important;
     }
 
-    .cartItem-img, .cartItem-noImg {
+    .cartItem-img,
+    .cartItem-noImg {
         width: 50px !important;
         height: 50px !important;
         border-radius: 10px !important;
@@ -887,6 +894,7 @@ html, body {
    MY ORDERS — Mobile
    ═══════════════════════════════════════ */
 @media (max-width: 767px) {
+
     /* Order cards */
     .order-card {
         border-radius: 14px !important;
@@ -931,4 +939,3 @@ html, body {
         font-size: 2rem !important;
     }
 }
-
