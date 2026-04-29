@@ -1453,20 +1453,14 @@ def toggle_stock(item_id):
 
 # ─── KITCHEN VIEW ─────────────────────────────────────
 @admin_bp.route('/kitchen')
-@login_required
-@admin_required
 def kitchen_view():
     return redirect(url_for('kitchen_portal.kitchen_dashboard'))
 
 @admin_bp.route('/kitchen/pantry')
-@login_required
-@admin_required
 def kitchen_pantry():
     return redirect(url_for('kitchen_portal.kitchen_dashboard'))
 
 @admin_bp.route('/kitchen/pantry/update/<int:ing_id>', methods=['POST'])
-@login_required
-@admin_required
 def kitchen_pantry_update(ing_id):
     return redirect(url_for('kitchen_portal.kitchen_dashboard'))
 
