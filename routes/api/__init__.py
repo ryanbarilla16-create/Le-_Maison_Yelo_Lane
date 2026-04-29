@@ -1168,6 +1168,16 @@ def api_reserve():
     if not check_reservation_time(res_time):
         return jsonify({'success': False, 'message': 'Time must be between 11:30 AM - 8:30 PM.'}), 400
     
+    # Duplicate booking check: same user, same date, same time, active reservation
+    duplicate = Reservation.query.filter(
+        Reservation.user_id == user_id,
+        Reservation.date == res_date,
+        Reservation.time == res_time,
+        Reservation.status.in_(['PENDING', 'CONFIRMED']),
+    ).first()
+    if duplicate:
+        return jsonify({'success': False, 'message': 'You already have a reservation on this date and time. Please choose a different schedule.'}), 400
+
     # Check for conflicts
     c_start = datetime.combine(res_date, res_time)
     c_end = c_start + timedelta(hours=duration)

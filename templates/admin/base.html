@@ -674,9 +674,6 @@
         <div id="mgmtGroup" class="collapsible-content">
             <ul class="sidebar-nav">
                 {% if current_user.role|upper == 'ADMIN' %}
-                <li><a href="{{ url_for('admin.approvals') }}"
-                        class="{% if request.endpoint == 'admin.approvals' %}active{% endif %}"><i
-                            class="fas fa-user-check"></i><span class="sidebar-label">Account Approvals</span></a></li>
                 <li><a href="{{ url_for('admin.users') }}"
                         class="{% if request.endpoint == 'admin.users' %}active{% endif %}"><i
                             class="fas fa-users-cog"></i><span class="sidebar-label">User Management</span></a></li>

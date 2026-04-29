@@ -725,11 +725,68 @@ def inventory_recipes():
         grouped_items[category] = list(group)
         
     menu_categories = [r[0] for r in db.session.query(MenuItem.category).filter(MenuItem.is_deleted == False).distinct().order_by(MenuItem.category).all()]
+    all_ingredients = Ingredient.query.order_by(Ingredient.name).all()
     
     return render_template('inventory/recipes.html',
                            portal_name=f"{current_user.first_name} {current_user.last_name}",
                            grouped_items=grouped_items,
-                           menu_categories=menu_categories)
+                           menu_categories=menu_categories,
+                           all_ingredients=all_ingredients)
+
+
+@inventory_bp.route('/staff/inventory/recipes/<int:item_id>/ingredients', methods=['GET'])
+def recipe_get_ingredients(item_id):
+    """Return current recipe ingredients for a menu item as JSON."""
+    if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        return jsonify({'error': 'Unauthorized'}), 403
+    item = MenuItem.query.get_or_404(item_id)
+    data = []
+    for r in item.ingredients:
+        data.append({
+            'id': r.id,
+            'ingredient_id': r.ingredient_id,
+            'name': r.ingredient.name,
+            'unit': r.ingredient.unit,
+            'quantity_needed': float(r.quantity_needed),
+        })
+    return jsonify({'success': True, 'ingredients': data})
+
+
+@inventory_bp.route('/staff/inventory/recipes/<int:item_id>/save', methods=['POST'])
+def recipe_save_ingredients(item_id):
+    """Save (replace) recipe ingredients for a menu item."""
+    if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        return jsonify({'error': 'Unauthorized'}), 403
+    item = MenuItem.query.get_or_404(item_id)
+    data = request.get_json()
+    if data is None:
+        return jsonify({'success': False, 'message': 'No data provided.'}), 400
+
+    rows = data.get('ingredients', [])
+
+    # Delete existing recipe rows for this item
+    MenuItemIngredient.query.filter_by(menu_item_id=item_id).delete()
+
+    for row in rows:
+        ing_id = row.get('ingredient_id')
+        qty = row.get('quantity_needed', 0)
+        try:
+            qty = float(qty)
+        except (TypeError, ValueError):
+            qty = 0
+        if not ing_id or qty <= 0:
+            continue
+        ing = Ingredient.query.get(ing_id)
+        if not ing:
+            continue
+        db.session.add(MenuItemIngredient(
+            menu_item_id=item_id,
+            ingredient_id=ing_id,
+            quantity_needed=qty,
+        ))
+
+    db.session.commit()
+    return jsonify({'success': True, 'message': f'Recipe for "{item.name}" saved successfully!'})
 
 @inventory_bp.route('/staff/inventory/batches')
 def inventory_ingredient_batches():
@@ -938,9 +995,73 @@ def inventory_add_supplier():
     new_ingredients_str = request.form.get('new_ingredients', '').strip()
     if new_ingredients_str:
         sup.catalog_items = new_ingredients_str
+        # Also create actual Ingredient records linked to this supplier
+        for ing_name in [i.strip() for i in new_ingredients_str.split(',') if i.strip()]:
+            # Avoid duplicates
+            existing = Ingredient.query.filter(
+                db.func.lower(Ingredient.name) == ing_name.lower(),
+                Ingredient.supplier_id == sup.id
+            ).first()
+            if not existing:
+                new_ing = Ingredient(
+                    name=ing_name,
+                    unit='pcs',
+                    stock_qty=0,
+                    supplier_id=sup.id
+                )
+                db.session.add(new_ing)
         db.session.commit()
         
     flash(f'Supplier "{name}" added successfully!', 'success')
+    return redirect(url_for('inventory_portal.inventory_suppliers'))
+
+
+@inventory_bp.route('/staff/inventory/suppliers/delete/<int:sup_id>', methods=['POST'])
+def inventory_delete_supplier(sup_id):
+    if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        return redirect(url_for('cashier_portal.staff_login'))
+
+    sup = Supplier.query.get_or_404(sup_id)
+    sup_name = sup.name
+    # Unlink ingredients but don't delete them
+    Ingredient.query.filter_by(supplier_id=sup_id).update({'supplier_id': None})
+    db.session.delete(sup)
+    db.session.commit()
+    flash(f'Supplier "{sup_name}" deleted.', 'success')
+    return redirect(url_for('inventory_portal.inventory_suppliers'))
+
+
+@inventory_bp.route('/staff/inventory/suppliers/update/<int:sup_id>', methods=['POST'])
+def inventory_update_supplier(sup_id):
+    if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        return redirect(url_for('cashier_portal.staff_login'))
+
+    sup = Supplier.query.get_or_404(sup_id)
+    sup.name = request.form.get('name', sup.name).strip()
+    sup.contact_person = request.form.get('contact_person', '').strip()
+    sup.phone = request.form.get('phone', '').strip()
+    sup.email = request.form.get('email', '').strip()
+    sup.address = request.form.get('address', '').strip()
+
+    new_catalog = request.form.get('new_ingredients', '').strip()
+    if new_catalog is not None:
+        sup.catalog_items = new_catalog
+        # Create new Ingredient records for any new names not yet linked
+        for ing_name in [i.strip() for i in new_catalog.split(',') if i.strip()]:
+            existing = Ingredient.query.filter(
+                db.func.lower(Ingredient.name) == ing_name.lower(),
+                Ingredient.supplier_id == sup.id
+            ).first()
+            if not existing:
+                db.session.add(Ingredient(
+                    name=ing_name,
+                    unit='pcs',
+                    stock_qty=0,
+                    supplier_id=sup.id
+                ))
+
+    db.session.commit()
+    flash(f'Supplier "{sup.name}" updated successfully!', 'success')
     return redirect(url_for('inventory_portal.inventory_suppliers'))
 
 @inventory_bp.route('/staff/inventory/ingredients/restock/<int:ing_id>', methods=['POST'])

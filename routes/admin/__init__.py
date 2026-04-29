@@ -417,6 +417,10 @@ def overview():
     total_menu = MenuItem.query.count()
     low_stock_items = MenuItem.query.filter_by(is_available=False).limit(200).all()
     
+    # Stock Request & Inventory Stats
+    pending_stock_requests = StockRequest.query.filter_by(status='PENDING').count()
+    low_ingredients_count = Ingredient.query.filter(Ingredient.stock_qty <= Ingredient.reorder_level).count()
+    
     recent_reservations = Reservation.query.order_by(Reservation.created_at.desc()).limit(5).all()
 
     import json as _json
@@ -468,6 +472,8 @@ def overview():
         confirmed_reservations=confirmed_reservations,
         recent_reservations=recent_reservations,
         low_stock_items=low_stock_items,
+        pending_stock_requests=pending_stock_requests,
+        low_ingredients_count=low_ingredients_count,
         total_revenue=total_revenue,
         revenue_trend_labels=_json.dumps(revenue_trend_labels),
         revenue_trend_data=_json.dumps(revenue_trend_data),
@@ -1358,6 +1364,19 @@ def update_reservation(res_id):
     res = Reservation.query.get_or_404(res_id)
     new_status = request.form.get('status')
     table_number = request.form.get('table_number')
+
+    if new_status == 'CONFIRMED' and table_number:
+        conflict = Reservation.query.filter(
+            Reservation.id != res.id,
+            Reservation.date == res.date,
+            Reservation.time == res.time,
+            Reservation.table_number == table_number,
+            Reservation.status == 'CONFIRMED'
+        ).first()
+
+        if conflict:
+            flash(f"{table_number} is already booked for this date and time.", "danger")
+            return redirect(url_for('admin.reservations'))
     
     res.status = new_status
     if table_number:
@@ -3226,35 +3245,18 @@ def create_stock_request():
         ingredient_id=ing_id,
         requested_by_id=current_user.id,
         quantity_requested=qty,
-        quantity_fulfilled=qty,
-        status='FULFILLED',
-        fulfilled_by_id=current_user.id,
+        quantity_fulfilled=0,
+        status='PENDING',
+        fulfilled_by_id=None,
         notes=notes
     )
     db.session.add(req)
-    
-    # 1. Deduct from Main Inventory (FIFO)
-    prev_main = float(ing.stock_qty)
-    ing.stock_qty = max(0, prev_main - qty)
-    log_inventory_change(ing.id, 'DEDUCT', qty, prev_main, f"Direct Pull to Kitchen")
-
-    # 2. Add to Kitchen Side
-    prev_kitchen = float(ing.kitchen_qty or 0)
-    ing.kitchen_qty = prev_kitchen + qty
-    log_inventory_change(ing.id, 'ADD', qty, prev_kitchen, f"Received from Bodega")
-
-    # 3. Handle FIFO Batches (Exhaust from Warehouse)
-    process_fifo_transaction(ing.id, 'DEDUCT', qty)
-
-    # 4. Mandatory Sync: Auto-update is_available for all menus using this ingredient
-    _sync_single_ingredient_availability(ing.id)
-
     db.session.commit()
     
-    # Notify inventory staff about the instant pull
+    # Notify inventory staff about the new request
     inv_staff = User.query.filter(User.role.in_(['INVENTORY_STAFF', 'INVENTORY', 'ADMIN'])).all()
     for s in inv_staff:
-        _create_web_notification(s.id, 'Kitchen Stock Pulled', f'Kitchen automatically pulled {qty} units of {req.ingredient.name}', 'SYSTEM')
+        _create_web_notification(s.id, 'New Stock Request', f'{current_user.first_name} requested {qty} units of {req.ingredient.name}', 'SYSTEM')
 
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return jsonify({

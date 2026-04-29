@@ -339,23 +339,12 @@
                 </div>
             </div>
 
-            <div class="resRow">
+            <div class="resRow" id="durationRow" style="display: none;">
                 <div class="resField">
                     <label for="duration">Duration</label>
-                    <select id="duration" name="duration" required>
-                        <option value="1">1 Hour</option>
-                        <option value="2" selected>2 Hours (Standard)</option>
-                        <option value="3">3 Hours</option>
-                        <option value="4">4 Hours</option>
-                        <option value="5">5 Hours</option>
-                        <option value="8">8 Hours (Full Day)</option>
+                    <select id="duration" name="duration" required readonly>
+                        <option value="2" selected>2 Hours (Exclusive)</option>
                     </select>
-                </div>
-                <div class="resField">
-                    <label for="occasion">Occasion <span
-                            style="font-weight: 400; color: var(--text-muted); font-size: 0.75rem;">(Optional)</span></label>
-                    <input type="text" id="occasion" name="occasion" maxlength="50"
-                        placeholder="e.g. Birthday, Anniversary">
                 </div>
             </div>
 
@@ -373,6 +362,7 @@
         var maxGuestText = document.getElementById('max-guest-text');
         var dateField = document.getElementById('date');
         var durationSelect = document.getElementById('duration');
+        var durationRow = document.getElementById('durationRow');
 
         var today = new Date();
         
@@ -396,7 +386,7 @@
             
             // Set fixed duration for Exclusive
             durationSelect.value = "2";
-            durationSelect.disabled = true;
+            durationRow.style.display = "grid";
             
             // Update UI
             guestHint.innerHTML = '<i class="fas fa-gem me-2" style="color: #D4A862;"></i><strong>Exclusive Booking:</strong><br>• Capacity: Max 40 pax<br>• Duration: Fixed 2 Hours (Automatic)<br>• Consumable: All Menu Items included';
@@ -439,7 +429,8 @@
             guestInput.max = 20;
             if (guestInput.value > 20) guestInput.value = 20;
             
-            durationSelect.disabled = false;
+            durationRow.style.display = "none";
+            durationSelect.value = "2";
             
             guestHint.innerHTML = '<i class="fas fa-chair me-2" style="color: #8B634B;"></i><strong>Standard Booking:</strong><br>• 1-4 Persons: 1 Standard Table<br>• 5-8 Persons: 2 Combined Tables<br>• 9+ Persons: Group Banquet Seating';
             maxGuestText.innerText = '20';
@@ -549,13 +540,11 @@
         let p_guests = "{{ pending.get('guest_count', '') if pending else '' }}";
         let p_type = "{{ pending.get('booking_type', 'REGULAR') if pending else 'REGULAR' }}";
         let p_duration = "{{ pending.get('duration', '2') if pending else '2' }}";
-        let p_occasion = "{{ pending.get('occasion', '') if pending else '' }}";
 
         // Restore from sessionStorage OR server pending details
         if (sessionStorage.getItem('res_type') || p_type) document.getElementById('booking_type').value = sessionStorage.getItem('res_type') || p_type;
         if (sessionStorage.getItem('res_guests') || p_guests) document.getElementById('guest_count').value = sessionStorage.getItem('res_guests') || p_guests;
         if (sessionStorage.getItem('res_duration') || p_duration) document.getElementById('duration').value = sessionStorage.getItem('res_duration') || p_duration;
-        if (sessionStorage.getItem('res_occasion') || p_occasion) document.getElementById('occasion').value = sessionStorage.getItem('res_occasion') || p_occasion;
         if (sessionStorage.getItem('res_date') || p_date) document.getElementById('date').value = sessionStorage.getItem('res_date') || p_date;
 
         updateBookingRules();
@@ -567,7 +556,7 @@
         }, 50);
 
         // Save on change
-        const fields = ['booking_type', 'guest_count', 'duration', 'occasion', 'date', 'time'];
+        const fields = ['booking_type', 'guest_count', 'duration', 'date', 'time'];
         fields.forEach(f => {
             var el = document.getElementById(f);
             if(el) {

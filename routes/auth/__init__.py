@@ -120,11 +120,13 @@ def signup():
             flash("Username already taken.", "danger"); return render_template('auth/signup.html')
         if User.query.filter_by(first_name=first_name, last_name=last_name).first():
             flash("User with this First and Last name already exists.", "danger"); return render_template('auth/signup.html')
+        if phone_number and User.query.filter_by(phone_number=phone_number).first():
+            flash("Phone number already registered to another account.", "danger"); return render_template('auth/signup.html')
 
         new_user = User(
             first_name=first_name, middle_name=middle_name, last_name=last_name,
             username=username, email=email, phone_number=phone_number, birthday=birthday, 
-            status='PENDING', gender=gender, age=int(age_val) if age_val else None
+            status='ACTIVE', gender=gender, age=int(age_val) if age_val else None
         )
         new_user.set_password(password)
         
@@ -182,7 +184,7 @@ def verify_otp(user_id):
             user.is_verified = True
             user.otp_code = None
             db.session.commit()
-            flash("Account successfully verified! Please wait for admin approval.", "success")
+            flash("Account successfully verified! You can now log in.", "success")
             return redirect(url_for('main.login'))
         else:
             flash("Invalid OTP.", "danger")
@@ -307,8 +309,9 @@ def social_auth():
             return jsonify({"success": True, "redirect": url_for('main.verify_otp', user_id=user.id)})
 
         if user.status != 'ACTIVE' and user.role not in ['ADMIN', 'CASHIER', 'INVENTORY_STAFF']:
-            flash(f"Your {provider} login was successful, but your account is pending admin approval.", "warning")
-            return jsonify({"success": True, "redirect": url_for('main.login')})
+            # Auto-activate social login users
+            user.status = 'ACTIVE'
+            db.session.commit()
             
         login_user(user)
         # (Same redirection logic as before)
@@ -379,11 +382,6 @@ def login():
                 return redirect(url_for('main.verify_otp', user_id=user.id))
             
             role_upper = user.role.upper() if user.role else ''
-            staff_roles = ['ADMIN', 'CASHIER', 'INVENTORY_STAFF', 'INVENTORY', 'KITCHEN', 'STAFF', 'RIDER']
-            
-            if user.status != 'ACTIVE' and role_upper not in staff_roles:
-                flash("Your account is pending admin approval.", "warning")
-                return redirect(url_for('main.login'))
             
             login_user(user)
             # Redirect admins/staff to their specific dashboards, regular users to homepage

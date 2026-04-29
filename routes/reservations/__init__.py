@@ -97,6 +97,17 @@ def reserve():
             flash("Time must be between 11:30 AM - 8:30 PM with 30-minute intervals.", "danger")
             return redirect(url_for('main.reserve'))
 
+        # Duplicate booking check: same user, same date, same time, active reservation
+        duplicate = Reservation.query.filter(
+            Reservation.user_id == current_user.id,
+            Reservation.date == res_date,
+            Reservation.time == res_time,
+            Reservation.status.in_(['PENDING', 'CONFIRMED']),
+        ).first()
+        if duplicate:
+            flash("You already have a reservation on this date and time. Please choose a different schedule.", "danger")
+            return redirect(url_for('main.reserve'))
+
         if guest_count <= 0:
             flash("Guest count must be at least 1.", "danger")
             return redirect(url_for('main.reserve'))

@@ -157,7 +157,25 @@
     <div class="supplier-card" onclick="openReceiveModal({{ sup.id }}, '{{ sup.name|e }}')">
         <div class="sup-header">
             <div class="sup-name">{{ sup.name }}</div>
-            <div class="sup-initial">{{ sup.name[:1] }}</div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <div class="sup-initial">{{ sup.name[:1] }}</div>
+                <button type="button"
+                    onclick="event.stopPropagation(); openEditModal({{ sup.id }}, '{{ sup.name|e }}', '{{ sup.contact_person|e }}', '{{ sup.phone|e }}', '{{ sup.email|e }}', '{{ sup.address|replace('\n',' ')|e }}', '{{ sup.catalog_items|e }}')"
+                    style="background:rgba(25,118,210,0.08); border:none; color:#1565c0; width:32px; height:32px; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s;"
+                    title="Edit Supplier"
+                    onmouseover="this.style.background='rgba(25,118,210,0.18)'"
+                    onmouseout="this.style.background='rgba(25,118,210,0.08)'">
+                    <i class="fas fa-pen" style="font-size:0.8rem;"></i>
+                </button>
+                <button type="button"
+                    onclick="event.stopPropagation(); confirmDeleteSupplier({{ sup.id }}, '{{ sup.name|e }}')"
+                    style="background:rgba(211,47,47,0.08); border:none; color:#c62828; width:32px; height:32px; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s;"
+                    title="Delete Supplier"
+                    onmouseover="this.style.background='rgba(211,47,47,0.18)'"
+                    onmouseout="this.style.background='rgba(211,47,47,0.08)'">
+                    <i class="fas fa-trash-alt" style="font-size:0.8rem;"></i>
+                </button>
+            </div>
         </div>
         <div class="sup-info">
             <i class="fas fa-user"></i> {{ sup.contact_person or 'No Contact Person' }}
@@ -202,6 +220,76 @@
                 <i class="fas fa-check-circle me-1"></i> Accept & Add to Inventory
             </button>
         </div>
+    </div>
+</div>
+
+<!-- ═══════════ DELETE SUPPLIER MODAL ═══════════ -->
+<div id="deleteSupplierModal" class="modal-overlay">
+    <div class="modal-content-custom" style="max-width: 420px;">
+        <div class="modal-header-custom" style="background: #c62828;">
+            <h3><i class="fas fa-trash-alt me-2"></i> Delete Supplier</h3>
+            <button class="close-modal" onclick="closeModal('deleteSupplierModal')">&times;</button>
+        </div>
+        <div class="modal-body-custom" style="text-align:center; padding: 32px 24px;">
+            <div style="width:60px; height:60px; background:rgba(198,40,40,0.1); border-radius:50%; display:flex; align-items:center; justify-content:center; margin: 0 auto 16px;">
+                <i class="fas fa-exclamation-triangle" style="font-size:1.5rem; color:#c62828;"></i>
+            </div>
+            <h4 style="margin:0 0 10px; color: var(--text);">Are you sure?</h4>
+            <p style="color: var(--muted); font-size: 0.9rem; margin:0;">
+                You are about to delete <strong id="deleteSupName" style="color:#c62828;"></strong>.<br>
+                Linked ingredients will be unlinked but not deleted.
+            </p>
+        </div>
+        <div class="modal-footer-custom" style="justify-content:center; gap:16px;">
+            <button type="button" class="btn-secondary" onclick="closeModal('deleteSupplierModal')">Cancel</button>
+            <button type="button" onclick="executeDeleteSupplier()"
+                style="background:#c62828; color:white; border:none; padding:10px 24px; border-radius:10px; cursor:pointer; font-weight:600;">
+                <i class="fas fa-trash-alt me-1"></i> Delete
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════ EDIT SUPPLIER MODAL ═══════════ -->
+<div id="editSupplierModal" class="modal-overlay">
+    <div class="modal-content-custom">
+        <div class="modal-header-custom" style="background: #1565c0;">
+            <h3><i class="fas fa-pen me-2"></i> Edit Supplier</h3>
+            <button class="close-modal" onclick="closeModal('editSupplierModal')">&times;</button>
+        </div>
+        <form id="editSupplierForm" method="POST" class="modal-body-custom">
+            <div class="form-group">
+                <label>Company Name *</label>
+                <input type="text" name="name" id="edit_name" required>
+            </div>
+            <div class="form-group">
+                <label>Contact Person</label>
+                <input type="text" name="contact_person" id="edit_contact">
+            </div>
+            <div class="form-group">
+                <label>Phone</label>
+                <input type="text" name="phone" id="edit_phone">
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" name="email" id="edit_email">
+            </div>
+            <div class="form-group">
+                <label>Address</label>
+                <textarea name="address" id="edit_address" rows="2"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Ingredients Supplied</label>
+                <input type="text" name="new_ingredients" id="edit_ingredients" placeholder="e.g. Pork, Chicken, Beef">
+                <small style="font-size:0.7rem; color:var(--muted);">Separate items with commas. New items will be added as ingredients.</small>
+            </div>
+            <div class="modal-footer-custom">
+                <button type="button" class="btn-secondary" onclick="closeModal('editSupplierModal')">Cancel</button>
+                <button type="submit" class="btn-primary" style="background:#1565c0;">
+                    <i class="fas fa-save me-1"></i> Save Changes
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -427,6 +515,38 @@
             btn.disabled = false;
             btn.innerHTML = originalHTML;
         });
+    }
+
+    // Delete Supplier Confirmation
+    let deleteSupId = null;
+    let deleteSupName = '';
+
+    function confirmDeleteSupplier(supId, supName) {
+        deleteSupId = supId;
+        deleteSupName = supName;
+        document.getElementById('deleteSupName').textContent = supName;
+        openModal('deleteSupplierModal');
+    }
+
+    function executeDeleteSupplier() {
+        if (!deleteSupId) return;
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/staff/inventory/suppliers/delete/${deleteSupId}`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    // Edit Supplier
+    function openEditModal(supId, name, contact, phone, email, address, ingredients) {
+        document.getElementById('editSupplierForm').action = `/staff/inventory/suppliers/update/${supId}`;
+        document.getElementById('edit_name').value = name;
+        document.getElementById('edit_contact').value = contact;
+        document.getElementById('edit_phone').value = phone;
+        document.getElementById('edit_email').value = email;
+        document.getElementById('edit_address').value = address;
+        document.getElementById('edit_ingredients').value = ingredients;
+        openModal('editSupplierModal');
     }
 </script>
 {% endblock %}

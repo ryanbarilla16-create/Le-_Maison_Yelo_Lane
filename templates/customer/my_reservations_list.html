@@ -206,7 +206,9 @@
                         
                         <div class="meta-tags">
                             <div class="meta-tag"><i class="fas fa-user-friends"></i>{{ r.guest_count }} guests</div>
+                            {% if r.booking_type == 'EXCLUSIVE' %}
                             <div class="meta-tag"><i class="fas fa-hourglass-half"></i>{{ r.duration or 2 }} hours</div>
+                            {% endif %}
                             {% if r.table_number %}
                             <div class="meta-tag"><i class="fas fa-chair"></i>Table {{ r.table_number }}</div>
                             {% endif %}
@@ -274,7 +276,7 @@
                             <span class="detail-label">Guest Count</span>
                             <span id="det-guests" class="detail-value"></span>
                         </div>
-                        <div class="detail-row">
+                        <div class="detail-row" id="duration-row" style="display:none;">
                             <span class="detail-label">Duration</span>
                             <span id="det-duration" class="detail-value"></span>
                         </div>
@@ -365,7 +367,14 @@
             document.getElementById('det-date').innerText = data.date;
             document.getElementById('det-time').innerText = data.time;
             document.getElementById('det-guests').innerText = data.guests + ' Persons';
-            document.getElementById('det-duration').innerText = data.duration + ' Hours';
+            
+            const durRow = document.getElementById('duration-row');
+            if (data.type === 'EXCLUSIVE') {
+                durRow.style.display = 'flex';
+                document.getElementById('det-duration').innerText = data.duration + ' Hours';
+            } else {
+                durRow.style.display = 'none';
+            }
 
             const occRow = document.getElementById('occasion-row');
             if (data.occasion) {
