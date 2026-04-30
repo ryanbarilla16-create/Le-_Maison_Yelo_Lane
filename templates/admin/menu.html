@@ -14,7 +14,7 @@
             <i class="fas fa-trash-alt me-2"></i> View Trash
         </a>
         {% if current_user.role|upper == 'ADMIN' %}
-        <button class="btn-admin-primary px-4 py-2" data-bs-toggle="modal" data-bs-target="#addMenuModal"
+        <button class="btn-admin-primary px-4 py-2" onclick="openAddModal()"
             style="border-radius: 10px; border: none; font-weight: 700; font-size: 0.85rem;">
             <i class="fas fa-plus me-2"></i> Add Item
         </button>
@@ -109,7 +109,7 @@
 </div>
 
 <!-- Edit Modal (single, loaded on-demand) -->
-<div class="modal fade admin-modal" id="editMenuModal" tabindex="-1">
+<div class="modal fade" id="editMenuModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <form method="POST" id="editMenuForm" action="{{ url_for('admin.menu_edit', item_id=0) }}">
@@ -136,16 +136,16 @@
                     </div>
                     <div class="mb-3"><label>Image URL</label><input class="form-control" id="editItemImageUrl"
                             name="image_url" type="url" maxlength="255"></div>
-
-                    <div class="modal-footer"><button type="submit" class="btn-admin btn-admin-primary">Save
-                            Changes</button></div>
+                </div> <!-- Missing closing div for modal-body -->
+                <div class="modal-footer"><button type="submit" class="btn-admin btn-admin-primary">Save
+                        Changes</button></div>
             </form>
         </div>
     </div>
 </div>
 
 <!-- Add Modal -->
-<div class="modal fade admin-modal" id="addMenuModal" tabindex="-1">
+<div class="modal fade" id="addMenuModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <form method="POST" action="{{ url_for('admin.menu_add') }}">
@@ -171,9 +171,9 @@
                     </div>
                     <div class="mb-3"><label>Image URL</label><input class="form-control" name="image_url" type="url"
                             maxlength="255"></div>
-
-                    <div class="modal-footer"><button type="submit" class="btn-admin btn-admin-primary">Add
-                            Item</button>
+                </div> <!-- Missing closing div for modal-body -->
+                <div class="modal-footer"><button type="submit" class="btn-admin btn-admin-primary">Add
+                        Item</button>
                     </div>
             </form>
         </div>
@@ -181,7 +181,7 @@
 </div>
 
 <!-- View Details Modal (Portrait Style) -->
-<div class="modal fade admin-modal" id="viewItemDetailsModal" tabindex="-1">
+<div class="modal fade" id="viewItemDetailsModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
         <div class="modal-content" style="border-radius: 20px; overflow: hidden; border: none;">
             <div style="position: relative;">
@@ -204,7 +204,7 @@
 </div>
 
 <!-- Confirm Delete Modal (Custom Style) -->
-<div class="modal fade admin-modal" id="confirmDeleteModal" tabindex="-1">
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
         <div class="modal-content"
             style="border-radius: 20px; border: none; overflow: hidden; box-shadow: 0 15px 50px rgba(0,0,0,0.2);">
@@ -450,10 +450,8 @@
             showCategory(openCategory);
         }
 
-        // Fix for grey screen issue: Move all modals to body to escape any stacking context
-        document.querySelectorAll('.admin-modal').forEach(modal => {
-            document.body.appendChild(modal);
-        });
+        // Modals are now strictly Bootstrap-controlled without the manual moving to body,
+        // which prevents initialization bugs that cause grey screens.
     });
 
     async function loadCategoryItems(categoryName) {
@@ -640,6 +638,11 @@
             console.error(e);
             if (loadWrap) loadWrap.innerHTML = '';
         }
+    }
+
+    function openAddModal() {
+        const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('addMenuModal'));
+        modal.show();
     }
 
     async function openEditModal(itemId) {
