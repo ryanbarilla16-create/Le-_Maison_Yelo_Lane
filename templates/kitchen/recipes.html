@@ -295,7 +295,13 @@
 
     function pollKitchenRecipes() {
         // Skip if user is typing in search
-        if (document.activeElement.id === 'recipeSearch') return;
+        const searchInput = document.getElementById('recipeSearch');
+        if (document.activeElement === searchInput) return;
+
+        // 1. Save current state
+        const currentSearch = searchInput ? searchInput.value : '';
+        const currentCat = document.getElementById('catSelect') ? document.getElementById('catSelect').value : 'ALL';
+        const scrollPos = window.scrollY;
 
         fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
         .then(response => response.text())
@@ -312,7 +318,14 @@
                 }
             });
             
-            // Re-apply filters
+            // 2. Re-apply state
+            const newSearch = document.getElementById('recipeSearch');
+            const newCat = document.getElementById('catSelect');
+            if (newSearch) newSearch.value = currentSearch;
+            if (newCat) newCat.value = currentCat;
+            
+            // 3. Restore scroll and re-filter
+            window.scrollTo(0, scrollPos);
             filterRecipes();
         })
         .catch(err => console.warn('Recipes sync failed:', err));
