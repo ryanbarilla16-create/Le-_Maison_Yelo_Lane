@@ -527,7 +527,10 @@ def kitchen_reservations():
 @kitchen_bp.route('/staff/kitchen/update/<int:order_id>', methods=['POST'])
 @login_required
 def kitchen_update_order(order_id):
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if current_user.role not in KITCHEN_ROLES:
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'Unauthorized'}), 403
         flash("Unauthorized", "error")
         return redirect(url_for('main.index'))
         
@@ -538,7 +541,6 @@ def kitchen_update_order(order_id):
     if new_status in ['PREPARING', 'READY', 'COMPLETED']:
         # Auto-deduct ingredients when order moves to PREPARING
         if new_status == 'PREPARING' and order.status != 'PREPARING':
-            from collections import defaultdict
             order_items = list(order.items)
             menu_item_ids = list({oi.menu_item_id for oi in order_items if oi.menu_item_id})
             
@@ -561,23 +563,30 @@ def kitchen_update_order(order_id):
                 for ing_id, deduction in deduction_by_ingredient_id.items():
                     ing = ingredients_by_id.get(ing_id)
                     if ing:
-                        # Deduct from KITCHEN stock, not warehouse stock
                         ing.kitchen_qty = max(0.0, float(ing.kitchen_qty or 0) - float(deduction))
-                        
-                        # Sync availability for this ingredient (checks kitchen stock)
-                        # We do this logic inline here as the helper isn't exported
-                        links = MenuItemIngredient.query.filter_by(ingredient_id=ing.id).all()
-                        for link in links:
-                            mi = MenuItem.query.get(link.menu_item_id)
-                            if mi:
-                                can_make = True
-                                for recipe_item in mi.ingredients:
-                                    qty_in_kitchen = float(recipe_item.ingredient.kitchen_qty or 0)
-                                    qty_needed = float(recipe_item.quantity_needed or 0)
-                                    if qty_in_kitchen < qty_needed:
-                                        can_make = False
-                                        break
-                                mi.is_available = can_make
+
+                # Batch availability sync — single pass instead of N+1 queries
+                affected_ing_ids = list(deduction_by_ingredient_id.keys())
+                if affected_ing_ids:
+                    all_links = MenuItemIngredient.query.filter(
+                        MenuItemIngredient.ingredient_id.in_(affected_ing_ids)
+                    ).all()
+                    affected_mi_ids = list({lnk.menu_item_id for lnk in all_links})
+                    if affected_mi_ids:
+                        from sqlalchemy.orm import selectinload
+                        affected_mis = MenuItem.query.options(
+                            selectinload(MenuItem.ingredients).selectinload(MenuItemIngredient.ingredient)
+                        ).filter(MenuItem.id.in_(affected_mi_ids)).all()
+                        for mi in affected_mis:
+                            can_make = True
+                            for recipe_item in mi.ingredients:
+                                ing_obj = ingredients_by_id.get(recipe_item.ingredient_id, recipe_item.ingredient)
+                                qty_in_kitchen = float(ing_obj.kitchen_qty or 0)
+                                qty_needed = float(recipe_item.quantity_needed or 0)
+                                if qty_in_kitchen < qty_needed:
+                                    can_make = False
+                                    break
+                            mi.is_available = can_make
             
             order.prep_start_at = get_ph_time()
             
@@ -593,8 +602,14 @@ def kitchen_update_order(order_id):
             socketio.emit('order_status_update', {'id': order.id, 'status': new_status}, namespace='/')
         except:
             pass
+        
+        if is_ajax:
+            return jsonify({'success': True, 'order_id': order.id, 'status': new_status})
             
         flash(f"Order #{order.id} updated to {new_status}.", "success")
+    else:
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'Invalid status'}), 400
         
     return redirect(url_for('kitchen_portal.kitchen_dashboard'))
 
@@ -603,30 +618,37 @@ def kitchen_pantry():
     if not current_user.is_authenticated or current_user.role not in KITCHEN_ROLES:
         return redirect(url_for('cashier_portal.staff_login'))
     
-    all_ingredients = Ingredient.query.order_by(Ingredient.name).all()
-    grouped_ingredients = {}
-    
-    for ing in all_ingredients:
-        # Find all Menu Item Categories this ingredient belongs to
-        cats = db.session.query(MenuItem.category).join(MenuItemIngredient, MenuItem.id == MenuItemIngredient.menu_item_id).filter(
-            MenuItemIngredient.ingredient_id == ing.id
-        ).distinct().all()
-        
-        cat_names = [c[0] for c in cats if c[0]]
-        if not cat_names:
-            cat_names = ['General / Uncategorized']
-            
-        for cat in cat_names:
-            if cat not in grouped_ingredients:
-                grouped_ingredients[cat] = []
-            grouped_ingredients[cat].append(ing)
-            
-    # Sort the dictionary by category name for a clean UI
-    grouped_ingredients = dict(sorted(grouped_ingredients.items()))
+    grouped_ingredients = _build_pantry_grouped()
         
     return render_template('kitchen/pantry.html', 
                            grouped_ingredients=grouped_ingredients,
                            portal_name=f"{current_user.first_name} {current_user.last_name}")
+
+def _build_pantry_grouped():
+    """Build ingredient-to-category grouping in ONE query instead of N+1."""
+    all_ingredients = Ingredient.query.order_by(Ingredient.name).all()
+    ing_by_id = {ing.id: ing for ing in all_ingredients}
+
+    # Single query: get all ingredient→menu category mappings at once
+    cat_mappings = db.session.query(
+        MenuItemIngredient.ingredient_id, MenuItem.category
+    ).join(MenuItem, MenuItem.id == MenuItemIngredient.menu_item_id).filter(
+        MenuItem.category.isnot(None)
+    ).distinct().all()
+
+    cats_by_ing = defaultdict(set)
+    for ing_id, cat in cat_mappings:
+        cats_by_ing[ing_id].add(cat)
+
+    grouped_ingredients = {}
+    for ing in all_ingredients:
+        cat_names = list(cats_by_ing.get(ing.id, set())) or ['General / Uncategorized']
+        for cat in cat_names:
+            if cat not in grouped_ingredients:
+                grouped_ingredients[cat] = []
+            grouped_ingredients[cat].append(ing)
+
+    return dict(sorted(grouped_ingredients.items()))
 
 @kitchen_bp.route('/staff/kitchen/recipes')
 def kitchen_recipes():
@@ -662,12 +684,78 @@ def kitchen_update_pantry():
             ing.kitchen_qty = new_qty
             db.session.commit()
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'success': True, 'new_qty': new_qty})
+                return jsonify({'success': True, 'new_qty': new_qty, 'name': ing.name, 'unit': ing.unit})
             flash(f"Updated {ing.name} kitchen stock to {new_qty} {ing.unit}.", "success")
             
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return jsonify({'success': False, 'message': 'Invalid data'}), 400
     return redirect(url_for('kitchen_portal.kitchen_pantry'))
+
+# ── Lightning-fast JSON APIs for kitchen polling (no template rendering) ──
+
+def _serialize_order(o):
+    """Serialize an order to a lightweight dict. Orders are pre-loaded with selectinload."""
+    dining = (o.dining_option or 'DINE_IN')
+    if dining == 'DINE_IN':
+        icon = 'utensils'
+    elif dining == 'TAKE_OUT':
+        icon = 'bag-shopping'
+    else:
+        icon = 'truck'
+    return {
+        'id': o.id,
+        'id_fmt': f'{o.id:04d}',
+        'status': o.status,
+        'created_at': o.created_at.strftime('%I:%M %p') if o.created_at else '',
+        'customer': (o.user.first_name if o.user else None) or o.customer_name or 'Walk-in Guest',
+        'dining_label': dining.replace('_', ' ').title(),
+        'dining_icon': icon,
+        'items': [{'qty': i.quantity, 'name': i.menu_item.name if i.menu_item else 'Item'} for i in o.items]
+    }
+
+@kitchen_bp.route('/staff/kitchen/api/orders')
+def kitchen_api_orders():
+    """Ultra-fast JSON endpoint for dashboard polling — no template rendering."""
+    if not current_user.is_authenticated or current_user.role not in KITCHEN_ROLES:
+        return jsonify({'error': 'Unauthorized'}), 401
+    from sqlalchemy.orm import selectinload
+    base_opts = [
+        selectinload(Order.items).selectinload(OrderItem.menu_item),
+        selectinload(Order.user)
+    ]
+    pending = Order.query.options(*base_opts).filter(
+        Order.status == 'PENDING', Order.reservation_id.is_(None)
+    ).order_by(Order.created_at.asc()).all()
+    preparing = Order.query.options(*base_opts).filter(
+        Order.status == 'PREPARING', Order.reservation_id.is_(None)
+    ).order_by(Order.created_at.asc()).all()
+    ready = Order.query.options(*base_opts).filter(
+        Order.status == 'READY', Order.reservation_id.is_(None)
+    ).order_by(Order.created_at.desc()).limit(20).all()
+    return jsonify({
+        'pending': [_serialize_order(o) for o in pending],
+        'preparing': [_serialize_order(o) for o in preparing],
+        'ready': [_serialize_order(o) for o in ready],
+        'counts': {'pending': len(pending), 'preparing': len(preparing), 'ready': len(ready)},
+        'time': get_ph_time().strftime('%I:%M:%S %p')
+    })
+
+@kitchen_bp.route('/staff/kitchen/api/pantry')
+def kitchen_api_pantry():
+    """Ultra-fast JSON endpoint for pantry polling — no template rendering."""
+    if not current_user.is_authenticated or current_user.role not in KITCHEN_ROLES:
+        return jsonify({'error': 'Unauthorized'}), 401
+    all_ingredients = Ingredient.query.order_by(Ingredient.name).all()
+    data = []
+    for ing in all_ingredients:
+        data.append({
+            'id': ing.id,
+            'name': ing.name,
+            'kitchen_qty': float(ing.kitchen_qty or 0),
+            'unit': ing.unit,
+            'reorder_level': float(ing.reorder_level or 0)
+        })
+    return jsonify({'ingredients': data, 'time': get_ph_time().strftime('%I:%M:%S %p')})
 
 @kitchen_bp.route('/staff/kitchen/pantry/emergency-fill', methods=['POST'])
 def kitchen_emergency_fill():

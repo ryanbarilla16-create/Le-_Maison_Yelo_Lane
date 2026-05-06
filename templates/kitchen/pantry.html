@@ -168,7 +168,7 @@
     }
     
     function savePantryItem(event, uniqId) {
-        event.preventDefault(); // Prevent full page reload
+        event.preventDefault();
         
         const form = event.target;
         const formData = new FormData(form);
@@ -186,35 +186,45 @@
             body: formData,
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         })
-        .then(response => {
-            if (response.ok) {
-                // Update ALL identical ingredients across different categories
-                const allForms = document.querySelectorAll(`.edit-form input[name="ingredient_id"][value="${ingId}"]`);
-                allForms.forEach(f => {
-                    const parentForm = f.closest('.edit-form');
-                    const targetUniqId = parentForm.id.replace('form-', '');
-                    
-                    // Sync the input values
-                    const qtyInput = parentForm.querySelector('input[name="kitchen_qty"]');
-                    if(qtyInput) qtyInput.value = newQty;
-                    
-                    // Sync the display text
-                    const displayEl = document.getElementById('qty-' + targetUniqId);
-                    if(displayEl) displayEl.innerText = parseFloat(newQty).toFixed(1);
-                    
-                    // Force close the edit form if it's open
-                    if(parentForm.style.display === 'flex') {
-                        toggleEdit(targetUniqId);
-                    }
-                });
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update ALL identical ingredients across different categories (instant)
+                _syncIngredientDisplay(ingId, parseFloat(newQty));
+                if (window.showToast) showToast('success', `${data.name} → ${data.new_qty} ${data.unit}`);
             } else {
-                alert("Failed to save changes. Please try again.");
+                alert(data.message || "Failed to save changes.");
             }
         })
-        .catch(err => console.error("Error saving:", err))
+        .catch(err => {
+            console.error("Error saving:", err);
+            alert("Network error. Please try again.");
+        })
         .finally(() => {
             saveBtn.disabled = false;
             saveBtn.innerText = 'Save';
+        });
+    }
+    
+    function _syncIngredientDisplay(ingId, newQty) {
+        // Find ALL cards with this ingredient across categories
+        const allForms = document.querySelectorAll(`.edit-form input[name="ingredient_id"][value="${ingId}"]`);
+        allForms.forEach(f => {
+            const parentForm = f.closest('.edit-form');
+            const targetUniqId = parentForm.id.replace('form-', '');
+            
+            // Sync the input values
+            const qtyInput = parentForm.querySelector('input[name="kitchen_qty"]');
+            if (qtyInput) qtyInput.value = newQty;
+            
+            // Sync the display text
+            const displayEl = document.getElementById('qty-' + targetUniqId);
+            if (displayEl) displayEl.innerText = newQty.toFixed(1);
+            
+            // Close the edit form
+            if (parentForm.style.display === 'flex') {
+                toggleEdit(targetUniqId);
+            }
         });
     }
     
@@ -234,36 +244,54 @@
             }
         });
     }
-    function pollKitchenPantry() {
+
+    /* ═══ Lightning JSON Pantry Polling ═══ */
+    async function pollKitchenPantry() {
+        // Skip if any edit form is open
         if (document.querySelector('form[id^="form-"][style*="flex"]')) return;
 
-        fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-        .then(response => response.text())
-        .then(html => {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            
-            // Save current filter selection
-            const selectEl = document.getElementById('pantryCategorySelect');
-            const currentFilter = selectEl ? selectEl.value : 'ALL';
-            
-            const ids = ['kitchenPantryContainer', 'lastUpdateText'];
-            ids.forEach(id => {
-                const oldEl = document.getElementById(id);
-                const newEl = doc.getElementById(id);
-                if (oldEl && newEl && oldEl.innerHTML !== newEl.innerHTML) {
-                    oldEl.innerHTML = newEl.innerHTML;
+        try {
+            const resp = await fetch('/staff/kitchen/api/pantry');
+            if (!resp.ok) return;
+            const data = await resp.json();
+
+            // Update timestamp
+            const tsEl = document.getElementById('lastUpdateText');
+            if (tsEl) tsEl.innerText = data.time;
+
+            // Surgically update only changed values — zero DOM re-rendering
+            const ingMap = {};
+            data.ingredients.forEach(ing => { ingMap[ing.id] = ing; });
+
+            document.querySelectorAll('.edit-form').forEach(form => {
+                const ingInput = form.querySelector('input[name="ingredient_id"]');
+                if (!ingInput) return;
+                const ingId = parseInt(ingInput.value);
+                const ing = ingMap[ingId];
+                if (!ing) return;
+
+                const uniqId = form.id.replace('form-', '');
+                const displayEl = document.getElementById('qty-' + uniqId);
+                const qtyInput = form.querySelector('input[name="kitchen_qty"]');
+
+                // Only update if not currently being edited
+                if (form.style.display !== 'flex') {
+                    if (displayEl) {
+                        const newStr = ing.kitchen_qty.toFixed(1);
+                        if (displayEl.innerText !== newStr) {
+                            displayEl.innerText = newStr;
+                            // Flash effect for changed values
+                            displayEl.style.transition = 'color 0.3s';
+                            displayEl.style.color = '#2E7D32';
+                            setTimeout(() => { displayEl.style.color = ''; }, 1500);
+                        }
+                    }
+                    if (qtyInput) qtyInput.value = ing.kitchen_qty;
                 }
             });
-            
-            // Re-apply filter and set select value
-            const newSelectEl = document.getElementById('pantryCategorySelect');
-            if (newSelectEl) {
-                newSelectEl.value = currentFilter;
-                filterPantry(currentFilter);
-            }
-        })
-        .catch(err => console.warn('Pantry sync failed:', err));
+        } catch (err) {
+            console.warn('Pantry sync failed:', err);
+        }
     }
 
     setInterval(pollKitchenPantry, 5000);

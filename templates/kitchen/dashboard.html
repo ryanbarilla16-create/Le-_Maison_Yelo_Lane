@@ -404,112 +404,230 @@
 
 {% block extra_script %}
 <script>
+    /* ═══ Tab Switching ═══ */
     function switchTab(status, btn) {
-        // Update Buttons
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-
-        // Update Columns
         document.querySelectorAll('.board-col').forEach(c => c.classList.remove('active'));
         document.getElementById('col-' + status).classList.add('active');
-        
-        // Save current tab preference
         localStorage.setItem('kitchen_active_tab', status);
     }
 
+    /* ═══ Optimistic Order Update (instant UI → 1 request) ═══ */
     async function updateOrderStatus(orderId, newStatus, btn) {
         const card = btn.closest('.order-card');
-        card.classList.add('updating');
+        
+        // ★ OPTIMISTIC: hide card immediately for instant feel
+        card.style.transition = 'all 0.3s ease';
+        card.style.opacity = '0';
+        card.style.transform = 'scale(0.9)';
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
         
         const formData = new FormData();
         formData.append('status', newStatus);
 
         try {
-            const response = await fetch(`/staff/kitchen/update/${orderId}`, {
+            const resp = await fetch(`/staff/kitchen/update/${orderId}`, {
                 method: 'POST',
                 body: formData,
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
+            const result = await resp.json();
 
-            if (response.ok) {
-                // Determine target column based on result
-                const targetStatus = (newStatus === 'PREPARING') ? 'PREPARING' : 'READY';
+            if (result.success) {
+                // Remove the card after animation
+                setTimeout(() => card.remove(), 300);
                 
-                const html = await fetch(location.href).then(r => r.text());
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
+                // Update tab counts immediately
+                _adjustTabCounts(newStatus);
                 
-                // Update all columns and counts
-                updateDashboardContent(doc);
+                // Check if column is now empty and show empty state
+                _checkEmptyColumns();
                 
-                if (window.showToast) window.showToast('success', `Order #${orderId} matches status ${newStatus}`);
+                if (window.showToast) showToast('success', `Order #${orderId} → ${newStatus}`);
+                
+                // Silently refresh full data to sync everything
+                setTimeout(pollKitchenDashboard, 600);
             } else {
-                alert('Failed to update order status');
-                card.classList.remove('updating');
+                // Revert optimistic update
+                card.style.opacity = '1';
+                card.style.transform = 'none';
+                btn.disabled = false;
+                btn.innerHTML = newStatus === 'PREPARING' 
+                    ? '<i class="fas fa-fire-flame-curved"></i> Start Processing'
+                    : '<i class="fas fa-check-double"></i> Ready for Pickup';
+                alert(result.message || 'Failed to update');
             }
-        } catch (error) {
-            console.error('Error updating order:', error);
-            card.classList.remove('updating');
+        } catch (err) {
+            card.style.opacity = '1';
+            card.style.transform = 'none';
+            btn.disabled = false;
+            console.error('Update error:', err);
         }
     }
-
-    function updateDashboardContent(doc) {
-        const ids = ['PENDING', 'PREPARING', 'READY'];
-        ids.forEach(status => {
-            const oldCol = document.getElementById('col-' + status);
-            const newCol = doc.getElementById('col-' + status);
-            if (oldCol && newCol && oldCol.innerHTML !== newCol.innerHTML) {
-                const isActive = oldCol.classList.contains('active');
-                oldCol.innerHTML = newCol.innerHTML;
-                if(isActive) oldCol.classList.add('active');
-            }
-        });
-        
-        // Update counts in buttons
-        const newTabs = doc.querySelectorAll('.tab-btn');
-        const oldTabs = document.querySelectorAll('.tab-btn');
-        oldTabs.forEach((tab, idx) => {
-            const newCountEl = newTabs[idx].querySelector('.tab-count');
-            const oldCountEl = tab.querySelector('.tab-count');
-            if (newCountEl && oldCountEl && oldCountEl.innerText !== newCountEl.innerText) {
-                oldCountEl.innerText = newCountEl.innerText;
+    
+    function _adjustTabCounts(newStatus) {
+        const tabs = document.querySelectorAll('.tab-btn .tab-count');
+        // tabs[0]=PENDING, tabs[1]=PREPARING, tabs[2]=READY
+        if (newStatus === 'PREPARING') {
+            tabs[0].innerText = Math.max(0, parseInt(tabs[0].innerText) - 1);
+            tabs[1].innerText = parseInt(tabs[1].innerText) + 1;
+        } else if (newStatus === 'READY') {
+            tabs[1].innerText = Math.max(0, parseInt(tabs[1].innerText) - 1);
+            tabs[2].innerText = parseInt(tabs[2].innerText) + 1;
+        }
+    }
+    
+    function _checkEmptyColumns() {
+        ['PENDING', 'PREPARING', 'READY'].forEach(status => {
+            const col = document.getElementById('col-' + status);
+            const cards = col.querySelectorAll('.order-card');
+            const existing = col.querySelector('.empty-state');
+            if (cards.length === 0 && !existing) {
+                const icons = {PENDING:'clipboard-list', PREPARING:'mug-hot', READY:'bell-slash'};
+                const labels = {PENDING:'Clean Board', PREPARING:'Oven Off', READY:'Pass Empty'};
+                const div = document.createElement('div');
+                div.className = 'empty-state';
+                div.style.gridColumn = '1 / -1';
+                div.innerHTML = `<i class="fas fa-${icons[status]}"></i><p>${labels[status]}</p>`;
+                col.appendChild(div);
             }
         });
     }
 
-    // Initialize Active Tab from localStorage
+    /* ═══ Client-side Card Builder ═══ */
+    function buildOrderCard(order, type) {
+        const card = document.createElement('div');
+        let cls = 'order-card';
+        if (type === 'PREPARING') cls += ' card-preparing';
+        if (type === 'READY') cls += ' card-ready';
+        card.className = cls;
+        card.style.cssText = 'display:flex; flex-direction:column; height:100%;';
+        
+        let itemsHtml = order.items.map(i => `
+            <div class="item-row" style="margin-bottom:10px;">
+                <span class="item-qty" style="width:28px; height:28px; font-size:0.9rem;">${i.qty}</span>
+                <span class="item-name" style="font-size:1rem; font-weight:600;${type==='READY'?' opacity:0.7;':''}">${i.name}</span>
+            </div>`).join('');
+        
+        let actionHtml = '';
+        if (type === 'PENDING') {
+            actionHtml = `<div class="order-actions" style="margin-top:20px;">
+                <button class="action-btn btn-start" onclick="updateOrderStatus(${order.id}, 'PREPARING', this)" style="padding:15px;">
+                    <i class="fas fa-fire-flame-curved"></i> Start Processing</button></div>`;
+        } else if (type === 'PREPARING') {
+            actionHtml = `<div class="order-actions" style="margin-top:20px;">
+                <button class="action-btn btn-ready" onclick="updateOrderStatus(${order.id}, 'READY', this)" style="padding:15px;">
+                    <i class="fas fa-check-double"></i> Ready for Pickup</button></div>`;
+        } else {
+            actionHtml = `<div style="font-size:0.75rem; color:var(--muted); text-align:center; font-weight:700; text-transform:uppercase; margin-top:20px;">Awaiting Cashier Handover</div>`;
+        }
+
+        let diningBg = type === 'READY' ? 'background:rgba(46,125,50,0.1); color:var(--success);' : '';
+        let diningContent = type === 'READY' ? '<i class="fas fa-bell"></i> Service Required' : `<i class="fas fa-${order.dining_icon}"></i> ${order.dining_label}`;
+
+        card.innerHTML = `
+            <div class="order-header">
+                <span class="order-num" style="font-size:1.1rem;">#${order.id_fmt}</span>
+                <span class="order-time">${order.created_at}</span>
+            </div>
+            <div class="order-customer" style="font-size:1rem;">
+                <i class="fas fa-user-circle"></i> ${order.customer}
+            </div>
+            <div class="dining-tag" style="padding:6px 12px; font-size:0.75rem; ${diningBg}">
+                ${diningContent}
+            </div>
+            <div class="order-items" style="flex-grow:1;">${itemsHtml}</div>
+            ${actionHtml}`;
+        return card;
+    }
+
+    /* ═══ Lightning JSON Polling ═══ */
+    let _pollLock = false;
+    async function pollKitchenDashboard() {
+        if (_pollLock || document.querySelector('.order-card[style*="opacity: 0"]')) return;
+        _pollLock = true;
+        try {
+            const resp = await fetch('/staff/kitchen/api/orders');
+            if (!resp.ok) { _pollLock = false; return; }
+            const data = await resp.json();
+
+            // Update timestamp
+            const tsEl = document.getElementById('lastUpdateText');
+            if (tsEl) tsEl.innerText = data.time;
+
+            // Update tab counts
+            const tabs = document.querySelectorAll('.tab-btn .tab-count');
+            if (tabs[0]) tabs[0].innerText = data.counts.pending;
+            if (tabs[1]) tabs[1].innerText = data.counts.preparing;
+            if (tabs[2]) tabs[2].innerText = data.counts.ready;
+
+            // Re-render each column only if data changed
+            _renderColumn('PENDING', data.pending, 'PENDING');
+            _renderColumn('PREPARING', data.preparing, 'PREPARING');
+            _renderColumn('READY', data.ready, 'READY');
+        } catch (e) { console.warn('Kitchen sync:', e); }
+        _pollLock = false;
+    }
+
+    // Track current order IDs to avoid unnecessary re-renders
+    let _colHashes = { PENDING: '', PREPARING: '', READY: '' };
+
+    function _renderColumn(status, orders, type) {
+        const hash = orders.map(o => o.id + ':' + o.status).join(',');
+        if (_colHashes[status] === hash) return; // no changes
+        _colHashes[status] = hash;
+
+        const col = document.getElementById('col-' + status);
+        if (!col) return;
+        const wasActive = col.classList.contains('active');
+
+        const headers = {
+            PENDING: '<i class="fas fa-list-check me-2" style="opacity:0.5;"></i> Orders Waiting to Prepare',
+            PREPARING: '<i class="fas fa-fire-burner me-2" style="opacity:0.5;"></i> Orders Currently Cooking',
+            READY: '<i class="fas fa-circle-check me-2" style="opacity:0.5;"></i> Orders Ready for Pickup'
+        };
+        const emptyIcons = { PENDING: 'clipboard-list', PREPARING: 'mug-hot', READY: 'bell-slash' };
+        const emptyLabels = { PENDING: 'Clean Board', PREPARING: 'Oven Off', READY: 'Pass Empty' };
+
+        // Clear and rebuild
+        col.innerHTML = '';
+        const hdr = document.createElement('div');
+        hdr.className = 'col-header';
+        hdr.style.cssText = 'grid-column: 1 / -1; margin-bottom: 20px;';
+        hdr.innerHTML = `<h3 style="font-size:1.1rem;">${headers[status]}</h3>`;
+        col.appendChild(hdr);
+
+        if (orders.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'empty-state';
+            empty.style.gridColumn = '1 / -1';
+            empty.innerHTML = `<i class="fas fa-${emptyIcons[status]}"></i><p>${emptyLabels[status]}</p>`;
+            col.appendChild(empty);
+        } else {
+            orders.forEach(o => col.appendChild(buildOrderCard(o, type)));
+        }
+
+        if (wasActive) col.classList.add('active');
+    }
+
+    /* ═══ Init ═══ */
     document.addEventListener('DOMContentLoaded', () => {
         const activeTab = localStorage.getItem('kitchen_active_tab');
         if (activeTab) {
             const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.onclick.toString().includes(activeTab));
             if (btn) switchTab(activeTab, btn);
         }
+        // Build initial hashes so first poll doesn't re-render unnecessarily
+        document.querySelectorAll('.board-col').forEach(col => {
+            const status = col.id.replace('col-', '');
+            const cards = col.querySelectorAll('.order-card');
+            // We'll let the first poll refresh set the hash
+        });
     });
 
-    // Refresh columns every 30 seconds silently
-    setInterval(async () => {
-        if (document.querySelector('.updating')) return;
-
-        try {
-            const html = await fetch(location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(r => r.text());
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            
-            // Update container and indicator
-            const ids = ['kitchenDashboardContainer', 'lastUpdateText'];
-            ids.forEach(id => {
-                const oldEl = document.getElementById(id);
-                const newEl = doc.getElementById(id);
-                if (oldEl && newEl) {
-                    if (id === 'kitchenDashboardContainer') {
-                        // Special handling to preserve board structure but update cards
-                        updateDashboardContent(doc);
-                    } else {
-                        oldEl.innerHTML = newEl.innerHTML;
-                    }
-                }
-            });
-        } catch (e) { console.warn('Kitchen sync failed'); }
-    }, 5000);
+    // Fast JSON poll every 5s
+    setInterval(pollKitchenDashboard, 5000);
 </script>
 {% endblock %}
