@@ -170,6 +170,7 @@ def checkout():
     is_valid, msg, status_override = validate_order(items_data, dining_option, payment_method, is_pos=False, apply_lock=True)
     
     if not is_valid:
+        db.session.rollback()
         flash(msg, "danger")
         return redirect(url_for('main.view_cart'))
     # ------------------------------

@@ -1752,6 +1752,7 @@ def walkin_order_submit():
         is_valid, msg, status_override = validate_order(items_data, dining_option, payment_method, is_pos=True, apply_lock=True)
         
         if not is_valid:
+            db.session.rollback()
             flash(msg, "danger")
             return redirect(url_for('admin.walkin_order'))
 

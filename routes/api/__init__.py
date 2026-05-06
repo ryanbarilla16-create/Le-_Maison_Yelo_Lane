@@ -882,6 +882,7 @@ def api_checkout():
     is_valid, msg, status_override = validate_order(cart_items, dining_option, payment_method, is_pos=False, apply_lock=True)
 
     if not is_valid:
+        db.session.rollback()
         return jsonify({'success': False, 'message': msg}), 400
     # ------------------------------
     
