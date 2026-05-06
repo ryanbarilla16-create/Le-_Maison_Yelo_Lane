@@ -12,7 +12,12 @@
 {% endblock %}
 
 {% block page_title %}Billing & Payments{% endblock %}
-{% block page_subtitle %}Manage payments and settle customer bills{% endblock %}
+{% block page_subtitle %}
+    Manage payments and settle customer bills
+    <span id="syncIndicator" style="font-size: 0.72rem; color: var(--muted); opacity: 0.8; margin-left: 10px; font-weight: 500;">
+        <i class="fas fa-sync-alt fa-spin me-1"></i> Live Update (5s) • Last: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
+    </span>
+{% endblock %}
 
 {% block extra_style %}
     /* Status filter tabs */
@@ -149,6 +154,7 @@
 {% endblock %}
 
 {% block content %}
+<div id="billingContainer">
     <div style="display:flex; justify-content:flex-end; gap:10px; margin-bottom:20px;">
         <div style="position:relative; display:inline-block;" id="reportDropdownWrap">
             <button class="btn-shift" onclick="this.parentElement.querySelector('.report-dropdown-menu').classList.toggle('show')">
@@ -397,6 +403,7 @@
             </div>
         </div>
     </div>
+</div> <!-- end billingContainer -->
 {% endblock %}
 
 {% block extra_head %}
@@ -761,5 +768,27 @@
             });
         });
     }
+
+    // Real-time polling
+    function pollBilling() {
+        if (document.querySelector('.billing-overlay.show')) return;
+        if (document.activeElement && document.activeElement.id === 'orderSearch') return;
+
+        fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(r => r.text())
+        .then(html => {
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            ['ordersTableBody', 'statGross', 'statUnpaid', 'billingPagination', 'lastUpdateText'].forEach(id => {
+                const o = document.getElementById(id);
+                const n = doc.getElementById(id);
+                if (o && n && o.innerHTML !== n.innerHTML) {
+                    o.innerHTML = n.innerHTML;
+                    if (id === 'billingPagination') bindPaginationAjax();
+                }
+            });
+        })
+        .catch(err => console.warn('Billing sync failed:', err));
+    }
+    setInterval(pollBilling, 5000);
 </script>
 {% endblock %}

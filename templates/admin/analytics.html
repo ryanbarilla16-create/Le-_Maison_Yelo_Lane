@@ -4,11 +4,15 @@
 {% block content %}
 <div class="page-header">
     <h1>Analytics</h1>
-    <p>Detailed sales insights and customer metrics.</p>
+    <p>Detailed sales insights and customer metrics. 
+       <span id="syncIndicator" style="font-size: 0.75rem; color: #8b7355; opacity: 0.8; margin-left: 10px;">
+           <i class="fas fa-sync-alt fa-spin me-1"></i> Real-time Sync (5s) • Last Update: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
+       </span>
+    </p>
 </div>
 
 <!-- CATEGORY STATS -->
-<div class="stats-grid">
+<div class="stats-grid" id="statsGrid1">
     <div class="stat-card">
         <div class="stat-icon" style="background: rgba(34,197,94,0.12); color: var(--admin-green);"><i
                 class="fas fa-peso-sign"></i></div>
@@ -29,7 +33,7 @@
     </div>
 </div>
 
-<div class="stats-grid">
+<div class="stats-grid" id="statsGrid2">
     <a href="{{ url_for('admin.reservations') }}" class="stat-card" style="text-decoration: none; display: block; cursor: pointer; color: inherit;">
         <div class="stat-icon" style="background: rgba(139, 99, 75, 0.12); color: #8d6e63;"><i class="fas fa-calendar-check"></i></div>
         <div class="stat-label">Total Reservations</div>
@@ -105,9 +109,6 @@
     </div>
 </div>
 
-<!-- ROW 5 : Existing Menu Analytics -->
-
-
 <div id="chartServerData" style="display: none;" data-revenue-trend-labels="{{ revenue_trend_labels | forceescape }}"
     data-revenue-trend-data="{{ revenue_trend_data | forceescape }}" data-order-status-labels="{{ order_status_labels | forceescape }}"
     data-order-status-data="{{ order_status_data | forceescape }}" data-daily-orders-labels="{{ daily_orders_labels | forceescape }}"
@@ -119,18 +120,49 @@
     data-forecast-labels="{{ forecast_labels | forceescape }}" data-forecast-data="{{ forecast_data | forceescape }}"></div>
 
 <script>
+    // Global chart registry to prevent multiple instances
+    window.analyticsCharts = window.analyticsCharts || {};
+
+    function pollAnalytics() {
+        fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            let dataChanged = false;
+            const ids = ['statsGrid1', 'statsGrid2', 'lastUpdateText', 'chartServerData'];
+            ids.forEach(id => {
+                const oldEl = document.getElementById(id);
+                const newEl = doc.getElementById(id);
+                if (oldEl && newEl && oldEl.innerHTML !== newEl.innerHTML) {
+                    oldEl.innerHTML = newEl.innerHTML;
+                    dataChanged = true;
+                    if (id === 'chartServerData') {
+                        Object.keys(newEl.dataset).forEach(key => oldEl.dataset[key] = newEl.dataset[key]);
+                    }
+                }
+            });
+            
+            if (dataChanged) initAnalyticsCharts();
+        })
+        .catch(err => console.warn('Analytics sync failed:', err));
+    }
+
+    // Poll every 30 seconds
+    setInterval(pollAnalytics, 5000);
+
     function initAnalyticsCharts() {
-        console.log("Initializing Analytics Charts...");
-        
         if (typeof Chart === 'undefined') {
-            console.error("Chart.js not loaded!");
             setTimeout(initAnalyticsCharts, 50);
             return;
         }
 
-        // ═══════════════════════════════════════════════════
-        // CHART.JS GLOBAL DEFAULTS (Cafe Theme)
-        // ═══════════════════════════════════════════════════
+        // Destroy existing charts if they exist
+        Object.values(window.analyticsCharts).forEach(chart => {
+            if (chart) chart.destroy();
+        });
+
         Chart.defaults.font.family = "'Inter', -apple-system, sans-serif";
         Chart.defaults.font.size = 12;
         Chart.defaults.color = '#8d6e63';
@@ -145,7 +177,6 @@
         Chart.defaults.animation.duration = 800;
         Chart.defaults.animation.easing = 'easeOutQuart';
 
-        // ── Palette ──────────────────────────────────────
         var CAFE_BROWN = '#8b634b';
         var CAFE_LATTE = '#c87941';
         var CAFE_GREEN = '#2e7d32';
@@ -165,9 +196,6 @@
             'No Data': '#d4d4d8'
         };
 
-        const defaultColors = ['#c87941', '#3b82f6', '#22c55e', '#f59e0b', '#8b5cf6', '#ef4444'];
-
-        // ── Helper: gradient fill ────────────────────────
         function hexToRgb(hex) {
             if (!hex) return [0, 0, 0];
             var r = parseInt(hex.slice(1, 3), 16);
@@ -186,11 +214,9 @@
             return grad;
         }
 
-        // ── Grid / Scale defaults ────────────────────────
         var scaleX = { ticks: { color: '#a1887f', font: { size: 11 } }, grid: { display: false } };
         var scaleY = { ticks: { color: '#a1887f', font: { size: 11 } }, grid: { color: 'rgba(139, 99, 75,0.06)' }, beginAtZero: true };
 
-        // ═══ Data from server ═══
         var _cd = document.getElementById('chartServerData').dataset;
         var revenueTrendLabels = JSON.parse(_cd.revenueTrendLabels);
         var revenueTrendData = JSON.parse(_cd.revenueTrendData);
@@ -206,14 +232,13 @@
         var monthlyRevData = JSON.parse(_cd.monthlyRevData);
         var loyaltyLabels = JSON.parse(_cd.loyaltyLabels);
         var loyaltyData = JSON.parse(_cd.loyaltyData);
+        var forecastLabels = JSON.parse(_cd.forecastLabels);
+        var forecastData = JSON.parse(_cd.forecastData);
 
-
-        // ═══════════════════════════════════════════════════
-        // 1) REVENUE TREND (Line — Last 7 Days)
-        // ═══════════════════════════════════════════════════
+        // 1) REVENUE TREND
         (function () {
             var ctx = document.getElementById('revenueTrendChart').getContext('2d');
-            new Chart(ctx, {
+            window.analyticsCharts.revenueTrend = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: revenueTrendLabels,
@@ -239,12 +264,10 @@
             });
         })();
 
-        // ═══════════════════════════════════════════════════
-        // 2) ORDER STATUS (Donut)
-        // ═══════════════════════════════════════════════════
+        // 2) ORDER STATUS
         (function () {
             var colors = orderStatusLabels.map(function (l) { return STATUS_COLORS[l] || '#a1887f'; });
-            new Chart(document.getElementById('orderStatusChart'), {
+            window.analyticsCharts.orderStatus = new Chart(document.getElementById('orderStatusChart'), {
                 type: 'doughnut',
                 data: {
                     labels: orderStatusLabels,
@@ -266,12 +289,10 @@
             });
         })();
 
-        // ═══════════════════════════════════════════════════
-        // 3) DAILY ORDERS (Bar — Last 7 Days)
-        // ═══════════════════════════════════════════════════
+        // 3) DAILY ORDERS
         (function () {
             var ctx = document.getElementById('dailyOrdersChart').getContext('2d');
-            new Chart(ctx, {
+            window.analyticsCharts.dailyOrders = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: dailyOrdersLabels,
@@ -294,12 +315,10 @@
             });
         })();
 
-        // ═══════════════════════════════════════════════════
-        // 4) BUSY TIMES (Line — Orders by Hour)
-        // ═══════════════════════════════════════════════════
+        // 4) BUSY TIMES
         (function () {
             var ctx = document.getElementById('busyTimesChart').getContext('2d');
-            new Chart(ctx, {
+            window.analyticsCharts.busyTimes = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: busyTimesLabels,
@@ -329,12 +348,10 @@
             });
         })();
 
-        // ═══════════════════════════════════════════════════
-        // 5) TOP 5 BEST SELLING DISHES (Horizontal Bar)
-        // ═══════════════════════════════════════════════════
+        // 5) TOP 5
         (function () {
             var palette = [CAFE_GOLD, CAFE_BROWN, CAFE_LATTE, CAFE_TEAL, CAFE_PURPLE];
-            new Chart(document.getElementById('topDishesChart'), {
+            window.analyticsCharts.topDishes = new Chart(document.getElementById('topDishesChart'), {
                 type: 'bar',
                 data: {
                     labels: topDishesLabels,
@@ -360,12 +377,10 @@
             });
         })();
 
-        // ═══════════════════════════════════════════════════
-        // 6) MONTHLY REVENUE (Area — Last 6 Months)
-        // ═══════════════════════════════════════════════════
+        // 6) MONTHLY REVENUE
         (function () {
             var ctx = document.getElementById('monthlyRevenueChart').getContext('2d');
-            new Chart(ctx, {
+            window.analyticsCharts.monthlyRevenue = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: monthlyRevLabels,
@@ -391,12 +406,10 @@
             });
         })();
 
-        // ═══════════════════════════════════════════════════
-        // 7) CUSTOMER LOYALTY (Donut)
-        // ═══════════════════════════════════════════════════
+        // 7) LOYALTY
         (function () {
             var loyaltyColors = loyaltyLabels.length === 1 ? ['#d4d4d8'] : [CAFE_GREEN, CAFE_LATTE];
-            new Chart(document.getElementById('loyaltyChart'), {
+            window.analyticsCharts.loyalty = new Chart(document.getElementById('loyaltyChart'), {
                 type: 'doughnut',
                 data: {
                     labels: loyaltyLabels,
@@ -418,18 +431,10 @@
             });
         })();
 
-        // ═══════════════════════════════════════════════════
-        // EXISTING MENU CHARTS
-        // ═══════════════════════════════════════════════════
-
-        // ═══════════════════════════════════════════════════
-        // 8) SALES FORECAST (Line — Dash/Future)
-        // ═══════════════════════════════════════════════════
+        // 8) FORECAST
         (function () {
-            var forecastLabels = JSON.parse(_cd.forecastLabels);
-            var forecastData = JSON.parse(_cd.forecastData);
             var ctx = document.getElementById('forecastChart').getContext('2d');
-            new Chart(ctx, {
+            window.analyticsCharts.forecast = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: forecastLabels,
@@ -463,7 +468,6 @@
         })();
     }
 
-    // Start initialization
     initAnalyticsCharts();
 </script>
 {% endblock %}

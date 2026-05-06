@@ -305,6 +305,9 @@
             </h1>
             <p data-aos="fade-up" data-aos-delay="200">
                 Every review is a story of a shared moment, a flavor discovered, and a memory made at Le Maison de Yelo Lane.
+                <span id="syncIndicator" style="display: block; font-size: 0.7rem; color: rgba(255,255,255,0.5); margin-top: 10px; letter-spacing: 1px; text-transform: uppercase;">
+                    <i class="fas fa-sync-alt fa-spin me-1"></i> Live Update (5s) • Last: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
+                </span>
             </p>
             <div class="section-divider" data-aos="zoom-in" data-aos-delay="400"></div>
         </div>
@@ -312,7 +315,7 @@
 
     <!-- Reviews Grid -->
     <section class="reviews-container">
-        <div class="container">
+        <div class="container" id="reviewsGridContainer">
             {% if approved_reviews %}
             <div class="row g-5 justify-content-center">
                 {% for review in approved_reviews %}
@@ -380,6 +383,30 @@ document.addEventListener('DOMContentLoaded', function() {
             offset: 50
         });
     }
+
+    function pollPublicReviews() {
+        fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            const ids = ['reviewsGridContainer', 'lastUpdateText'];
+            ids.forEach(id => {
+                const oldEl = document.getElementById(id);
+                const newEl = doc.getElementById(id);
+                if (oldEl && newEl) oldEl.innerHTML = newEl.innerHTML;
+            });
+            
+            // Re-init AOS for new elements
+            if (typeof AOS !== 'undefined') {
+                AOS.refresh();
+            }
+        })
+        .catch(err => console.warn('Public Reviews sync failed:', err));
+    }
+
+    setInterval(pollPublicReviews, 5000);
 });
 </script>
 {% endblock %}

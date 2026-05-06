@@ -6,7 +6,11 @@
     style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
     <div>
         <h1>Menu Management</h1>
-        <p>Add, edit, or remove menu items visually.</p>
+        <p>Add, edit, or remove menu items visually.
+            <span id="syncIndicator" style="font-size: 0.75rem; color: #8b7355; opacity: 0.8; margin-left: 10px;">
+                <i class="fas fa-sync-alt fa-spin me-1"></i> Real-time Sync (5s) • Last Update: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
+            </span>
+        </p>
     </div>
     <div style="display: flex; gap: 0.5rem; align-items: center;">
         <a href="{{ url_for('admin.menu_trash') }}" class="btn btn-outline-secondary px-4 py-2"
@@ -22,6 +26,7 @@
     </div>
 </div>
 
+<div id="menuCategoriesContainer">
 <!-- 1. Categories Grid View -->
 {% set cat_icons = {
 'All Day Breakfast': 'fas fa-egg',
@@ -88,6 +93,7 @@
         {% endfor %}
     </div>
 </div>
+</div> <!-- end menuCategoriesContainer -->
 
 <!-- 2. Items View (Initially Hidden, loaded lazily) -->
 <div id="items-view" style="display: none;">
@@ -749,6 +755,27 @@
         const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('confirmDeleteModal'));
         modal.show();
     }
-</script>
+    function pollMenu() {
+        if (document.querySelector('.modal.show')) return;
 
+        fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            const ids = ['menuCategoriesContainer', 'lastUpdateText'];
+            ids.forEach(id => {
+                const oldEl = document.getElementById(id);
+                const newEl = doc.getElementById(id);
+                if (oldEl && newEl && oldEl.innerHTML !== newEl.innerHTML) {
+                    oldEl.innerHTML = newEl.innerHTML;
+                }
+            });
+        })
+        .catch(err => console.warn('Menu sync failed:', err));
+    }
+
+    setInterval(pollMenu, 5000);
+</script>
 {% endblock %}

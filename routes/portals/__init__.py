@@ -7,6 +7,7 @@ import random
 import threading
 import traceback
 from collections import defaultdict
+from itertools import groupby
 
 # Blueprints WITHOUT prefix because we specify full paths in decorators to match user's custom URL mix
 cashier_bp = Blueprint('cashier_portal', __name__)
@@ -205,7 +206,7 @@ def _portal_reset_password(portal_name, login_url_name):
 # ── UNIFIED STAFF LOGIN (/staff/login) ────────────────────────────
 # ══════════════════════════════════════════════════════════════════
 
-ALL_STAFF_ROLES = ['CASHIER', 'STAFF', 'KITCHEN', 'INVENTORY_STAFF', 'INVENTORY', 'ADMIN']
+ALL_STAFF_ROLES = ['CASHIER', 'STAFF', 'KITCHEN', 'INVENTORY_STAFF', 'INVENTORY', 'ADMIN', 'SUPER_ADMIN']
 
 def _get_dashboard_for_role(role):
     """Return the correct dashboard URL name based on user role."""
@@ -216,7 +217,7 @@ def _get_dashboard_for_role(role):
         return 'kitchen_portal.kitchen_dashboard'
     elif role_upper in ('INVENTORY_STAFF', 'INVENTORY'):
         return 'inventory_portal.inventory_dashboard'
-    elif role_upper == 'ADMIN':
+    elif role_upper in ('ADMIN', 'SUPER_ADMIN'):
         return 'admin.overview'
     return 'cashier_portal.staff_login'
 
@@ -327,6 +328,27 @@ def cashier_walkin_order():
     items = MenuItem.query.filter_by(is_available=True, is_deleted=False).order_by(MenuItem.category, MenuItem.name).all()
     categories = sorted(set(i.category for i in items))
     return render_template('cashier/walkin_order.html', items=items, categories=categories)
+
+@cashier_bp.route('/staff/cashier/reservations')
+def cashier_reservations():
+    if not current_user.is_authenticated or current_user.role not in CASHIER_ROLES:
+        return redirect(url_for('cashier_portal.staff_login'))
+    from models import Reservation
+    query = Reservation.query
+    user_branch = getattr(current_user, 'branch', None)
+    if user_branch and user_branch != 'ALL':
+        query = query.filter_by(branch=user_branch)
+    all_reservations = query.order_by(Reservation.created_at.desc()).all()
+    
+    class MockPagination:
+        def __init__(self, items):
+            self.items = items
+            self.total = len(items)
+            self.pages = 1
+            self.page = 1
+    
+    pagination = MockPagination(all_reservations)
+    return render_template('cashier/reservations.html', reservations=pagination, status_filter='ALL')
 
 @cashier_bp.route('/staff/cashier/billing')
 def cashier_billing():
@@ -581,11 +603,26 @@ def kitchen_pantry():
     if not current_user.is_authenticated or current_user.role not in KITCHEN_ROLES:
         return redirect(url_for('cashier_portal.staff_login'))
     
-    from itertools import groupby
-    ingredients = Ingredient.query.order_by(Ingredient.category, Ingredient.name).all()
+    all_ingredients = Ingredient.query.order_by(Ingredient.name).all()
     grouped_ingredients = {}
-    for category, group in groupby(ingredients, lambda x: x.category or 'General'):
-        grouped_ingredients[category] = list(group)
+    
+    for ing in all_ingredients:
+        # Find all Menu Item Categories this ingredient belongs to
+        cats = db.session.query(MenuItem.category).join(MenuItemIngredient, MenuItem.id == MenuItemIngredient.menu_item_id).filter(
+            MenuItemIngredient.ingredient_id == ing.id
+        ).distinct().all()
+        
+        cat_names = [c[0] for c in cats if c[0]]
+        if not cat_names:
+            cat_names = ['General / Uncategorized']
+            
+        for cat in cat_names:
+            if cat not in grouped_ingredients:
+                grouped_ingredients[cat] = []
+            grouped_ingredients[cat].append(ing)
+            
+    # Sort the dictionary by category name for a clean UI
+    grouped_ingredients = dict(sorted(grouped_ingredients.items()))
         
     return render_template('kitchen/pantry.html', 
                            grouped_ingredients=grouped_ingredients,
@@ -612,6 +649,8 @@ def kitchen_recipes():
 @kitchen_bp.route('/staff/kitchen/pantry/update', methods=['POST'])
 def kitchen_update_pantry():
     if not current_user.is_authenticated or current_user.role not in KITCHEN_ROLES:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': False, 'message': 'Unauthorized'}), 401
         return redirect(url_for('cashier_portal.staff_login'))
     
     ing_id = request.form.get('ingredient_id', type=int)
@@ -622,8 +661,12 @@ def kitchen_update_pantry():
         if ing:
             ing.kitchen_qty = new_qty
             db.session.commit()
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': True, 'new_qty': new_qty})
             flash(f"Updated {ing.name} kitchen stock to {new_qty} {ing.unit}.", "success")
             
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({'success': False, 'message': 'Invalid data'}), 400
     return redirect(url_for('kitchen_portal.kitchen_pantry'))
 
 @kitchen_bp.route('/staff/kitchen/pantry/emergency-fill', methods=['POST'])
@@ -707,7 +750,7 @@ def inventory_dashboard():
     
     suppliers = Supplier.query.order_by(Supplier.name).all()
     
-    from itertools import groupby
+    all_ingredients = Ingredient.query.order_by(Ingredient.category, Ingredient.name).all()
     
     grouped_ingredients = {}
     for category, group in groupby(all_ingredients, lambda x: x.category or 'General'):

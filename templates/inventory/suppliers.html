@@ -14,7 +14,11 @@
 {% block page_title %}Supplier Directory{% endblock %}
 {% block page_subtitle %}
     <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
-        <span>Manage and contact verified ingredient providers</span>
+        <span>Manage and contact verified ingredient providers
+            <span id="syncIndicator" style="font-size: 0.72rem; color: var(--muted); opacity: 0.8; margin-left: 10px; font-weight: 500;">
+                <i class="fas fa-sync-alt fa-spin me-1"></i> Live Update (5s) • Last: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
+            </span>
+        </span>
         <button class="btn-primary" onclick="openModal('addSupplierModal')" style="padding: 8px 16px; font-size: 0.85rem;">
             <i class="fas fa-plus me-1"></i> Add Supplier
         </button>
@@ -152,6 +156,7 @@
 {% endblock %}
 
 {% block content %}
+<div id="supplierGridContainer">
 <div class="supplier-grid">
     {% for sup in suppliers %}
     <div class="supplier-card" onclick="openReceiveModal({{ sup.id }}, '{{ sup.name|e }}')">
@@ -548,5 +553,26 @@
         document.getElementById('edit_ingredients').value = ingredients;
         openModal('editSupplierModal');
     }
+
+    function pollSuppliers() {
+        if (document.querySelector('.modal-overlay[style*="flex"]')) return;
+
+        fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            ['supplierGrid', 'supplierCount', 'lastUpdateText'].forEach(id => {
+                const o = document.getElementById(id);
+                const n = doc.getElementById(id);
+                if (o && n && o.innerHTML !== n.innerHTML) o.innerHTML = n.innerHTML;
+            });
+        })
+        .catch(err => console.warn('Supplier sync failed:', err));
+    }
+
+    setInterval(pollSuppliers, 5000);
 </script>
+</div> <!-- end supplierGridContainer -->
 {% endblock %}

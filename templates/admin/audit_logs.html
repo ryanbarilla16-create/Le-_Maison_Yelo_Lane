@@ -144,7 +144,11 @@
         </div>
         <div>
             <h1 style="font-family: 'Playfair Display', serif; font-weight: 800; color: #3E2723; margin: 0; font-size: 1.8rem;">System Audit Logs</h1>
-            <p style="margin: 0; font-size: 0.85rem; color: #8B634B; font-weight: 600;">Secure ledger of all administrative actions</p>
+            <p style="margin: 0; font-size: 0.85rem; color: #8B634B; font-weight: 600;">Secure ledger of all administrative actions
+                <span id="syncIndicator" style="font-size: 0.7rem; color: #8b7355; opacity: 0.8; margin-left: 10px; font-weight: 500;">
+                    <i class="fas fa-sync-alt fa-spin me-1"></i> Real-time Sync (5s) • Last Update: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
+                </span>
+            </p>
         </div>
     </div>
     <span style="background: rgba(87, 117, 81, 0.1); color: #577551; border: 1px solid rgba(87, 117, 81, 0.2); padding: 0.5rem 1rem; border-radius: 50px; font-size: 0.75rem; font-weight: 800; display: flex; align-items: center; gap: 6px;">
@@ -152,6 +156,8 @@
         SECURITY TRAIL ACTIVE
     </span>
 </div>
+
+<div id="auditLogsContainer">
 
 <div class="audit-filters">
     <button class="btn-audit-filter active" data-filter="ALL"><i class="fas fa-list"></i> All Trails</button>
@@ -259,27 +265,48 @@
         {% endif %}
     </ul>
     {% endif %}
-</div>
+</div> <!-- end auditLogsContainer -->
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    function pollAuditLogs() {
+        fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            const ids = ['auditLogsContainer', 'lastUpdateText'];
+            ids.forEach(id => {
+                const oldEl = document.getElementById(id);
+                const newEl = doc.getElementById(id);
+                if (oldEl && newEl && oldEl.innerHTML !== newEl.innerHTML) {
+                    oldEl.innerHTML = newEl.innerHTML;
+                    if (id === 'auditLogsContainer') initAuditFilters();
+                }
+            });
+        })
+        .catch(err => console.warn('Audit logs sync failed:', err));
+    }
+
+    function initAuditFilters() {
         const filterBtns = document.querySelectorAll('.btn-audit-filter');
         const rows = document.querySelectorAll('.ledger-row');
 
         filterBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                // Update active button state
+            // Remove old listeners to avoid multiple attachments if re-running
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            
+            newBtn.addEventListener('click', () => {
                 filterBtns.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
+                newBtn.classList.add('active');
 
-                // Filter logic
-                const filterValue = btn.getAttribute('data-filter');
+                const filterValue = newBtn.getAttribute('data-filter');
                 let visibleCount = 0;
 
                 rows.forEach(row => {
                     if (filterValue === 'ALL') {
                         row.style.display = '';
-                        // Reset alternating background styles on table naturally
                         visibleCount++;
                     } else {
                         if (row.getAttribute('data-action') === filterValue) {
@@ -291,7 +318,6 @@
                     }
                 });
                 
-                // Optional: Handle empty state if filtering results in 0 rows
                 let emptyMsg = document.getElementById('empty-filter-msg');
                 if (visibleCount === 0 && rows.length > 0) {
                     if (!emptyMsg) {
@@ -313,9 +339,11 @@
                 }
             });
         });
-    });
-</script>
+    }
 
+    document.addEventListener('DOMContentLoaded', initAuditFilters);
+    setInterval(pollAuditLogs, 5000);
+</script>
 {% endblock %}
 
 

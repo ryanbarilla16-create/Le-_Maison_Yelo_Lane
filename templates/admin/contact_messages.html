@@ -221,11 +221,15 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h2 class="h3 mb-1" style="font-family: 'Playfair Display', serif; font-weight: 800; color: #3E2723;">Contact Messages</h2>
-        <p class="text-muted small mb-0" style="font-weight: 500;">Manage inquiries and connect with your guests.</p>
+        <p class="text-muted small mb-0" style="font-weight: 500;">Manage inquiries and connect with your guests.
+            <span id="syncIndicator" style="font-size: 0.75rem; color: #8b7355; opacity: 0.8; margin-left: 10px;">
+                <i class="fas fa-sync-alt fa-spin me-1"></i> Real-time Sync (5s) • Last Update: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
+            </span>
+        </p>
     </div>
 </div>
 
-<div class="premium-card">
+<div class="premium-card" id="messagesContainer">
     <div class="premium-header d-flex justify-content-between align-items-center">
         <h6 class="mb-0 fw-bold text-uppercase" style="color: #5D4037; letter-spacing: 1px;"><i class="fas fa-inbox me-2"></i> Inbox Overview</h6>
     </div>
@@ -366,4 +370,33 @@
     </div>
 </div>
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function pollContactMessages() {
+        // Prevent update if a modal is currently open to avoid UI flickering or closing the modal
+        if (document.querySelector('.modal.show')) return;
+
+        fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            const ids = ['messagesContainer', 'lastUpdateText'];
+            ids.forEach(id => {
+                const oldEl = document.getElementById(id);
+                const newEl = doc.getElementById(id);
+                if (oldEl && newEl && oldEl.innerHTML !== newEl.innerHTML) {
+                    oldEl.innerHTML = newEl.innerHTML;
+                }
+            });
+        })
+        .catch(err => console.warn('Contact messages sync failed:', err));
+    }
+
+    // Poll every 30 seconds
+    setInterval(pollContactMessages, 5000);
+</script>
 {% endblock %}

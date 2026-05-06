@@ -189,6 +189,11 @@ def reviews_page():
     bestsellers = MenuItem.query.filter_by(category='Best Sellers', is_available=True, is_deleted=False).limit(8).all()
     return render_template('public/reviews_page.html', site=site, approved_reviews=approved_reviews)
 
+@main_bp.route('/locations')
+def locations_page():
+    site = load_site_settings()
+    return render_template('public/locations_page.html', site=site)
+
 @main_bp.route('/pages/<page_name>')
 def static_page(page_name):
     from utils import load_site_settings

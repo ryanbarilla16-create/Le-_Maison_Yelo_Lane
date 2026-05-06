@@ -39,7 +39,12 @@
 {% endblock %}
 
 {% block page_title %}Kitchen Dashboard{% endblock %}
-{% block page_subtitle %}Live preparation queue and production tracking{% endblock %}
+{% block page_subtitle %}
+    Live preparation queue and production tracking
+    <span id="syncIndicator" style="font-size: 0.72rem; color: var(--muted); opacity: 0.8; margin-left: 10px; font-weight: 500;">
+        <i class="fas fa-sync-alt fa-spin me-1"></i> Live Update (5s) • Last: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
+    </span>
+{% endblock %}
 
 {% block extra_style %}
     .kitchen-board { 
@@ -257,6 +262,7 @@
 {% endblock %}
 
 {% block content %}
+<div id="kitchenDashboardContainer">
     <div class="kitchen-tabs">
         <button class="tab-btn active" onclick="switchTab('PENDING', this)">
             <i class="fas fa-list-check"></i> To Cook
@@ -393,6 +399,7 @@
             {% endfor %}
         </div>
     </div>
+</div> <!-- end kitchenDashboardContainer -->
 {% endblock %}
 
 {% block extra_script %}
@@ -451,8 +458,7 @@
         ids.forEach(status => {
             const oldCol = document.getElementById('col-' + status);
             const newCol = doc.getElementById('col-' + status);
-            if (oldCol && newCol) {
-                // Preserving the 'active' class
+            if (oldCol && newCol && oldCol.innerHTML !== newCol.innerHTML) {
                 const isActive = oldCol.classList.contains('active');
                 oldCol.innerHTML = newCol.innerHTML;
                 if(isActive) oldCol.classList.add('active');
@@ -463,8 +469,11 @@
         const newTabs = doc.querySelectorAll('.tab-btn');
         const oldTabs = document.querySelectorAll('.tab-btn');
         oldTabs.forEach((tab, idx) => {
-            const newCount = newTabs[idx].querySelector('.tab-count').innerText;
-            tab.querySelector('.tab-count').innerText = newCount;
+            const newCountEl = newTabs[idx].querySelector('.tab-count');
+            const oldCountEl = tab.querySelector('.tab-count');
+            if (newCountEl && oldCountEl && oldCountEl.innerText !== newCountEl.innerText) {
+                oldCountEl.innerText = newCountEl.innerText;
+            }
         });
     }
 
@@ -479,13 +488,28 @@
 
     // Refresh columns every 30 seconds silently
     setInterval(async () => {
-        const html = await fetch(location.href).then(r => r.text());
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        // Only update if no one is currently clicking a button
-        if (!document.querySelector('.updating')) {
-            updateDashboardContent(doc);
-        }
-    }, 30000);
+        if (document.querySelector('.updating')) return;
+
+        try {
+            const html = await fetch(location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(r => r.text());
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            // Update container and indicator
+            const ids = ['kitchenDashboardContainer', 'lastUpdateText'];
+            ids.forEach(id => {
+                const oldEl = document.getElementById(id);
+                const newEl = doc.getElementById(id);
+                if (oldEl && newEl) {
+                    if (id === 'kitchenDashboardContainer') {
+                        // Special handling to preserve board structure but update cards
+                        updateDashboardContent(doc);
+                    } else {
+                        oldEl.innerHTML = newEl.innerHTML;
+                    }
+                }
+            });
+        } catch (e) { console.warn('Kitchen sync failed'); }
+    }, 5000);
 </script>
 {% endblock %}

@@ -149,7 +149,7 @@ _REVIEW_SENTIMENT_CACHE_TTL_SECONDS = 600  # 10 minutes
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        allowed_roles = ['ADMIN', 'CASHIER', 'INVENTORY_STAFF', 'INVENTORY', 'KITCHEN', 'STAFF', 'RIDER']
+        allowed_roles = ['ADMIN', 'SUPER_ADMIN', 'CASHIER', 'INVENTORY_STAFF', 'INVENTORY', 'KITCHEN', 'STAFF', 'RIDER']
         if not current_user.is_authenticated or not current_user.role or current_user.role.upper() not in allowed_roles:
             flash("Access denied. Staff privileges required.", "danger")
             return redirect(url_for('admin.admin_login'))
@@ -162,7 +162,7 @@ def admin_required(f):
 @admin_required
 def system_db_indexes():
     """Admin-only: verify expected indexes exist (Postgres only)."""
-    if current_user.role.upper() != 'ADMIN':
+    if current_user.role.upper() not in ('ADMIN', 'SUPER_ADMIN'):
         return jsonify({'success': False, 'message': 'Admin only.'}), 403
 
     try:
@@ -201,7 +201,7 @@ def system_db_indexes():
 # ─── AUTH ─────────────────────────────────────────────
 @admin_bp.route('/login', methods=['GET', 'POST'])
 def admin_login():
-    allowed_roles = ['ADMIN', 'CASHIER', 'INVENTORY_STAFF', 'INVENTORY', 'KITCHEN', 'STAFF', 'RIDER']
+    allowed_roles = ['ADMIN', 'SUPER_ADMIN', 'CASHIER', 'INVENTORY_STAFF', 'INVENTORY', 'KITCHEN', 'STAFF', 'RIDER']
     
     if current_user.is_authenticated and current_user.role and current_user.role.upper() in allowed_roles:
         role_upper = current_user.role.upper()
@@ -401,67 +401,95 @@ def admin_reset_password():
 @login_required
 @admin_required
 def overview():
-    # Optimization: Aggregate queries to prevent high network latency to NeonDB (US-East)
-    # Get user counts in 1 query instead of 2
-    users_stats = db.session.query(User.role, User.status, func.count(User.id)).group_by(User.role, User.status).all()
-    total_customers = sum(c for r, s, c in users_stats if r == 'USER')
-    pending_users = sum(c for r, s, c in users_stats if r == 'USER' and s == 'PENDING')
-    
-    # Get reservation stats in 1 query instead of 3
-    res_stats = db.session.query(Reservation.status, func.count(Reservation.id)).group_by(Reservation.status).all()
-    total_reservations = sum(c for s, c in res_stats)
-    pending_reservations = sum(c for s, c in res_stats if s == 'PENDING')
-    confirmed_reservations = sum(c for s, c in res_stats if s == 'CONFIRMED')
-    
-    # Menu stats
-    total_menu = MenuItem.query.count()
-    low_stock_items = MenuItem.query.filter_by(is_available=False).limit(200).all()
-    
-    # Stock Request & Inventory Stats
-    pending_stock_requests = StockRequest.query.filter_by(status='PENDING').count()
-    low_ingredients_count = Ingredient.query.filter(Ingredient.stock_qty <= Ingredient.reorder_level).count()
-    
-    recent_reservations = Reservation.query.order_by(Reservation.created_at.desc()).limit(5).all()
+    # If SUPER_ADMIN, redirect to the dedicated super admin dashboard
+    if current_user.role and current_user.role.upper() == 'SUPER_ADMIN':
+        return redirect(url_for('admin.super_admin_overview'))
 
     import json as _json
     today = date.today()
 
-    # 1) & 2) Revenue and Orders Trend (Combined optimization)
+    # Determine branch filter for this admin
+    user_branch = getattr(current_user, 'branch', None)
+
+    # ── CUSTOMER STATS (global - customers are not branch-specific) ──
+    users_stats = db.session.query(User.role, User.status, func.count(User.id)).group_by(User.role, User.status).all()
+    total_customers = sum(c for r, s, c in users_stats if r == 'USER')
+    pending_users = sum(c for r, s, c in users_stats if r == 'USER' and s == 'PENDING')
+
+    # ── RESERVATION STATS (branch-filtered) ──
+    res_query = db.session.query(Reservation.status, func.count(Reservation.id))
+    if user_branch and user_branch != 'ALL':
+        res_query = res_query.filter(Reservation.branch == user_branch)
+    res_stats = res_query.group_by(Reservation.status).all()
+    total_reservations = sum(c for s, c in res_stats)
+    pending_reservations = sum(c for s, c in res_stats if s == 'PENDING')
+    confirmed_reservations = sum(c for s, c in res_stats if s == 'CONFIRMED')
+
+    # ── MENU STATS (shared across branches for now) ──
+    total_menu = MenuItem.query.count()
+    low_stock_items = MenuItem.query.filter_by(is_available=False).limit(200).all()
+
+    # ── STOCK & INVENTORY (global for now - inventory is shared) ──
+    pending_stock_requests = 0
+    low_ingredients_count = 0
+    if not user_branch or user_branch in ('ALL', 'Pagsanjan'):
+        pending_stock_requests = StockRequest.query.filter_by(status='PENDING').count()
+        low_ingredients_count = Ingredient.query.filter(Ingredient.stock_qty <= Ingredient.reorder_level).count()
+
+    # ── RECENT RESERVATIONS (branch-filtered) ──
+    recent_res_query = Reservation.query
+    if user_branch and user_branch != 'ALL':
+        recent_res_query = recent_res_query.filter_by(branch=user_branch)
+    recent_reservations = recent_res_query.order_by(Reservation.created_at.desc()).limit(5).all()
+
+    # ── REVENUE & ORDER TRENDS (branch-filtered, last 7 days) ──
     week_ago = today - timedelta(days=6)
-    trend_stats = db.session.query(
+    trend_query = db.session.query(
         func.date(Order.created_at).label('d'),
         func.count(Order.id).label('cnt'),
         func.sum(Order.total_amount).label('rev')
-    ).filter(func.date(Order.created_at) >= week_ago).group_by('d').all()
-    
+    ).filter(func.date(Order.created_at) >= week_ago)
+    if user_branch and user_branch != 'ALL':
+        trend_query = trend_query.filter(Order.branch == user_branch)
+    trend_stats = trend_query.group_by('d').all()
+
     trend_map = {row.d: (int(row.cnt or 0), float(row.rev or 0)) for row in trend_stats}
-    
+
     revenue_trend_labels, revenue_trend_data = [], []
     daily_orders_labels, daily_orders_data = [], []
-    
+
     for i in range(6, -1, -1):
         d = today - timedelta(days=i)
         lbl = d.strftime('%b %d')
         revenue_trend_labels.append(lbl)
         daily_orders_labels.append(lbl)
-        
+
         stat = trend_map.get(d, (0, 0.0))
         daily_orders_data.append(stat[0])
         revenue_trend_data.append(stat[1])
 
-    # 3) Busy Times
-    busy_hours_raw = db.session.query(func.extract('hour', Order.created_at).label('hr'), func.count(Order.id)).group_by('hr').order_by('hr').all()
+    # ── BUSY TIMES (branch-filtered) ──
+    busy_query = db.session.query(func.extract('hour', Order.created_at).label('hr'), func.count(Order.id))
+    if user_branch and user_branch != 'ALL':
+        busy_query = busy_query.filter(Order.branch == user_branch)
+    busy_hours_raw = busy_query.group_by('hr').order_by('hr').all()
     busy_map = {int(h): c for h, c in busy_hours_raw}
     busy_times_labels = [f'{h:02d}:00' for h in range(24)]
     busy_times_data = [busy_map.get(h, 0) for h in range(24)]
 
-    # 4) Order Status Donut
-    order_status_rows = db.session.query(Order.status, func.count(Order.id)).group_by(Order.status).all()
+    # ── ORDER STATUS DONUT (branch-filtered) ──
+    status_query = db.session.query(Order.status, func.count(Order.id))
+    if user_branch and user_branch != 'ALL':
+        status_query = status_query.filter(Order.branch == user_branch)
+    order_status_rows = status_query.group_by(Order.status).all()
     order_status_labels = [r[0] for r in order_status_rows] if order_status_rows else ['No Data']
     order_status_data = [r[1] for r in order_status_rows] if order_status_rows else [1]
 
-    # Compute total revenue
-    total_revenue = float(db.session.query(func.coalesce(func.sum(Order.total_amount), 0)).scalar())
+    # ── TOTAL REVENUE (branch-filtered) ──
+    rev_query = db.session.query(func.coalesce(func.sum(Order.total_amount), 0))
+    if user_branch and user_branch != 'ALL':
+        rev_query = rev_query.filter(Order.branch == user_branch)
+    total_revenue = float(rev_query.scalar())
 
     return render_template('admin/overview.html',
         total_customers=total_customers,
@@ -485,16 +513,131 @@ def overview():
         order_status_data=_json.dumps(order_status_data)
     )
 
+# ─── SUPER ADMIN: MULTI-BRANCH OVERVIEW ──────────────
+@admin_bp.route('/super-overview')
+@login_required
+@admin_required
+def super_admin_overview():
+    if not current_user.role or current_user.role.upper() != 'SUPER_ADMIN':
+        flash("Access denied. Super Admin only.", "danger")
+        return redirect(url_for('admin.overview'))
+
+    import json as _json
+    today = date.today()
+    week_ago = today - timedelta(days=6)
+    branches = ['Pagsanjan', 'Lucban']
+
+    # ── GLOBAL STATS ──
+    total_customers = User.query.filter_by(role='USER').count()
+    total_staff = User.query.filter(User.role.in_(['ADMIN', 'CASHIER', 'KITCHEN', 'INVENTORY_STAFF', 'INVENTORY', 'STAFF', 'RIDER'])).count()
+    total_menu = MenuItem.query.filter_by(is_deleted=False).count()
+    total_revenue = float(db.session.query(func.coalesce(func.sum(Order.total_amount), 0)).scalar())
+    total_orders = Order.query.count()
+    total_reservations = Reservation.query.count()
+    pending_orders = Order.query.filter_by(status='PENDING').count()
+
+    # ── PER-BRANCH STATS ──
+    branch_data = {}
+    for br in branches:
+        br_revenue = float(db.session.query(func.coalesce(func.sum(Order.total_amount), 0)).filter(Order.branch == br).scalar())
+        br_orders = Order.query.filter_by(branch=br).count()
+        br_pending = Order.query.filter_by(branch=br, status='PENDING').count()
+        br_completed = Order.query.filter_by(branch=br, status='COMPLETED').count()
+        br_reservations = Reservation.query.filter_by(branch=br).count()
+        br_staff = User.query.filter(
+            User.branch == br,
+            User.role.in_(['ADMIN', 'CASHIER', 'KITCHEN', 'INVENTORY_STAFF', 'INVENTORY', 'STAFF', 'RIDER'])
+        ).count()
+
+        # Revenue trend per branch (last 7 days)
+        br_trend = db.session.query(
+            func.date(Order.created_at).label('d'),
+            func.sum(Order.total_amount).label('rev')
+        ).filter(func.date(Order.created_at) >= week_ago, Order.branch == br).group_by('d').all()
+        br_trend_map = {row.d: float(row.rev or 0) for row in br_trend}
+
+        br_rev_data = []
+        for i in range(6, -1, -1):
+            d = today - timedelta(days=i)
+            br_rev_data.append(br_trend_map.get(d, 0.0))
+
+        # Order status breakdown per branch
+        br_status_rows = db.session.query(Order.status, func.count(Order.id)).filter(Order.branch == br).group_by(Order.status).all()
+        br_status_labels = [r[0] for r in br_status_rows] if br_status_rows else ['No Data']
+        br_status_data = [r[1] for r in br_status_rows] if br_status_rows else [0]
+
+        branch_data[br] = {
+            'revenue': br_revenue,
+            'orders': br_orders,
+            'pending': br_pending,
+            'completed': br_completed,
+            'reservations': br_reservations,
+            'staff_count': br_staff,
+            'revenue_trend': br_rev_data,
+            'status_labels': br_status_labels,
+            'status_data': br_status_data,
+        }
+
+    # Revenue trend labels (shared)
+    rev_labels = []
+    for i in range(6, -1, -1):
+        rev_labels.append((today - timedelta(days=i)).strftime('%b %d'))
+
+    # ── CRITICAL ALERTS (Inventory & Kitchen) ──
+    low_ingredients_all = Ingredient.query.filter(Ingredient.stock_qty <= Ingredient.reorder_level).order_by(Ingredient.stock_qty.asc()).limit(20).all()
+    out_of_stock_menu_all = MenuItem.query.filter_by(is_available=False).limit(20).all()
+    
+    low_ingredients = {'Pagsanjan': [], 'Lucban': []}
+    for item in low_ingredients_all:
+        b = item.branch or 'Pagsanjan'
+        if b in low_ingredients:
+            low_ingredients[b].append(item)
+            
+    out_of_stock_menu = {'Pagsanjan': [], 'Lucban': []}
+    for item in out_of_stock_menu_all:
+        b = item.branch or 'Pagsanjan'
+        if b in out_of_stock_menu:
+            out_of_stock_menu[b].append(item)
+
+    return render_template('admin/super_overview.html',
+        total_customers=total_customers,
+        total_staff=total_staff,
+        total_menu=total_menu,
+        total_revenue=total_revenue,
+        total_orders=total_orders,
+        total_reservations=total_reservations,
+        pending_orders=pending_orders,
+        branches=branches,
+        branch_data=branch_data,
+        low_ingredients=low_ingredients,
+        out_of_stock_menu=out_of_stock_menu,
+        get_ph_time=get_ph_time,
+        rev_labels=_json.dumps(rev_labels),
+        pagsanjan_rev=_json.dumps(branch_data['Pagsanjan']['revenue_trend']),
+        lucban_rev=_json.dumps(branch_data['Lucban']['revenue_trend']),
+        pagsanjan_status_labels=_json.dumps(branch_data['Pagsanjan']['status_labels']),
+        pagsanjan_status_data=_json.dumps(branch_data['Pagsanjan']['status_data']),
+        lucban_status_labels=_json.dumps(branch_data['Lucban']['status_labels']),
+        lucban_status_data=_json.dumps(branch_data['Lucban']['status_data']),
+    )
+
 # ─── STAFF PERFORMANCE ────────────────────────────────
 @admin_bp.route('/staff-performance')
 @login_required
 @admin_required
 def staff_performance():
+    if current_user.role.upper() != 'SUPER_ADMIN':
+        flash("Access denied. Admin Boss only.", "danger")
+        return redirect(url_for('admin.overview'))
     from models import InventoryLog
     import json as _json
 
     # ── CASHIER STATS ──
-    cashiers = User.query.filter(db.func.upper(User.role).in_(['CASHIER', 'STAFF'])).all()
+    cashiers_q = User.query.filter(db.func.upper(User.role).in_(['CASHIER', 'STAFF']))
+    user_branch = getattr(current_user, 'branch', None)
+    if user_branch and user_branch != 'ALL':
+        cashiers_q = cashiers_q.filter(User.branch == user_branch)
+    cashiers = cashiers_q.all()
     cashier_stats = []
     cashier_ids = [c.id for c in cashiers]
     today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -534,7 +677,10 @@ def staff_performance():
         })
 
     # ── RIDER STATS ──
-    riders = User.query.filter(db.func.upper(User.role) == 'RIDER').all()
+    riders_q = User.query.filter(db.func.upper(User.role) == 'RIDER')
+    if user_branch and user_branch != 'ALL':
+        riders_q = riders_q.filter(User.branch == user_branch)
+    riders = riders_q.all()
     rider_stats = []
     rider_ids = [r.id for r in riders]
     rider_total = {}
@@ -640,7 +786,10 @@ def staff_performance():
         })
 
     # ── KITCHEN STAFF STATS ──
-    kitchen_staff = User.query.filter(db.func.upper(User.role) == 'KITCHEN').all()
+    kitchen_staff_q = User.query.filter(db.func.upper(User.role) == 'KITCHEN')
+    if user_branch and user_branch != 'ALL':
+        kitchen_staff_q = kitchen_staff_q.filter(User.branch == user_branch)
+    kitchen_staff = kitchen_staff_q.all()
     kitchen_stats = []
     # General kitchen metrics
     today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -718,22 +867,28 @@ def staff_performance():
 @login_required
 @admin_required
 def analytics():
-    if current_user.role.upper() != 'ADMIN':
+    if current_user.role.upper() not in ('ADMIN', 'SUPER_ADMIN'):
         flash("Access denied. Admin only.", "danger")
         return redirect(url_for('admin.overview'))
 
     import json as _json
+    # Determine branch filter for this admin
+    user_branch = getattr(current_user, 'branch', None)
+
     # Existing metrics
     total_customers = User.query.filter_by(role='USER').count()
     total_menu_items = MenuItem.query.count()
     
     # Reservation counts by type
-    exclusive_count = Reservation.query.filter_by(booking_type='EXCLUSIVE').count()
-    regular_count = Reservation.query.filter_by(booking_type='REGULAR').count()
-    total_reservations = Reservation.query.count()
+    res_q = Reservation.query
+    if user_branch and user_branch != 'ALL':
+        res_q = res_q.filter_by(branch=user_branch)
+        
+    exclusive_count = res_q.filter_by(booking_type='EXCLUSIVE').count()
+    regular_count = res_q.filter_by(booking_type='REGULAR').count()
+    total_reservations = res_q.count()
     
     # ── CHART DATA (Moved from overview) ──────────────────
-    # Get PH today date for consistency with stored records
     today = get_ph_time().date()
 
     # 1) Revenue Trend (Last 7 Days) — Line chart
@@ -742,13 +897,19 @@ def analytics():
     for i in range(6, -1, -1):
         d = today - timedelta(days=i)
         revenue_trend_labels.append(d.strftime('%b %d'))
-        day_rev = db.session.query(func.coalesce(func.sum(Order.total_amount), 0))\
-            .filter(func.date(Order.created_at) == d).scalar()
+        rev_q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0))\
+            .filter(func.date(Order.created_at) == d)
+        if user_branch and user_branch != 'ALL':
+            rev_q = rev_q.filter(Order.branch == user_branch)
+        day_rev = rev_q.scalar()
         revenue_trend_data.append(float(day_rev))
 
     # 2) Order Status — Donut chart
-    order_status_rows = db.session.query(Order.status, func.count(Order.id))\
-        .group_by(Order.status).all()
+    status_q = db.session.query(Order.status, func.count(Order.id))
+    if user_branch and user_branch != 'ALL':
+        status_q = status_q.filter(Order.branch == user_branch)
+    order_status_rows = status_q.group_by(Order.status).all()
+    
     order_status_labels = [r[0] for r in order_status_rows] if order_status_rows else ['No Data']
     order_status_data = [r[1] for r in order_status_rows] if order_status_rows else [1]
 
@@ -758,27 +919,40 @@ def analytics():
     for i in range(6, -1, -1):
         d = today - timedelta(days=i)
         daily_orders_labels.append(d.strftime('%b %d'))
-        cnt = db.session.query(func.count(Order.id))\
-            .filter(func.date(Order.created_at) == d).scalar()
+        cnt_q = db.session.query(func.count(Order.id))\
+            .filter(func.date(Order.created_at) == d)
+        if user_branch and user_branch != 'ALL':
+            cnt_q = cnt_q.filter(Order.branch == user_branch)
+        cnt = cnt_q.scalar()
         daily_orders_data.append(int(cnt or 0))
 
     # 4) Busy Times — Line chart (orders grouped by hour 0-23)
-    busy_hours_raw = db.session.query(
+    busy_q = db.session.query(
         func.extract('hour', Order.created_at).label('hr'),
         func.count(Order.id)
-    ).group_by('hr').order_by('hr').all()
+    )
+    if user_branch and user_branch != 'ALL':
+        busy_q = busy_q.filter(Order.branch == user_branch)
+    busy_hours_raw = busy_q.group_by('hr').order_by('hr').all()
+    
     busy_map = {int(h): c for h, c in busy_hours_raw}
     busy_times_labels = [f'{h:02d}:00' for h in range(24)]
     busy_times_data = [busy_map.get(h, 0) for h in range(24)]
 
     # 5) Top 5 Best Selling Dishes — Horizontal bar chart
-    top_dishes_raw = db.session.query(
+    top_dishes_q = db.session.query(
         MenuItem.name,
         func.sum(OrderItem.quantity).label('total_qty')
     ).join(OrderItem, OrderItem.menu_item_id == MenuItem.id)\
-     .group_by(MenuItem.name)\
+     .join(Order, Order.id == OrderItem.order_id)
+     
+    if user_branch and user_branch != 'ALL':
+        top_dishes_q = top_dishes_q.filter(Order.branch == user_branch)
+        
+    top_dishes_raw = top_dishes_q.group_by(MenuItem.name)\
      .order_by(func.sum(OrderItem.quantity).desc())\
      .limit(5).all()
+     
     top_dishes_labels = [r[0] for r in top_dishes_raw] if top_dishes_raw else ['No Data']
     top_dishes_data = [int(r[1]) for r in top_dishes_raw] if top_dishes_raw else [0]
 
@@ -798,16 +972,24 @@ def analytics():
         else:
             month_end = date(y, m + 1, 1)
         monthly_rev_labels.append(month_start.strftime('%b %Y'))
-        rev = db.session.query(func.coalesce(func.sum(Order.total_amount), 0))\
+        
+        mrev_q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0))\
             .filter(Order.created_at >= datetime.combine(month_start, datetime.min.time()),
-                    Order.created_at < datetime.combine(month_end, datetime.min.time())).scalar()
+                    Order.created_at < datetime.combine(month_end, datetime.min.time()))
+        if user_branch and user_branch != 'ALL':
+            mrev_q = mrev_q.filter(Order.branch == user_branch)
+        rev = mrev_q.scalar()
         monthly_rev_data.append(float(rev))
 
     # 7) Customer Loyalty — Donut chart (repeat vs one-time buyers)
-    order_counts_sub = db.session.query(
+    order_counts_sub_q = db.session.query(
         Order.user_id,
         func.count(Order.id).label('order_count')
-    ).group_by(Order.user_id).subquery()
+    )
+    if user_branch and user_branch != 'ALL':
+        order_counts_sub_q = order_counts_sub_q.filter(Order.branch == user_branch)
+        
+    order_counts_sub = order_counts_sub_q.group_by(Order.user_id).subquery()
     repeat_customers = db.session.query(func.count()).filter(order_counts_sub.c.order_count > 1).scalar() or 0
     onetime_customers = db.session.query(func.count()).filter(order_counts_sub.c.order_count == 1).scalar() or 0
     loyalty_labels = ['Repeat Customers', 'One-time Customers']
@@ -817,11 +999,12 @@ def analytics():
         loyalty_data = [1]
 
     # Compute total revenue
-    total_revenue_val = db.session.query(func.coalesce(func.sum(Order.total_amount), 0)).scalar()
+    trev_q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0))
+    if user_branch and user_branch != 'ALL':
+        trev_q = trev_q.filter(Order.branch == user_branch)
+    total_revenue_val = trev_q.scalar()
     
     # 8) Advanced Analytics: Profit & Loss (P&L)
-    # COGS = Sum (Ingredient.cost_per_unit * recipe.quantity_needed * qty_sold)
-    # Using select_from to anchor the query at OrderItem and avoid cross-join
     cogs_query = db.session.query(
         func.sum(OrderItem.quantity * MenuItemIngredient.quantity_needed * Ingredient.cost_per_unit)
     ).select_from(OrderItem)\
@@ -830,17 +1013,22 @@ def analytics():
      .join(MenuItemIngredient, MenuItemIngredient.menu_item_id == MenuItem.id)\
      .join(Ingredient, Ingredient.id == MenuItemIngredient.ingredient_id)\
      .filter(Order.status == 'COMPLETED')
+     
+    if user_branch and user_branch != 'ALL':
+        cogs_query = cogs_query.filter(Order.branch == user_branch)
 
     total_cogs = float(cogs_query.scalar() or 0.0)
     net_profit = float(total_revenue_val) - total_cogs
     
     # 9) Sales Forecast (Next 7 Days)
-    # Simple moving average of the last 14 days
     last_14_days_rev = []
     for i in range(13, -1, -1):
         d = today - timedelta(days=i)
-        rev = db.session.query(func.coalesce(func.sum(Order.total_amount), 0))\
-            .filter(func.date(Order.created_at) == d).scalar()
+        fc_q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0))\
+            .filter(func.date(Order.created_at) == d)
+        if user_branch and user_branch != 'ALL':
+            fc_q = fc_q.filter(Order.branch == user_branch)
+        rev = fc_q.scalar()
         last_14_days_rev.append(float(rev))
     
     avg_daily_rev = sum(last_14_days_rev) / 14 if last_14_days_rev else 0
@@ -849,7 +1037,6 @@ def analytics():
     for i in range(1, 8):
         future_date = today + timedelta(days=i)
         forecast_labels.append(future_date.strftime('%b %d'))
-        # Adding a small randomness/trend factor? No, keep it simple for now
         forecast_data.append(round(avg_daily_rev, 2))
 
     return render_template('admin/analytics.html',
@@ -876,7 +1063,8 @@ def analytics():
         monthly_rev_labels=_json.dumps(monthly_rev_labels),
         monthly_rev_data=_json.dumps(monthly_rev_data),
         loyalty_labels=_json.dumps(loyalty_labels),
-        loyalty_data=_json.dumps(loyalty_data)
+        loyalty_data=_json.dumps(loyalty_data),
+        get_ph_time=get_ph_time
     )
 
 MENU_CATEGORIES = [
@@ -935,7 +1123,7 @@ def menu():
 @login_required
 @admin_required
 def menu_item_json(item_id):
-    if current_user.role.upper() != 'ADMIN':
+    if current_user.role.upper() not in ('ADMIN', 'SUPER_ADMIN'):
         return jsonify({'success': False, 'message': 'Admin only.'}), 403
 
     item = MenuItem.query.get_or_404(item_id)
@@ -1007,7 +1195,7 @@ def menu_items_json():
 @login_required
 @admin_required
 def menu_add():
-    if current_user.role.upper() != 'ADMIN':
+    if current_user.role.upper() not in ('ADMIN', 'SUPER_ADMIN'):
         flash("Access denied. Admin only.", "danger")
         return redirect(url_for('admin.menu'))
 
@@ -1050,7 +1238,7 @@ def menu_add():
 @login_required
 @admin_required
 def menu_edit(item_id):
-    if current_user.role.upper() != 'ADMIN':
+    if current_user.role.upper() not in ('ADMIN', 'SUPER_ADMIN'):
         flash("Access denied. Admin only.", "danger")
         return redirect(url_for('admin.menu'))
 
@@ -1092,7 +1280,7 @@ def menu_edit(item_id):
 @login_required
 @admin_required
 def menu_delete(item_id):
-    if current_user.role.upper() != 'ADMIN':
+    if current_user.role.upper() not in ('ADMIN', 'SUPER_ADMIN'):
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return jsonify({'success': False, 'message': 'Admin only.'}), 403
         flash("Access denied. Admin only.", "danger")
@@ -1123,7 +1311,7 @@ def menu_trash():
 @admin_required
 def menu_restore(item_id):
     """Restore a trashed menu item."""
-    if current_user.role.upper() != 'ADMIN':
+    if current_user.role.upper() not in ('ADMIN', 'SUPER_ADMIN'):
         flash("Access denied.", "danger")
         return redirect(url_for('admin.menu_trash'))
         
@@ -1139,6 +1327,9 @@ def menu_restore(item_id):
 @login_required
 @admin_required
 def approvals():
+    if current_user.role.upper() != 'SUPER_ADMIN':
+        flash("Access denied.", "danger")
+        return redirect(url_for('admin.overview'))
     pending = User.query.filter_by(status='PENDING', role='USER', is_verified=True).limit(300).all()
     return render_template('admin/approvals.html', pending=pending)
 
@@ -1227,26 +1418,30 @@ def reject_user(user_id):
 @login_required
 @admin_required
 def users():
-    if current_user.role.upper() != 'ADMIN':
-        flash("Access denied. Admin only.", "danger")
+    if current_user.role.upper() != 'SUPER_ADMIN':
+        flash("Access denied. Admin Boss only.", "danger")
         return redirect(url_for('admin.overview'))
 
     role_filter = request.args.get('role', 'ALL')
     page = request.args.get('page', 1, type=int)
     
     query = User.query
+    user_branch = getattr(current_user, 'branch', None)
+    if user_branch and user_branch != 'ALL':
+        query = query.filter(User.branch == user_branch)
+        
     if role_filter != 'ALL':
         query = query.filter(func.upper(User.role) == role_filter.upper())
     
-    pagination = query.order_by(User.id).paginate(page=page, per_page=30, error_out=False)
-    return render_template('admin/users.html', users=pagination, role_filter=role_filter)
+    pagination = query.order_by(User.id.desc()).paginate(page=page, per_page=100, error_out=False)
+    return render_template('admin/users.html', users=pagination, role_filter=role_filter, get_ph_time=get_ph_time)
 
 @admin_bp.route('/users/update-role/<int:user_id>', methods=['POST'])
 @login_required
 @admin_required
 def update_user_role(user_id):
-    if current_user.role.upper() != 'ADMIN':
-        flash("Access denied. Admin only.", "danger")
+    if current_user.role.upper() != 'SUPER_ADMIN':
+        flash("Access denied. Admin Boss only.", "danger")
         return redirect(url_for('admin.overview'))
 
     user = User.query.get_or_404(user_id)
@@ -1263,8 +1458,8 @@ def update_user_role(user_id):
 @login_required
 @admin_required
 def broadcast():
-    if current_user.role.upper() != 'ADMIN':
-        flash("Access denied. Admin only.", "danger")
+    if current_user.role.upper() != 'SUPER_ADMIN':
+        flash("Access denied. Admin Boss only.", "danger")
         return redirect(url_for('admin.overview'))
 
     user_ids = request.form.getlist('user_ids')
@@ -1322,7 +1517,7 @@ def broadcast():
 @login_required
 @admin_required
 def api_user_details(user_id):
-    if current_user.role.upper() != 'ADMIN':
+    if current_user.role.upper() != 'SUPER_ADMIN':
         return jsonify({'error': 'Unauthorized'}), 403
 
     user = User.query.get_or_404(user_id)
@@ -1343,19 +1538,8 @@ def api_user_details(user_id):
 @login_required
 @admin_required
 def reservations():
-    # Fetch all reservations for instant client-side filtering
-    all_reservations = Reservation.query.order_by(Reservation.created_at.desc()).all()
-    
-    # Mock pagination object since the template uses .items and .total
-    class MockPagination:
-        def __init__(self, items):
-            self.items = items
-            self.total = len(items)
-            self.pages = 1
-            self.page = 1
-    
-    pagination = MockPagination(all_reservations)
-    return render_template('admin/reservations.html', reservations=pagination, status_filter='ALL')
+    # Redirect to cashier portal reservations (staff layout)
+    return redirect(url_for('cashier_portal.cashier_reservations'))
 
 @admin_bp.route('/reservations/update/<int:res_id>', methods=['POST'])
 @login_required
@@ -1565,7 +1749,7 @@ def walkin_order_submit():
 
         items_data = [{'menu_item_id': int(id), 'quantity': int(qty)} for id, qty in zip(item_ids, quantities)]
         from routes.orders import validate_order
-        is_valid, msg, status_override = validate_order(items_data, dining_option, payment_method, is_pos=True)
+        is_valid, msg, status_override = validate_order(items_data, dining_option, payment_method, is_pos=True, apply_lock=True)
         
         if not is_valid:
             flash(msg, "danger")
@@ -1664,6 +1848,10 @@ def deliveries():
     page = request.args.get('page', 1, type=int)
     
     query = Order.query.filter_by(dining_option='DELIVERY')
+    user_branch = getattr(current_user, 'branch', None)
+    if user_branch and user_branch != 'ALL':
+        query = query.filter_by(branch=user_branch)
+        
     if status_filter != 'ALL':
         if status_filter == 'WAITING':
             query = query.filter((Order.delivery_status == None) | (Order.delivery_status == 'WAITING'))
@@ -1682,6 +1870,10 @@ def orders():
     page = request.args.get('page', 1, type=int)
     
     query = Order.query
+    user_branch = getattr(current_user, 'branch', None)
+    if user_branch and user_branch != 'ALL':
+        query = query.filter_by(branch=user_branch)
+        
     if status_filter != 'ALL':
         query = query.filter_by(status=status_filter)
         
@@ -1690,13 +1882,18 @@ def orders():
     # Optimized Stats Calculation via SQL Group By
     today = get_ph_time().date()
     # 1 query for all today's stats
-    today_stats_rows = db.session.query(
+    today_stats_q = db.session.query(
         Order.status, 
         Order.payment_status,
         Order.payment_method,
         func.count(Order.id),
         func.sum(Order.total_amount)
-    ).filter(func.date(Order.created_at) == today).group_by(Order.status, Order.payment_status, Order.payment_method).all()
+    ).filter(func.date(Order.created_at) == today)
+    
+    if user_branch and user_branch != 'ALL':
+        today_stats_q = today_stats_q.filter(Order.branch == user_branch)
+        
+    today_stats_rows = today_stats_q.group_by(Order.status, Order.payment_status, Order.payment_method).all()
     
     total_sales_today = 0
     pending_count = 0
@@ -2058,12 +2255,14 @@ def split_order(order_id):
 @login_required
 @admin_required
 def reviews():
-    status_filter = request.args.get('status', 'PENDING')
     limit = request.args.get('limit', 250, type=int)
     limit = max(1, min(limit, 500))
     
-    # Always fetch all reviews up to the limit to allow instant DOM-based tab switching on the frontend.
-    all_reviews = Review.query.options(selectinload(Review.user)).order_by(Review.created_at.desc()).limit(limit).all()
+    rev_q = Review.query.options(selectinload(Review.user))
+    user_branch = getattr(current_user, 'branch', None)
+    if user_branch and user_branch != 'ALL':
+        rev_q = rev_q.join(Order, Review.order_id == Order.id).filter(Order.branch == user_branch)
+    all_reviews = rev_q.order_by(Review.created_at.desc()).limit(limit).all()
         
     # AI Sentiment Analysis (Dynamic Calculation to avoid DB Migrations)
     positive_words = ['good', 'great', 'excellent', 'amazing', 'best', 'delicious', 'love', 'perfect', 'nice', 'awesome', 'sarap', 'mabilis', 'ayos', 'sulit', 'outstanding', 'fantastic', 'superb', 'yummy', 'tasty']
@@ -2074,7 +2273,6 @@ def reviews():
         _REVIEW_SENTIMENT_CACHE.clear()
 
     # Speed optimization: compute sentiment for missing reviews in background thread.
-    # This prevents /admin/reviews from timing out when there are many new/unique comments.
     now_mono = time.monotonic()
 
     def _compute_sentiment(text: str, rating: int):
@@ -2084,29 +2282,20 @@ def reviews():
         pos_count = sum(t.count(word) for word in positive_words)
         neg_count = sum(t.count(word) for word in negative_words)
 
-        # Adjust weight based on star rating
-        if rating >= 4:
-            pos_count += 2
-        elif rating <= 2:
-            neg_count += 2
+        if rating >= 4: pos_count += 2
+        elif rating <= 2: neg_count += 2
 
-        if pos_count > neg_count:
-            return ("POSITIVE", "😊", "success")
-        if neg_count > pos_count:
-            return ("NEGATIVE", "😠", "danger")
-        # Tie-break with rating
-        if rating >= 4:
-            return ("POSITIVE", "😊", "success")
-        if rating <= 2:
-            return ("NEGATIVE", "😠", "danger")
+        if pos_count > neg_count: return ("POSITIVE", "😊", "success")
+        if neg_count > pos_count: return ("NEGATIVE", "😠", "danger")
+        if rating >= 4: return ("POSITIVE", "😊", "success")
+        if rating <= 2: return ("NEGATIVE", "😠", "danger")
         return ("NEUTRAL", "😐", "secondary")
 
-    # Protect cache dict in case multiple requests compute at once.
     import threading as _threading
     if not hasattr(reviews, "_sentiment_lock"):
         reviews._sentiment_lock = _threading.Lock()
 
-    jobs = []  # (cache_key, comment_text, rating)
+    jobs = []
     for review in all_reviews:
         comment_text = str(review.comment or '')
         if not comment_text.strip():
@@ -2124,16 +2313,13 @@ def reviews():
             review.ai_sentiment_icon = icon
             review.ai_sentiment_color = color
         else:
-            # Default fast placeholder; background thread will fill the cache.
             review.ai_sentiment = "NEUTRAL"
             review.ai_sentiment_icon = "😐"
             review.ai_sentiment_color = "secondary"
             jobs.append((cache_key, comment_text, review.rating))
 
     if jobs:
-        # Copy jobs to avoid accidental mutation.
         jobs_copy = list(jobs)
-
         def _worker(jobs_local):
             mono = time.monotonic()
             try:
@@ -2143,10 +2329,9 @@ def reviews():
                         _REVIEW_SENTIMENT_CACHE[cache_key] = (mono, (sentiment, icon, color))
             except Exception as e:
                 print(f"Sentiment background worker failed: {e}")
-
         threading.Thread(target=_worker, args=(jobs_copy,), daemon=True).start()
 
-    return render_template('admin/reviews.html', reviews=all_reviews, status_filter=status_filter)
+    return render_template('admin/reviews.html', reviews=all_reviews)
 
 @admin_bp.route('/reviews/update/<int:review_id>', methods=['POST'])
 @login_required
@@ -2164,14 +2349,38 @@ from utils import load_site_settings, save_site_settings
 @admin_bp.route('/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
+    user_role = current_user.role.upper().replace(' ', '_')
+    if user_role != 'SUPER_ADMIN' and user_role != 'ADMIN':
+        flash("Access denied. Admin Boss only.", "danger")
+        return redirect(url_for('admin.overview'))
+    
     site_settings = load_site_settings()
-    if request.method == 'POST' and current_user.role.upper() == 'ADMIN':
+    if request.method == 'POST' and user_role == 'SUPER_ADMIN':
         # Handle form submission for homepage content
+        # Update Hero 1
+        site_settings['hero1']['title1'] = request.form.get('hero1_title1', site_settings['hero1']['title1'])
+        site_settings['hero1']['title2'] = request.form.get('hero1_title2', site_settings['hero1']['title2'])
+        site_settings['hero1']['description'] = request.form.get('hero1_desc', site_settings['hero1']['description'])
+        site_settings['hero1']['image_url'] = request.form.get('hero1_img', site_settings['hero1']['image_url'])
+
         # Update Hero 2
         site_settings['hero2']['title1'] = request.form.get('hero2_title1', site_settings['hero2']['title1'])
         site_settings['hero2']['title2'] = request.form.get('hero2_title2', site_settings['hero2']['title2'])
         site_settings['hero2']['description'] = request.form.get('hero2_desc', site_settings['hero2']['description'])
         site_settings['hero2']['image_url'] = request.form.get('hero2_img', site_settings['hero2']['image_url'])
+
+        # Update Hero 3
+        site_settings['hero3']['title1'] = request.form.get('hero3_title1', site_settings['hero3']['title1'])
+        site_settings['hero3']['title2'] = request.form.get('hero3_title2', site_settings['hero3']['title2'])
+        site_settings['hero3']['description'] = request.form.get('hero3_desc', site_settings['hero3']['description'])
+        site_settings['hero3']['image_url'] = request.form.get('hero3_img', site_settings['hero3']['image_url'])
+
+        # Update Welcome Section
+        site_settings['welcome']['title'] = request.form.get('welcome_title', site_settings['welcome']['title'])
+        site_settings['welcome']['subtitle'] = request.form.get('welcome_subtitle', site_settings['welcome']['subtitle'])
+        site_settings['welcome']['description1'] = request.form.get('welcome_desc1', site_settings['welcome']['description1'])
+        site_settings['welcome']['description2'] = request.form.get('welcome_desc2', site_settings['welcome']['description2'])
+        site_settings['welcome']['image_url'] = request.form.get('welcome_img', site_settings['welcome']['image_url'])
         
         # Update Card 1
         site_settings['card1']['title'] = request.form.get('c1_title', site_settings['card1']['title'])
@@ -3200,10 +3409,24 @@ def log_audit(action, target_type, target_id, description):
 @login_required
 @admin_required
 def audit_logs():
+    if current_user.role.upper() != 'SUPER_ADMIN':
+        flash("Access denied. Admin Boss only.", "danger")
+        return redirect(url_for('admin.overview'))
     """View system audit logs"""
     page = request.args.get('page', 1, type=int)
     per_page = 30
-    logs = AuditLog.query.order_by(AuditLog.created_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
+    user_branch = getattr(current_user, 'branch', None)
+    if user_branch and user_branch not in ('ALL', 'Pagsanjan'):
+        class MockPagination:
+            items = []
+            page = 1
+            pages = 1
+            has_next = False
+            has_prev = False
+            iter_pages = lambda self: []
+        logs = MockPagination()
+    else:
+        logs = AuditLog.query.order_by(AuditLog.created_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
     return render_template('admin/audit_logs.html', logs=logs)
 
 # ─── SMART INVENTORY ALERTS API ────────────────────
@@ -3279,8 +3502,15 @@ def advanced_analytics_api():
 @login_required
 @admin_required
 def vouchers():
+    if current_user.role.upper() != 'SUPER_ADMIN':
+        flash("Access denied. Admin Boss only.", "danger")
+        return redirect(url_for('admin.overview'))
     """List all vouchers"""
-    all_vouchers = Voucher.query.order_by(Voucher.created_at.desc()).limit(200).all()
+    user_branch = getattr(current_user, 'branch', None)
+    if user_branch and user_branch not in ('ALL', 'Pagsanjan'):
+        all_vouchers = []
+    else:
+        all_vouchers = Voucher.query.order_by(Voucher.created_at.desc()).limit(200).all()
     return render_template('admin/vouchers.html', vouchers=all_vouchers)
 
 @admin_bp.route('/vouchers/add', methods=['POST'])
@@ -3400,9 +3630,20 @@ def voucher_delete(voucher_id):
 @login_required
 @admin_required
 def delivery_areas():
+    if current_user.role.upper() != 'SUPER_ADMIN':
+        flash("Access denied. Admin Boss only.", "danger")
+        return redirect(url_for('admin.overview'))
     from models import DeliveryArea
-    areas = DeliveryArea.query.order_by(DeliveryArea.municipality.asc()).all()
-    return render_template('admin/delivery_areas.html', areas=areas)
+    all_areas = DeliveryArea.query.order_by(DeliveryArea.branch.asc(), DeliveryArea.municipality.asc()).all()
+    
+    # Group by branch
+    grouped_areas = {}
+    for area in all_areas:
+        if area.branch not in grouped_areas:
+            grouped_areas[area.branch] = []
+        grouped_areas[area.branch].append(area)
+        
+    return render_template('admin/delivery_areas.html', grouped_areas=grouped_areas)
 
 @admin_bp.route('/delivery-areas/add', methods=['POST'])
 @login_required
@@ -3411,6 +3652,7 @@ def delivery_area_add():
     import json
     from models import DeliveryArea
     municipality = request.form.get('municipality', '').strip().title()
+    branch = request.form.get('branch', 'Pagsanjan')
     barangays_raw = request.form.get('barangays', '').strip()
     lat = request.form.get('lat', type=float)
     lng = request.form.get('lng', type=float)
@@ -3419,8 +3661,8 @@ def delivery_area_add():
         flash("Municipality name is required.", "danger")
         return redirect(url_for('admin.delivery_areas'))
 
-    if DeliveryArea.query.filter_by(municipality=municipality).first():
-        flash(f"'{municipality}' already exists.", "danger")
+    if DeliveryArea.query.filter_by(municipality=municipality, branch=branch).first():
+        flash(f"'{municipality}' already exists for {branch}.", "danger")
         return redirect(url_for('admin.delivery_areas'))
 
     # Parse barangays — one per line or comma-separated
@@ -3431,6 +3673,7 @@ def delivery_area_add():
 
     area = DeliveryArea(
         municipality=municipality,
+        branch=branch,
         barangays=json.dumps(brgys),
         lat=lat,
         lng=lng,
@@ -3450,6 +3693,7 @@ def delivery_area_edit(area_id):
     from models import DeliveryArea
     area = DeliveryArea.query.get_or_404(area_id)
     municipality = request.form.get('municipality', '').strip().title()
+    branch = request.form.get('branch', area.branch)
     barangays_raw = request.form.get('barangays', '').strip()
     lat = request.form.get('lat', type=float)
     lng = request.form.get('lng', type=float)
@@ -3459,9 +3703,9 @@ def delivery_area_edit(area_id):
         return redirect(url_for('admin.delivery_areas'))
 
     # Check duplicate (excluding self)
-    dup = DeliveryArea.query.filter(DeliveryArea.municipality == municipality, DeliveryArea.id != area_id).first()
+    dup = DeliveryArea.query.filter(DeliveryArea.municipality == municipality, DeliveryArea.branch == branch, DeliveryArea.id != area_id).first()
     if dup:
-        flash(f"'{municipality}' already exists.", "danger")
+        flash(f"'{municipality}' already exists for {branch}.", "danger")
         return redirect(url_for('admin.delivery_areas'))
 
     brgys = [b.strip() for b in barangays_raw.replace('\n', ',').split(',') if b.strip()]
@@ -3470,6 +3714,7 @@ def delivery_area_edit(area_id):
         return redirect(url_for('admin.delivery_areas'))
 
     area.municipality = municipality
+    area.branch = branch
     area.barangays = json.dumps(brgys)
     area.lat = lat
     area.lng = lng
@@ -3509,8 +3754,12 @@ def delivery_area_delete(area_id):
 def contact_messages():
     """List all contact us messages"""
     from models import ContactMessage
-    messages = ContactMessage.query.order_by(ContactMessage.created_at.desc()).all()
-    
+    user_branch = getattr(current_user, 'branch', None)
+    if user_branch and user_branch not in ('ALL', 'Pagsanjan'):
+        messages = []
+    else:
+        messages = ContactMessage.query.order_by(ContactMessage.created_at.desc()).all()
+        
     # mark all as read when admin visits the page
     has_unread = False
     for m in messages:

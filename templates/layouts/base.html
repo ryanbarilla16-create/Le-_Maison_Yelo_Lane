@@ -615,6 +615,127 @@
         }, true);
     </script>
 
+    <!-- Branch Selection Modal -->
+    <div class="branch-modal-overlay" id="branchModal">
+        <div class="branch-modal-content">
+            <h2>Bienvenue!</h2>
+            <p class="subtitle-main">SELECT YOUR BRANCH</p>
+            
+            <div class="branch-select-wrapper">
+                <select id="branchSelect">
+                    <option value="" disabled selected>Choose a location near you...</option>
+                    <option value="Lucban, Quezon">Lucban, Quezon (Main)</option>
+                    <option value="Pagsanjan, Laguna">Pagsanjan, Laguna</option>
+                    <option value="Lucena, Quezon">Lucena, Quezon (Coming Soon)</option>
+                </select>
+            </div>
+
+            <button class="btn-branch-confirm" onclick="confirmBranchSelection()">
+                Confirm & Proceed
+            </button>
+
+            <div class="mt-4">
+                <p style="font-size: 0.75rem; color: #A1887F;">"Experience premium French dining at your nearest location."</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Welcome Loading Overlay -->
+    <div id="welcomeLoading" class="branch-modal-overlay" style="z-index: 10001; background: #2D1B18; display: none; flex-direction: column;">
+        <div class="text-center text-white animate__animated animate__fadeIn">
+            <div class="spinner-border mb-4" style="width: 4rem; height: 4rem; color: #D4A862; border-width: 0.25em;"></div>
+            <h2 id="welcomeMsg" style="font-family: 'Playfair Display', serif; font-weight: 800; letter-spacing: 2px;">Welcome to Le Maison...</h2>
+            <p style="color: #D4A862; opacity: 0.8; text-transform: uppercase; letter-spacing: 3px; font-size: 0.8rem;">Preparing your premium experience</p>
+        </div>
+    </div>
+
+    <script>
+        const branchData = {
+            "Lucban, Quezon": {
+                address: "Fidel Rada St, Lucban, 4328 Quezon",
+                phone: "+63 (998) 886-3566",
+                map: "https://maps.google.com/maps?q=Fidel%20Rada%20St,%20Lucban,%204328%20Quezon&t=&z=16&ie=UTF8&iwloc=&output=embed"
+            },
+            "Pagsanjan, Laguna": {
+                address: "National Highway Brgy, Pagsanjan, Laguna",
+                phone: "+63 (998) 886-3566",
+                map: "https://maps.google.com/maps?q=National%20Highway%20Brgy,%20Pagsanjan,%20Laguna&t=&z=16&ie=UTF8&iwloc=&output=embed"
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const selectedBranch = localStorage.getItem('selected_branch');
+            const branchModal = document.getElementById('branchModal');
+
+            if (!selectedBranch) {
+                setTimeout(() => {
+                    branchModal.classList.add('show');
+                }, 800);
+            } else {
+                // If branch exists, apply it immediately without loading
+                applyBranchInfo(selectedBranch);
+            }
+        });
+
+        function applyBranchInfo(branchName) {
+            const data = branchData[branchName];
+            if (!data) return;
+
+            // Update Home/Index elements if they exist
+            const addrEl = document.getElementById('branchAddress');
+            const phoneEl = document.getElementById('branchPhone');
+            const mapEl = document.getElementById('branchMap');
+            
+            if (addrEl) addrEl.innerText = data.address;
+            if (phoneEl) phoneEl.innerText = data.phone;
+            if (mapEl) mapEl.src = data.map;
+
+            // Update Contact Page elements if they exist
+            const contactAddrEl = document.getElementById('contactBranchAddress');
+            const contactPhoneEl = document.getElementById('contactBranchPhone');
+            
+            if (contactAddrEl) contactAddrEl.innerText = data.address;
+            if (contactPhoneEl) contactPhoneEl.innerText = data.phone;
+        }
+
+        function confirmBranchSelection() {
+            const select = document.getElementById('branchSelect');
+            const branchName = select.value;
+
+            if (!branchName) {
+                if (window.showToast) showToast('warning', 'Please select a branch first.');
+                return;
+            }
+
+            if (branchName === 'Lucena, Quezon') {
+                if (window.showToast) showToast('info', 'Lucena Branch is currently under construction. Stay tuned for our grand opening!');
+                return;
+            }
+
+            // 1. Hide Selection Modal
+            document.getElementById('branchModal').classList.remove('show');
+
+            // 2. Show Welcome Loading
+            const loading = document.getElementById('welcomeLoading');
+            const welcomeMsg = document.getElementById('welcomeMsg');
+            welcomeMsg.innerText = `Welcome to Le Maison ${branchName.split(',')[0]}!`;
+            loading.style.display = 'flex';
+            loading.classList.add('show');
+
+            // 3. Save & Apply
+            localStorage.setItem('selected_branch', branchName);
+            applyBranchInfo(branchName);
+
+            // 4. Fade out after 2 seconds
+            setTimeout(() => {
+                loading.style.opacity = '0';
+                setTimeout(() => {
+                    loading.style.display = 'none';
+                }, 500);
+            }, 2200);
+        }
+    </script>
+
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

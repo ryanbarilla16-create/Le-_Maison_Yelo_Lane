@@ -349,12 +349,17 @@
             <a href="{{ url_for('main.index') }}" class="resBack"><i class="fas fa-arrow-left"></i> Back</a>
             <div class="resTitle">
                 <h2><i class="fas fa-calendar-check me-2" style="color: #8B634B; font-size: 1.5rem;"></i>My Reservations</h2>
-                <p>Manage and track your coffee table bookings</p>
+                <p>Manage and track your coffee table bookings
+                   <span id="syncIndicator" style="font-size: 0.72rem; color: #8b7355; opacity: 0.8; margin-left: 10px; font-weight: 500;">
+                       <i class="fas fa-sync-alt fa-spin me-1"></i> Live Update (5s) • Last: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
+                   </span>
+                </p>
             </div>
         </div>
         <a href="{{ url_for('main.reserve') }}" class="moOrderBtn" style="text-decoration: none;" onclick="clearReservationSession()"><i class="fas fa-plus"></i> Reserve More</a>
     </div>
 
+    <div id="customerReservationsContainer">
     <!-- Stats -->
     <div class="resStats">
         <div class="resStat"><h4 style="color: #8B634B;">{{ all_res|length }}</h4><p>Total Bookings</p></div>
@@ -478,6 +483,30 @@
         <a href="{{ url_for('main.reserve') }}" class="navJoin" style="display:inline-block; padding: 0.7rem 3rem; text-decoration: none;">Reserve Now</a>
     </div>
     {% endif %}
+    </div> <!-- end customerReservationsContainer -->
+
+    <script>
+        function pollCustomerReservations() {
+            if (document.querySelector('.modal.show')) return;
+
+            fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                const ids = ['customerReservationsContainer', 'lastUpdateText'];
+                ids.forEach(id => {
+                    const oldEl = document.getElementById(id);
+                    const newEl = doc.getElementById(id);
+                    if (oldEl && newEl) oldEl.innerHTML = newEl.innerHTML;
+                });
+            })
+            .catch(err => console.warn('Customer Reservations sync failed:', err));
+        }
+
+        setInterval(pollCustomerReservations, 5000);
+    </script>
 </main>
 
 <!-- Modal for Pre-ordered Items -->

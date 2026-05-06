@@ -29,10 +29,13 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 style="font-family: 'Georgia', serif; color: var(--text-main); font-size: 2rem; font-weight: bold; margin: 0;">
         Staff Performance Metrics</h1>
+    <span id="syncIndicator" style="font-size: 0.75rem; color: #8b7355; opacity: 0.8;">
+        <i class="fas fa-sync-alt fa-spin me-1"></i> Real-time Sync (5s) • Last Update: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
+    </span>
 </div>
 
 <!-- ═══ SUMMARY STAT CARDS ═══ -->
-<div class="perf-row">
+<div class="perf-row" id="summaryStats">
     {% set stats = [
         ('fas fa-users', '#8d6e63,#a1887f', total_staff, 'Total Staff'),
         ('fas fa-receipt', '#8f6d54,#b08d72', total_orders_processed, 'Orders Processed'),
@@ -54,7 +57,7 @@
 <!-- ═══ ROW 1: CASHIER + RIDER (equal height) ═══ -->
 <div class="perf-row">
     <!-- CASHIER -->
-    <div class="perf-half perf-card">
+    <div class="perf-half perf-card" id="cashierContainer">
         <div class="card-header">
             <h6 class="fw-bold mb-0"><i class="fas fa-cash-register me-2" style="color:#8f6d54;"></i>Cashier Productivity</h6>
             <span class="perf-badge" style="background:rgba(143,109,84,0.1);color:#8f6d54;">{{ cashier_stats|length }} staff</span>
@@ -90,7 +93,7 @@
     </div>
 
     <!-- RIDER -->
-    <div class="perf-half perf-card">
+    <div class="perf-half perf-card" id="riderContainer">
         <div class="card-header">
             <h6 class="fw-bold mb-0"><i class="fas fa-motorcycle me-2" style="color:#a8613d;"></i>Rider Deliveries</h6>
             <span class="perf-badge" style="background:rgba(168,97,61,0.1);color:#a8613d;">{{ rider_stats|length }} riders</span>
@@ -134,7 +137,7 @@
 <!-- ═══ ROW 2: INVENTORY + KITCHEN (equal height) ═══ -->
 <div class="perf-row">
     <!-- INVENTORY -->
-    <div class="perf-half perf-card">
+    <div class="perf-half perf-card" id="inventoryContainer">
         <div class="card-header">
             <h6 class="fw-bold mb-0"><i class="fas fa-boxes-stacked me-2" style="color:#5e4a50;"></i>Inventory Staff Activity</h6>
             <span class="perf-badge" style="background:rgba(94,74,80,0.1);color:#5e4a50;">{{ inventory_stats|length }} staff</span>
@@ -173,7 +176,7 @@
     </div>
 
     <!-- KITCHEN -->
-    <div class="perf-half perf-card">
+    <div class="perf-half perf-card" id="kitchenContainer">
         <div class="card-header">
             <h6 class="fw-bold mb-0"><i class="fas fa-fire-burner me-2" style="color:#9e4439;"></i>Kitchen Staff</h6>
             <span class="perf-badge" style="background:rgba(158,68,57,0.1);color:#9e4439;">{{ kitchen_stats|length }} staff</span>
@@ -259,28 +262,83 @@
     </div>
 </div>
 
+<div id="staffChartData" style="display: none;" 
+    data-cashier-labels="{{ cashier_chart_labels | forceescape }}"
+    data-cashier-data="{{ cashier_chart_data | forceescape }}"
+    data-cashier-sales="{{ cashier_sales_data | forceescape }}"
+    data-rider-labels="{{ rider_chart_labels | forceescape }}"
+    data-rider-data="{{ rider_chart_data | forceescape }}"
+    data-role-labels="{{ role_dist_labels | forceescape }}"
+    data-role-data="{{ role_dist_data | forceescape }}">
+</div>
+
 <script>
+window.staffCharts = window.staffCharts || {};
+
+function pollStaffPerformance() {
+    fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    .then(response => response.text())
+    .then(html => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        
+        const ids = ['summaryStats', 'cashierContainer', 'riderContainer', 'inventoryContainer', 'kitchenContainer', 'lastUpdateText', 'staffChartData'];
+        let dataChanged = false;
+
+        ids.forEach(id => {
+            const oldEl = document.getElementById(id);
+            const newEl = doc.getElementById(id);
+            if (oldEl && newEl && oldEl.innerHTML !== newEl.innerHTML) {
+                oldEl.innerHTML = newEl.innerHTML;
+                dataChanged = true;
+                if (id === 'staffChartData') {
+                    Object.keys(newEl.dataset).forEach(key => oldEl.dataset[key] = newEl.dataset[key]);
+                }
+            }
+        });
+        
+        if (dataChanged) initStaffCharts();
+    })
+    .catch(err => console.warn('Staff performance sync failed:', err));
+}
+
+setInterval(pollStaffPerformance, 5000);
+
 function initStaffCharts() {
     if (typeof Chart === 'undefined') {
         setTimeout(initStaffCharts, 50);
         return;
     }
 
+    // Destroy existing
+    Object.values(window.staffCharts).forEach(chart => {
+        if (chart) chart.destroy();
+    });
+
     const sharedFont = { family: "'Inter', sans-serif" };
     const gridColor = 'rgba(0,0,0,0.04)';
+    const _cd = document.getElementById('staffChartData').dataset;
+
+    const cashierLabels = JSON.parse(_cd.cashierLabels);
+    const cashierData = JSON.parse(_cd.cashierData);
+    const cashierSales = JSON.parse(_cd.cashierSales);
+    const riderLabels = JSON.parse(_cd.riderLabels);
+    const riderData = JSON.parse(_cd.riderData);
+    const roleLabels = JSON.parse(_cd.roleLabels);
+    const roleData = JSON.parse(_cd.roleData);
 
     // Cashier Bar Chart
-    new Chart(document.getElementById('cashierChart'), {
+    window.staffCharts.cashier = new Chart(document.getElementById('cashierChart'), {
         type: 'bar',
         data: {
-            labels: {{ cashier_chart_labels|safe }},
+            labels: cashierLabels,
             datasets: [{
                 label: 'Orders',
-                data: {{ cashier_chart_data|safe }},
+                data: cashierData,
                 backgroundColor: 'rgba(143,109,84,0.7)', borderColor: 'rgba(143,109,84,1)', borderWidth: 1, borderRadius: 8, barPercentage: 0.5,
             }, {
                 label: 'Sales ₱',
-                data: {{ cashier_sales_data|safe }},
+                data: cashierSales,
                 backgroundColor: 'rgba(82,107,72,0.7)', borderColor: 'rgba(82,107,72,1)', borderWidth: 1, borderRadius: 8, barPercentage: 0.5, yAxisID: 'y1',
             }]
         },
@@ -296,21 +354,21 @@ function initStaffCharts() {
     });
 
     // Rider Doughnut
-    new Chart(document.getElementById('riderChart'), {
+    window.staffCharts.rider = new Chart(document.getElementById('riderChart'), {
         type: 'doughnut',
         data: {
-            labels: {{ rider_chart_labels|safe }},
-            datasets: [{ data: {{ rider_chart_data|safe }}, backgroundColor: ['#a8613d','#b8704c','#c97e59','#d98d69','#e89b78'], borderWidth: 2, borderColor: '#fff', hoverOffset: 8 }]
+            labels: riderLabels,
+            datasets: [{ data: riderData, backgroundColor: ['#a8613d','#b8704c','#c97e59','#d98d69','#e89b78'], borderWidth: 2, borderColor: '#fff', hoverOffset: 8 }]
         },
         options: { responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 14, font: { size: 11, ...sharedFont } } } } }
     });
 
     // Role Distribution Polar Area
-    new Chart(document.getElementById('roleChart'), {
+    window.staffCharts.role = new Chart(document.getElementById('roleChart'), {
         type: 'polarArea',
         data: {
-            labels: {{ role_dist_labels|safe }},
-            datasets: [{ data: {{ role_dist_data|safe }}, backgroundColor: ['rgba(143,109,84,0.6)','rgba(168,97,61,0.6)','rgba(94,74,80,0.6)','rgba(158,68,57,0.6)'], borderWidth: 2, borderColor: '#fff' }]
+            labels: roleLabels,
+            datasets: [{ data: roleData, backgroundColor: ['rgba(143,109,84,0.6)','rgba(168,97,61,0.6)','rgba(94,74,80,0.6)','rgba(158,68,57,0.6)'], borderWidth: 2, borderColor: '#fff' }]
         },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 14, font: { size: 11, ...sharedFont } } } }, scales: { r: { grid: { color: gridColor }, ticks: { display: false } } } }
     });

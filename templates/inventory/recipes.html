@@ -12,7 +12,12 @@
 {% endblock %}
 
 {% block page_title %}Menu Items & Recipes{% endblock %}
-{% block page_subtitle %}Review standard portioning and ingredient requirements{% endblock %}
+{% block page_subtitle %}
+    Review standard portioning and ingredient requirements
+    <span id="syncIndicator" style="font-size: 0.72rem; color: var(--muted); opacity: 0.8; margin-left: 10px; font-weight: 500;">
+        <i class="fas fa-sync-alt fa-spin me-1"></i> Live Update (5s) • Last: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
+    </span>
+{% endblock %}
 
 {% block extra_style %}
     .recipe-grid {
@@ -445,5 +450,22 @@
     document.getElementById('editRecipeModal').addEventListener('click', function(e) {
         if (e.target === this) closeRecipeEdit();
     });
+
+    function pollInventoryRecipes() {
+        if (document.getElementById('editRecipeModal').style.display === 'flex') return;
+
+        fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(r => r.text())
+        .then(html => {
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            ['recipeGrid', 'recipeCount', 'lastUpdateText'].forEach(id => {
+                const o = document.getElementById(id);
+                const n = doc.getElementById(id);
+                if (o && n && o.innerHTML !== n.innerHTML) o.innerHTML = n.innerHTML;
+            });
+        })
+        .catch(err => console.warn('Inventory recipes sync failed:', err));
+    }
+    setInterval(pollInventoryRecipes, 5000);
 </script>
 {% endblock %}

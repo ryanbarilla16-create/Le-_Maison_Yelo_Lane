@@ -167,7 +167,7 @@ def checkout():
     
     # --- ORDER VALIDATION LOGIC ---
     items_data = [{'menu_item_id': int(id), 'quantity': qty} for id, qty in items_to_checkout.items()]
-    is_valid, msg, status_override = validate_order(items_data, dining_option, payment_method, is_pos=False)
+    is_valid, msg, status_override = validate_order(items_data, dining_option, payment_method, is_pos=False, apply_lock=True)
     
     if not is_valid:
         flash(msg, "danger")
@@ -396,13 +396,13 @@ def add_order_review(order_id):
         order_id=order.id,
         rating=rating,
         comment=comment,
-        status='PENDING' # Requires admin approval by default
+        status='APPROVED' # Automatically approved
     )
     
     db.session.add(new_review)
     db.session.commit()
     
-    flash("Thank you for your review! It has been submitted for approval.", "success")
+    flash("Thank you for your review!", "success")
     return redirect(url_for('main.my_orders'))
 
 @main_bp.route('/order/<int:order_id>/receipt')

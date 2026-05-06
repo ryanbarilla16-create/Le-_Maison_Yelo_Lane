@@ -210,6 +210,7 @@
         <ul class="nav nav-left me-auto d-md-flex d-none align-items-center ms-4">
             <li class="nav-item"><a class="navTxt" href="{{ url_for('main.index') }}">HOME</a></li>
             <li class="nav-item"><a class="navTxt" href="{{ url_for('main.menu_page') }}">MENU</a></li>
+            <li class="nav-item"><a class="navTxt" href="{{ url_for('main.locations_page') }}">LOCATIONS</a></li>
             <li class="nav-item"><a class="navTxt" href="{{ url_for('main.about_page') }}">ABOUT</a></li>
             <li class="nav-item"><a class="navTxt" href="{{ url_for('main.reviews_page') }}">REVIEWS</a></li>
         </ul>
@@ -482,7 +483,7 @@
         // Initial count update
         updateNotifCount();
         // Refresh count every 30s
-        setInterval(updateNotifCount, 30000);
+        setInterval(updateNotifCount, 5000);
 
     });
 

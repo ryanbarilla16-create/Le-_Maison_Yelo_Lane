@@ -399,11 +399,16 @@
     }
 </style>
 
+<div id="adminReservationsContainer">
 <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-3">
     <div>
-        <h1 style="font-family: 'Playfair Display', serif; font-weight: 800; color: #3E2723;">Reservations</h1>
-        <p style="color: #8B634B; opacity: 0.8; font-weight: 500;">Manage incoming table bookings and exclusive events.
-        </p>
+        <h1 style="font-family: 'Playfair Display', serif; font-weight: 800; color: #3E2723;">
+            Reservations
+            <span id="syncIndicator" style="font-size: 0.72rem; color: #8b7355; opacity: 0.8; margin-left: 10px; font-weight: 500;">
+                <i class="fas fa-sync-alt fa-spin me-1"></i> Live Update (5s) • Last: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
+            </span>
+        </h1>
+        <p style="color: #8B634B; opacity: 0.8; font-weight: 500;">Manage incoming table bookings and exclusive events.</p>
     </div>
     <div class="filter-tabs"
         style="background: #fff; padding: 0.4rem; border-radius: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); margin: 0;">
@@ -419,6 +424,7 @@
     </div>
 </div>
 
+<div id="reservationsGridContainer">
 <div class="mb-3">
     <h3 style="font-size: 1.1rem; font-weight: 700; color: #5D4037;"><i class="fas fa-list me-2 opacity-50"></i>{{
         reservations.total }} Reservation{{ 's' if reservations.total != 1 else '' }}</h3>
@@ -528,11 +534,9 @@
                 <span style="font-size: 0.75rem; color: #9ca3af; font-weight: 600; font-style: italic;">No further
                     action</span>
                 {% endif %}
-            </div>
         </div>
     </div>
     {% endfor %}
-</div>
 </div>
 
 <div id="noReservationsState" class="empty-res-state" style="display: none;">
@@ -557,6 +561,7 @@
         Check back later.</p>
 </div>
 {% endif %}
+</div> <!-- end reservationsGridContainer -->
 
 <!-- Table Assignment Modal -->
 <div id="tableModal" class="table-modal">
@@ -685,5 +690,35 @@
             emptyState.style.display = visibleCount === 0 ? 'block' : 'none';
         }
     }
+
+    function pollAdminReservations() {
+        if (document.getElementById('tableModal').style.display === 'flex' || document.querySelector('.modal.show')) return;
+
+        fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            const ids = ['adminReservationsContainer', 'lastUpdateText'];
+            ids.forEach(id => {
+                const oldEl = document.getElementById(id);
+                const newEl = doc.getElementById(id);
+                if (oldEl && newEl && oldEl.innerHTML !== newEl.innerHTML) {
+                    oldEl.innerHTML = newEl.innerHTML;
+                    
+                    // Re-apply filter if active after content update
+                    const activeTab = document.querySelector('.filter-tab.active');
+                    if (activeTab) {
+                        filterReservations(activeTab.dataset.filter);
+                    }
+                }
+            });
+        })
+        .catch(err => console.warn('Admin Reservations sync failed:', err));
+    }
+
+    setInterval(pollAdminReservations, 5000);
 </script>
+</div> <!-- end adminReservationsContainer -->
 {% endblock %}

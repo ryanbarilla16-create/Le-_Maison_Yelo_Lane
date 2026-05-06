@@ -879,7 +879,7 @@ def api_checkout():
 
     # --- ORDER VALIDATION LOGIC ---
     from utils import validate_order
-    is_valid, msg, status_override = validate_order(cart_items, dining_option, payment_method, is_pos=False)
+    is_valid, msg, status_override = validate_order(cart_items, dining_option, payment_method, is_pos=False, apply_lock=True)
 
     if not is_valid:
         return jsonify({'success': False, 'message': msg}), 400
@@ -1116,7 +1116,7 @@ def api_add_review(order_id):
     if not rating or rating < 1 or rating > 5:
         return jsonify({'success': False, 'message': 'Rating must be 1-5.'}), 400
     
-    new_review = Review(user_id=user_id, order_id=order_id, rating=rating, comment=comment, status='PENDING')
+    new_review = Review(user_id=user_id, order_id=order_id, rating=rating, comment=comment, status='APPROVED')
     db.session.add(new_review)
     db.session.commit()
     

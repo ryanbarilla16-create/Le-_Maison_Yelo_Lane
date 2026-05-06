@@ -29,7 +29,12 @@
     {% endif %}
 {% endblock %}
 
-{% block page_title %}Stock Requests{% endblock %}
+{% block page_title %}
+    Stock Requests
+    <span id="syncIndicator" style="font-size: 0.72rem; color: #8b7355; opacity: 0.8; margin-left: 10px; font-weight: 500;">
+        <i class="fas fa-sync-alt fa-spin me-1"></i> Live Update (5s) • <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
+    </span>
+{% endblock %}
 {% block page_subtitle %}Manage and fulfill ingredient requests sent directly from the Kitchen.{% endblock %}
 
 {% block extra_style %}
@@ -160,6 +165,7 @@
 {% endblock %}
 
 {% block content %}
+<div id="stockRequestsContainer">
 
 {% set pending_list = [] %}
 {% set history_list = [] %}
@@ -394,5 +400,26 @@
     window.onclick = function(e) {
         if(e.target.classList.contains('modal-v2')) e.target.style.display = 'none';
     }
+    function pollStockRequests() {
+        if (document.querySelector('.modal-v2[style*="display: flex"]')) return;
+
+        fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            const ids = ['stockRequestsContainer', 'lastUpdateText'];
+            ids.forEach(id => {
+                const oldEl = document.getElementById(id);
+                const newEl = doc.getElementById(id);
+                if (oldEl && newEl) oldEl.innerHTML = newEl.innerHTML;
+            });
+        })
+        .catch(err => console.warn('Stock Requests sync failed:', err));
+    }
+
+    setInterval(pollStockRequests, 5000);
 </script>
+</div> <!-- end stockRequestsContainer -->
 {% endblock %}

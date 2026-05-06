@@ -3,10 +3,18 @@
 {% block title %}Inventory | Le Maison Kitchen{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <h1>Inventory Management</h1>
-    <p>Manage ingredients, suppliers, and track stock levels for all menu items.</p>
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <h1>Inventory Management</h1>
+        <p>Manage ingredients, suppliers, and track stock levels.
+            <span id="syncIndicator" style="font-size: 0.75rem; color: #8b7355; opacity: 0.8; margin-left: 10px;">
+                <i class="fas fa-sync-alt fa-spin me-1"></i> Real-time Sync (5s) • Last Update: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
+            </span>
+        </p>
+    </div>
 </div>
+
+<div id="inventoryMainContainer">
 
 <div class="stats-grid">
     <div class="stat-card stat-interactive" style="cursor: pointer; transition: transform 0.2s;" onclick="window.location.href='{{ url_for('admin.menu') }}'">
@@ -1566,6 +1574,50 @@
         link.click();
         document.body.removeChild(link);
     };
+</div> <!-- end inventoryMainContainer -->
+
+<script>
+    function pollInventory() {
+        if (document.querySelector('.modal.show') || document.querySelector('.da-modal-overlay.show')) return;
+        
+        // Preserve active tab
+        const activeTab = document.querySelector('.inv-tab:not([style*="display:none"])');
+        const activeTabId = activeTab ? activeTab.id : null;
+
+        fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            const ids = ['inventoryMainContainer', 'lastUpdateText'];
+            ids.forEach(id => {
+                const oldEl = document.getElementById(id);
+                const newEl = doc.getElementById(id);
+                if (oldEl && newEl && oldEl.innerHTML !== newEl.innerHTML) {
+                    oldEl.innerHTML = newEl.innerHTML;
+                    
+                    // If we updated the main container, we need to restore the tab display
+                    if (id === 'inventoryMainContainer' && activeTabId) {
+                        document.querySelectorAll('.inv-tab').forEach(t => t.style.display = 'none');
+                        const restoredTab = document.getElementById(activeTabId);
+                        if (restoredTab) restoredTab.style.display = 'block';
+                    }
+                }
+            });
+            
+            // Re-initialize dynamic listeners if any (e.g. tooltips)
+            if (window.bootstrap && window.bootstrap.Tooltip) {
+                const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                tooltipTriggerList.map(function (tooltipTriggerEl) {
+                    return new bootstrap.Tooltip(tooltipTriggerEl);
+                });
+            }
+        })
+        .catch(err => console.warn('Inventory sync failed:', err));
+    }
+
+    setInterval(pollInventory, 5000);
 </script>
 {% endblock %}
 {% endblock %}

@@ -41,7 +41,12 @@
 {% block page_title %}Kitchen Pantry{% endblock %}
 {% block page_subtitle %}
     <div style="display:flex; justify-content:space-between; align-items:center;">
-        <span>Monitor on-hand ingredients in the kitchen station</span>
+        <div>
+            <span>Monitor on-hand ingredients in the kitchen station</span>
+            <span id="syncIndicator" style="font-size: 0.72rem; color: var(--muted); opacity: 0.8; margin-left: 10px; font-weight: 500;">
+                <i class="fas fa-sync-alt fa-spin me-1"></i> Live Update (5s) • Last: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
+            </span>
+        </div>
         <button class="btn-primary" style="background:#5D4037; border:1px solid rgba(255,255,255,0.1); padding:6px 14px; font-size:0.75rem;" 
                 onclick="confirmEmergency()">
             <i class="fas fa-bolt me-1"></i> Emergency Fill (All to 100)
@@ -91,6 +96,7 @@
 {% endblock %}
 
 {% block content %}
+<div id="kitchenPantryContainer">
     <div class="alert alert-info" style="background:rgba(93,64,55,0.05); border-radius:15px; padding:15px; margin-bottom:25px; display:flex; gap:15px; align-items:center;">
         <i class="fas fa-info-circle" style="color:var(--primary);"></i>
         <p style="font-size:0.85rem; color:var(--muted); margin:0;">These are ingredients currently in the kitchen. Stock is deducted when you start cooking an order.</p>
@@ -100,7 +106,7 @@
         <div style="display: flex; align-items: center; gap: 12px;">
             <i class="fas fa-filter" style="color: var(--primary); font-size: 0.9rem;"></i>
             <label style="font-size: 0.85rem; font-weight: 700; color: var(--muted); white-space: nowrap;">Pantry Category:</label>
-            <select onchange="filterPantry(this.value)" style="padding: 10px 18px; border-radius: 12px; border: 1px solid rgba(93,64,55,0.12); background: #fdfbf9; font-size: 0.85rem; color: var(--text); cursor: pointer; outline: none; transition: all 0.2s;">
+            <select id="pantryCategorySelect" onchange="filterPantry(this.value)" style="padding: 10px 18px; border-radius: 12px; border: 1px solid rgba(93,64,55,0.12); background: #fdfbf9; font-size: 0.85rem; color: var(--text); cursor: pointer; outline: none; transition: all 0.2s;">
                 <option value="ALL">All Ingredients</option>
                 {% for cat in grouped_ingredients.keys() %}
                 <option value="{{ cat|replace(' ', '-')|lower }}">{{ cat }}</option>
@@ -117,24 +123,25 @@
         </div>
         <div class="pantry-grid">
             {% for ing in items %}
-            <div class="ing-card" id="card-{{ ing.id }}">
-                <button class="edit-btn" onclick="toggleEdit({{ ing.id }})"><i class="fas fa-pencil"></i></button>
+            {% set uniq_id = category|replace(' ', '')|replace('&', '') ~ '-' ~ ing.id %}
+            <div class="ing-card" id="card-{{ uniq_id }}">
+                <button class="edit-btn" onclick="toggleEdit('{{ uniq_id }}')"><i class="fas fa-pencil"></i></button>
                 <div class="name">{{ ing.name }}</div>
                 <div class="val-row">
-                    <span class="qty" id="qty-{{ ing.id }}">{{ "%.1f"|format(ing.kitchen_qty|float) }}</span>
+                    <span class="qty" id="qty-{{ uniq_id }}">{{ "%.1f"|format(ing.kitchen_qty|float) }}</span>
                     <span class="unit">{{ ing.unit }}</span>
                     {% if ing.kitchen_qty|float <= (ing.reorder_level|float / 2) %}
                         <span class="low-stock-pill">LOW</span>
                     {% endif %}
                 </div>
                 
-                <form class="edit-form" id="form-{{ ing.id }}" action="{{ url_for('kitchen_portal.kitchen_update_pantry') }}" method="POST">
+                <form class="edit-form" id="form-{{ uniq_id }}" action="{{ url_for('kitchen_portal.kitchen_update_pantry') }}" method="POST" onsubmit="savePantryItem(event, '{{ uniq_id }}')">
                     <input type="hidden" name="ingredient_id" value="{{ ing.id }}">
                     <label style="font-size:0.65rem; font-weight:800; color:var(--muted); text-transform:uppercase;">Update Stock:</label>
                     <input type="number" name="kitchen_qty" step="0.1" value="{{ ing.kitchen_qty|float }}" required>
                     <div style="display:flex; gap:5px;">
                         <button type="submit" class="btn-sm btn-save">Save</button>
-                        <button type="button" class="btn-sm btn-cancel" onclick="toggleEdit({{ ing.id }})">Cancel</button>
+                        <button type="button" class="btn-sm btn-cancel" onclick="toggleEdit('{{ uniq_id }}')">Cancel</button>
                     </div>
                 </form>
             </div>
@@ -143,7 +150,7 @@
     </div>
     {% endfor %}
 
-
+</div> <!-- end kitchenPantryContainer -->
 {% endblock %}
 
 {% block extra_script %}
@@ -158,6 +165,57 @@
             form.style.display = 'flex';
             valRow.style.display = 'none';
         }
+    }
+    
+    function savePantryItem(event, uniqId) {
+        event.preventDefault(); // Prevent full page reload
+        
+        const form = event.target;
+        const formData = new FormData(form);
+        const url = form.action;
+        
+        const saveBtn = form.querySelector('.btn-save');
+        saveBtn.disabled = true;
+        saveBtn.innerText = '...';
+        
+        const newQty = form.querySelector('input[name="kitchen_qty"]').value;
+        const ingId = form.querySelector('input[name="ingredient_id"]').value;
+
+        fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => {
+            if (response.ok) {
+                // Update ALL identical ingredients across different categories
+                const allForms = document.querySelectorAll(`.edit-form input[name="ingredient_id"][value="${ingId}"]`);
+                allForms.forEach(f => {
+                    const parentForm = f.closest('.edit-form');
+                    const targetUniqId = parentForm.id.replace('form-', '');
+                    
+                    // Sync the input values
+                    const qtyInput = parentForm.querySelector('input[name="kitchen_qty"]');
+                    if(qtyInput) qtyInput.value = newQty;
+                    
+                    // Sync the display text
+                    const displayEl = document.getElementById('qty-' + targetUniqId);
+                    if(displayEl) displayEl.innerText = parseFloat(newQty).toFixed(1);
+                    
+                    // Force close the edit form if it's open
+                    if(parentForm.style.display === 'flex') {
+                        toggleEdit(targetUniqId);
+                    }
+                });
+            } else {
+                alert("Failed to save changes. Please try again.");
+            }
+        })
+        .catch(err => console.error("Error saving:", err))
+        .finally(() => {
+            saveBtn.disabled = false;
+            saveBtn.innerText = 'Save';
+        });
     }
     
     function confirmEmergency() {
@@ -176,7 +234,38 @@
             }
         });
     }
+    function pollKitchenPantry() {
+        if (document.querySelector('form[id^="form-"][style*="flex"]')) return;
 
+        fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            // Save current filter selection
+            const selectEl = document.getElementById('pantryCategorySelect');
+            const currentFilter = selectEl ? selectEl.value : 'ALL';
+            
+            const ids = ['kitchenPantryContainer', 'lastUpdateText'];
+            ids.forEach(id => {
+                const oldEl = document.getElementById(id);
+                const newEl = doc.getElementById(id);
+                if (oldEl && newEl && oldEl.innerHTML !== newEl.innerHTML) {
+                    oldEl.innerHTML = newEl.innerHTML;
+                }
+            });
+            
+            // Re-apply filter and set select value
+            const newSelectEl = document.getElementById('pantryCategorySelect');
+            if (newSelectEl) {
+                newSelectEl.value = currentFilter;
+                filterPantry(currentFilter);
+            }
+        })
+        .catch(err => console.warn('Pantry sync failed:', err));
+    }
 
+    setInterval(pollKitchenPantry, 5000);
 </script>
 {% endblock %}

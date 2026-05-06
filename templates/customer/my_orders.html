@@ -538,14 +538,18 @@
         <div class="d-flex align-items-center gap-3">
             <a href="{{ url_for('main.index') }}" class="moBack"><i class="fas fa-arrow-left"></i> Back</a>
             <div class="moTitle">
-                <h2><i class="fas fa-shopping-bag me-2" style="color: #8B634B; font-size: 1.4rem;"></i>My
-                    Orders</h2>
-                <p>Track and manage all your orders</p>
+                <h2><i class="fas fa-shopping-bag me-2" style="color: #8B634B; font-size: 1.4rem;"></i>My Orders</h2>
+                <p>Track and manage all your orders 
+                   <span id="syncIndicator" style="font-size: 0.72rem; color: #8b7355; opacity: 0.8; margin-left: 10px; font-weight: 500;">
+                       <i class="fas fa-sync-alt fa-spin me-1"></i> Live Update (5s) • Last: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
+                   </span>
+                </p>
             </div>
         </div>
         <a href="{{ url_for('main.menu_page') }}" class="moOrderBtn"><i class="fas fa-plus"></i> Order More</a>
     </div>
 
+    <div id="customerOrdersContainer">
     <!-- Stats -->
     <div class="moStats">
         <div class="moStat">
@@ -954,29 +958,26 @@
             }).then(() => loadOrderChats());
         }
 
-        // Silent Order Status Auto-Refresh (Every 10s)
-        setInterval(async () => {
-            try {
-                const response = await fetch(window.location.href);
-                const html = await response.text();
+        function pollCustomerOrders() {
+            if (document.querySelector('.modal.show')) return;
+
+            fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(response => response.text())
+            .then(html => {
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
                 
-                // 1. Update the orders container
-                const newOrders = doc.getElementById('ordersContainer');
-                const oldOrders = document.getElementById('ordersContainer');
-                if (newOrders && oldOrders) {
-                    oldOrders.innerHTML = newOrders.innerHTML;
-                }
-
-                // 2. Update Stats (Counts)
-                const statHolders = document.querySelectorAll('.moStat h4');
-                const newStatHolders = doc.querySelectorAll('.moStat h4');
-                statHolders.forEach((s, i) => {
-                    if(newStatHolders[i]) s.innerText = newStatHolders[i].innerText;
+                const ids = ['customerOrdersContainer', 'lastUpdateText'];
+                ids.forEach(id => {
+                    const oldEl = document.getElementById(id);
+                    const newEl = doc.getElementById(id);
+                    if (oldEl && newEl) oldEl.innerHTML = newEl.innerHTML;
                 });
-            } catch (e) { console.error("Silent refresh failed", e); }
-        }, 10000);
+            })
+            .catch(err => console.warn('Customer Orders sync failed:', err));
+        }
+
+        setInterval(pollCustomerOrders, 5000);
     </script>
 </main>
 {% endblock %}

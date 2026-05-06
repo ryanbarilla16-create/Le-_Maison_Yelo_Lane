@@ -93,18 +93,44 @@
         <div class="col-12 col-lg-4 mb-4 d-flex flex-column align-items-lg-end justify-content-start">
             <div
                 style="font-family: 'Playfair Display', 'Georgia', serif; font-weight: 700; font-size: 1.4rem; color: #fff; margin-bottom: 1rem;">
-                <i class="fas fa-coffee" style="color: #8B634B; margin-right: 8px;"></i> Le maison yelo Lane
+                <i class="fas fa-coffee" style="color: #8B634B; margin-right: 8px;"></i> {{ site.footer.address_text }}
             </div>
             <p
                 style="font-size: 0.8rem; color: rgba(255,255,255,0.5); text-align: lg-right; margin-bottom: 1.5rem; max-width: 300px;">
                 Crafting exceptional coffee experiences in the heart of Pagsanjan.
             </p>
             <div class="d-flex gap-3 mb-3">
+                {% if site.footer.facebook_link %}
                 <a href="{{ site.footer.facebook_link }}" target="_blank"
                     style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; color: #fff; transition: all 0.3s; text-decoration: none; border: 1px solid rgba(255,255,255,0.1);"
                     onmouseover="this.style.background='linear-gradient(135deg, #5D4037, #795548)'; this.style.borderColor='transparent'; this.style.transform='translateY(-3px)'"
                     onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='rgba(255,255,255,0.1)'; this.style.transform='translateY(0)'"><i
                         class="fab fa-facebook-f"></i></a>
+                {% endif %}
+                
+                {% if site.footer.instagram_link %}
+                <a href="{{ site.footer.instagram_link }}" target="_blank"
+                    style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; color: #fff; transition: all 0.3s; text-decoration: none; border: 1px solid rgba(255,255,255,0.1);"
+                    onmouseover="this.style.background='linear-gradient(135deg, #833ab4, #fd1d1d)'; this.style.borderColor='transparent'; this.style.transform='translateY(-3px)'"
+                    onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='rgba(255,255,255,0.1)'; this.style.transform='translateY(0)'"><i
+                        class="fab fa-instagram"></i></a>
+                {% endif %}
+
+                {% if site.footer.twitter_link %}
+                <a href="{{ site.footer.twitter_link }}" target="_blank"
+                    style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; color: #fff; transition: all 0.3s; text-decoration: none; border: 1px solid rgba(255,255,255,0.1);"
+                    onmouseover="this.style.background='linear-gradient(135deg, #1DA1F2, #0D8ECF)'; this.style.borderColor='transparent'; this.style.transform='translateY(-3px)'"
+                    onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='rgba(255,255,255,0.1)'; this.style.transform='translateY(0)'"><i
+                        class="fab fa-twitter"></i></a>
+                {% endif %}
+
+                {% if site.footer.youtube_link %}
+                <a href="{{ site.footer.youtube_link }}" target="_blank"
+                    style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; color: #fff; transition: all 0.3s; text-decoration: none; border: 1px solid rgba(255,255,255,0.1);"
+                    onmouseover="this.style.background='linear-gradient(135deg, #FF0000, #CC0000)'; this.style.borderColor='transparent'; this.style.transform='translateY(-3px)'"
+                    onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='rgba(255,255,255,0.1)'; this.style.transform='translateY(0)'"><i
+                        class="fab fa-youtube"></i></a>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -135,8 +161,7 @@
             </ul>
         </div>
         <div class="col-md-4 text-md-end mt-3 mt-md-0">
-            <span style="font-size: 0.75rem; color: rgba(255,255,255,0.4);">© 2026 Le maison yelo Lane. All rights
-                reserved.</span>
+            <span style="font-size: 0.75rem; color: rgba(255,255,255,0.4);">{{ site.footer.copyright_text }}</span>
         </div>
     </div>
 </footer>

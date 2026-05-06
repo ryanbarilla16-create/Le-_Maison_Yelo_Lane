@@ -12,7 +12,12 @@
 {% endblock %}
 
 {% block page_title %}First-In, First-Out Batches{% endblock %}
-{% block page_subtitle %}Track ingredient freshness and purchase history{% endblock %}
+{% block page_subtitle %}
+    Track ingredient freshness and purchase history
+    <span id="syncIndicator" style="font-size: 0.72rem; color: var(--muted); opacity: 0.8; margin-left: 10px; font-weight: 500;">
+        <i class="fas fa-sync-alt fa-spin me-1"></i> Live Update (5s) • Last: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
+    </span>
+{% endblock %}
 
 {% block extra_style %}
 <style>
@@ -30,6 +35,7 @@
 {% endblock %}
 
 {% block content %}
+<div id="batchesContainer">
 <div class="fifo-stats">
     <div class="fifo-stat-card">
         <div class="stat-icon-wrap" style="background: rgba(93, 64, 55, 0.1); color: var(--primary);"><i class="fas fa-boxes-stacked"></i></div>
@@ -137,8 +143,10 @@
             </div>
         </form>
     </div>
-</div>
+</div> <!-- end batchesContainer -->
+{% endblock %}
 
+{% block extra_script %}
 <script>
     function applyStaffFilter() {
         const cat = document.getElementById('batchCategoryFilterStaff').value;
@@ -152,6 +160,28 @@
         });
         document.getElementById('filterSubtext').innerText = cat === 'ALL' ? `Total: ${visible} batches` : `${visible} in ${cat}`;
     }
-    document.addEventListener('DOMContentLoaded', applyStaffFilter);
+    function pollBatches() {
+        if (document.getElementById('staffAddBatchModal').style.display === 'flex') return;
+
+        fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            const ids = ['batchesContainer', 'lastUpdateText'];
+            ids.forEach(id => {
+                const oldEl = document.getElementById(id);
+                const newEl = doc.getElementById(id);
+                if (oldEl && newEl) oldEl.innerHTML = newEl.innerHTML;
+            });
+            
+            // Re-apply filter
+            applyStaffFilter();
+        })
+        .catch(err => console.warn('Batches sync failed:', err));
+    }
+
+    setInterval(pollBatches, 5000);
 </script>
 {% endblock %}

@@ -14,7 +14,7 @@
     <i class="fas fa-chevron-down toggle-icon"></i>
 </div>
 <div id="group-management" class="nav-group">
-    <a class="nav-item {% if request.endpoint == 'admin.reservations' %}active{% endif %}" href="{{ url_for('admin.reservations') }}">
+    <a class="nav-item {% if request.endpoint == 'cashier_portal.cashier_reservations' %}active{% endif %}" href="{{ url_for('cashier_portal.cashier_reservations') }}">
         <i class="fas fa-calendar-alt"></i> Reservations
     </a>
     <a class="nav-item {% if request.endpoint == 'cashier_portal.cashier_billing' %}active{% endif %}" href="{{ url_for('cashier_portal.cashier_billing') }}">

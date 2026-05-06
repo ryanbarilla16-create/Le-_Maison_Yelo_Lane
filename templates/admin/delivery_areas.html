@@ -3,156 +3,668 @@
 {% block content %}
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 style="font-family:'Georgia',serif;color:var(--text-main);font-size:2rem;font-weight:bold;margin:0;">
-        <i class="fas fa-map-marker-alt me-2"></i>Delivery Areas
-    </h1>
+    <div>
+        <h1 style="font-family:'Georgia',serif;color:var(--text-main);font-size:2rem;font-weight:bold;margin:0;">
+            <i class="fas fa-map-marker-alt me-2"></i>Delivery Areas
+        </h1>
+        <p style="margin: 0; font-size: 0.85rem; color: #8B634B; font-weight: 600;">Configure service zones and
+            coverage.
+            <span id="syncIndicator"
+                style="font-size: 0.75rem; color: #8b7355; opacity: 0.8; margin-left: 10px; font-weight: 500;">
+                <i class="fas fa-sync-alt fa-spin me-1"></i> Real-time Sync (5s) • Last Update: <span
+                    id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
+            </span>
+        </p>
+    </div>
     <button class="btn-admin-primary px-4 py-2" onclick="openAddModal()"
         style="border-radius:10px;border:none;font-weight:700;font-size:0.85rem;">
         <i class="fas fa-plus me-1"></i> Add Area
     </button>
 </div>
 
-<style>
-    .da-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:1.5rem; }
-    .da-card { background:#fff; border-radius:16px; border:1px solid rgba(139,99,75,0.1); box-shadow:0 8px 25px rgba(0,0,0,0.03); transition:all 0.3s; position:relative; overflow:hidden; }
-    .da-card:hover { transform:translateY(-3px); box-shadow:0 12px 35px rgba(139,99,75,0.08); }
-    .da-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:8px; background:linear-gradient(180deg,#8B634B,#5D4037); }
-    .da-body { padding:1.25rem 1.25rem 1.25rem 1.75rem; }
-    .da-muni { font-family:'Playfair Display',serif; font-weight:900; font-size:1.2rem; color:#3E2723; margin:0 0 4px; }
-    .da-coords { font-size:0.72rem; color:#a48c7e; font-weight:600; margin-bottom:0.75rem; }
-    .da-brgys { font-size:0.78rem; color:#6D4C41; line-height:1.6; max-height:80px; overflow:hidden; position:relative; }
-    .da-brgys.expanded { max-height:none; }
-    .da-brgys-fade { position:absolute; bottom:0; left:0; right:0; height:30px; background:linear-gradient(transparent,#fff); pointer-events:none; }
-    .da-footer { display:flex; justify-content:space-between; align-items:center; padding:0.75rem 1.25rem 0.75rem 1.75rem; border-top:1px dashed rgba(139,99,75,0.1); }
-    .da-badge-active { background:#f0f4ef; color:#577551; border:1px solid #dce5d9; padding:0.25rem 0.75rem; border-radius:50px; font-size:0.72rem; font-weight:800; }
-    .da-badge-inactive { background:#f5f5f5; color:#757575; border:1px solid #e0e0e0; padding:0.25rem 0.75rem; border-radius:50px; font-size:0.72rem; font-weight:800; }
-    .da-actions { display:flex; gap:0.4rem; }
-    .da-btn { width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:none; cursor:pointer; font-size:0.75rem; transition:all 0.2s; }
-    .da-btn-edit { background:#fdf6e9; color:#c2934d; border:1px solid #f6e6cd; }
-    .da-btn-edit:hover { background:#faeccd; }
-    .da-btn-toggle { background:#e8f5e9; color:#388e3c; border:1px solid #c8e6c9; }
-    .da-btn-toggle:hover { background:#c8e6c9; }
-    .da-btn-delete { background:#f8f3f0; color:#8a4a41; border:1px solid #eed7d3; }
-    .da-btn-delete:hover { background:#eed7d3; }
-    /* Modal */
-    .da-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:3000; display:none; align-items:center; justify-content:center; }
-    .da-modal-overlay.show { display:flex; }
-    .da-modal { background:#fdfaf7; border-radius:20px; width:100%; max-width:560px; max-height:90vh; overflow-y:auto; box-shadow:0 30px 80px rgba(0,0,0,0.2); }
-    .da-modal-header { background:linear-gradient(135deg,#5D4037,#8B634B); padding:1.25rem 1.5rem; border-radius:20px 20px 0 0; display:flex; justify-content:space-between; align-items:center; }
-    .da-modal-body { padding:1.5rem; }
-    .da-label { font-size:0.78rem; font-weight:700; color:#5D4037; text-transform:uppercase; letter-spacing:0.4px; margin-bottom:5px; display:block; }
-    .da-input { border:1.5px solid rgba(139,99,75,0.2)!important; border-radius:10px!important; font-size:0.9rem; color:#3E2723; background:#fff!important; padding:0.55rem 0.85rem; width:100%; transition:border-color 0.2s; }
-    .da-input:focus { border-color:#8B634B!important; outline:none; box-shadow:0 0 0 3px rgba(139,99,75,0.1)!important; }
-    .da-textarea { resize:vertical; min-height:100px; }
-    #mapPreview { height:220px; border-radius:12px; border:1.5px solid rgba(139,99,75,0.2); margin-top:0.5rem; }
-</style>
+<div id="daGridContainer">
 
-<div class="da-grid" id="daGrid">
-    {% for area in areas %}
-    <div class="da-card" id="da-card-{{ area.id }}">
-        <div class="da-body">
-            <div class="d-flex justify-content-between align-items-start">
-                <h3 class="da-muni">{{ area.municipality }}</h3>
-                <span class="da-badge-{{ 'active' if area.is_active else 'inactive' }}" id="da-badge-{{ area.id }}">
-                    {{ 'Active' if area.is_active else 'Inactive' }}
-                </span>
+    <style>
+        .da-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .da-card {
+            background: #fff;
+            border-radius: 24px;
+            border: 1px solid rgba(139, 99, 75, 0.08);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02);
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .da-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(139, 99, 75, 0.12);
+            border-color: rgba(139, 99, 75, 0.2);
+        }
+
+        .da-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 6px;
+            background: #8B634B;
+            opacity: 0.8;
+        }
+
+        .da-body {
+            padding: 1.5rem 1.5rem 1.25rem 2rem;
+        }
+
+        .da-muni {
+            font-family: 'Georgia', serif;
+            font-weight: 800;
+            font-size: 1.4rem;
+            color: #2d2520;
+            margin: 0;
+            letter-spacing: -0.5px;
+        }
+
+        .da-branch-tag {
+            font-size: 0.65rem;
+            color: #8B634B;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 4px;
+            opacity: 0.8;
+        }
+
+        .da-coords {
+            font-size: 0.75rem;
+            color: #a48c7e;
+            font-weight: 600;
+            margin: 1rem 0 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .da-brgys {
+            font-size: 0.85rem;
+            color: #5d4037;
+            line-height: 1.7;
+            max-height: 100px;
+            overflow: hidden;
+            position: relative;
+            font-weight: 500;
+        }
+
+        .da-brgys.expanded {
+            max-height: none;
+        }
+
+        .da-brgys-fade {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 40px;
+            background: linear-gradient(transparent, rgba(255, 255, 255, 0.95));
+            pointer-events: none;
+        }
+
+        .da-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem 1.25rem 2rem;
+            background: #fafafa;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .da-badge-active {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+            padding: 0.35rem 1rem;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 800;
+        }
+
+        .da-badge-inactive {
+            background: #fff1f0;
+            color: #cf1322;
+            border: 1px solid #ffa39e;
+            padding: 0.35rem 1rem;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 800;
+        }
+
+        .da-actions {
+            display: flex;
+            gap: 0.6rem;
+        }
+
+        .da-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .da-btn-edit {
+            background: #fff;
+            color: #8B634B;
+            border: 1.5px solid #e8e0d8;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .da-btn-edit:hover {
+            background: #8B634B;
+            color: #fff;
+            border-color: #8B634B;
+        }
+
+        .da-btn-toggle {
+            background: #fff;
+            color: #2e7d32;
+            border: 1.5px solid #e8f5e9;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .da-btn-toggle:hover {
+            background: #2e7d32;
+            color: #fff;
+            border-color: #2e7d32;
+        }
+
+        .da-btn-delete {
+            background: #fff;
+            color: #cf1322;
+            border: 1.5px solid #fff1f0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .da-btn-delete:hover {
+            background: #cf1322;
+            color: #fff;
+            border-color: #cf1322;
+        }
+
+        /* Smart Suggestions */
+        /* Smart Status - Lowkey */
+        .smart-status {
+            font-size: 0.72rem;
+            color: #2e7d32;
+            margin-top: 6px;
+            display: none;
+            align-items: center;
+            gap: 5px;
+            font-weight: 700;
+            transition: all 0.3s;
+            opacity: 0;
+        }
+
+        .smart-status.visible {
+            display: flex;
+            opacity: 1;
+        }
+
+        .smart-status i {
+            font-size: 0.8rem;
+        }
+
+        /* MODAL CSS FIX */
+        .da-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(45, 37, 32, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        .da-modal-overlay.show {
+            display: flex;
+        }
+
+        .da-modal {
+            background: #fff;
+            border-radius: 28px;
+            width: 100%;
+            max-width: 640px;
+            max-height: 92vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
+            animation: modalSlide 0.3s ease-out;
+        }
+
+        @keyframes modalSlide {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .da-modal-header {
+            background: linear-gradient(135deg, #5D4037, #8B634B);
+            padding: 1.5rem 2rem;
+            border-radius: 28px 28px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .da-modal-body {
+            padding: 2rem;
+        }
+
+        .da-label {
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: #5D4037;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .da-input {
+            border: 1.5px solid #e8e0d8 !important;
+            border-radius: 12px !important;
+            font-size: 0.95rem;
+            color: #2d2520;
+            background: #fff !important;
+            padding: 0.75rem 1rem;
+            width: 100%;
+            transition: all 0.2s;
+        }
+
+        .da-input:focus {
+            border-color: #8B634B !important;
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(139, 99, 75, 0.12) !important;
+            background: #fff !important;
+        }
+
+        .da-textarea {
+            resize: vertical;
+            min-height: 120px;
+            line-height: 1.6;
+        }
+
+        #mapPreview {
+            height: 200px;
+            border-radius: 16px;
+            border: 1.5px solid #e8e0d8;
+            margin-top: 0.5rem;
+        }
+    </style>
+
+    <div id="daGrid">
+        {% set branches = ['Pagsanjan', 'Lucban'] %}
+        {% for branch_name in branches %}
+        <div class="branch-section mb-5">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <h2
+                    style="font-family:'Georgia',serif; color:#3E2723; font-size:1.6rem; font-weight:bold; margin:0; display:flex; align-items:center; gap:15px;">
+                    <span
+                        style="width:40px; height:40px; background:#8B634B; color:#fff; display:flex; align-items:center; justify-content:center; border-radius:12px; font-size:1rem;">
+                        <i class="fas fa-store"></i>
+                    </span>
+                    {{ branch_name }} Branch Locations
+                    <span
+                        style="font-size:0.8rem; background:rgba(139,99,75,0.1); color:#8B634B; padding:5px 15px; border-radius:50px; font-weight:700; letter-spacing:0.5px;">
+                        {{ grouped_areas[branch_name]|length if grouped_areas[branch_name] else 0 }} SERVICED AREAS
+                    </span>
+                </h2>
             </div>
-            {% if area.lat and area.lng %}
-            <div class="da-coords"><i class="fas fa-map-pin me-1"></i>{{ "%.4f"|format(area.lat) }}, {{ "%.4f"|format(area.lng) }}</div>
-            {% endif %}
-            <div class="da-brgys" id="da-brgys-{{ area.id }}">
-                {{ area.barangays_list()|join(', ') }}
-                <div class="da-brgys-fade" id="da-fade-{{ area.id }}"></div>
+
+            <div class="da-grid">
+                {% if grouped_areas[branch_name] %}
+                {% for area in grouped_areas[branch_name]|sort(attribute='municipality') %}
+                <div class="da-card" id="da-card-{{ area.id }}">
+                    <div class="da-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="d-flex flex-column">
+                                <h3 class="da-muni">{{ area.municipality }}</h3>
+                                <div class="da-branch-tag"><i class="fas fa-location-dot"></i>{{ branch_name }} Zone
+                                </div>
+                            </div>
+                            <span class="da-badge-{{ 'active' if area.is_active else 'inactive' }}"
+                                id="da-badge-{{ area.id }}">
+                                {{ 'Active' if area.is_active else 'Inactive' }}
+                            </span>
+                        </div>
+
+                        <div class="da-coords">
+                            <i class="fas fa-map-pin" style="color:#D4A862;"></i>
+                            {% if area.lat and area.lng %}
+                            {{ "%.4f"|format(area.lat) }}, {{ "%.4f"|format(area.lng) }}
+                            {% else %}
+                            Location Pin Not Set
+                            {% endif %}
+                        </div>
+
+                        <div class="da-brgys" id="da-brgys-{{ area.id }}">
+                            {{ area.barangays_list()|join(', ') }}
+                            <div class="da-brgys-fade" id="da-fade-{{ area.id }}"></div>
+                        </div>
+                        <button type="button" onclick="toggleBrgys({{ area.id }})" id="da-expand-{{ area.id }}"
+                            style="background:none;border:none;color:#8B634B;font-size:0.75rem;font-weight:700;cursor:pointer;padding:8px 0 0; text-decoration: underline;">
+                            View All {{ area.barangays_list()|length }} Barangays
+                        </button>
+                    </div>
+                    <div class="da-footer">
+                        <div class="da-actions">
+                            <button class="da-btn da-btn-edit" title="Edit Details" data-id="{{ area.id }}"
+                                data-muni="{{ area.municipality }}" data-branch="{{ area.branch }}"
+                                data-brgys="{{ area.barangays_list()|join('\n')|e }}" data-lat="{{ area.lat or '' }}"
+                                data-lng="{{ area.lng or '' }}" onclick="openEditFromBtn(this)">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="da-btn da-btn-toggle" title="Toggle Service Status"
+                                id="da-toggle-{{ area.id }}" onclick="toggleArea({{ area.id }}, this)">
+                                <i class="fas fa-{{ 'pause' if area.is_active else 'play' }}"></i>
+                            </button>
+                            <button class="da-btn da-btn-delete" title="Remove Area" data-id="{{ area.id }}"
+                                data-name="{{ area.municipality }}" onclick="deleteAreaFromBtn(this)">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div
+                    style="grid-column:1/-1;text-align:center;padding:4rem 2rem;background:#fff;border-radius:24px;border:2px dashed #f0e6e0;">
+                    <div
+                        style="width:60px; height:60px; background:#fdfaf7; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 1rem;">
+                        <i class="fas fa-map-marked-alt" style="font-size:1.5rem;color:#d1c4bc;"></i>
+                    </div>
+                    <h4 style="font-family:'Georgia',serif;color:#3E2723; margin-bottom:5px;">No assigned areas</h4>
+                    <p style="color:#a48c7e; font-size:0.85rem; margin:0;">Click "Add Area" and assign it to the {{
+                        branch_name }} branch.</p>
+                </div>
+                {% endif %}
             </div>
-            <button type="button" onclick="toggleBrgys({{ area.id }})" id="da-expand-{{ area.id }}"
-                style="background:none;border:none;color:#8B634B;font-size:0.72rem;font-weight:700;cursor:pointer;padding:4px 0 0;">
-                Show all {{ area.barangays_list()|length }} barangays ▾
-            </button>
         </div>
-        <div class="da-footer">
-            <span style="font-size:0.75rem;color:#a48c7e;font-weight:600;">
-                <i class="fas fa-map-marker-alt me-1"></i>{{ area.barangays_list()|length }} barangays
-            </span>
-            <div class="da-actions">
-                <button class="da-btn da-btn-edit" title="Edit"
-                    data-id="{{ area.id }}"
-                    data-muni="{{ area.municipality }}"
-                    data-brgys="{{ area.barangays_list()|tojson|e }}"
-                    data-lat="{{ area.lat or '' }}"
-                    data-lng="{{ area.lng or '' }}"
-                    onclick="openEditFromBtn(this)">
-                    <i class="fas fa-pen"></i>
-                </button>
-                <button class="da-btn da-btn-toggle" title="Toggle Active" id="da-toggle-{{ area.id }}"
-                    onclick="toggleArea({{ area.id }}, this)">
-                    <i class="fas fa-{{ 'pause' if area.is_active else 'play' }}"></i>
-                </button>
-                <button class="da-btn da-btn-delete" title="Delete"
-                    data-id="{{ area.id }}"
-                    data-name="{{ area.municipality }}"
-                    onclick="deleteAreaFromBtn(this)">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>
-        </div>
+        {% endfor %}
     </div>
-    {% else %}
-    <div id="da-empty" style="grid-column:1/-1;text-align:center;padding:4rem 2rem;background:#fff;border-radius:20px;border:1px dashed rgba(139,99,75,0.2);">
-        <i class="fas fa-map-marked-alt" style="font-size:3rem;color:rgba(139,99,75,0.2);margin-bottom:1rem;display:block;"></i>
-        <h3 style="font-family:'Playfair Display',serif;color:#3E2723;">No delivery areas yet</h3>
-        <p style="color:#8D6E63;">Click "Add Area" to configure your first delivery zone.</p>
-    </div>
-    {% endfor %}
-</div>
+</div> <!-- end daGridContainer -->
+
+<script>
+    // Smart Barangay Database
+    const SMART_LOCATIONS = {
+        'Pagsanjan': { // LAGUNA (30 Towns)
+            'Alaminos': { coords: [14.0614, 121.2464], brgys: ['Barangay I', 'Barangay II', 'Barangay III', 'Barangay IV', 'Del Carmen', 'Palma', 'San Agustin', 'San Andres', 'San Gregorio', 'San Jose', 'San Juan', 'San Miguel', 'San Roque', 'Santa Rosa'] },
+            'Bay': { coords: [14.1833, 121.2833], brgys: ['Bitin', 'Calo', 'Dila', 'Maitim', 'Masaya', 'Paciano Rizal', 'Puypuy', 'San Antonio', 'San Isidro', 'San Nicolas', 'Santa Cruz', 'Santo Domingo', 'Tagumpay', 'Tranca'] },
+            'Biñan': { coords: [14.3333, 121.0833], brgys: ['Biñan (Poblacion)', 'Canlalay', 'Casile', 'De La Paz', 'Dela Paz', 'Ganado', 'Langkiwa', 'Loma', 'Malaban', 'Malamig', 'Mamplasan', 'Platero', 'San Antonio', 'San Francisco', 'San Jose', 'San Vicente', 'Santo Niño', 'Santo Tomas', 'Soro-soro', 'Timbao', 'Zapote'] },
+            'Cabuyao': { coords: [14.2833, 121.1333], brgys: ['Banay-banay', 'Banlic', 'Bigaa', 'Butong', 'Casile', 'Diezmo', 'Gulod', 'Mamatid', 'Marinig', 'Niugan', 'Pittland', 'Poblacion Uno', 'Poblacion Dos', 'Poblacion Tres', 'Pulo', 'Sala', 'San Isidro'] },
+            'Calamba': { coords: [14.2167, 121.1667], brgys: ['Bagong Kalsada', 'Bañadero', 'Barandal', 'Barangay 1', 'Barangay 2', 'Barangay 3', 'Batino', 'Bubuyan', 'Bucal', 'Bunggo', 'Burol', 'Canlubang', 'Halang', 'La Mesa', 'Laguerta', 'Lawa', 'Lecheria', 'Lingga', 'Mabato', 'Majada Labas', 'Makiling', 'Palingon', 'Parian', 'Poblacion', 'Punta', 'Real', 'Saimsim', 'Sampiruhan', 'San Cristobal', 'San Jose', 'San Juan', 'Sirang Lupa', 'Sucol', 'Turbina', 'Uwisan'] },
+            'Calauan': { coords: [14.1500, 121.3167], brgys: ['Balayhangin', 'Bangyas', 'Dayap', 'Hanggan', 'Imok', 'Kanluran', 'Lamot 1', 'Lamot 2', 'Limao', 'Mabacan', 'Masiit', 'Paliparan', 'Perez', 'Prinza', 'San Isidro', 'Santo Tomas'] },
+            'Cavinti': { coords: [14.2461, 121.5056], brgys: ['Anglas', 'Bangco', 'Bukal', 'Bulajo', 'Cansuso', 'Duhat', 'Inao-Awan', 'Kanluran Talaongan', 'Labayo', 'Layasin', 'Layug', 'Mahipon', 'Paowin', 'Poblacion', 'Silangan Talaongan', 'Sisilmin', 'Sumucab', 'Tibatib', 'Udia'] },
+            'Famy': { coords: [14.4333, 121.4500], brgys: ['Asana', 'Bacong-Sigsigan', 'Bagong Pag-asa', 'Balitoc', 'Banaba', 'Batuhan', 'Bulihan', 'Caballero', 'Calumpang', 'Cuevas', 'Katuyas', 'Liyang', 'Mahetac', 'Minayutan', 'Pangil', 'Salang-bato', 'Tunhac'] },
+            'Kalayaan': { coords: [14.3524, 121.5117], brgys: ['Longos', 'San Juan', 'San Jose'] },
+            'Liliw': { coords: [14.1333, 121.4333], brgys: ['Bayate', 'Bongkol', 'Bubukal', 'Cabuyew', 'Calumpang', 'Culabat', 'Dagatan', 'Daniw', 'Ibabang Palina', 'Ibabang San Roque', 'Ilayang Palina', 'Ilayang San Roque', 'Kanluran Uno', 'Kanluran Dos', 'Luquin', 'Malabo-Kalantukan', 'Masikap', 'Mojon', 'Novillos', 'Oogong', 'Pag-asa', 'Poblacion', 'Puntod', 'Rizal', 'San Isidro', 'Santa Maria', 'Tuy-Baanan'] },
+            'Los Baños': { coords: [14.1667, 121.2167], brgys: ['Anos', 'Bagong Silang', 'Bambang', 'Batong Malake', 'Baybayin', 'Bayog', 'Lalakay', 'Maahas', 'Malinta', 'Mayondon', 'Putho-Tuntungin', 'San Antonio', 'Tadlac', 'UPLB'] },
+            'Luisiana': { coords: [14.1833, 121.5083], brgys: ['De La Paz', 'San Antonio', 'San Buenaventura', 'San Diego', 'San Isidro', 'San Jose', 'San Juan', 'San Luis', 'San Pablo', 'San Pedro', 'San Rafael', 'San Roque', 'San Salvador', 'San Vicente', 'Santa Catalina', 'Santa Cruz', 'Santa Lucia', 'Santo Domingo', 'Santo Tomas'] },
+            'Lumban': { coords: [14.3014, 121.4589], brgys: ['Bagong Silang', 'Balimbingan', 'Balubad', 'Caliraya', 'Concepcion', 'Luwac', 'Maracta', 'Maytalang I', 'Maytalang II', 'Primeiro Distrito', 'Salac', 'Santo Niño', 'Segundo Distrito', 'Talahib', 'Talongue', 'Wawa'] },
+            'Mabitac': { coords: [14.4333, 121.4167], brgys: ['Amuyong', 'Lambac', 'Lucong', 'Matalatala', 'Nanguma', 'Poblacion', 'San Antonio', 'San Francisco', 'San Jose', 'San Vicente'] },
+            'Magdalena': { coords: [14.1989, 121.4286], brgys: ['Alipit', 'Baanan', 'Balanac', 'Bucal', 'Buenavista', 'Bungkol', 'Burol', 'Capayapaan', 'Cigaras', 'Halayhayin', 'Ibabang Atingay', 'Ibabang Butnong', 'Ilayang Atingay', 'Ilayang Butnong', 'Ilog', 'Malaking Ambling', 'Mali-mali', 'Mamatid', 'Poblacion', 'Sabang', 'Salasad', 'Tanawan', 'Tipunan', 'Unson'] },
+            'Majayjay': { coords: [14.1436, 121.5036], brgys: ['Bakia', 'Bukal', 'Burgos', 'Gagalot', 'Ibabang Banga', 'Ibabang Bayucain', 'Ilayang Banga', 'Ilayang Bayucain', 'Isabang', 'Malinao', 'May-it', 'Munting Kawayan', 'Olla', 'Origuel', 'Panalaban', 'Pangil', 'Panglan', 'Piit', 'Poblacion', 'San Francisco', 'San Miguel', 'Santa Catalina', 'Suba', 'Talortor', 'Tanawan', 'Taytay'] },
+            'Nagcarlan': { coords: [14.1333, 121.4167], brgys: ['Abo', 'Alibungbungan', 'Alumbrado', 'Balayong', 'Balimbing', 'Balite', 'Banca-banca', 'Bangcuro', 'Banago', 'Bitaoy', 'Bucal', 'Bunga', 'Buenavista', 'Buboy', 'Calumpang', 'Kanluran Lazaan', 'Ilayang Lazaan', 'Labangan', 'Lawaguin', 'Malaya', 'Malinao', 'Manaol', 'Maravilla', 'Nagcarlan', 'Oobi', 'Poblacion', 'Rizal', 'San Francisco', 'San Jose', 'San Juan', 'San Vicente', 'Santa Lucia', 'Sulsuguin', 'Talangan', 'Taytay', 'Tibatib'] },
+            'Paete': { coords: [14.3592, 121.4820], brgys: ['Barangay 1', 'Barangay 2', 'Barangay 3', 'Barangay 4', 'Barangay 5', 'Barangay 6', 'Barangay 7', 'Barangay 8', 'Barangay 9'] },
+            'Pagsanjan': { coords: [14.2721, 121.4502], brgys: ['Anibong', 'Biñan', 'Buboy', 'Cabanbanan', 'Calusiche', 'Dingin', 'Lambac', 'Layugan', 'Magdapio', 'Maulawin', 'Pinagsanjan', 'Sabang', 'Sampaloc', 'San Isidro', 'Barangay I (Poblacion)', 'Barangay II (Poblacion)'] },
+            'Pakil': { coords: [14.3822, 121.4789], brgys: ['Baño', 'Banilan', 'Burgos', 'Casa Real', 'Dorado', 'Gonzales', 'Kabulusan', 'Matikiw', 'Panglan', 'Poblacion', 'Rizal', 'Tavera', 'Tibastro'] },
+            'Pangil': { coords: [14.4022, 121.4633], brgys: ['Balian', 'Isla', 'Natividad', 'Poblacion', 'San Jose', 'Sulib', 'Tabon'] },
+            'Pila': { coords: [14.2333, 121.3667], brgys: ['Aplaya', 'Bagong Pook', 'Bukal', 'Bulilan Sur', 'Concepcion', 'Labuin', 'Linga', 'Masico', 'Mojon', 'Pansol', 'Pinagbayanan', 'Poblacion', 'San Antonio', 'San Miguel', 'Santa Clara Norte', 'Santa Clara Sur', 'Tubuan'] },
+            'Rizal': { coords: [14.1167, 121.4000], brgys: ['Antipolo', 'Entablado', 'Laguan', 'Puli', 'Pauli 1', 'Pauli 2', 'Poblacion', 'San Roque', 'Talaga', 'Tuy'] },
+            'San Pablo': { coords: [14.0667, 121.3333], brgys: ['Barangay I-A', 'Barangay I-B', 'Barangay II-A', 'Barangay II-B', 'Barangay III-A', 'Barangay III-B', 'Barangay IV-A', 'Barangay IV-B', 'Barangay V-A', 'Barangay V-B', 'Barangay VI-A', 'Barangay VI-B', 'Barangay VII-A', 'Barangay VII-B', 'Atis', 'Bautista', 'Concepcion', 'Del Remedio', 'San Buenaventura', 'San Francisco', 'San Gabriel', 'San Ignacio', 'San Isidro', 'San Jose', 'San Juan', 'San Lucas 1', 'San Lucas 2', 'San Marcos', 'San Mateo', 'San Nicolas', 'San Pedro', 'San Rafael', 'San Roque', 'San Vicente', 'Santa Ana', 'Santa Catalina', 'Santa Cruz', 'Santa Elena', 'Santa Filomena', 'Santa Isabel', 'Santa Maria', 'Santa Maria Magdalena', 'Santa Monica', 'Santa Veronica', 'Santiago', 'Santisimo Rosario', 'Soledad'] },
+            'San Pedro': { coords: [14.3667, 121.0500], brgys: ['Bagong Silang', 'Chrysanthemum', 'Cuyab', 'Estrella', 'Fatima', 'G.S.I.S.', 'Landayan', 'Langka', 'Laram', 'Magsaysay', 'Narra', 'Nueva', 'Poblacion', 'San Antonio', 'San Roque', 'San Vicente', 'Santo Niño', 'United Bayanihan', 'United Better Living', 'Vicente Leyba'] },
+            'Santa Cruz': { coords: [14.2817, 121.4131], brgys: ['Alipit', 'Bagong Bayan', 'Bubukal', 'Calios', 'Duhat', 'Gatid', 'Giling-Giling', 'Labuin', 'Malinao', 'Matalatala', 'Oogong', 'Pagsawitan', 'Palanas', 'Patimbao', 'Poblacion I', 'Poblacion II', 'Poblacion III', 'Poblacion IV', 'Poblacion V', 'San Jose', 'San Juan', 'San Pablo Norte', 'San Pablo Sur', 'Santisima Cruz', 'Santo Angel Central', 'Santo Angel Norte', 'Santo Angel Sur'] },
+            'Santa Maria': { coords: [14.4667, 121.4167], brgys: ['Bagong Pook', 'Cabooan', 'Calayab', 'Coralan', 'Juan Santiago', 'Kayhakat', 'Macasipac', 'Mabitac', 'Poblacion', 'Pao-o', 'Parang ng Buho', 'Santiago', 'Talangka', 'Tungkod'] },
+            'Santa Rosa': { coords: [14.3167, 121.1167], brgys: ['Aplaya', 'Balibago', 'Caingin', 'Dila', 'Dita', 'Don Jose', 'Kanluran', 'Labas', 'Macabling', 'Malitlit', 'Market Area', 'Pook', 'Pulong Santa Cruz', 'Santo Domingo', 'Sinalhan', 'Tagapo'] },
+            'Siniloan': { coords: [14.4167, 121.4500], brgys: ['Acevida', 'Bagong Pag-asa', 'Buhay', 'Gen. Luna', 'Halayhayin', 'Kapatalan', 'Laguio', 'Liyang', 'Macatad', 'Magsaysay', 'Pandeño', 'Poblacion', 'Salubungan', 'Wawa'] },
+            'Victoria': { coords: [14.2250, 121.3283], brgys: ['Banca-banca', 'Daniw', 'Masapang', 'Nanhaya', 'Pagalangan', 'San Francisco', 'San Roque', 'San Nicolas', 'Santa Cruz'] }
+        },
+        'Lucban': { // QUEZON (41 Towns)
+            'Agdangan': { coords: [13.8750, 121.9250], brgys: ['Binagbag', 'Dayap', 'Ibabang Kinagunan', 'Ilayang Kinagunan', 'Poblacion', 'Salvacion', 'Sildora'] },
+            'Alabat': { coords: [14.1000, 122.0167], brgys: ['Angeles', 'Bacong', 'Balungay', 'Buenavista', 'Camagon', 'Gordon', 'Pagsabangan', 'Poblacion', 'Villa Esperanza', 'Villa Jesus'] },
+            'Atimonan': { coords: [14.0000, 121.9167], brgys: ['Angeles', 'Balubad', 'Caridad Ibaba', 'Caridad Ilaya', 'Inaclagan', 'Malinao Ibaba', 'Malinao Ilaya', 'Poblacion', 'San Jose', 'Santa Catalina', 'Tagbakin'] },
+            'Buenavista': { coords: [13.7333, 122.5000], brgys: ['Bagong Silang', 'Batabat Ibaba', 'Batabat Ilaya', 'Buenavista', 'Catulin', 'Poblacion', 'San Pedro', 'Villa Aurora'] },
+            'Burdeos': { coords: [14.8333, 122.4500], brgys: ['Aluyon', 'Amot', 'Animar', 'Bonifacio', 'Burdeos', 'Carlagan', 'Mabini', 'Poblacion', 'San Rafael'] },
+            'Calauag': { coords: [14.0000, 122.2833], brgys: ['Anahawan', 'Bagong Silang', 'Binakas', 'Calauag', 'Doña Aurora', 'Mabini', 'Poblacion', 'Santa Maria', 'Villa San Isidro'] },
+            'Candelaria': { coords: [13.9167, 121.4167], brgys: ['Buenavista West', 'Buenavista East', 'Bukal Sur', 'Bukal Norte', 'Mangilag Sur', 'Mangilag Norte', 'Masin Sur', 'Masin Norte', 'Poblacion', 'San Andres', 'San Isidro'] },
+            'Catanauan': { coords: [13.5833, 122.3167], brgys: ['Ajos', 'Catanauan', 'Gatasan', 'Madulao', 'Poblacion', 'San Isidro', 'San Roque', 'Santa Maria'] },
+            'Dolores': { coords: [14.0167, 121.3833], brgys: ['Antonino', 'Bungoy', 'Dolores', 'Manggahan', 'Pinagdanlayan', 'Poblacion', 'San Mateo', 'Santa Lucia'] },
+            'General Luna': { coords: [13.6833, 122.1667], brgys: ['Bacong Ibaba', 'Bacong Ilaya', 'General Luna', 'Malaya', 'Magsaysay', 'Poblacion', 'San Isidro', 'Santa Maria'] },
+            'General Nakar': { coords: [14.7667, 121.6333], brgys: ['Anoling', 'Banglos', 'Batangan', 'Canaway', 'General Nakar', 'Lumutan', 'Maigang', 'Maligaya', 'Poblacion', 'Sablang'] },
+            'Guinayangan': { coords: [13.9000, 122.4500], brgys: ['Aloneros', 'Guinayangan', 'Ligpit Ibaba', 'Ligpit Ilaya', 'Mabini', 'Poblacion', 'Sintones', 'Villa Hiwasayan'] },
+            'Gumaca': { coords: [13.9167, 122.1000], brgys: ['Adia', 'Bamban', 'Gumaca', 'Mabini', 'Poblacion', 'Rosario', 'San Isidro', 'San Vicente', 'Villa Aurora'] },
+            'Infanta': { coords: [14.7500, 121.6500], brgys: ['Agos-agos', 'Antikin', 'Banugao', 'Infanta', 'Libjo', 'Miswa', 'Poblacion', 'Tongohin'] },
+            'Jomalig': { coords: [14.7000, 122.4000], brgys: ['Bukal', 'Casiguran', 'Gango', 'Jomalig', 'Poblacion', 'Talisoy'] },
+            'Lopez': { coords: [13.8833, 122.2667], brgys: ['Bebito', 'Lopez', 'Mabini', 'Poblacion', 'San Francisco', 'Santa Maria', 'Villa Aurora', 'Villa Hermosa'] },
+            'Lucban': { coords: [14.1147, 121.5552], brgys: ['Abang', 'Aliliw', 'Atimonan', 'Ayuti', 'Balayong', 'Bonifacio', 'Cabolaan', 'Calasumanga', 'Coligado', 'Igang', 'Kabatuhan', 'Kakawit', 'Kalyaat', 'Kilib', 'Kulapi', 'Mahabang Parang', 'Malupak', 'Manasa', 'May-it', 'Nagsinamo', 'Nalunao', 'Palola', 'Piis', 'Samil', 'Tiawe', 'Tinamnan'] },
+            'Lucena City': { coords: [13.9333, 121.6167], brgys: ['Barangay 1', 'Barangay 2', 'Barangay 3', 'Barangay 4', 'Barangay 5', 'Barangay 6', 'Barangay 7', 'Barangay 8', 'Barangay 9', 'Barangay 10', 'Barangay 11', 'Cotta', 'Dalahican', 'Gulang-gulang', 'Ibabang Dupay', 'Ibayang Dupay', 'Iyam', 'Market View', 'Mayao Castillo', 'Mayao Kanluran', 'Mayao Parada', 'Mayao Silangan', 'Salinas', 'Talao-talao'] },
+            'Macalelon': { coords: [13.7500, 122.1333], brgys: ['Amontay', 'Macalelon', 'Mabini', 'Poblacion', 'San Isidro', 'San Vicente', 'Villa Aurora'] },
+            'Mauban': { coords: [14.1889, 121.7289], brgys: ['Barangay 1', 'Barangay 2', 'Barangay 3', 'Bagong Bayan', 'Balisbis', 'Lual', 'Polo', 'Remedios', 'Sadsaran', 'San Isidro', 'San Jose', 'San Lorenzo', 'San Roque', 'San Vicente'] },
+            'Mulanay': { coords: [13.5167, 122.4000], brgys: ['Ajus', 'Bagong Silang', 'Mulanay', 'Poblacion', 'San Isidro', 'Santa Maria', 'Villa Aurora'] },
+            'Padre Burgos': { coords: [13.8833, 121.8167], brgys: ['Basiao', 'Padre Burgos', 'Mabini', 'Poblacion', 'San Isidro', 'San Vicente', 'Villa Aurora'] },
+            'Pagbilao': { coords: [13.9667, 121.6833], brgys: ['Alupaye', 'Anitun', 'Bukal', 'Ibabang Polo', 'Ilayang Polo', 'Mapagong', 'Pinagbayanan', 'Poblacion', 'Sta. Catalina', 'Talipan'] },
+            'Panukulan': { coords: [14.9333, 121.8167], brgys: ['Bancala', 'Panukulan', 'Mabini', 'Poblacion', 'San Isidro', 'Villa Aurora'] },
+            'Patnanungan': { coords: [14.7833, 122.2167], brgys: ['Patnanungan Norte', 'Patnanungan Sur', 'Poblacion'] },
+            'Perez': { coords: [14.1833, 121.9167], brgys: ['Maquiguin', 'Perez', 'Poblacion', 'Villa Aurora'] },
+            'Pitogo': { coords: [13.7833, 122.0833], brgys: ['Amontay', 'Pitogo', 'Mabini', 'Poblacion', 'San Isidro', 'Villa Aurora'] },
+            'Plaridel': { coords: [13.9500, 122.0167], brgys: ['Concepcion', 'Plaridel', 'Poblacion', 'Villa Aurora'] },
+            'Polillo': { coords: [14.7167, 121.9333], brgys: ['Polillo', 'Mabini', 'Poblacion', 'San Isidro', 'Villa Aurora'] },
+            'Quezon': { coords: [14.0167, 122.1833], brgys: ['Quezon', 'Mabini', 'Poblacion', 'San Isidro', 'Villa Aurora'] },
+            'Real': { coords: [14.6667, 121.6000], brgys: ['Kiloloron', 'Llavac', 'Malapad', 'Pandit', 'Poblacion', 'Real', 'Tignoan'] },
+            'Sampaloc': { coords: [14.1625, 121.6392], brgys: ['Apasan', 'Banot', 'Bilucao', 'Caldong', 'Poblacion', 'San Isidro', 'San Roque', 'Taquico'] },
+            'San Andres': { coords: [13.3333, 122.6833], brgys: ['Alupay', 'San Andres', 'Mabini', 'Poblacion', 'San Isidro', 'Villa Aurora'] },
+            'San Antonio': { coords: [13.9000, 121.2833], brgys: ['Bulihan', 'San Antonio', 'Mabini', 'Poblacion', 'San Isidro', 'Villa Aurora'] },
+            'San Francisco': { coords: [13.3500, 122.5333], brgys: ['Don Juan Vercelos', 'San Francisco', 'Mabini', 'Poblacion', 'San Isidro', 'Villa Aurora'] },
+            'San Narciso': { coords: [13.5667, 122.5667], brgys: ['San Narciso', 'Mabini', 'Poblacion', 'San Isidro', 'Villa Aurora'] },
+            'Sariaya': { coords: [13.9667, 121.5333], brgys: ['Balubal', 'Bignay 1', 'Bignay 2', 'Lutucan', 'Manggalang 1', 'Manggalang 2', 'Poblacion', 'Sariaya'] },
+            'Tagkawayan': { coords: [13.9167, 122.5333], brgys: ['Aldavoc', 'Tagkawayan', 'Mabini', 'Poblacion', 'San Isidro', 'Villa Aurora'] },
+            'Tayabas City': { coords: [14.0256, 121.5889], brgys: ['Barangay 1', 'Barangay 2', 'Barangay 3', 'Angustias', 'Camaysa', 'Isabang', 'Maitim', 'Opias', 'Palale', 'Wakas'] },
+            'Tiaong': { coords: [13.9500, 121.3167], brgys: ['Anastacia', 'Bulakin', 'Lumingon', 'Lusacan', 'Poblacion', 'Tiaong'] },
+            'Unisan': { coords: [13.8333, 122.1333], brgys: ['Alaba', 'Unisan', 'Mabini', 'Poblacion', 'San Isidro', 'Villa Aurora'] }
+        }
+    };
+
+    function setupSmartAutoFill() {
+        const branchSelect = document.getElementById('daBranch');
+        const muniSelect = document.getElementById('daMunicipality');
+        const customMuniBox = document.getElementById('customMunicipalityBox');
+        const brgyTextarea = document.getElementById('daBarangays');
+        const statusEl = document.getElementById('smartStatus');
+
+        if (!branchSelect || !muniSelect || !brgyTextarea || !statusEl) return;
+
+        function updateTownOptions() {
+            const branchKey = branchSelect.value; // 'Pagsanjan' or 'Lucban'
+            
+            // Clear but keep first option
+            muniSelect.innerHTML = '<option value="">-- Choose Location --</option>';
+            
+            const towns = SMART_LOCATIONS[branchKey];
+            if (towns) {
+                Object.keys(towns).sort().forEach(town => {
+                    const opt = document.createElement('option');
+                    opt.value = town;
+                    opt.textContent = town;
+                    muniSelect.appendChild(opt);
+                });
+            }
+            
+            // Add custom option
+            const addOpt = document.createElement('option');
+            addOpt.value = "CUSTOM";
+            addOpt.textContent = "➕ Add New Town / City";
+            addOpt.style.color = "#8B634B";
+            addOpt.style.fontWeight = "bold";
+            muniSelect.appendChild(addOpt);
+        }
+
+        branchSelect.addEventListener('change', updateTownOptions);
+        updateTownOptions(); // Initial call
+
+        muniSelect.addEventListener('change', function () {
+            const branchKey = branchSelect.value;
+            const val = this.value;
+            
+            if (val === "CUSTOM") {
+                customMuniBox.style.display = 'block';
+                brgyTextarea.readOnly = false;
+                brgyTextarea.placeholder = "Enter barangays here (one per line)...";
+                brgyTextarea.value = '';
+                statusEl.classList.remove('visible');
+                return;
+            } else {
+                if (customMuniBox) customMuniBox.style.display = 'none';
+                brgyTextarea.readOnly = true;
+            }
+
+            if (!val) {
+                brgyTextarea.value = '';
+                statusEl.classList.remove('visible');
+                return;
+            }
+
+            const data = SMART_LOCATIONS[branchKey] ? SMART_LOCATIONS[branchKey][val] : null;
+            if (data) {
+                brgyTextarea.value = data.brgys.sort().join('\n');
+                statusEl.innerHTML = `<i class="fas fa-check-circle"></i> All ${data.brgys.length} barangays of ${val} loaded.`;
+                statusEl.classList.add('visible');
+
+                const lat = data.coords[0];
+                const lng = data.coords[1];
+
+                if (modalMap) {
+                    modalMap.setView([lat, lng], 14);
+                    if (modalMarker) modalMap.removeLayer(modalMarker);
+                    modalMarker = L.marker([lat, lng], { draggable: true }).addTo(modalMap);
+                    modalMarker.on('dragend', updateCoordsFromMarker);
+                    document.getElementById('daLat').value = lat.toFixed(6);
+                    document.getElementById('daLng').value = lng.toFixed(6);
+                }
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', setupSmartAutoFill);
+
+    function pollDeliveryAreas() {
+        if (document.getElementById('daModalOverlay').classList.contains('show')) return;
+
+        fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+
+                const ids = ['daGridContainer', 'lastUpdateText'];
+                ids.forEach(id => {
+                    const oldEl = document.getElementById(id);
+                    const newEl = doc.getElementById(id);
+                    if (oldEl && newEl && oldEl.innerHTML !== newEl.innerHTML) {
+                        oldEl.innerHTML = newEl.innerHTML;
+                        if (id === 'daGridContainer') setupSmartAutoFill();
+                    }
+                });
+            })
+            .catch(err => console.warn('Delivery areas sync failed:', err));
+    }
+
+    setInterval(pollDeliveryAreas, 5000);
+</script>
 
 <!-- Add/Edit Modal -->
 <div class="da-modal-overlay" id="daModalOverlay">
     <div class="da-modal">
         <div class="da-modal-header">
-            <h5 class="text-white fw-bold mb-0" id="daModalTitle" style="font-size:1.1rem;">
+            <h5 class="text-white fw-bold mb-0" id="daModalTitle"
+                style="font-size:1.1rem; font-family:'Georgia', serif;">
                 <i class="fas fa-map-marker-alt me-2"></i> Add Delivery Area
             </h5>
-            <button type="button" onclick="closeModal()" style="background:none;border:none;color:#fff;font-size:1.2rem;cursor:pointer;line-height:1;">×</button>
+            <button type="button" onclick="closeModal()"
+                style="background:none;border:none;color:#fff;font-size:1.5rem;cursor:pointer;line-height:1; opacity:0.8;">×</button>
         </div>
         <div class="da-modal-body">
             <form id="daForm" method="POST">
                 <input type="hidden" id="daAreaId" value="">
 
-                <div class="mb-3">
-                    <label class="da-label">Municipality / City Name</label>
-                    <input type="text" id="daMunicipality" name="municipality" class="da-input" placeholder="e.g. Pagsanjan" required>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-7">
+                        <label class="da-label">Select Municipality / City</label>
+                        <select id="daMunicipality" name="municipality" class="da-input" required>
+                            <option value="">-- Choose Location --</option>
+                        </select>
+                        <div id="smartStatus" class="smart-status"></div>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="da-label">Assign to Branch</label>
+                        <select name="branch" id="daBranch" class="da-input" required>
+                            <option value="Pagsanjan">Pagsanjan (Laguna)</option>
+                            <option value="Lucban">Lucban (Quezon)</option>
+                        </select>
+                    </div>
                 </div>
 
-                <div class="mb-3">
-                    <label class="da-label">Barangays <span style="font-weight:400;text-transform:none;color:#a48c7e;">(one per line or comma-separated)</span></label>
+                <div class="mb-4">
+                    <label class="da-label">Barangays Coverage <span
+                            style="text-transform:none; font-weight:400; color:#a48c7e; margin-left:5px;">(Fixed
+                            Selection)</span></label>
                     <textarea id="daBarangays" name="barangays" class="da-input da-textarea"
-                        placeholder="Poblacion&#10;San Antonio&#10;San Miguel&#10;..."></textarea>
+                        placeholder="Select a municipality above..."
+                        style="min-height: 150px; background: #fdfaf7!important;" readonly></textarea>
                 </div>
 
-                <div class="row g-3 mb-3">
-                    <div class="col-6">
-                        <label class="da-label">Latitude <span style="font-weight:400;text-transform:none;color:#a48c7e;">(for map pin)</span></label>
-                        <input type="number" id="daLat" name="lat" class="da-input" step="0.0001" placeholder="e.g. 14.2833">
+                <div class="mb-4">
+                    <label class="da-label">Set Delivery Pin on Map <span
+                            style="font-weight:400;text-transform:none;color:#a48c7e; margin-left:5px;">(Click the exact
+                            location on map)</span></label>
+                    <div id="mapPreview"
+                        style="height: 300px; border-radius: 20px; border: 2px solid #e8e0d8; box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);">
                     </div>
-                    <div class="col-6">
-                        <label class="da-label">Longitude</label>
-                        <input type="number" id="daLng" name="lng" class="da-input" step="0.0001" placeholder="e.g. 121.4167">
-                    </div>
+                    <input type="hidden" id="daLat" name="lat">
+                    <input type="hidden" id="daLng" name="lng">
                 </div>
 
-                <div class="mb-3">
-                    <label class="da-label">Pin on Map <span style="font-weight:400;text-transform:none;color:#a48c7e;">(click to set coordinates)</span></label>
-                    <div id="mapPreview"></div>
-                </div>
-
-                <div class="d-flex justify-content-end gap-2 mt-3">
+                <div class="d-flex justify-content-end gap-3 mt-4"
+                    style="border-top:1px solid #f0f0f0; padding-top:1.5rem;">
                     <button type="button" onclick="closeModal()"
-                        style="background:transparent;border:1.5px solid rgba(139,99,75,0.25);color:#8B634B;border-radius:50px;padding:0.55rem 1.4rem;font-weight:700;font-size:0.85rem;cursor:pointer;">
+                        style="background:transparent;border:1.5px solid #e8e0d8;color:#8B634B;border-radius:12px;padding:0.7rem 1.8rem;font-weight:700;font-size:0.85rem;cursor:pointer;">
                         Cancel
                     </button>
                     <button type="submit" id="daSubmitBtn"
-                        style="background:linear-gradient(135deg,#8B634B,#5D4037);color:#fff;border:none;border-radius:50px;padding:0.55rem 1.6rem;font-weight:800;font-size:0.85rem;cursor:pointer;box-shadow:0 6px 18px rgba(93,64,55,0.25);">
-                        <i class="fas fa-save me-1"></i> Save Area
+                        style="background:#8B634B;color:#fff;border:none;border-radius:12px;padding:0.7rem 2rem;font-weight:800;font-size:0.85rem;cursor:pointer;box-shadow:0 10px 25px rgba(139,99,75,0.25);">
+                        <i class="fas fa-save me-1"></i> Confirm & Save
                     </button>
                 </div>
             </form>
@@ -160,23 +672,23 @@
     </div>
 </div>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
     let modalMap = null, modalMarker = null;
 
     function openEditFromBtn(btn) {
-        const id   = btn.dataset.id;
+        const id = btn.dataset.id;
         const muni = btn.dataset.muni;
-        const lat  = btn.dataset.lat  !== '' ? parseFloat(btn.dataset.lat)  : null;
-        const lng  = btn.dataset.lng  !== '' ? parseFloat(btn.dataset.lng)  : null;
-        let brgys  = [];
-        try { brgys = JSON.parse(btn.dataset.brgys); } catch(e) { brgys = []; }
-        openEditModal(id, muni, brgys, lat, lng);
+        const branch = btn.dataset.branch;
+        const lat = btn.dataset.lat !== '' ? parseFloat(btn.dataset.lat) : null;
+        const lng = btn.dataset.lng !== '' ? parseFloat(btn.dataset.lng) : null;
+        let brgys = btn.getAttribute('data-brgys');
+        openEditModal(id, muni, branch, brgys, lat, lng);
     }
 
     function deleteAreaFromBtn(btn) {
-        const id   = btn.dataset.id;
+        const id = btn.dataset.id;
         const name = btn.dataset.name;
         deleteArea(id, name, btn);
     }
@@ -186,29 +698,31 @@
         document.getElementById('daForm').action = '/admin/delivery-areas/add';
         document.getElementById('daAreaId').value = '';
         document.getElementById('daMunicipality').value = '';
+        document.getElementById('daBranch').value = 'Pagsanjan';
         document.getElementById('daBarangays').value = '';
         document.getElementById('daLat').value = '';
         document.getElementById('daLng').value = '';
         document.getElementById('daModalOverlay').classList.add('show');
-        setTimeout(function() { initModalMap(null, null); }, 300);
+        setTimeout(function () { initModalMap(null, null); }, 300);
     }
 
-    function openEditModal(id, muni, brgys, lat, lng) {
+    function openEditModal(id, muni, branch, brgys, lat, lng) {
         document.getElementById('daModalTitle').innerHTML = '<i class="fas fa-pen me-2"></i> Edit Delivery Area';
         document.getElementById('daForm').action = '/admin/delivery-areas/' + id + '/edit';
         document.getElementById('daAreaId').value = id;
         document.getElementById('daMunicipality').value = muni;
-        document.getElementById('daBarangays').value = Array.isArray(brgys) ? brgys.join('\n') : brgys;
+        document.getElementById('daBranch').value = branch;
+        document.getElementById('daBarangays').value = brgys;
         document.getElementById('daLat').value = (lat !== null && lat !== undefined) ? lat : '';
         document.getElementById('daLng').value = (lng !== null && lng !== undefined) ? lng : '';
         document.getElementById('daModalOverlay').classList.add('show');
-        setTimeout(function() { initModalMap(lat, lng); }, 300);
+        setTimeout(function () { initModalMap(lat, lng); }, 300);
     }
 
     function closeModal() {
         document.getElementById('daModalOverlay').classList.remove('show');
         if (modalMap) {
-            try { modalMap.remove(); } catch(e) {}
+            try { modalMap.remove(); } catch (e) { }
             modalMap = null;
             modalMarker = null;
         }
@@ -219,7 +733,7 @@
     function initModalMap(lat, lng) {
         // Destroy existing map instance first
         if (modalMap) {
-            try { modalMap.remove(); } catch(e) {}
+            try { modalMap.remove(); } catch (e) { }
             modalMap = null;
             modalMarker = null;
         }
@@ -239,7 +753,7 @@
                 modalMarker.on('dragend', updateCoordsFromMarker);
             }
 
-            modalMap.on('click', function(e) {
+            modalMap.on('click', function (e) {
                 if (modalMarker) modalMap.removeLayer(modalMarker);
                 modalMarker = L.marker(e.latlng, { draggable: true }).addTo(modalMap);
                 modalMarker.on('dragend', updateCoordsFromMarker);
@@ -248,8 +762,8 @@
             });
 
             // Force size recalculation
-            setTimeout(function() { if (modalMap) modalMap.invalidateSize(); }, 100);
-        } catch(e) {
+            setTimeout(function () { if (modalMap) modalMap.invalidateSize(); }, 100);
+        } catch (e) {
             console.error('Map init error:', e);
         }
     }
@@ -260,19 +774,8 @@
         document.getElementById('daLng').value = ll.lng.toFixed(6);
     }
 
-    // Sync lat/lng inputs → move marker
-    ['daLat','daLng'].forEach(function(id) {
-        document.getElementById(id).addEventListener('input', function() {
-            const lat = parseFloat(document.getElementById('daLat').value);
-            const lng = parseFloat(document.getElementById('daLng').value);
-            if (!isNaN(lat) && !isNaN(lng) && modalMap) {
-                if (modalMarker) modalMap.removeLayer(modalMarker);
-                modalMarker = L.marker([lat, lng], { draggable: true }).addTo(modalMap);
-                modalMarker.on('dragend', updateCoordsFromMarker);
-                modalMap.setView([lat, lng], 13);
-            }
-        });
-    });
+    // Remove the event listeners for hidden inputs
+    // ['daLat','daLng'].forEach(function(id) { ... });
 
     function toggleBrgys(id) {
         const el = document.getElementById('da-brgys-' + id);
@@ -284,7 +787,7 @@
             btn.textContent = 'Show less ▴';
         } else {
             fade.style.display = 'block';
-            btn.textContent = btn.textContent.replace('▴','▾');
+            btn.textContent = btn.textContent.replace('▴', '▾');
         }
     }
 
@@ -329,7 +832,7 @@
     }
 
     // Close modal on overlay click
-    document.getElementById('daModalOverlay').addEventListener('click', function(e) {
+    document.getElementById('daModalOverlay').addEventListener('click', function (e) {
         if (e.target === this) closeModal();
     });
 </script>

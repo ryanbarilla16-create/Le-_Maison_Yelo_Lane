@@ -213,15 +213,12 @@
 <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
     <div>
         <h1 style="font-family: 'Playfair Display', serif; font-weight: 800; color: #3E2723;">Review Management</h1>
-        <p style="color: #8B634B; opacity: 0.8; font-weight: 500;">Monitor and moderate customer feedback.</p>
+        <p style="color: #8B634B; opacity: 0.8; font-weight: 500;">Monitor customer feedback in real-time. 
+            <span id="syncIndicator" style="font-size: 0.75rem; color: #8b7355; opacity: 0.8; margin-left: 10px;">
+                <i class="fas fa-sync-alt fa-spin me-1"></i> Real-time Sync (5s) • Last Update: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
+            </span>
+        </p>
     </div>
-</div>
-
-<div class="filter-tabs">
-    <button onclick="filterReviews('ALL', this)" class="filter-tab" id="tab-all">All</button>
-    <button onclick="filterReviews('PENDING', this)" class="filter-tab active" id="tab-pending">Pending</button>
-    <button onclick="filterReviews('APPROVED', this)" class="filter-tab" id="tab-approved">Approved</button>
-    <button onclick="filterReviews('REJECTED', this)" class="filter-tab" id="tab-rejected">Rejected</button>
 </div>
 
 <div class="review-grid" id="reviewsGridContainer">
@@ -251,24 +248,6 @@
             </div>
         </div>
 
-        <div class="review-footer">
-            {% if review.status == 'PENDING' %}
-                <span class="status-badge status-pending"><i class="fas fa-hourglass-half"></i> Pending</span>
-            {% elif review.status == 'APPROVED' %}
-                <span class="status-badge status-approved"><i class="fas fa-check-circle"></i> Approved</span>
-            {% elif review.status == 'REJECTED' %}
-                <span class="status-badge status-rejected"><i class="fas fa-times-circle"></i> Rejected</span>
-            {% endif %}
-
-            <form action="{{ url_for('admin.update_review', review_id=review.id) }}" method="POST" class="review-action-form">
-                <select name="status" class="review-select">
-                    <option value="PENDING" {% if review.status=='PENDING' %}selected{% endif %}>Pending</option>
-                    <option value="APPROVED" {% if review.status=='APPROVED' %}selected{% endif %}>Approve</option>
-                    <option value="REJECTED" {% if review.status=='REJECTED' %}selected{% endif %}>Reject</option>
-                </select>
-                <button type="submit" class="btn-update">Update</button>
-            </form>
-        </div>
     </div>
     {% else %}
     <div class="empty-reviews-state empty-state-message">
@@ -276,62 +255,33 @@
             <i class="far fa-star"></i>
         </div>
         <h3 style="font-family: 'Playfair Display', serif; font-weight: 800; color: #3E2723; margin-bottom: 0.5rem;">No Reviews Found</h3>
-        <p style="color: #8D6E63; max-width: 400px; margin: 0 auto;">There are no reviews matching the current filter.</p>
+        <p style="color: #8D6E63; max-width: 400px; margin: 0 auto;">There are no reviews to display.</p>
     </div>
     {% endfor %}
 </div>
 
 <script>
-    function filterReviews(status, tabElement) {
-        // Update active tab styling
-        document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-        if (tabElement) {
-            tabElement.classList.add('active');
-        } else {
-            // Fallback if called programmatically
-            const targetTab = document.getElementById('tab-' + status.toLowerCase());
-            if(targetTab) targetTab.classList.add('active');
-        }
-
-        const cards = document.querySelectorAll('.review-card');
-        let visibleCount = 0;
-
-        cards.forEach(card => {
-            if (status === 'ALL' || card.dataset.status === status) {
-                card.style.display = 'flex';
-                visibleCount++;
-            } else {
-                card.style.display = 'none';
-            }
-        });
-
-        // Toggle empty state if no cards remain
-        let emptyState = document.querySelector('.empty-state-message');
-        if (visibleCount === 0) {
-            if (!emptyState) {
-                // Generate empty state dynamically if it doesn't exist
-                const grid = document.getElementById('reviewsGridContainer');
-                grid.insertAdjacentHTML('beforeend', `
-                    <div class="empty-reviews-state empty-state-message">
-                        <div style="width: 80px; height: 80px; background: #faf6f1; color: #8b634b; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin: 0 auto 1.5rem;">
-                            <i class="far fa-star"></i>
-                        </div>
-                        <h3 style="font-family: 'Playfair Display', serif; font-weight: 800; color: #3E2723; margin-bottom: 0.5rem;">No Reviews Found</h3>
-                        <p style="color: #8D6E63; max-width: 400px; margin: 0 auto;">There are no reviews matching the current filter.</p>
-                    </div>
-                `);
-            } else {
-                emptyState.style.display = 'block';
-            }
-        } else if (emptyState) {
-            emptyState.style.display = 'none';
-        }
+    function pollReviews() {
+        fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            const ids = ['reviewsGridContainer', 'lastUpdateText'];
+            ids.forEach(id => {
+                const oldEl = document.getElementById(id);
+                const newEl = doc.getElementById(id);
+                if (oldEl && newEl && oldEl.innerHTML !== newEl.innerHTML) {
+                    oldEl.innerHTML = newEl.innerHTML;
+                }
+            });
+        })
+        .catch(err => console.warn('Reviews sync failed:', err));
     }
 
-    // Immediately filter by PENDING on initial load
-    document.addEventListener("DOMContentLoaded", () => {
-        filterReviews('PENDING', document.getElementById('tab-pending'));
-    });
+    // Poll every 30 seconds
+    setInterval(pollReviews, 5000);
 </script>
 {% endblock %}
 

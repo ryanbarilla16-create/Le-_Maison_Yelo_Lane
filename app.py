@@ -67,6 +67,10 @@ mail = Mail(app)
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+@app.context_processor
+def inject_ph_time():
+    return dict(get_ph_time=get_ph_time)
+
 # Initialize realtime mirroring to Supabase via Event Hooks
 # setup_supabase_sync()
 

@@ -10,12 +10,12 @@
     <section class="lm-hero">
         <div class="owl-carousel owl-theme home-slider">
             <!-- Slide 1 -->
-            <div class="slider-item" style="background-image: url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=70&w=1500&auto=format&fit=crop');">
+            <div class="slider-item" style="background-image: url('{{ site.hero1.image_url }}');">
                 <div class="overlay"></div>
                 <div class="slider-text">
                     <div>
-                        <h1 data-aos="fade-up">Experience Premium<br>French Dining</h1>
-                        <p data-aos="fade-up" data-aos-delay="200">Discover a thoughtfully crafted menu designed to bring you and your famille together at Le Maison de Yelo Lane.</p>
+                        <h1 data-aos="fade-up">{{ site.hero1.title1|safe }}<br>{{ site.hero1.title2|safe }}</h1>
+                        <p data-aos="fade-up" data-aos-delay="200">{{ site.hero1.description }}</p>
                         <div data-aos="fade-up" data-aos-delay="400">
                             <a href="{{ url_for('main.menu_page') }}" class="btn-hero filled">Order Now</a>
                             <a href="{{ url_for('main.menu_page') }}" class="btn-hero">View Menu</a>
@@ -24,12 +24,12 @@
                 </div>
             </div>
             <!-- Slide 2 -->
-            <div class="slider-item" style="background-image: url('https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=70&w=1500&auto=format&fit=crop');">
+            <div class="slider-item" style="background-image: url('{{ site.hero2.image_url }}');">
                 <div class="overlay"></div>
                 <div class="slider-text">
                     <div>
-                        <h1>Good Food,<br>Great Company</h1>
-                        <p>From signature lattes to artisan pastries, every dish carries a story of passion and tradition.</p>
+                        <h1>{{ site.hero2.title1|safe }}<br>{{ site.hero2.title2|safe }}</h1>
+                        <p>{{ site.hero2.description }}</p>
                         <div>
                             {% if current_user.is_authenticated %}
                             <a href="{{ url_for('main.reserve') }}" class="btn-hero filled" onclick="clearReservationSession()">Book a Table</a>
@@ -42,12 +42,12 @@
                 </div>
             </div>
             <!-- Slide 3 -->
-            <div class="slider-item" style="background-image: url('{{ site.hero2.image_url }}');">
+            <div class="slider-item" style="background-image: url('{{ site.hero3.image_url }}');">
                 <div class="overlay"></div>
                 <div class="slider-text">
                     <div>
-                        <h1>{{ site.hero2.title1 }}<br>{{ site.hero2.title2 }}</h1>
-                        <p>{{ site.hero2.description }}</p>
+                        <h1>{{ site.hero3.title1|safe }}<br>{{ site.hero3.title2|safe }}</h1>
+                        <p>{{ site.hero3.description }}</p>
                         <div>
                             <a href="{{ url_for('main.menu_page') }}" class="btn-hero filled">Explore Menu</a>
                         </div>
@@ -63,13 +63,13 @@
         <div class="container-fluid px-3">
             <div class="row align-items-center g-5">
                 <div class="col-md-6" data-aos="fade-right">
-                    <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=75&w=900&auto=format&fit=crop" alt="Le Maison interior" class="img-fluid" style="border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.15); width: 100%; max-height: 500px; object-fit: cover;">
+                    <img src="{{ site.welcome.image_url }}" alt="Le Maison interior" class="img-fluid" style="border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.15); width: 100%; max-height: 500px; object-fit: cover;">
                 </div>
                 <div class="col-md-6 welcome-text" data-aos="fade-left">
-                    <p style="color: #c9a96e; text-transform: uppercase; letter-spacing: 3px; font-weight: 700; font-size: 0.8rem;">Welcome to</p>
-                    <h2>Le Maison de <span>Yelo Lane</span></h2>
-                    <p>From humble beginnings on Yelo Lane to becoming Pagsanjan's beloved dining destination, every dish we serve carries a story of passion, tradition, and French-inspired artistry.</p>
-                    <p>Whether it's a romantic dinner, a family celebration, or a casual coffee date — we've prepared the perfect ambiance just for you.</p>
+                    <p style="color: #c9a96e; text-transform: uppercase; letter-spacing: 3px; font-weight: 700; font-size: 0.8rem;">{{ site.welcome.subtitle }}</p>
+                    <h2>{{ site.welcome.title|safe }}</h2>
+                    <p>{{ site.welcome.description1 }}</p>
+                    <p>{{ site.welcome.description2 }}</p>
                     <a href="{{ url_for('main.about_page') }}" class="btn-hero filled" style="display: inline-block; margin-top: 1rem;">Learn More</a>
                 </div>
             </div>
@@ -103,6 +103,34 @@
                         <div class="icon-wrap"><i class="fas fa-coffee"></i></div>
                         <h5>Signature Blends</h5>
                         <p>Our artisanal coffee and French-inspired recipes are crafted with love to create an unforgettable experience.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ PROMO CARDS ═══ -->
+    <section class="lm-section lm-promo light" style="background: #fdfbf9; padding-top: 0;">
+        <div class="container-fluid px-3">
+            <div class="row g-4">
+                <div class="col-md-6" data-aos="fade-up">
+                    <div class="promo-card" style="background: #fff; border-radius: 12px; overflow: hidden; display: flex; box-shadow: 0 10px 30px rgba(0,0,0,0.05); height: 100%;">
+                        <div style="flex: 1; padding: 2.5rem; display: flex; flex-direction: column; justify-content: center;">
+                            <h3 style="font-family: 'Playfair Display', serif; font-weight: 800; color: #3E2723; margin-bottom: 1rem;">{{ site.card1.title }}</h3>
+                            <p style="color: #6D4C41; font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.5rem;">{{ site.card1.description }}</p>
+                            <a href="{{ url_for('main.menu_page') }}" style="color: #8B634B; font-weight: 700; text-decoration: none; text-transform: uppercase; letter-spacing: 1px; font-size: 0.85rem;">Discover More <i class="fas fa-arrow-right ms-1"></i></a>
+                        </div>
+                        <div style="flex: 1; min-height: 300px; background-image: url('{{ site.card1.image_url }}'); background-size: cover; background-position: center;"></div>
+                    </div>
+                </div>
+                <div class="col-md-6" data-aos="fade-up" data-aos-delay="100">
+                    <div class="promo-card" style="background: #fff; border-radius: 12px; overflow: hidden; display: flex; box-shadow: 0 10px 30px rgba(0,0,0,0.05); height: 100%;">
+                        <div style="flex: 1; padding: 2.5rem; display: flex; flex-direction: column; justify-content: center;">
+                            <h3 style="font-family: 'Playfair Display', serif; font-weight: 800; color: #3E2723; margin-bottom: 1rem;">{{ site.card2.title }}</h3>
+                            <p style="color: #6D4C41; font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.5rem;">{{ site.card2.description }}</p>
+                            <a href="{{ url_for('main.menu_page') }}" style="color: #8B634B; font-weight: 700; text-decoration: none; text-transform: uppercase; letter-spacing: 1px; font-size: 0.85rem;">Discover More <i class="fas fa-arrow-right ms-1"></i></a>
+                        </div>
+                        <div style="flex: 1; min-height: 300px; background-image: url('{{ site.card2.image_url }}'); background-size: cover; background-position: center;"></div>
                     </div>
                 </div>
             </div>
@@ -299,7 +327,7 @@
             <div class="row g-4 align-items-stretch">
                 <div class="col-md-6" data-aos="fade-right">
                     <div class="map-wrap">
-                        <iframe src="https://maps.google.com/maps?q=Le%20Maison%20de%20Yelo%20Lane,%20General%20Taino%20Street,%20Pagsanjan,%20Laguna,%20Philippines&t=&z=16&ie=UTF8&iwloc=&output=embed" allowfullscreen="" loading="lazy"></iframe>
+                        <iframe id="branchMap" src="https://maps.google.com/maps?q=Le%20Maison%20de%20Yelo%20Lane,%20General%20Taino%20Street,%20Pagsanjan,%20Laguna,%20Philippines&t=&z=16&ie=UTF8&iwloc=&output=embed" allowfullscreen="" loading="lazy"></iframe>
                     </div>
                 </div>
                 <div class="col-md-6" data-aos="fade-left">
@@ -343,9 +371,9 @@
                         </form>
                         
                         <div class="mt-4 pt-3" style="border-top: 1px solid rgba(255,255,255,0.1);">
-                            <div class="d-flex align-items-center gap-3 mb-2"><i class="fas fa-map-marker-alt" style="color: #c9a96e;"></i><span style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">Yelo Lane, General Taino Street, Pagsanjan, Laguna</span></div>
-                            <div class="d-flex align-items-center gap-3 mb-2"><i class="fas fa-phone" style="color: #c9a96e;"></i><span style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">09988863566</span></div>
-                            <div class="d-flex align-items-center gap-3"><i class="fas fa-envelope" style="color: #c9a96e;"></i><span style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">lemaisonyelolane9@gmail.com</span></div>
+                            <div class="d-flex align-items-center gap-3 mb-2"><i class="fas fa-map-marker-alt" style="color: #c9a96e;"></i><span id="branchAddress" style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">Yelo Lane, General Taino Street, Pagsanjan, Laguna</span></div>
+                            <div class="d-flex align-items-center gap-3 mb-2"><i class="fas fa-phone" style="color: #c9a96e;"></i><span id="branchPhone" style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">09988863566</span></div>
+                            <div class="d-flex align-items-center gap-3"><i class="fas fa-envelope" style="color: #c9a96e;"></i><span id="branchEmail" style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">lemaisonyelolane9@gmail.com</span></div>
                         </div>
                     </div>
                 </div>

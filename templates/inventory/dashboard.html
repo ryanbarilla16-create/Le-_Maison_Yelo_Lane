@@ -12,7 +12,12 @@
 {% endblock %}
 
 {% block page_title %}Inventory Dashboard{% endblock %}
-{% block page_subtitle %}Monitor stock levels and supplier health{% endblock %}
+{% block page_subtitle %}
+    Monitor stock levels and supplier health
+    <span id="syncIndicator" style="font-size: 0.72rem; color: var(--muted); opacity: 0.8; margin-left: 10px; font-weight: 500;">
+        <i class="fas fa-sync-alt fa-spin me-1"></i> Live Update (5s) • Last: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
+    </span>
+{% endblock %}
 
 {% block extra_style %}
     .glow-green  { background:linear-gradient(90deg, #2e7d32, #81c784); }
@@ -139,6 +144,7 @@
 {% endblock %}
 
 {% block content %}
+<div id="inventoryDashboardContainer">
     <div class="stats-row">
         <div class="stat-card">
             <div class="icon-wrap icon-green"><i class="fas fa-boxes-stacked"></i></div>
@@ -448,6 +454,7 @@
             </form>
         </div>
     </div>
+</div> <!-- end inventoryDashboardContainer -->
 {% endblock %}
 
 {% block extra_head %}
@@ -721,5 +728,35 @@
             event.target.style.display = 'none';
         }
     }
+
+    function pollInventoryDashboard() {
+        if (document.querySelector('.modal-overlay[style*="flex"]')) return;
+
+        fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            ['fullInventoryTableBody', 'lastUpdateText', 'itemCount', 'categorySelector'].forEach(id => {
+                const o = document.getElementById(id);
+                const n = doc.getElementById(id);
+                if (o && n && o.innerHTML !== n.innerHTML) o.innerHTML = n.innerHTML;
+            });
+
+            const ids = ['inventoryDashboardContainer', 'lastUpdateText', 'ingredientCountPill'];
+            ids.forEach(id => {
+                const oldEl = document.getElementById(id);
+                const newEl = doc.getElementById(id);
+                if (oldEl && newEl && oldEl.innerHTML !== newEl.innerHTML) {
+                    oldEl.innerHTML = newEl.innerHTML;
+                    if (id === 'inventoryDashboardContainer') applyDashboardFilter();
+                }
+            });
+        })
+        .catch(err => console.warn('Inventory sync failed:', err));
+    }
+
+    setInterval(pollInventoryDashboard, 5000);
 </script>
 {% endblock %}

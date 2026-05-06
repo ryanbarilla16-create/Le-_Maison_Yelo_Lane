@@ -22,7 +22,8 @@ class User(db.Model, UserMixin):
     
     # Status and Roles
     status = db.Column(db.String(20), default='PENDING') # PENDING, ACTIVE, REJECTED
-    role = db.Column(db.String(20), default='USER', index=True) # USER, ADMIN, CASHIER, INVENTORY_STAFF, RIDER
+    role = db.Column(db.String(20), default='USER', index=True) # USER, ADMIN, SUPER_ADMIN, CASHIER, INVENTORY_STAFF, RIDER
+    branch = db.Column(db.String(50), nullable=True, default=None) # Pagsanjan, Lucban, ALL (for SUPER_ADMIN), None (for regular users)
     
     # Email Verification
     is_verified = db.Column(db.Boolean, default=False)
@@ -39,6 +40,7 @@ class User(db.Model, UserMixin):
 class Reservation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    branch = db.Column(db.String(50), nullable=True, default='Pagsanjan') # Which branch this reservation belongs to
     date = db.Column(db.Date, nullable=False)
     time = db.Column(db.Time, nullable=False)
     guest_count = db.Column(db.Integer, nullable=False)
@@ -56,6 +58,7 @@ class Reservation(db.Model):
 class MenuItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
+    branch = db.Column(db.String(50), nullable=True, default='Pagsanjan')
     description = db.Column(db.Text, nullable=True)
     price = db.Column(db.Numeric(10, 2), nullable=False)
     category = db.Column(db.String(50), nullable=False, index=True)
@@ -81,6 +84,7 @@ class Order(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     customer_name = db.Column(db.String(100), nullable=True)  # For walk-in customers
+    branch = db.Column(db.String(50), nullable=True, default='Pagsanjan') # Which branch this order belongs to
     total_amount = db.Column(db.Numeric(10, 2), nullable=False)
     status = db.Column(db.String(20), default='PENDING', index=True) # PENDING, PREPARING, COMPLETED, CANCELLED
     payment_status = db.Column(db.String(20), default='UNPAID') # UNPAID, PAID
@@ -126,7 +130,7 @@ class Review(db.Model):
     order_id = db.Column(db.Integer, db.ForeignKey('order.id'), nullable=True) # Reference to the specific order being reviewed
     rating = db.Column(db.Integer, nullable=False) # 1 to 5
     comment = db.Column(db.Text, nullable=True)
-    status = db.Column(db.String(20), default='PENDING', index=True) # PENDING, APPROVED, REJECTED
+    status = db.Column(db.String(20), default='APPROVED', index=True) # PENDING, APPROVED, REJECTED
     created_at = db.Column(db.DateTime, default=get_ph_time, index=True)
 
     user = db.relationship('User', backref=db.backref('reviews', lazy=True))
@@ -157,6 +161,7 @@ class Supplier(db.Model):
 class Ingredient(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(150), nullable=False)
+    branch = db.Column(db.String(50), nullable=True, default='Pagsanjan')
     unit = db.Column(db.String(30), nullable=False)  # e.g. grams, pieces, liters, kg
     stock_qty = db.Column(db.Numeric(10, 2), default=0) # Main Warehouse/Bodega
     kitchen_qty = db.Column(db.Numeric(10, 2), default=0) # On-hand at Kitchen
@@ -322,7 +327,8 @@ class ContactMessage(db.Model):
 class DeliveryArea(db.Model):
     id         = db.Column(db.Integer, primary_key=True)
     municipality = db.Column(db.String(100), nullable=False, unique=True)
-    barangays  = db.Column(db.Text, nullable=False)   # JSON array stored as text
+    branch       = db.Column(db.String(50), nullable=False, default='Pagsanjan')
+    barangays    = db.Column(db.Text, nullable=False)   # JSON array stored as text
     lat        = db.Column(db.Float, nullable=True)
     lng        = db.Column(db.Float, nullable=True)
     is_active  = db.Column(db.Boolean, default=True)

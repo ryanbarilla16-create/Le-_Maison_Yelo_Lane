@@ -4,12 +4,21 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 style="font-family: 'Georgia', serif; color: var(--text-main); font-size: 2rem; font-weight: bold; margin: 0;">
-        <i class="fas fa-ticket-alt me-2"></i>Voucher & Promo Codes</h1>
+    <div>
+        <h1 style="font-family: 'Georgia', serif; color: var(--text-main); font-size: 2rem; font-weight: bold; margin: 0;">
+            <i class="fas fa-ticket-alt me-2"></i>Voucher & Promo Codes</h1>
+        <p style="margin: 0; font-size: 0.85rem; color: #8B634B; font-weight: 600;">Manage discount codes and promotions
+            <span id="syncIndicator" style="font-size: 0.75rem; color: #8b7355; opacity: 0.8; margin-left: 10px; font-weight: 500;">
+                <i class="fas fa-sync-alt fa-spin me-1"></i> Real-time Sync (5s) • Last Update: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
+            </span>
+        </p>
+    </div>
     <button class="btn-admin-primary px-4 py-2" data-bs-toggle="modal" data-bs-target="#addVoucherModal" style="border-radius: 10px; border: none; font-weight: 700; font-size: 0.85rem;">
         <i class="fas fa-plus me-1"></i> New Voucher
     </button>
 </div>
+
+<div id="vouchersGridContainer">
 
 <style>
     .voucher-controls-bar {
@@ -246,7 +255,34 @@
         <p style="color: #8D6E63; max-width: 400px; margin: 0 auto;">There are currently no discount codes available. Click "Create Voucher" to make one.</p>
     </div>
     {% endfor %}
-</div>
+</div> <!-- end vouchersGridContainer -->
+
+<script>
+    function pollVouchers() {
+        // Prevent update if a modal is currently open
+        if (document.querySelector('.modal.show')) return;
+
+        fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            const ids = ['vouchersGridContainer', 'lastUpdateText'];
+            ids.forEach(id => {
+                const oldEl = document.getElementById(id);
+                const newEl = doc.getElementById(id);
+                if (oldEl && newEl && oldEl.innerHTML !== newEl.innerHTML) {
+                    oldEl.innerHTML = newEl.innerHTML;
+                }
+            });
+        })
+        .catch(err => console.warn('Vouchers sync failed:', err));
+    }
+
+    // Poll every 30 seconds
+    setInterval(pollVouchers, 5000);
+</script>
 
 <script>
     function toggleVoucherOptimistic(btn) {

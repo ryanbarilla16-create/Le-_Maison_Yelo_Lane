@@ -8,7 +8,7 @@
 </div>
 
 <div class="admin-cards-grid">
-    {% if current_user.role|upper == 'ADMIN' %}
+    {% if current_user.role|upper in ['ADMIN', 'SUPER ADMIN', 'SUPER_ADMIN'] %}
     <div class="admin-card">
         <h3><i class="fas fa-sliders me-2" style="color: var(--admin-blue);"></i> General</h3>
         <div style="display: flex; flex-direction: column; gap: 1rem;">
@@ -37,47 +37,106 @@
                 <span class="badge-status badge-active">Active</span>
             </div>
         </div>
+        </div>
     </div>
-</div>
 
-<!-- Homepage Content Management Settings -->
-<div class="admin-card" style="margin-top: 1.5rem;">
+    <!-- Homepage Content Management Settings -->
+    <div class="admin-card" style="margin-top: 1.5rem; grid-column: 1 / -1;">
     <h3><i class="fas fa-home me-2" style="color: var(--admin-yellow);"></i> Homepage Design & Content</h3>
     <form method="POST" action="{{ url_for('admin.settings') }}">
 
-        <!-- Hero 2 Section -->
-        <div
-            style="background: var(--admin-bg); padding: 1.25rem; border-radius: 8px; border: 1px solid var(--admin-border); margin-bottom: 1.5rem;">
-            <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--admin-text); margin-bottom: 1rem;"><i
-                    class="fas fa-image me-1"></i> Secondary Hero Section</h4>
-
+        <!-- Hero 1 Section -->
+        <div style="background: var(--admin-bg); padding: 1.25rem; border-radius: 8px; border: 1px solid var(--admin-border); margin-bottom: 1.5rem;">
+            <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--admin-text); margin-bottom: 1rem;"><i class="fas fa-image me-1"></i> Main Hero Slide 1</h4>
             <div class="row g-3">
                 <div class="col-md-6">
-                    <label class="form-label"
-                        style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);">Subtitle (e.g.,
-                        Premium Dining)</label>
-                    <input type="text" class="form-control" name="hero2_title1" value="{{ site.hero2.title1 }}"
-                        required>
+                    <label class="form-label" style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);">Subtitle (e.g., Experience Premium)</label>
+                    <input type="text" class="form-control" name="hero1_title1" value="{{ site.hero1.title1 }}" required>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label"
-                        style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);">Main Title (e.g.,
-                        Drift into Joy)</label>
-                    <input type="text" class="form-control" name="hero2_title2" value="{{ site.hero2.title2 }}"
-                        required>
+                    <label class="form-label" style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);">Main Title (e.g., French Dining)</label>
+                    <input type="text" class="form-control" name="hero1_title2" value="{{ site.hero1.title2 }}" required>
                 </div>
                 <div class="col-12">
-                    <label class="form-label"
-                        style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);">Short
-                        Description</label>
-                    <textarea class="form-control" name="hero2_desc" rows="2"
-                        required>{{ site.hero2.description }}</textarea>
+                    <label class="form-label" style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);">Short Description</label>
+                    <textarea class="form-control" name="hero1_desc" rows="2" required>{{ site.hero1.description }}</textarea>
                 </div>
                 <div class="col-12">
-                    <label class="form-label"
-                        style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);">Background Image
-                        URL</label>
+                    <label class="form-label" style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);">Background Image URL</label>
+                    <input type="url" class="form-control" name="hero1_img" value="{{ site.hero1.image_url }}" required>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hero 2 Section -->
+        <div style="background: var(--admin-bg); padding: 1.25rem; border-radius: 8px; border: 1px solid var(--admin-border); margin-bottom: 1.5rem;">
+            <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--admin-text); margin-bottom: 1rem;"><i class="fas fa-image me-1"></i> Main Hero Slide 2</h4>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label" style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);">Subtitle (e.g., Good Food,)</label>
+                    <input type="text" class="form-control" name="hero2_title1" value="{{ site.hero2.title1 }}" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);">Main Title (e.g., Great Company)</label>
+                    <input type="text" class="form-control" name="hero2_title2" value="{{ site.hero2.title2 }}" required>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);">Short Description</label>
+                    <textarea class="form-control" name="hero2_desc" rows="2" required>{{ site.hero2.description }}</textarea>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);">Background Image URL</label>
                     <input type="url" class="form-control" name="hero2_img" value="{{ site.hero2.image_url }}" required>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hero 3 Section -->
+        <div style="background: var(--admin-bg); padding: 1.25rem; border-radius: 8px; border: 1px solid var(--admin-border); margin-bottom: 1.5rem;">
+            <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--admin-text); margin-bottom: 1rem;"><i class="fas fa-image me-1"></i> Main Hero Slide 3</h4>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label" style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);">Subtitle (e.g., Premium French Dining)</label>
+                    <input type="text" class="form-control" name="hero3_title1" value="{{ site.hero3.title1 }}" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);">Main Title (e.g., Drift into Joy)</label>
+                    <input type="text" class="form-control" name="hero3_title2" value="{{ site.hero3.title2 }}" required>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);">Short Description</label>
+                    <textarea class="form-control" name="hero3_desc" rows="2" required>{{ site.hero3.description }}</textarea>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);">Background Image URL</label>
+                    <input type="url" class="form-control" name="hero3_img" value="{{ site.hero3.image_url }}" required>
+                </div>
+            </div>
+        </div>
+
+        <!-- Welcome Section -->
+        <div style="background: var(--admin-bg); padding: 1.25rem; border-radius: 8px; border: 1px solid var(--admin-border); margin-bottom: 1.5rem;">
+            <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--admin-text); margin-bottom: 1rem;"><i class="fas fa-hand-holding-heart me-1"></i> Welcome / About Section</h4>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label" style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);">Section Title</label>
+                    <input type="text" class="form-control" name="welcome_title" value="{{ site.welcome.title }}" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);">Subtitle (e.g., Welcome to)</label>
+                    <input type="text" class="form-control" name="welcome_subtitle" value="{{ site.welcome.subtitle }}" required>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);">Description Paragraph 1</label>
+                    <textarea class="form-control" name="welcome_desc1" rows="3" required>{{ site.welcome.description1 }}</textarea>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);">Description Paragraph 2</label>
+                    <textarea class="form-control" name="welcome_desc2" rows="3" required>{{ site.welcome.description2 }}</textarea>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" style="font-size: 0.8rem; font-weight: 600; color: var(--admin-text-muted);">Featured Image URL</label>
+                    <input type="url" class="form-control" name="welcome_img" value="{{ site.welcome.image_url }}" required>
                 </div>
             </div>
         </div>
@@ -202,7 +261,7 @@
     </form>
 </div>
 
-<div class="admin-card" style="margin-top: 1.5rem;">
+<div class="admin-card" style="margin-top: 1.5rem; grid-column: 1 / -1;">
     <h3><i class="fas fa-info-circle me-2" style="color: var(--admin-text-muted);"></i> System Info</h3>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
         <div>
@@ -222,9 +281,14 @@
             <div style="font-weight: 600;">1.0.0</div>
         </div>
     </div>
+    {% else %}
+    <div class="admin-card" style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+        <i class="fas fa-lock mb-3" style="font-size: 3rem; color: var(--admin-text-muted);"></i>
+        <h3>Access Restricted</h3>
+        <p>You do not have permission to view system settings.</p>
+    </div>
+    {% endif %}
 </div>
-</div>
-{% endif %}
 
 {% endblock %}
 

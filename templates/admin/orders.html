@@ -25,6 +25,21 @@
         font-weight: 700;
         margin: 0;
         letter-spacing: -0.3px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    #syncIndicator {
+        font-family: 'Inter', sans-serif;
+        font-size: 0.72rem;
+        color: #8b7355;
+        opacity: 0.8;
+        font-weight: 500;
+        background: rgba(139, 99, 75, 0.05);
+        padding: 4px 10px;
+        border-radius: 50px;
+        border: 1px solid rgba(139, 99, 75, 0.1);
     }
 
     .orders-header-actions {
@@ -580,8 +595,17 @@
 </style>
 
 <!-- Page Header -->
+<div id="adminOrdersContainer">
 <div class="orders-page-header">
-    <h1>Order Management</h1>
+    <h1>
+        Order Management
+        <span id="syncIndicator">
+            <i class="fas fa-sync-alt fa-spin me-1"></i> Live Update (5s) • <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
+        </span>
+    </h1>
+    <div>
+        <p style="margin: 0; color: #8b634b; opacity: 0.8; font-size: 0.85rem;">Manage and process customer orders.</p>
+    </div>
     <div class="orders-header-actions">
         <button class="btn-header"
             onclick="document.getElementById('shiftReportModal').style.display='flex'">
@@ -595,6 +619,8 @@
         </a>
     </div>
 </div>
+
+<div id="ordersMainContainer">
 
 <!-- Quick Stats -->
 <div class="order-stats-row">
@@ -905,11 +931,6 @@
             }
         });
     }
-</script>
-{% endblock %}
-
-{% block scripts %}
-<script>
     function handleSplitClick(btn) {
         const orderId = btn.getAttribute('data-order-id');
         const items = JSON.parse(btn.getAttribute('data-items'));
@@ -944,8 +965,7 @@
 
         modal.show();
     }
-</script>
-<script>
+
     function toggleOrderItems(orderId, event) {
         if (event.target.closest('button') || event.target.closest('a') || event.target.closest('.dropdown-menu') || event.target.closest('select') || event.target.closest('form')) {
             return;
@@ -958,6 +978,33 @@
         const row = event.target.closest('tr');
         row.style.backgroundColor = collapseEl.classList.contains('show') ? 'transparent' : 'rgba(139, 99, 75, 0.02)';
     }
+
+    function pollOrders() {
+        if (document.querySelector('.modal.show') || document.querySelector('.admin-modal[style*="display: flex"]')) return;
+
+        fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            const ids = ['ordersMainContainer', 'lastUpdateText'];
+            ids.forEach(id => {
+                const oldEl = document.getElementById(id);
+                const newEl = doc.getElementById(id);
+                if (oldEl && newEl && oldEl.innerHTML !== newEl.innerHTML) {
+                    oldEl.innerHTML = newEl.innerHTML;
+                }
+            });
+            
+            const searchInput = document.getElementById('orderSearch');
+            if (searchInput && searchInput.value) {
+                filterOrders();
+            }
+        })
+        .catch(err => console.warn('Orders sync failed:', err));
+    }
+    setInterval(pollOrders, 5000);
 </script>
 {% endblock %}
 

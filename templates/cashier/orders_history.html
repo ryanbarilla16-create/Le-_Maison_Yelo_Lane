@@ -11,7 +11,12 @@
 {% endblock %}
 
 {% block page_title %}Order History{% endblock %}
-{% block page_subtitle %}Review past transactions and order details{% endblock %}
+{% block page_subtitle %}
+    Review past transactions and order details
+    <span id="syncIndicator" style="font-size: 0.72rem; color: var(--muted); opacity: 0.8; margin-left: 10px; font-weight: 500;">
+        <i class="fas fa-sync-alt fa-spin me-1"></i> Live Update (5s) • Last: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
+    </span>
+{% endblock %}
 
 {% block extra_style %}
     /* Status pills */
@@ -74,6 +79,7 @@
 {% endblock %}
 
 {% block content %}
+<div id="orderHistoryContainer">
     <div class="history-stats">
         <div class="history-stat">
             <div class="history-stat-icon" style="background:rgba(93,64,55,0.08); color:var(--primary);">
@@ -211,6 +217,7 @@
             {% endif %}
         </div>
     </div>
+</div> <!-- end orderHistoryContainer -->
 {% endblock %}
 
 {% block extra_script %}
@@ -272,5 +279,30 @@
     }
 
     document.addEventListener('DOMContentLoaded', bindPaginationLinks);
+
+    function pollOrderHistory() {
+        if (document.activeElement && document.activeElement.id === 'historySearch') return;
+
+        fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(r => r.text())
+        .then(html => {
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            ['historyBody', 'historyPagination', 'lastUpdateText'].forEach(id => {
+                const o = document.getElementById(id);
+                const n = doc.getElementById(id);
+                if (o && n && o.innerHTML !== n.innerHTML) {
+                    o.innerHTML = n.innerHTML;
+                    if (id === 'historyPagination') bindPaginationLinks();
+                }
+            });
+            const oldStats = document.querySelector('.history-stats');
+            const newStats = doc.querySelector('.history-stats');
+            if (oldStats && newStats && oldStats.innerHTML !== newStats.innerHTML) {
+                oldStats.innerHTML = newStats.innerHTML;
+            }
+        })
+        .catch(err => console.warn('History sync failed:', err));
+    }
+    setInterval(pollOrderHistory, 5000);
 </script>
 {% endblock %}

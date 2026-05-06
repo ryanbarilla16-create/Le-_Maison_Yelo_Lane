@@ -12,7 +12,12 @@
 {% endblock %}
 
 {% block page_title %}Inventory Audit History{% endblock %}
-{% block page_subtitle %}Track every single deduction, addition, or manual adjustment made to inventory stocks{% endblock %}
+{% block page_subtitle %}
+    Track every single deduction, addition, or manual adjustment made to inventory stocks
+    <span id="syncIndicator" style="font-size: 0.72rem; color: var(--muted); opacity: 0.8; margin-left: 10px; font-weight: 500;">
+        <i class="fas fa-sync-alt fa-spin me-1"></i> Live Update (5s) • Last: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
+    </span>
+{% endblock %}
 
 {% block extra_style %}
 <style>
@@ -87,7 +92,7 @@
                 {% endif %}
             </span>
         </div>
-        <span style="font-size: 0.75rem; color: var(--muted);">{{ logs|length }} records found</span>
+        <span style="font-size: 0.75rem; color: var(--muted);"><span id="logCount">{{ logs|length }}</span> records found</span>
     </div>
 
     <div class="table-responsive">
@@ -103,7 +108,7 @@
                     <th>Reason / Notes</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="auditTableBody">
                 {% for log in logs %}
                 <tr>
                     <td>
@@ -210,4 +215,24 @@
     .btn-staff-outline { display: inline-block; padding: 8px 20px; border: 1.5px solid #D4A862; color: #D4A862; border-radius: 10px; text-decoration: none; font-weight: 700; font-size: 0.8rem; transition: all 0.2s; }
     .btn-staff-outline:hover { background: #D4A862; color: #fff; }
 </style>
+{% endblock %}
+{% block extra_script %}
+<script>
+    function pollInventoryAudit() {
+        if (document.querySelector('.modal.show')) return;
+        fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(r => r.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            ['auditTableBody', 'lastUpdateText', 'logCount'].forEach(id => {
+                const o = document.getElementById(id);
+                const n = doc.getElementById(id);
+                if (o && n && o.innerHTML !== n.innerHTML) o.innerHTML = n.innerHTML;
+            });
+        })
+        .catch(err => console.warn('Audit sync failed:', err));
+    }
+    setInterval(pollInventoryAudit, 5000);
+</script>
 {% endblock %}

@@ -34,11 +34,30 @@ def create_notification(user_id, title, message, notif_type='SYSTEM'):
 SETTINGS_FILE = os.path.join(os.path.dirname(os.path.abspath(__dirname__)) if '__dirname__' in locals() else os.path.dirname(__file__), 'site_settings.json')
 
 DEFAULT_SETTINGS = {
+    "hero1": {
+        "title1": "Experience Premium",
+        "title2": "French Dining",
+        "description": "Discover a thoughtfully crafted menu designed to bring you and your famille together at Le Maison de Yelo Lane.",
+        "image_url": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=70&w=1500&auto=format&fit=crop"
+    },
     "hero2": {
+        "title1": "Good Food,",
+        "title2": "Great Company",
+        "description": "From signature lattes to artisan pastries, every dish carries a story of passion and tradition.",
+        "image_url": "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=70&w=1500&auto=format&fit=crop"
+    },
+    "hero3": {
         "title1": "Premium French Dining",
         "title2": "Drift into Joy",
         "description": "Order your favorite organic blends and freshly baked pastries right to your table, or reserve a spot for your next coffee run.",
-        "image_url": "https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=2047&auto=format&fit=crop"
+        "image_url": "https://i.postimg.cc/cCRnWV9j/htdhtht.webp"
+    },
+    "welcome": {
+        "title": "Le Maison de Yelo Lane",
+        "subtitle": "Welcome to",
+        "description1": "From humble beginnings on Yelo Lane to becoming Pagsanjan's beloved dining destination, every dish we serve carries a story of passion, tradition, and French-inspired artistry.",
+        "description2": "Whether it's a romantic dinner, a family celebration, or a casual coffee date — we've prepared the perfect ambiance just for you.",
+        "image_url": "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=75&w=900&auto=format&fit=crop"
     },
     "card1": {
         "title": "Signature Yelo Latte",
@@ -142,7 +161,7 @@ def requires_roles(*allowed_roles):
         return wrapped
     return wrapper
 
-def validate_order(items_data, dining_option, payment_method, is_pos=False):
+def validate_order(items_data, dining_option, payment_method, is_pos=False, apply_lock=False):
     """
     Business Logic Validation for Orders.
     Returns (is_valid, message, order_status_override)
@@ -210,9 +229,31 @@ def validate_order(items_data, dining_option, payment_method, is_pos=False):
             ingredient = ingredients_by_id.get(r.ingredient_id)
             if ingredient is None:
                 continue
+                
+            # --- SCOUT #1 FIX: Race Condition Lock & Real-time Pending Calculation ---
+            # 1. Lock the ingredient row to prevent simultaneous identical checks (The "Safety Lock")
+            if apply_lock:
+                from sqlalchemy.orm import object_session
+                session = object_session(ingredient)
+                if session:
+                    session.refresh(ingredient, with_for_update=True)
+            
+            # 2. Calculate how much of this ingredient is already "reserved" by PENDING orders
+            from models import Order, OrderItem, MenuItemIngredient, db
+            pending_usage = db.session.query(db.func.sum(OrderItem.quantity * MenuItemIngredient.quantity_needed))\
+                .join(Order, Order.id == OrderItem.order_id)\
+                .join(MenuItemIngredient, MenuItemIngredient.menu_item_id == OrderItem.menu_item_id)\
+                .filter(Order.status.in_(['PENDING', 'HOLD']))\
+                .filter(MenuItemIngredient.ingredient_id == ingredient.id)\
+                .scalar()
+            
+            pending_usage = float(pending_usage or 0)
+            real_available = float(ingredient.kitchen_qty or 0) - pending_usage
             needed = float(r.quantity_needed) * quantity
-            if float(ingredient.kitchen_qty or 0) < needed:
-                return False, f"Insufficient Stock: '{menu_item.name}' is temporarily unavailable due to lack of ingredients in kitchen ({ingredient.name}).", None
+            
+            # 3. Check if the "Real Available" stock is enough
+            if real_available < needed:
+                return False, f"Insufficient Stock: We cannot fulfill '{menu_item.name}'. Another customer is currently reserving the last available stock.", None
 
         total_amount += Decimal(str(menu_item.price)) * quantity
         total_items += quantity
