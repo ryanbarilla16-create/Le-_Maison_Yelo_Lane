@@ -7,14 +7,7 @@
         <h1 style="font-family:'Georgia',serif;color:var(--text-main);font-size:2rem;font-weight:bold;margin:0;">
             <i class="fas fa-map-marker-alt me-2"></i>Delivery Areas
         </h1>
-        <p style="margin: 0; font-size: 0.85rem; color: #8B634B; font-weight: 600;">Configure service zones and
-            coverage.
-            <span id="syncIndicator"
-                style="font-size: 0.75rem; color: #8b7355; opacity: 0.8; margin-left: 10px; font-weight: 500;">
-                <i class="fas fa-sync-alt fa-spin me-1"></i> Real-time Sync (5s) • Last Update: <span
-                    id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
-            </span>
-        </p>
+        <p style="margin: 0; font-size: 0.85rem; color: #8B634B; font-weight: 600;">Configure service zones and coverage.</p>
     </div>
     <button class="btn-admin-primary px-4 py-2" onclick="openAddModal()"
         style="border-radius:10px;border:none;font-weight:700;font-size:0.85rem;">
@@ -582,26 +575,27 @@
     function pollDeliveryAreas() {
         if (document.getElementById('daModalOverlay').classList.contains('show')) return;
 
+        const savedScroll = window.scrollY;
+
         fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
             .then(response => response.text())
             .then(html => {
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
 
-                const ids = ['daGridContainer', 'lastUpdateText'];
-                ids.forEach(id => {
+                ['daGrid', 'lastUpdateText'].forEach(id => {
                     const oldEl = document.getElementById(id);
                     const newEl = doc.getElementById(id);
                     if (oldEl && newEl && oldEl.innerHTML !== newEl.innerHTML) {
                         oldEl.innerHTML = newEl.innerHTML;
-                        if (id === 'daGridContainer') setupSmartAutoFill();
                     }
                 });
+                window.scrollTo(0, savedScroll);
             })
             .catch(err => console.warn('Delivery areas sync failed:', err));
     }
 
-    setInterval(pollDeliveryAreas, 5000);
+    
 </script>
 
 <!-- Add/Edit Modal -->

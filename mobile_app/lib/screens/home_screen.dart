@@ -112,6 +112,17 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _handleDeepLink(String link) {
+    if (link == '/my-orders') {
+      setState(() => _currentIndex = 2);
+    } else if (link == '/my-reservations') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const MyReservationsScreen()),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final screens = [
@@ -246,11 +257,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         Icons.notifications_outlined,
                         badgeCount: _unreadNotifCount,
                         onTap: () async {
-                          await Navigator.push(
+                          final result = await Navigator.push(
                             context,
                             MaterialPageRoute(builder: (_) => const NotificationsScreen()),
                           );
                           _loadUnreadCount();
+                          if (result is String) {
+                            _handleDeepLink(result);
+                          }
                         },
                       ),
                       const SizedBox(width: 12),

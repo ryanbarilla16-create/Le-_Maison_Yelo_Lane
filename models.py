@@ -92,6 +92,8 @@ class Order(db.Model):
     payment_method = db.Column(db.String(20), default='COUNTER') # COUNTER, ONLINE
     amount_tendered = db.Column(db.Numeric(10, 2), nullable=True)
     change_amount = db.Column(db.Numeric(10, 2), nullable=True)
+    table_number = db.Column(db.Integer, nullable=True)  # Table number for dine-in orders
+    table_status = db.Column(db.String(20), nullable=True, default='AVAILABLE')  # AVAILABLE, OCCUPIED
     notes = db.Column(db.Text, nullable=True)
     delivery_address = db.Column(db.Text, nullable=True)
     delivery_status = db.Column(db.String(20), nullable=True)  # WAITING, PICKED_UP, ON_THE_WAY, DELIVERED
@@ -130,6 +132,8 @@ class Review(db.Model):
     order_id = db.Column(db.Integer, db.ForeignKey('order.id'), nullable=True) # Reference to the specific order being reviewed
     rating = db.Column(db.Integer, nullable=False) # 1 to 5
     comment = db.Column(db.Text, nullable=True)
+    photo_url = db.Column(db.String(500), nullable=True) # Customer uploaded photo
+    is_featured_in_gallery = db.Column(db.Boolean, default=False) # Admin can feature in homepage gallery
     status = db.Column(db.String(20), default='APPROVED', index=True) # PENDING, APPROVED, REJECTED
     created_at = db.Column(db.DateTime, default=get_ph_time, index=True)
 
@@ -141,6 +145,7 @@ class Notification(db.Model):
     title = db.Column(db.String(200), nullable=False)
     message = db.Column(db.Text, nullable=False)
     type = db.Column(db.String(30), default='SYSTEM')  # ORDER, RESERVATION, DELIVERY, SYSTEM
+    link = db.Column(db.String(500), nullable=True) # Optional link to redirect user (e.g. /order/123)
     is_read = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=get_ph_time)
 
@@ -154,6 +159,7 @@ class Supplier(db.Model):
     email = db.Column(db.String(120), nullable=True)
     address = db.Column(db.Text, nullable=True)
     catalog_items = db.Column(db.Text, nullable=True)
+    category = db.Column(db.String(100), nullable=True)
     created_at = db.Column(db.DateTime, default=get_ph_time)
 
     ingredients = db.relationship('Ingredient', backref='supplier', lazy=True)
@@ -341,3 +347,18 @@ class DeliveryArea(db.Model):
             return json.loads(self.barangays)
         except Exception:
             return []
+
+
+# ── SUPPLIER PAYMENTS & EXPENSES ──────────────────────────────────────────────
+class SupplierPayment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), nullable=False)
+    branch = db.Column(db.String(50), nullable=False)  # 'Pagsanjan' or 'Lucban'
+    amount = db.Column(db.Numeric(10, 2), nullable=False)
+    details = db.Column(db.Text, nullable=True)  # Description / list of items received
+    created_at = db.Column(db.DateTime, default=get_ph_time)
+    processed_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+
+    supplier = db.relationship('Supplier', backref=db.backref('payments', lazy=True))
+    processed_by = db.relationship('User', backref=db.backref('processed_payments', lazy=True))
+

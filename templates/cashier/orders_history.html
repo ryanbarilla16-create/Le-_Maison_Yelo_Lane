@@ -13,9 +13,7 @@
 {% block page_title %}Order History{% endblock %}
 {% block page_subtitle %}
     Review past transactions and order details
-    <span id="syncIndicator" style="font-size: 0.72rem; color: var(--muted); opacity: 0.8; margin-left: 10px; font-weight: 500;">
-        <i class="fas fa-sync-alt fa-spin me-1"></i> Live Update (5s) • Last: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
-    </span>
+    
 {% endblock %}
 
 {% block extra_style %}
@@ -283,6 +281,10 @@
     function pollOrderHistory() {
         if (document.activeElement && document.activeElement.id === 'historySearch') return;
 
+        const searchEl = document.getElementById('historySearch');
+        const savedSearch = searchEl ? searchEl.value : '';
+        const savedScroll = window.scrollY;
+
         fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
         .then(r => r.text())
         .then(html => {
@@ -300,9 +302,16 @@
             if (oldStats && newStats && oldStats.innerHTML !== newStats.innerHTML) {
                 oldStats.innerHTML = newStats.innerHTML;
             }
+            // ★ Restore search and scroll
+            const newSearch = document.getElementById('historySearch');
+            if (newSearch && savedSearch) {
+                newSearch.value = savedSearch;
+                filterHistory();
+            }
+            window.scrollTo(0, savedScroll);
         })
         .catch(err => console.warn('History sync failed:', err));
     }
-    setInterval(pollOrderHistory, 5000);
+    
 </script>
 {% endblock %}

@@ -18,14 +18,15 @@ def safe_elapsed(dt_value):
         dt_value = dt_value.replace(tzinfo=None)
     return (now - dt_value).total_seconds()
 
-def create_notification(user_id, title, message, notif_type='SYSTEM'):
+def create_notification(user_id, title, message, notif_type='SYSTEM', link=None):
     """Helper to create a notification for any user"""
     from models import db, Notification
     notif = Notification(
         user_id=user_id,
         title=title,
         message=message,
-        type=notif_type
+        type=notif_type,
+        link=link
     )
     db.session.add(notif)
     db.session.commit()

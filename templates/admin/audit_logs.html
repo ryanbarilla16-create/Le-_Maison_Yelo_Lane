@@ -144,11 +144,7 @@
         </div>
         <div>
             <h1 style="font-family: 'Playfair Display', serif; font-weight: 800; color: #3E2723; margin: 0; font-size: 1.8rem;">System Audit Logs</h1>
-            <p style="margin: 0; font-size: 0.85rem; color: #8B634B; font-weight: 600;">Secure ledger of all administrative actions
-                <span id="syncIndicator" style="font-size: 0.7rem; color: #8b7355; opacity: 0.8; margin-left: 10px; font-weight: 500;">
-                    <i class="fas fa-sync-alt fa-spin me-1"></i> Real-time Sync (5s) • Last Update: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
-                </span>
-            </p>
+            <p style="margin: 0; font-size: 0.85rem; color: #8B634B; font-weight: 600;">Secure ledger of all administrative actions</p>
         </div>
     </div>
     <span style="background: rgba(87, 117, 81, 0.1); color: #577551; border: 1px solid rgba(87, 117, 81, 0.2); padding: 0.5rem 1rem; border-radius: 50px; font-size: 0.75rem; font-weight: 800; display: flex; align-items: center; gap: 6px;">
@@ -342,7 +338,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', initAuditFilters);
-    setInterval(pollAuditLogs, 5000);
+    
 </script>
 {% endblock %}
 

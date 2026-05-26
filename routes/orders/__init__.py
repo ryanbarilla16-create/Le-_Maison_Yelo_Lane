@@ -392,11 +392,38 @@ def add_order_review(order_id):
         flash("Please provide a valid star rating (1-5).", "danger")
         return redirect(url_for('main.my_orders'))
 
+    # Handle photo upload
+    from flask import current_app
+    from werkzeug.utils import secure_filename
+    
+    photo_file = request.files.get('photo')
+    photo_url = None
+    
+    if photo_file and photo_file.filename:
+        # Check if file has an allowed extension
+        allowed_extensions = {'png', 'jpg', 'jpeg', 'gif'}
+        ext = photo_file.filename.rsplit('.', 1)[-1].lower() if '.' in photo_file.filename else ''
+        if ext not in allowed_extensions:
+            flash("Invalid image format. Allowed: PNG, JPG, JPEG, GIF.", "danger")
+            return redirect(url_for('main.my_orders'))
+            
+        try:
+            upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'reviews')
+            os.makedirs(upload_folder, exist_ok=True)
+            filename = secure_filename(f"review_{current_user.id}_{int(get_ph_time().timestamp())}.{ext}")
+            filepath = os.path.join(upload_folder, filename)
+            photo_file.save(filepath)
+            photo_url = f"/static/uploads/reviews/{filename}"
+        except Exception as e:
+            print(f"Error saving review photo: {str(e)}")
+            flash("Failed to upload image. Please try again.", "warning")
+
     new_review = Review(
         user_id=current_user.id,
         order_id=order.id,
         rating=rating,
         comment=comment,
+        photo_url=photo_url,
         status='APPROVED' # Automatically approved
     )
     

@@ -440,7 +440,8 @@ def reserve_confirm():
                 admin.id,
                 'New Reservation Request! 📅',
                 f'{current_user.first_name} made a reservation for {res_date.strftime("%b %d, %Y")} at {res_time.strftime("%I:%M %p")} — Payment pending.',
-                'RESERVATION'
+                'RESERVATION',
+                link='/admin/reservations'
             )
 
         # 4. Create Xendit invoice
@@ -518,7 +519,8 @@ def reservation_payment_success(res_id, order_id):
             staff.id,
             'Reservation Payment Received! 💳',
             f'Reservation #{reservation.id} for {current_user.first_name} on {reservation.date.strftime("%b %d, %Y")} at {reservation.time.strftime("%I:%M %p")} is now paid. Please confirm the booking.',
-            'RESERVATION'
+            'RESERVATION',
+            link='/admin/reservations'
         )
 
     # Notify user
@@ -526,7 +528,8 @@ def reservation_payment_success(res_id, order_id):
         current_user.id,
         'Reservation Payment Successful! 🎉',
         f'Your payment for your {reservation.date.strftime("%b %d, %Y")} {reservation.time.strftime("%I:%M %p")} reservation has been received. Awaiting admin confirmation.',
-        'RESERVATION'
+        'RESERVATION',
+        link='/my-reservations'
     )
 
     flash("Payment successful! Your reservation is pending admin confirmation. We'll notify you once confirmed.", "success")

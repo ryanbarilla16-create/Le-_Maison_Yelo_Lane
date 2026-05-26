@@ -57,9 +57,9 @@ def _get_walkin_items_cached():
         ).filter_by(is_available=True, is_deleted=False).order_by(MenuItem.category, MenuItem.name).all(),
     )
 
-def _create_web_notification(user_id, title, message, notif_type='SYSTEM'):
+def _create_web_notification(user_id, title, message, notif_type='SYSTEM', link=None):
     """Backwards compatible helper for admin routes"""
-    return create_notification(user_id, title, message, notif_type)
+    return create_notification(user_id, title, message, notif_type, link)
 
 def log_inventory_change(ingredient_id, action, quantity, previous_stock, reason=None):
     from models import InventoryLog
@@ -206,7 +206,7 @@ def admin_login():
     if current_user.is_authenticated and current_user.role and current_user.role.upper() in allowed_roles:
         role_upper = current_user.role.upper()
         if role_upper == 'CASHIER':
-            return redirect(url_for('admin.orders'))
+            return redirect(url_for('cashier_portal.cashier_dashboard'))
         elif role_upper in ['INVENTORY_STAFF', 'INVENTORY']:
             return redirect(url_for('inventory_portal.inventory_dashboard'))
         elif role_upper == 'KITCHEN':
@@ -224,7 +224,7 @@ def admin_login():
             login_user(user)
             role_upper = user.role.upper()
             if role_upper == 'CASHIER':
-                return redirect(url_for('admin.orders'))
+                return redirect(url_for('cashier_portal.cashier_dashboard'))
             elif role_upper in ['INVENTORY_STAFF', 'INVENTORY']:
                 return redirect(url_for('inventory_portal.inventory_dashboard'))
             elif role_upper == 'KITCHEN':
@@ -486,10 +486,18 @@ def overview():
     order_status_data = [r[1] for r in order_status_rows] if order_status_rows else [1]
 
     # ── TOTAL REVENUE (branch-filtered) ──
+    from models import SupplierPayment
     rev_query = db.session.query(func.coalesce(func.sum(Order.total_amount), 0))
     if user_branch and user_branch != 'ALL':
         rev_query = rev_query.filter(Order.branch == user_branch)
-    total_revenue = float(rev_query.scalar())
+    order_rev = float(rev_query.scalar())
+    
+    expense_query = db.session.query(func.coalesce(func.sum(SupplierPayment.amount), 0))
+    if user_branch and user_branch != 'ALL':
+        expense_query = expense_query.filter(SupplierPayment.branch == user_branch)
+    total_expenses = float(expense_query.scalar())
+    
+    total_revenue = order_rev - total_expenses
 
     return render_template('admin/overview.html',
         total_customers=total_customers,
@@ -531,7 +539,10 @@ def super_admin_overview():
     total_customers = User.query.filter_by(role='USER').count()
     total_staff = User.query.filter(User.role.in_(['ADMIN', 'CASHIER', 'KITCHEN', 'INVENTORY_STAFF', 'INVENTORY', 'STAFF', 'RIDER'])).count()
     total_menu = MenuItem.query.filter_by(is_deleted=False).count()
-    total_revenue = float(db.session.query(func.coalesce(func.sum(Order.total_amount), 0)).scalar())
+    from models import SupplierPayment
+    total_order_revenue = float(db.session.query(func.coalesce(func.sum(Order.total_amount), 0)).scalar())
+    total_expenses = float(db.session.query(func.coalesce(func.sum(SupplierPayment.amount), 0)).scalar())
+    total_revenue = total_order_revenue  # GROSS only - expenses shown separately per branch
     total_orders = Order.query.count()
     total_reservations = Reservation.query.count()
     pending_orders = Order.query.filter_by(status='PENDING').count()
@@ -539,7 +550,11 @@ def super_admin_overview():
     # ── PER-BRANCH STATS ──
     branch_data = {}
     for br in branches:
-        br_revenue = float(db.session.query(func.coalesce(func.sum(Order.total_amount), 0)).filter(Order.branch == br).scalar())
+        br_order_revenue = float(db.session.query(func.coalesce(func.sum(Order.total_amount), 0)).filter(Order.branch == br).scalar())
+        br_expenses = float(db.session.query(func.coalesce(func.sum(SupplierPayment.amount), 0)).filter(SupplierPayment.branch == br).scalar())
+        br_expense_count = db.session.query(func.count(SupplierPayment.id)).filter(SupplierPayment.branch == br).scalar() or 0
+        br_net_revenue = br_order_revenue - br_expenses  # After supplier deductions
+        
         br_orders = Order.query.filter_by(branch=br).count()
         br_pending = Order.query.filter_by(branch=br, status='PENDING').count()
         br_completed = Order.query.filter_by(branch=br, status='COMPLETED').count()
@@ -561,21 +576,41 @@ def super_admin_overview():
             d = today - timedelta(days=i)
             br_rev_data.append(br_trend_map.get(d, 0.0))
 
+        # Expense trend per branch (last 7 days)
+        br_exp_trend = db.session.query(
+            func.date(SupplierPayment.created_at).label('d'),
+            func.sum(SupplierPayment.amount).label('exp')
+        ).filter(func.date(SupplierPayment.created_at) >= week_ago, SupplierPayment.branch == br).group_by('d').all()
+        br_exp_trend_map = {row.d: float(row.exp or 0) for row in br_exp_trend}
+        br_exp_data = []
+        for i in range(6, -1, -1):
+            d = today - timedelta(days=i)
+            br_exp_data.append(br_exp_trend_map.get(d, 0.0))
+
         # Order status breakdown per branch
         br_status_rows = db.session.query(Order.status, func.count(Order.id)).filter(Order.branch == br).group_by(Order.status).all()
         br_status_labels = [r[0] for r in br_status_rows] if br_status_rows else ['No Data']
         br_status_data = [r[1] for r in br_status_rows] if br_status_rows else [0]
 
+        # Recent supplier payments per branch (last 5)
+        br_recent_payments = SupplierPayment.query.filter_by(branch=br).order_by(SupplierPayment.created_at.desc()).limit(5).all()
+
         branch_data[br] = {
-            'revenue': br_revenue,
+            'gross_revenue': br_order_revenue,
+            'expenses': br_expenses,
+            'expense_count': br_expense_count,
+            'net_revenue': br_net_revenue,
+            'revenue': br_net_revenue,  # keep for backward compat in template
             'orders': br_orders,
             'pending': br_pending,
             'completed': br_completed,
             'reservations': br_reservations,
             'staff_count': br_staff,
             'revenue_trend': br_rev_data,
+            'expense_trend': br_exp_data,
             'status_labels': br_status_labels,
             'status_data': br_status_data,
+            'recent_payments': br_recent_payments,
         }
 
     # Revenue trend labels (shared)
@@ -599,11 +634,14 @@ def super_admin_overview():
         if b in out_of_stock_menu:
             out_of_stock_menu[b].append(item)
 
+    recent_expenses = SupplierPayment.query.order_by(SupplierPayment.created_at.desc()).limit(10).all()
+
     return render_template('admin/super_overview.html',
         total_customers=total_customers,
         total_staff=total_staff,
         total_menu=total_menu,
         total_revenue=total_revenue,
+        total_expenses=total_expenses,
         total_orders=total_orders,
         total_reservations=total_reservations,
         pending_orders=pending_orders,
@@ -615,10 +653,13 @@ def super_admin_overview():
         rev_labels=_json.dumps(rev_labels),
         pagsanjan_rev=_json.dumps(branch_data['Pagsanjan']['revenue_trend']),
         lucban_rev=_json.dumps(branch_data['Lucban']['revenue_trend']),
+        pagsanjan_exp=_json.dumps(branch_data['Pagsanjan']['expense_trend']),
+        lucban_exp=_json.dumps(branch_data['Lucban']['expense_trend']),
         pagsanjan_status_labels=_json.dumps(branch_data['Pagsanjan']['status_labels']),
         pagsanjan_status_data=_json.dumps(branch_data['Pagsanjan']['status_data']),
         lucban_status_labels=_json.dumps(branch_data['Lucban']['status_labels']),
         lucban_status_data=_json.dumps(branch_data['Lucban']['status_data']),
+        recent_expenses=recent_expenses,
     )
 
 # ─── STAFF PERFORMANCE ────────────────────────────────
@@ -872,199 +913,229 @@ def analytics():
         return redirect(url_for('admin.overview'))
 
     import json as _json
-    # Determine branch filter for this admin
-    user_branch = getattr(current_user, 'branch', None)
-
-    # Existing metrics
-    total_customers = User.query.filter_by(role='USER').count()
-    total_menu_items = MenuItem.query.count()
-    
-    # Reservation counts by type
-    res_q = Reservation.query
-    if user_branch and user_branch != 'ALL':
-        res_q = res_q.filter_by(branch=user_branch)
-        
-    exclusive_count = res_q.filter_by(booking_type='EXCLUSIVE').count()
-    regular_count = res_q.filter_by(booking_type='REGULAR').count()
-    total_reservations = res_q.count()
-    
-    # ── CHART DATA (Moved from overview) ──────────────────
     today = get_ph_time().date()
+    total_customers = User.query.filter_by(role='USER').count()
 
-    # 1) Revenue Trend (Last 7 Days) — Line chart
-    revenue_trend_labels = []
-    revenue_trend_data = []
-    for i in range(6, -1, -1):
-        d = today - timedelta(days=i)
-        revenue_trend_labels.append(d.strftime('%b %d'))
-        rev_q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0))\
-            .filter(func.date(Order.created_at) == d)
-        if user_branch and user_branch != 'ALL':
-            rev_q = rev_q.filter(Order.branch == user_branch)
-        day_rev = rev_q.scalar()
-        revenue_trend_data.append(float(day_rev))
+    def get_branch_data(br):
+        # Reservation counts by type
+        res_q = Reservation.query
+        if br != 'ALL':
+            res_q = res_q.filter_by(branch=br)
+        exclusive_count = res_q.filter_by(booking_type='EXCLUSIVE').count()
+        regular_count = res_q.filter_by(booking_type='REGULAR').count()
+        total_reservations = res_q.count()
 
-    # 2) Order Status — Donut chart
-    status_q = db.session.query(Order.status, func.count(Order.id))
-    if user_branch and user_branch != 'ALL':
-        status_q = status_q.filter(Order.branch == user_branch)
-    order_status_rows = status_q.group_by(Order.status).all()
-    
-    order_status_labels = [r[0] for r in order_status_rows] if order_status_rows else ['No Data']
-    order_status_data = [r[1] for r in order_status_rows] if order_status_rows else [1]
+        # Menu items
+        menu_q = MenuItem.query.filter_by(is_deleted=False)
+        if br != 'ALL':
+            menu_q = menu_q.filter_by(branch=br)
+        total_menu_items = menu_q.count()
 
-    # 3) Daily Orders (Last 7 Days) — Bar chart
-    daily_orders_labels = []
-    daily_orders_data = []
-    for i in range(6, -1, -1):
-        d = today - timedelta(days=i)
-        daily_orders_labels.append(d.strftime('%b %d'))
-        cnt_q = db.session.query(func.count(Order.id))\
-            .filter(func.date(Order.created_at) == d)
-        if user_branch and user_branch != 'ALL':
-            cnt_q = cnt_q.filter(Order.branch == user_branch)
-        cnt = cnt_q.scalar()
-        daily_orders_data.append(int(cnt or 0))
+        # 1) Revenue Trend
+        revenue_trend_labels = []
+        revenue_trend_data = []
+        for i in range(6, -1, -1):
+            d = today - timedelta(days=i)
+            revenue_trend_labels.append(d.strftime('%b %d'))
+            rev_q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0))\
+                .filter(func.date(Order.created_at) == d)
+            if br != 'ALL':
+                rev_q = rev_q.filter(Order.branch == br)
+            day_rev = rev_q.scalar()
+            revenue_trend_data.append(float(day_rev))
 
-    # 4) Busy Times — Line chart (orders grouped by hour 0-23)
-    busy_q = db.session.query(
-        func.extract('hour', Order.created_at).label('hr'),
-        func.count(Order.id)
-    )
-    if user_branch and user_branch != 'ALL':
-        busy_q = busy_q.filter(Order.branch == user_branch)
-    busy_hours_raw = busy_q.group_by('hr').order_by('hr').all()
-    
-    busy_map = {int(h): c for h, c in busy_hours_raw}
-    busy_times_labels = [f'{h:02d}:00' for h in range(24)]
-    busy_times_data = [busy_map.get(h, 0) for h in range(24)]
+        # 2) Order Status
+        status_q = db.session.query(Order.status, func.count(Order.id))
+        if br != 'ALL':
+            status_q = status_q.filter(Order.branch == br)
+        order_status_rows = status_q.group_by(Order.status).all()
+        order_status_labels = [r[0] for r in order_status_rows] if order_status_rows else ['No Data']
+        order_status_data = [r[1] for r in order_status_rows] if order_status_rows else [1]
 
-    # 5) Top 5 Best Selling Dishes — Horizontal bar chart
-    top_dishes_q = db.session.query(
-        MenuItem.name,
-        func.sum(OrderItem.quantity).label('total_qty')
-    ).join(OrderItem, OrderItem.menu_item_id == MenuItem.id)\
-     .join(Order, Order.id == OrderItem.order_id)
-     
-    if user_branch and user_branch != 'ALL':
-        top_dishes_q = top_dishes_q.filter(Order.branch == user_branch)
-        
-    top_dishes_raw = top_dishes_q.group_by(MenuItem.name)\
-     .order_by(func.sum(OrderItem.quantity).desc())\
-     .limit(5).all()
-     
-    top_dishes_labels = [r[0] for r in top_dishes_raw] if top_dishes_raw else ['No Data']
-    top_dishes_data = [int(r[1]) for r in top_dishes_raw] if top_dishes_raw else [0]
+        # 3) Daily Orders
+        daily_orders_labels = []
+        daily_orders_data = []
+        for i in range(6, -1, -1):
+            d = today - timedelta(days=i)
+            daily_orders_labels.append(d.strftime('%b %d'))
+            cnt_q = db.session.query(func.count(Order.id))\
+                .filter(func.date(Order.created_at) == d)
+            if br != 'ALL':
+                cnt_q = cnt_q.filter(Order.branch == br)
+            cnt = cnt_q.scalar()
+            daily_orders_data.append(int(cnt or 0))
 
-    # 6) Monthly Revenue — Area chart (last 6 months)
-    monthly_rev_labels = []
-    monthly_rev_data = []
-    for i in range(5, -1, -1):
-        first_of_month = today.replace(day=1)
-        m = first_of_month.month - i
-        y = first_of_month.year
-        while m <= 0:
-            m += 12
-            y -= 1
-        month_start = date(y, m, 1)
-        if m == 12:
-            month_end = date(y + 1, 1, 1)
-        else:
-            month_end = date(y, m + 1, 1)
-        monthly_rev_labels.append(month_start.strftime('%b %Y'))
-        
-        mrev_q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0))\
-            .filter(Order.created_at >= datetime.combine(month_start, datetime.min.time()),
-                    Order.created_at < datetime.combine(month_end, datetime.min.time()))
-        if user_branch and user_branch != 'ALL':
-            mrev_q = mrev_q.filter(Order.branch == user_branch)
-        rev = mrev_q.scalar()
-        monthly_rev_data.append(float(rev))
+        # 4) Busy Times
+        busy_q = db.session.query(
+            func.extract('hour', Order.created_at).label('hr'),
+            func.count(Order.id)
+        )
+        if br != 'ALL':
+            busy_q = busy_q.filter(Order.branch == br)
+        busy_hours_raw = busy_q.group_by('hr').order_by('hr').all()
+        busy_map = {int(h): c for h, c in busy_hours_raw}
+        busy_times_labels = [f'{h:02d}:00' for h in range(24)]
+        busy_times_data = [busy_map.get(h, 0) for h in range(24)]
 
-    # 7) Customer Loyalty — Donut chart (repeat vs one-time buyers)
-    order_counts_sub_q = db.session.query(
-        Order.user_id,
-        func.count(Order.id).label('order_count')
-    )
-    if user_branch and user_branch != 'ALL':
-        order_counts_sub_q = order_counts_sub_q.filter(Order.branch == user_branch)
-        
-    order_counts_sub = order_counts_sub_q.group_by(Order.user_id).subquery()
-    repeat_customers = db.session.query(func.count()).filter(order_counts_sub.c.order_count > 1).scalar() or 0
-    onetime_customers = db.session.query(func.count()).filter(order_counts_sub.c.order_count == 1).scalar() or 0
-    loyalty_labels = ['Repeat Customers', 'One-time Customers']
-    loyalty_data = [repeat_customers, onetime_customers]
-    if repeat_customers == 0 and onetime_customers == 0:
-        loyalty_labels = ['No Orders Yet']
-        loyalty_data = [1]
+        # 5) Top Selling Dishes
+        top_dishes_q = db.session.query(
+            MenuItem.name,
+            func.sum(OrderItem.quantity).label('total_qty')
+        ).join(OrderItem, OrderItem.menu_item_id == MenuItem.id)\
+         .join(Order, Order.id == OrderItem.order_id)
+        if br != 'ALL':
+            top_dishes_q = top_dishes_q.filter(Order.branch == br)
+        top_dishes_raw = top_dishes_q.group_by(MenuItem.name)\
+         .order_by(func.sum(OrderItem.quantity).desc())\
+         .limit(5).all()
+        top_dishes_labels = [r[0] for r in top_dishes_raw] if top_dishes_raw else ['No Data']
+        top_dishes_data = [int(r[1]) for r in top_dishes_raw] if top_dishes_raw else [0]
 
-    # Compute total revenue
-    trev_q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0))
-    if user_branch and user_branch != 'ALL':
-        trev_q = trev_q.filter(Order.branch == user_branch)
-    total_revenue_val = trev_q.scalar()
-    
-    # 8) Advanced Analytics: Profit & Loss (P&L)
-    cogs_query = db.session.query(
-        func.sum(OrderItem.quantity * MenuItemIngredient.quantity_needed * Ingredient.cost_per_unit)
-    ).select_from(OrderItem)\
-     .join(Order, Order.id == OrderItem.order_id)\
-     .join(MenuItem, MenuItem.id == OrderItem.menu_item_id)\
-     .join(MenuItemIngredient, MenuItemIngredient.menu_item_id == MenuItem.id)\
-     .join(Ingredient, Ingredient.id == MenuItemIngredient.ingredient_id)\
-     .filter(Order.status == 'COMPLETED')
-     
-    if user_branch and user_branch != 'ALL':
-        cogs_query = cogs_query.filter(Order.branch == user_branch)
+        # 6) Monthly Revenue
+        monthly_rev_labels = []
+        monthly_rev_data = []
+        for i in range(5, -1, -1):
+            first_of_month = today.replace(day=1)
+            m = first_of_month.month - i
+            y = first_of_month.year
+            while m <= 0:
+                m += 12
+                y -= 1
+            month_start = date(y, m, 1)
+            if m == 12:
+                month_end = date(y + 1, 1, 1)
+            else:
+                month_end = date(y, m + 1, 1)
+            monthly_rev_labels.append(month_start.strftime('%b %Y'))
+            mrev_q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0))\
+                .filter(Order.created_at >= datetime.combine(month_start, datetime.min.time()),
+                        Order.created_at < datetime.combine(month_end, datetime.min.time()))
+            if br != 'ALL':
+                mrev_q = mrev_q.filter(Order.branch == br)
+            rev = mrev_q.scalar()
+            monthly_rev_data.append(float(rev))
 
-    total_cogs = float(cogs_query.scalar() or 0.0)
-    net_profit = float(total_revenue_val) - total_cogs
-    
-    # 9) Sales Forecast (Next 7 Days)
-    last_14_days_rev = []
-    for i in range(13, -1, -1):
-        d = today - timedelta(days=i)
-        fc_q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0))\
-            .filter(func.date(Order.created_at) == d)
-        if user_branch and user_branch != 'ALL':
-            fc_q = fc_q.filter(Order.branch == user_branch)
-        rev = fc_q.scalar()
-        last_14_days_rev.append(float(rev))
-    
-    avg_daily_rev = sum(last_14_days_rev) / 14 if last_14_days_rev else 0
-    forecast_labels = []
-    forecast_data = []
-    for i in range(1, 8):
-        future_date = today + timedelta(days=i)
-        forecast_labels.append(future_date.strftime('%b %d'))
-        forecast_data.append(round(avg_daily_rev, 2))
+        # 7) Customer Loyalty
+        order_counts_sub_q = db.session.query(
+            Order.user_id,
+            func.count(Order.id).label('order_count')
+        )
+        if br != 'ALL':
+            order_counts_sub_q = order_counts_sub_q.filter(Order.branch == br)
+        order_counts_sub = order_counts_sub_q.group_by(Order.user_id).subquery()
+        repeat_customers = db.session.query(func.count()).filter(order_counts_sub.c.order_count > 1).scalar() or 0
+        onetime_customers = db.session.query(func.count()).filter(order_counts_sub.c.order_count == 1).scalar() or 0
+        loyalty_labels = ['Repeat Customers', 'One-time Customers']
+        loyalty_data = [repeat_customers, onetime_customers]
+        if repeat_customers == 0 and onetime_customers == 0:
+            loyalty_labels = ['No Orders Yet']
+            loyalty_data = [1]
+
+        # Total revenue
+        trev_q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0))
+        if br != 'ALL':
+            trev_q = trev_q.filter(Order.branch == br)
+        total_revenue_val = float(trev_q.scalar())
+
+        # 8) Advanced P&L COGS
+        cogs_query = db.session.query(
+            func.sum(OrderItem.quantity * MenuItemIngredient.quantity_needed * Ingredient.cost_per_unit)
+        ).select_from(OrderItem)\
+         .join(Order, Order.id == OrderItem.order_id)\
+         .join(MenuItem, MenuItem.id == OrderItem.menu_item_id)\
+         .join(MenuItemIngredient, MenuItemIngredient.menu_item_id == MenuItem.id)\
+         .join(Ingredient, Ingredient.id == MenuItemIngredient.ingredient_id)\
+         .filter(Order.status == 'COMPLETED')
+        if br != 'ALL':
+            cogs_query = cogs_query.filter(Order.branch == br)
+        total_cogs = float(cogs_query.scalar() or 0.0)
+        net_profit = total_revenue_val - total_cogs
+
+        # 9) Sales Forecast
+        last_14_days_rev = []
+        for i in range(13, -1, -1):
+            d = today - timedelta(days=i)
+            fc_q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0))\
+                .filter(func.date(Order.created_at) == d)
+            if br != 'ALL':
+                fc_q = fc_q.filter(Order.branch == br)
+            rev = fc_q.scalar()
+            last_14_days_rev.append(float(rev))
+        avg_daily_rev = sum(last_14_days_rev) / 14 if last_14_days_rev else 0
+        forecast_labels = []
+        forecast_data = []
+        for i in range(1, 8):
+            future_date = today + timedelta(days=i)
+            forecast_labels.append(future_date.strftime('%b %d'))
+            forecast_data.append(round(avg_daily_rev, 2))
+
+        return {
+            'stats': {
+                'total_menu_items': total_menu_items,
+                'exclusive_count': exclusive_count,
+                'regular_count': regular_count,
+                'total_reservations': total_reservations,
+                'total_revenue': total_revenue_val,
+                'total_cogs': total_cogs,
+                'net_profit': net_profit,
+            },
+            'charts': {
+                'forecast': {'labels': forecast_labels, 'data': forecast_data},
+                'revenue_trend': {'labels': revenue_trend_labels, 'data': revenue_trend_data},
+                'order_status': {'labels': order_status_labels, 'data': order_status_data},
+                'daily_orders': {'labels': daily_orders_labels, 'data': daily_orders_data},
+                'busy_times': {'labels': busy_times_labels, 'data': busy_times_data},
+                'top_dishes': {'labels': top_dishes_labels, 'data': top_dishes_data},
+                'monthly_rev': {'labels': monthly_rev_labels, 'data': monthly_rev_data},
+                'loyalty': {'labels': loyalty_labels, 'data': loyalty_data},
+            }
+        }
+
+    user_role = current_user.role.upper()
+    selected_branch = 'ALL'
+    branches_data = {}
+    if user_role == 'SUPER_ADMIN':
+        selected_branch = request.args.get('branch', 'ALL')
+        if selected_branch not in ['ALL', 'Pagsanjan', 'Lucban']:
+            selected_branch = 'ALL'
+        branches_data['ALL'] = get_branch_data('ALL')
+        branches_data['Pagsanjan'] = get_branch_data('Pagsanjan')
+        branches_data['Lucban'] = get_branch_data('Lucban')
+    else:
+        user_branch = getattr(current_user, 'branch', 'Pagsanjan')
+        selected_branch = user_branch
+        branches_data[user_branch] = get_branch_data(user_branch)
+
+    current_data = branches_data[selected_branch]
 
     return render_template('admin/analytics.html',
         total_customers=total_customers,
-        total_menu_items=total_menu_items,
-        exclusive_count=exclusive_count,
-        regular_count=regular_count,
-        total_reservations=total_reservations,
-        total_revenue=float(total_revenue_val),
-        total_cogs=total_cogs,
-        net_profit=net_profit,
-        forecast_labels=_json.dumps(forecast_labels),
-        forecast_data=_json.dumps(forecast_data),
-        revenue_trend_labels=_json.dumps(revenue_trend_labels),
-        revenue_trend_data=_json.dumps(revenue_trend_data),
-        order_status_labels=_json.dumps(order_status_labels),
-        order_status_data=_json.dumps(order_status_data),
-        daily_orders_labels=_json.dumps(daily_orders_labels),
-        daily_orders_data=_json.dumps(daily_orders_data),
-        busy_times_labels=_json.dumps(busy_times_labels),
-        busy_times_data=_json.dumps(busy_times_data),
-        top_dishes_labels=_json.dumps(top_dishes_labels),
-        top_dishes_data=_json.dumps(top_dishes_data),
-        monthly_rev_labels=_json.dumps(monthly_rev_labels),
-        monthly_rev_data=_json.dumps(monthly_rev_data),
-        loyalty_labels=_json.dumps(loyalty_labels),
-        loyalty_data=_json.dumps(loyalty_data),
-        get_ph_time=get_ph_time
+        total_menu_items=current_data['stats']['total_menu_items'],
+        exclusive_count=current_data['stats']['exclusive_count'],
+        regular_count=current_data['stats']['regular_count'],
+        total_reservations=current_data['stats']['total_reservations'],
+        total_revenue=current_data['stats']['total_revenue'],
+        total_cogs=current_data['stats']['total_cogs'],
+        net_profit=current_data['stats']['net_profit'],
+        forecast_labels=_json.dumps(current_data['charts']['forecast']['labels']),
+        forecast_data=_json.dumps(current_data['charts']['forecast']['data']),
+        revenue_trend_labels=_json.dumps(current_data['charts']['revenue_trend']['labels']),
+        revenue_trend_data=_json.dumps(current_data['charts']['revenue_trend']['data']),
+        order_status_labels=_json.dumps(current_data['charts']['order_status']['labels']),
+        order_status_data=_json.dumps(current_data['charts']['order_status']['data']),
+        daily_orders_labels=_json.dumps(current_data['charts']['daily_orders']['labels']),
+        daily_orders_data=_json.dumps(current_data['charts']['daily_orders']['data']),
+        busy_times_labels=_json.dumps(current_data['charts']['busy_times']['labels']),
+        busy_times_data=_json.dumps(current_data['charts']['busy_times']['data']),
+        top_dishes_labels=_json.dumps(current_data['charts']['top_dishes']['labels']),
+        top_dishes_data=_json.dumps(current_data['charts']['top_dishes']['data']),
+        monthly_rev_labels=_json.dumps(current_data['charts']['monthly_rev']['labels']),
+        monthly_rev_data=_json.dumps(current_data['charts']['monthly_rev']['data']),
+        loyalty_labels=_json.dumps(current_data['charts']['loyalty']['labels']),
+        loyalty_data=_json.dumps(current_data['charts']['loyalty']['data']),
+        get_ph_time=get_ph_time,
+        selected_branch=selected_branch,
+        all_branches_data_json=_json.dumps(branches_data)
     )
 
 MENU_CATEGORIES = [
@@ -1327,7 +1398,7 @@ def menu_restore(item_id):
 @login_required
 @admin_required
 def approvals():
-    if current_user.role.upper() != 'SUPER_ADMIN':
+    if current_user.role.upper() not in ['ADMIN', 'SUPER_ADMIN']:
         flash("Access denied.", "danger")
         return redirect(url_for('admin.overview'))
     pending = User.query.filter_by(status='PENDING', role='USER', is_verified=True).limit(300).all()
@@ -1575,7 +1646,7 @@ def update_reservation(res_id):
         'COMPLETED': f'Your reservation for {res.date.strftime("%b %d, %Y")} has been marked as completed. Thank you for dining with us!',
     }
     if new_status in status_msgs:
-        _create_web_notification(res.user_id, f'Reservation {new_status.capitalize()}', status_msgs[new_status], 'RESERVATION')
+        _create_web_notification(res.user_id, f'Reservation {new_status.capitalize()}', status_msgs[new_status], 'RESERVATION', link='/my-reservations')
     
     flash(f"Reservation #{res.id} updated to {new_status}.", "success")
     return redirect(url_for('admin.reservations'))
@@ -1736,8 +1807,23 @@ def walkin_order_submit():
         # Allow Admin full control for POS now
         customer_name = (request.form.get('customer_name') or 'Walk-in Customer').strip()
         dining_option = request.form.get('dining_option', 'DINE_IN')
-        notes = request.form.get('notes', '').strip()
+        table_number = request.form.get('table_number')
         payment_method = request.form.get('payment_method', 'COUNTER')
+
+        # Validate table selection for dine-in
+        if dining_option == 'DINE_IN' and not table_number:
+            flash("Please select a table for dine-in orders.", "danger")
+            return redirect(url_for('admin.walkin_order'))
+
+        # Check if table is already occupied
+        if dining_option == 'DINE_IN' and table_number:
+            occupied_order = Order.query.filter_by(
+                table_number=int(table_number),
+                table_status='OCCUPIED'
+            ).first()
+            if occupied_order:
+                flash(f"Table {table_number} is already occupied. Please select another table.", "danger")
+                return redirect(url_for('admin.walkin_order'))
 
         # Parse items from form
         item_ids = request.form.getlist('item_id[]')
@@ -1790,7 +1876,9 @@ def walkin_order_submit():
             amount_tendered=amount_tendered,
             change_amount=change_amount,
             dining_option=dining_option,
-            notes=notes,
+            table_number=int(table_number) if table_number else None,
+            table_status='OCCUPIED' if dining_option == 'DINE_IN' and table_number else None,
+            notes='',
             items=order_items
         )
         db.session.add(order)
@@ -1802,6 +1890,7 @@ def walkin_order_submit():
             'id': order.id,
             'customer': customer_name,
             'dining_option': dining_option,
+            'table_number': int(table_number) if table_number else None,
             'total_amount': float(total)
         }, namespace='/')
         
@@ -1816,8 +1905,8 @@ def walkin_order_submit():
                     'amount': float(total),
                     'payer_email': current_user.email,
                     'description': f"Walk-in Order #{order.id} for {customer_name}",
-                    'success_redirect_url': url_for('admin.orders', _external=True),
-                    'failure_redirect_url': url_for('admin.orders', _external=True),
+                    'success_redirect_url': url_for('cashier_portal.cashier_dashboard', _external=True),
+                    'failure_redirect_url': url_for('cashier_portal.cashier_dashboard', _external=True),
                     'currency': 'PHP'
                 }
                 try:
@@ -1831,14 +1920,62 @@ def walkin_order_submit():
                         return redirect(order.xendit_invoice_url)
                 except Exception as x: print(f"XENDIT ERROR: {str(x)}")
         
-        flash("Walk-in order submitted successfully!", "success")
-        return redirect(url_for('admin.orders'))
+        flash(f"Walk-in order submitted successfully! Table {table_number} is now occupied." if table_number else "Walk-in order submitted successfully!", "success")
+        return redirect(url_for('cashier_portal.cashier_dashboard'))
     except Exception as e:
         db.session.rollback()
         print(f"WALKIN SUBMIT ERROR: {str(e)}")
         flash(f"System Error: {str(e)}", "danger")
         return redirect(url_for('admin.walkin_order'))
-    return redirect(url_for('admin.orders'))
+    return redirect(url_for('cashier_portal.cashier_dashboard'))
+
+@admin_bp.route('/walkin-order/table-status', methods=['GET'])
+@login_required
+@admin_required
+def get_table_status():
+    """Get status of all tables (1-17)"""
+    try:
+        # Get all occupied tables
+        occupied_tables = db.session.query(Order.table_number).filter(
+            Order.table_status == 'OCCUPIED',
+            Order.table_number.isnot(None)
+        ).all()
+        
+        occupied_list = [t[0] for t in occupied_tables]
+        
+        # Create status for all 17 tables
+        table_status = {}
+        for i in range(1, 18):
+            table_status[i] = 'OCCUPIED' if i in occupied_list else 'AVAILABLE'
+        
+        return jsonify({'success': True, 'tables': table_status})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@admin_bp.route('/orders/<int:order_id>/release-table', methods=['POST'])
+@login_required
+@admin_required
+def release_table(order_id):
+    """Release table after customer leaves"""
+    try:
+        order = Order.query.get_or_404(order_id)
+        
+        if not order.table_number:
+            return jsonify({'success': False, 'error': 'This order has no table assigned'}), 400
+        
+        table_num = order.table_number
+        order.table_status = 'AVAILABLE'
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Table {table_num} is now available',
+            'table_number': table_num
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 
 # ─── DELIVERIES ───────────────────────────────────────
 @admin_bp.route('/deliveries')
@@ -2082,7 +2219,7 @@ def update_order(order_id):
             'CANCELLED': f'Your order #{order.id} has been cancelled.',
         }
         if new_status in order_status_msgs:
-            _create_web_notification(order.user_id, f'Order {new_status.capitalize()}', order_status_msgs[new_status], 'ORDER')
+            _create_web_notification(order.user_id, f'Order {new_status.capitalize()}', order_status_msgs[new_status], 'ORDER', link='/my-orders')
     
     # Send receipt email when order is COMPLETED.
     # This can be slow (SMTP + template rendering), so move it off the request thread.
@@ -2332,7 +2469,30 @@ def reviews():
                 print(f"Sentiment background worker failed: {e}")
         threading.Thread(target=_worker, args=(jobs_copy,), daemon=True).start()
 
-    return render_template('admin/reviews.html', reviews=all_reviews)
+    # Calculate stats
+    total_reviews = len(all_reviews)
+    avg_rating = sum(r.rating for r in all_reviews) / total_reviews if total_reviews else 0.0
+    featured_count = sum(1 for r in all_reviews if r.is_featured_in_gallery and r.photo_url)
+    
+    # Rating distribution
+    rating_dist = {i: sum(1 for r in all_reviews if r.rating == i) for i in range(1, 6)}
+    
+    # Sentiment distribution
+    sentiment_dist = {
+        'positive': sum(1 for r in all_reviews if getattr(r, 'ai_sentiment', 'NEUTRAL') == 'POSITIVE'),
+        'neutral': sum(1 for r in all_reviews if getattr(r, 'ai_sentiment', 'NEUTRAL') == 'NEUTRAL'),
+        'negative': sum(1 for r in all_reviews if getattr(r, 'ai_sentiment', 'NEUTRAL') == 'NEGATIVE')
+    }
+
+    return render_template(
+        'admin/reviews.html', 
+        reviews=all_reviews,
+        total_reviews=total_reviews,
+        avg_rating=round(avg_rating, 1),
+        featured_count=featured_count,
+        rating_dist=rating_dist,
+        sentiment_dist=sentiment_dist
+    )
 
 @admin_bp.route('/reviews/update/<int:review_id>', methods=['POST'])
 @login_required
@@ -2340,10 +2500,110 @@ def reviews():
 def update_review(review_id):
     review = Review.query.get_or_404(review_id)
     new_status = request.form.get('status')
+    
+    if new_status not in ['PENDING', 'APPROVED', 'REJECTED']:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': False, 'message': 'Invalid status value'}), 400
+        flash("Invalid status value", "danger")
+        return redirect(url_for('admin.reviews'))
+        
     review.status = new_status
     db.session.commit()
+    
+    log_audit('UPDATE', 'Review', review.id, f"Admin updated review status to {new_status}")
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({
+            'success': True,
+            'message': f"Review status updated to {new_status}.",
+            'status': new_status
+        })
+        
     flash(f"Review from {review.user.first_name} marked as {new_status}.", "success")
     return redirect(url_for('admin.reviews'))
+
+@admin_bp.route('/reviews/edit-photo/<int:review_id>', methods=['POST'])
+@login_required
+@admin_required
+def edit_review_photo(review_id):
+    """Replace/upload a new photo for a review (e.g. for homepage gallery)"""
+    review = Review.query.get_or_404(review_id)
+    
+    if 'photo' not in request.files:
+        return jsonify({'success': False, 'message': 'No file part in request'}), 400
+        
+    file = request.files['photo']
+    if file.filename == '':
+        return jsonify({'success': False, 'message': 'No selected file'}), 400
+        
+    if file:
+        import os
+        from werkzeug.utils import secure_filename
+        from flask import current_app
+        from utils import get_ph_time
+        
+        allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+        ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+        if ext not in allowed_extensions:
+            return jsonify({'success': False, 'message': 'Invalid image format. Allowed: PNG, JPG, JPEG, GIF, WEBP.'}), 400
+            
+        try:
+            upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'reviews')
+            os.makedirs(upload_folder, exist_ok=True)
+            
+            # Use review.id to keep it unique
+            filename = secure_filename(f"review_{review.id}_edited_{int(get_ph_time().timestamp())}.{ext}")
+            filepath = os.path.join(upload_folder, filename)
+            file.save(filepath)
+            
+            # Delete old file if it exists and was uploaded locally
+            old_photo_url = review.photo_url
+            if old_photo_url and old_photo_url.startswith('/static/uploads/'):
+                try:
+                    old_path = os.path.join(current_app.root_path, old_photo_url.lstrip('/'))
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
+                except Exception as e:
+                    print(f"Failed to delete old photo: {e}")
+            
+            # Update db
+            review.photo_url = f"/static/uploads/reviews/{filename}"
+            db.session.commit()
+            
+            log_audit('UPDATE', 'Review', review.id, f"Admin updated photo for review #{review.id}")
+            
+            return jsonify({
+                'success': True,
+                'message': 'Photo updated successfully',
+                'photo_url': review.photo_url
+            })
+        except Exception as e:
+            print(f"Error saving edited review photo: {str(e)}")
+            return jsonify({'success': False, 'message': f'Failed to upload image: {str(e)}'}), 500
+            
+    return jsonify({'success': False, 'message': 'No file received'}), 400
+
+@admin_bp.route('/reviews/toggle-gallery/<int:review_id>', methods=['POST'])
+@login_required
+@admin_required
+def toggle_review_gallery(review_id):
+    """Toggle whether a review photo is featured in homepage gallery"""
+    review = Review.query.get_or_404(review_id)
+    
+    if not review.photo_url:
+        return jsonify({'success': False, 'message': 'This review has no photo'}), 400
+    
+    # Toggle the gallery feature
+    review.is_featured_in_gallery = not review.is_featured_in_gallery
+    db.session.commit()
+    
+    status = 'added to' if review.is_featured_in_gallery else 'removed from'
+    return jsonify({
+        'success': True, 
+        'message': f'Photo {status} gallery',
+        'is_featured': review.is_featured_in_gallery
+    })
+
 
 # ─── SYSTEM: SETTINGS ────────────────────────────────
 from utils import load_site_settings, save_site_settings
@@ -2497,6 +2757,7 @@ def admin_notifications():
         notifs_data.append({
             'id': f'db_{n.id}', 'title': n.title, 'message': n.message,
             'type': n.type, 'is_read': n.is_read,
+            'link': n.link,
             'created_at': n.created_at.strftime('%b %d, %I:%M %p') if n.created_at else '',
             'raw_date': n.created_at or get_ph_time()
         })
@@ -2508,7 +2769,8 @@ def admin_notifications():
             notifs_data.append({
                 'id': f'usr_{u.id}', 'title': 'Account Approval Needed',
                 'message': f'{u.first_name} {u.last_name} is awaiting admin approval.',
-                'type': 'SYSTEM', 'is_read': False, 'created_at': 'Pending', 'raw_date': get_ph_time()
+                'type': 'SYSTEM', 'is_read': False, 'created_at': 'Pending', 'raw_date': get_ph_time(),
+                'link': '/admin/approvals'
             })
             
         pend_res = Reservation.query.filter_by(status='PENDING').order_by(Reservation.created_at.desc()).limit(5).all()
@@ -2518,7 +2780,8 @@ def admin_notifications():
                 'message': f'{r.guest_count} guests for {r.date.strftime("%b %d")} at {r.time.strftime("%I:%M %p")}.',
                 'type': 'RESERVATION', 'is_read': False,
                 'created_at': r.created_at.strftime('%b %d, %I:%M %p') if r.created_at else 'Pending',
-                'raw_date': r.created_at or get_ph_time()
+                'raw_date': r.created_at or get_ph_time(),
+                'link': '/admin/reservations'
             })
 
     # Add order notifications for Staff/Admin
@@ -2530,7 +2793,8 @@ def admin_notifications():
                 'message': f'Amount: ₱{float(o.total_amount):,.2f} ({o.dining_option})',
                 'type': 'ORDER', 'is_read': False,
                 'created_at': o.created_at.strftime('%b %d, %I:%M %p') if o.created_at else '',
-                'raw_date': o.created_at or get_ph_time()
+                'raw_date': o.created_at or get_ph_time(),
+                'link': '/admin/kitchen' if o.dining_option != 'DELIVERY' else '/admin/deliveries'
             })
 
     # Sort manually by created_at (descending)
@@ -2571,6 +2835,23 @@ def admin_mark_all_read():
     """Mark all admin's notifications as read"""
     Notification.query.filter_by(user_id=current_user.id, is_read=False).update({'is_read': True})
     db.session.commit()
+    return jsonify({'success': True})
+
+@admin_bp.route('/api/notifications/<notif_id>/read', methods=['POST'])
+@login_required
+@admin_required
+def admin_mark_read(notif_id):
+    """Mark a single notification as read. Handles both DB and synthetic IDs."""
+    if notif_id.startswith('db_'):
+        try:
+            db_id = int(notif_id.split('_')[1])
+            notif = Notification.query.get(db_id)
+            if notif and notif.user_id == current_user.id:
+                notif.is_read = True
+                db.session.commit()
+        except Exception:
+            pass
+    # Synthetic notifications (usr_, res_, ord_) are not stored as read state in DB for now
     return jsonify({'success': True})
 
 # ─── USER WEB NOTIFICATIONS API ──────────────────────

@@ -3,13 +3,25 @@
 
 {% block content %}
 <div class="page-header">
-    <h1>Analytics</h1>
-    <p>Detailed sales insights and customer metrics. 
-       <span id="syncIndicator" style="font-size: 0.75rem; color: #8b7355; opacity: 0.8; margin-left: 10px;">
-           <i class="fas fa-sync-alt fa-spin me-1"></i> Real-time Sync (5s) • Last Update: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
-       </span>
-    </p>
+    <h1 id="analyticsPageTitle">Analytics - {% if selected_branch == 'ALL' %}All Branches{% else %}{{ selected_branch }} Branch{% endif %}</h1>
+    <p>Detailed sales insights and customer metrics.</p>
 </div>
+
+{% if current_user.role|upper == 'SUPER_ADMIN' %}
+<div class="mb-4">
+    <div class="d-flex gap-2 flex-wrap" id="branchFilterContainer">
+        <button data-branch="ALL" class="filter-tab {% if selected_branch == 'ALL' %}active{% endif %}" style="border: 1px solid rgba(139, 99, 75, 0.2); outline: none; cursor: pointer;">
+            <i class="fas fa-globe me-1"></i> All Branches (Combined)
+        </button>
+        <button data-branch="Pagsanjan" class="filter-tab {% if selected_branch == 'Pagsanjan' %}active{% endif %}" style="border: 1px solid rgba(139, 99, 75, 0.2); outline: none; cursor: pointer;">
+            <i class="fas fa-store me-1"></i> Pagsanjan Main
+        </button>
+        <button data-branch="Lucban" class="filter-tab {% if selected_branch == 'Lucban' %}active{% endif %}" style="border: 1px solid rgba(139, 99, 75, 0.2); outline: none; cursor: pointer;">
+            <i class="fas fa-store me-1"></i> Lucban Branch
+        </button>
+    </div>
+</div>
+{% endif %}
 
 <!-- CATEGORY STATS -->
 <div class="stats-grid" id="statsGrid1">
@@ -17,19 +29,19 @@
         <div class="stat-icon" style="background: rgba(34,197,94,0.12); color: var(--admin-green);"><i
                 class="fas fa-peso-sign"></i></div>
         <div class="stat-label">Net Profit</div>
-        <div class="stat-value">&#8369;{{ "%.0f"|format(net_profit) }}</div>
+        <div class="stat-value" id="valNetProfit">&#8369;{{ "%.0f"|format(net_profit) }}</div>
     </div>
     <div class="stat-card">
         <div class="stat-icon" style="background: rgba(59,130,246,0.12); color: var(--admin-blue);"><i
                 class="fas fa-coins"></i></div>
         <div class="stat-label">Total COGS</div>
-        <div class="stat-value">&#8369;{{ "%.0f"|format(total_cogs) }}</div>
+        <div class="stat-value" id="valTotalCogs">&#8369;{{ "%.0f"|format(total_cogs) }}</div>
     </div>
     <div class="stat-card">
         <div class="stat-icon" style="background: rgba(139, 99, 75,0.12); color: #8d6e63;"><i
                 class="fas fa-wallet"></i></div>
         <div class="stat-label">Total Revenue</div>
-        <div class="stat-value">&#8369;{{ "%.0f"|format(total_revenue) }}</div>
+        <div class="stat-value" id="valTotalRevenue">&#8369;{{ "%.0f"|format(total_revenue) }}</div>
     </div>
 </div>
 
@@ -37,17 +49,17 @@
     <a href="{{ url_for('admin.reservations') }}" class="stat-card" style="text-decoration: none; display: block; cursor: pointer; color: inherit;">
         <div class="stat-icon" style="background: rgba(139, 99, 75, 0.12); color: #8d6e63;"><i class="fas fa-calendar-check"></i></div>
         <div class="stat-label">Total Reservations</div>
-        <div class="stat-value">{{ total_reservations }}</div>
+        <div class="stat-value" id="valTotalReservations">{{ total_reservations }}</div>
     </a>
     <a href="{{ url_for('admin.reservations', type='EXCLUSIVE') }}" class="stat-card" style="text-decoration: none; display: block; cursor: pointer; color: inherit;">
         <div class="stat-icon" style="background: rgba(212, 168, 98, 0.15); color: #D4A862;"><i class="fas fa-crown"></i></div>
         <div class="stat-label">Exclusive Bookings</div>
-        <div class="stat-value">{{ exclusive_count }}</div>
+        <div class="stat-value" id="valExclusiveCount">{{ exclusive_count }}</div>
     </a>
     <a href="{{ url_for('admin.reservations', type='REGULAR') }}" class="stat-card" style="text-decoration: none; display: block; cursor: pointer; color: inherit;">
         <div class="stat-icon" style="background: rgba(139, 99, 75, 0.1); color: #8B634B;"><i class="fas fa-users"></i></div>
         <div class="stat-label">Standard Bookings</div>
-        <div class="stat-value">{{ regular_count }}</div>
+        <div class="stat-value" id="valRegularCount">{{ regular_count }}</div>
     </a>
 </div>
 
@@ -109,6 +121,10 @@
     </div>
 </div>
 
+<script id="allBranchesData" type="application/json">
+    {{ all_branches_data_json | safe }}
+</script>
+
 <div id="chartServerData" style="display: none;" data-revenue-trend-labels="{{ revenue_trend_labels | forceescape }}"
     data-revenue-trend-data="{{ revenue_trend_data | forceescape }}" data-order-status-labels="{{ order_status_labels | forceescape }}"
     data-order-status-data="{{ order_status_data | forceescape }}" data-daily-orders-labels="{{ daily_orders_labels | forceescape }}"
@@ -122,6 +138,8 @@
 <script>
     // Global chart registry to prevent multiple instances
     window.analyticsCharts = window.analyticsCharts || {};
+    window.allBranchData = JSON.parse(document.getElementById('allBranchesData').textContent);
+    let currentActiveBranch = '{{ selected_branch }}';
 
     function pollAnalytics() {
         fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
@@ -130,27 +148,142 @@
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
             
-            let dataChanged = false;
-            const ids = ['statsGrid1', 'statsGrid2', 'lastUpdateText', 'chartServerData'];
-            ids.forEach(id => {
-                const oldEl = document.getElementById(id);
-                const newEl = doc.getElementById(id);
-                if (oldEl && newEl && oldEl.innerHTML !== newEl.innerHTML) {
-                    oldEl.innerHTML = newEl.innerHTML;
-                    dataChanged = true;
-                    if (id === 'chartServerData') {
-                        Object.keys(newEl.dataset).forEach(key => oldEl.dataset[key] = newEl.dataset[key]);
-                    }
-                }
-            });
-            
-            if (dataChanged) initAnalyticsCharts();
+            // Sync all branches data
+            const oldJSON = document.getElementById('allBranchesData');
+            const newJSON = doc.getElementById('allBranchesData');
+            if (oldJSON && newJSON && oldJSON.textContent !== newJSON.textContent) {
+                oldJSON.textContent = newJSON.textContent;
+                window.allBranchData = JSON.parse(newJSON.textContent);
+                updateAnalyticsUI(currentActiveBranch);
+            }
         })
         .catch(err => console.warn('Analytics sync failed:', err));
     }
 
+    function updateAnalyticsUI(branch) {
+        currentActiveBranch = branch;
+        const data = window.allBranchData[branch];
+        if (!data) return;
+
+        // 1. Update text stats
+        const formatter = new Intl.NumberFormat('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        const netProfitEl = document.getElementById('valNetProfit');
+        const cogsEl = document.getElementById('valTotalCogs');
+        const revEl = document.getElementById('valTotalRevenue');
+        const resEl = document.getElementById('valTotalReservations');
+        const exclEl = document.getElementById('valExclusiveCount');
+        const regEl = document.getElementById('valRegularCount');
+
+        if (netProfitEl) netProfitEl.innerHTML = '&#8369;' + formatter.format(data.stats.net_profit);
+        if (cogsEl) cogsEl.innerHTML = '&#8369;' + formatter.format(data.stats.total_cogs);
+        if (revEl) revEl.innerHTML = '&#8369;' + formatter.format(data.stats.total_revenue);
+        if (resEl) resEl.textContent = data.stats.total_reservations;
+        if (exclEl) exclEl.textContent = data.stats.exclusive_count;
+        if (regEl) regEl.textContent = data.stats.regular_count;
+
+        // Page title
+        const pageTitle = document.getElementById('analyticsPageTitle');
+        if (pageTitle) {
+            pageTitle.textContent = 'Analytics - ' + (branch === 'ALL' ? 'All Branches' : branch + ' Branch');
+        }
+
+        // Update active tab styling
+        const container = document.getElementById('branchFilterContainer');
+        if (container) {
+            container.querySelectorAll('.filter-tab').forEach(btn => {
+                if (btn.getAttribute('data-branch') === branch) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        // 2. Update Charts
+        // Chart 1: Revenue Trend
+        if (window.analyticsCharts.revenueTrend) {
+            window.analyticsCharts.revenueTrend.data.labels = data.charts.revenue_trend.labels;
+            window.analyticsCharts.revenueTrend.data.datasets[0].data = data.charts.revenue_trend.data;
+            window.analyticsCharts.revenueTrend.update();
+        }
+
+        // Chart 2: Order Status
+        if (window.analyticsCharts.orderStatus) {
+            window.analyticsCharts.orderStatus.data.labels = data.charts.order_status.labels;
+            window.analyticsCharts.orderStatus.data.datasets[0].data = data.charts.order_status.data;
+            var STATUS_COLORS = {
+                'PENDING': '#f59e0b',
+                'PREPARING': '#3b82f6',
+                'COMPLETED': '#22c55e',
+                'CANCELLED': '#ef4444',
+                'No Data': '#d4d4d8'
+            };
+            window.analyticsCharts.orderStatus.data.datasets[0].backgroundColor = data.charts.order_status.labels.map(function(l) { return STATUS_COLORS[l] || '#a1887f'; });
+            window.analyticsCharts.orderStatus.update();
+        }
+
+        // Chart 3: AI Sales Forecast
+        if (window.analyticsCharts.forecast) {
+            window.analyticsCharts.forecast.data.labels = data.charts.forecast.labels;
+            window.analyticsCharts.forecast.data.datasets[0].data = data.charts.forecast.data;
+            window.analyticsCharts.forecast.update();
+        }
+
+        // Chart 4: Daily Orders
+        if (window.analyticsCharts.dailyOrders) {
+            window.analyticsCharts.dailyOrders.data.labels = data.charts.daily_orders.labels;
+            window.analyticsCharts.dailyOrders.data.datasets[0].data = data.charts.daily_orders.data;
+            window.analyticsCharts.dailyOrders.update();
+        }
+
+        // Chart 5: Busy Times
+        if (window.analyticsCharts.busyTimes) {
+            window.analyticsCharts.busyTimes.data.labels = data.charts.busy_times.labels;
+            window.analyticsCharts.busyTimes.data.datasets[0].data = data.charts.busy_times.data;
+            window.analyticsCharts.busyTimes.update();
+        }
+
+        // Chart 6: Top Dishes
+        if (window.analyticsCharts.topDishes) {
+            window.analyticsCharts.topDishes.data.labels = data.charts.top_dishes.labels;
+            window.analyticsCharts.topDishes.data.datasets[0].data = data.charts.top_dishes.data;
+            window.analyticsCharts.topDishes.update();
+        }
+
+        // Chart 7: Monthly Revenue
+        if (window.analyticsCharts.monthlyRevenue) {
+            window.analyticsCharts.monthlyRevenue.data.labels = data.charts.monthly_rev.labels;
+            window.analyticsCharts.monthlyRevenue.data.datasets[0].data = data.charts.monthly_rev.data;
+            window.analyticsCharts.monthlyRevenue.update();
+        }
+
+        // Chart 8: Customer Loyalty
+        if (window.analyticsCharts.loyalty) {
+            window.analyticsCharts.loyalty.data.labels = data.charts.loyalty.labels;
+            window.analyticsCharts.loyalty.data.datasets[0].data = data.charts.loyalty.data;
+            var CAFE_GREEN = '#2e7d32';
+            var CAFE_LATTE = '#c87941';
+            window.analyticsCharts.loyalty.data.datasets[0].backgroundColor = data.charts.loyalty.labels.length === 1 ? ['#d4d4d8'] : [CAFE_GREEN, CAFE_LATTE];
+            window.analyticsCharts.loyalty.update();
+        }
+    }
+
+    // Attach click listeners
+    document.addEventListener('DOMContentLoaded', function() {
+        const container = document.getElementById('branchFilterContainer');
+        if (container) {
+            container.addEventListener('click', function(e) {
+                const btn = e.target.closest('[data-branch]');
+                if (btn) {
+                    const branch = btn.getAttribute('data-branch');
+                    updateAnalyticsUI(branch);
+                }
+            });
+        }
+    });
+
     // Poll every 30 seconds
-    setInterval(pollAnalytics, 5000);
+    
 
     function initAnalyticsCharts() {
         if (typeof Chart === 'undefined') {

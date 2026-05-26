@@ -258,6 +258,20 @@
                     </div>
                 </div>
             </li>
+            <style>
+                .notif-entry {
+                    cursor: pointer !important;
+                    user-select: none;
+                    transition: all 0.2s ease;
+                }
+                .notif-entry:hover {
+                    background-color: rgba(139, 99, 75, 0.05) !important;
+                }
+                .notif-entry:active {
+                    background-color: rgba(139, 99, 75, 0.08) !important;
+                    transform: scale(0.995);
+                }
+            </style>
 
             <li style="width: 1px; height: 24px; background: rgba(255,255,255,0.1); margin: 0 8px;"></li>
 
@@ -416,22 +430,66 @@
         list.innerHTML = '';
         if (data.notifications && data.notifications.length > 0) {
             data.notifications.forEach(n => {
-                const item = document.createElement('div');
+                const item = document.createElement('a');
                 item.className = 'notif-entry';
-                item.style.padding = '20px 24px';
-                item.style.borderBottom = '1px solid rgba(139, 99, 75, 0.05)';
-                item.style.background = n.is_read ? 'transparent' : 'rgba(139, 99, 75, 0.02)';
-                item.style.transition = 'all 0.3s ease';
-                item.style.opacity = n.is_read ? '0.6' : '1';
+                item.style.cssText = `
+                    display: block;
+                    text-decoration: none !important;
+                    padding: 20px 24px;
+                    border-bottom: 1px solid rgba(139, 99, 75, 0.05);
+                    background: ${n.is_read ? 'transparent' : 'rgba(139, 99, 75, 0.02)'};
+                    transition: all 0.3s ease;
+                    opacity: ${n.is_read ? '0.7' : '1'};
+                    position: relative;
+                    z-index: 10;
+                `;
+                
+                // Fallback links for older notifications
+                let targetLink = n.link;
+                
+                // Fix for any hardcoded /reservations or /view-orders that might be in the DB from earlier
+                if (targetLink === '/reservations') targetLink = '/my-reservations';
+                if (targetLink === '/view-orders') targetLink = '/my-orders';
+
+                if (!targetLink) {
+                    const typeUpper = (n.type || '').toUpperCase();
+                    const titleUpper = (n.title || '').toUpperCase();
+                    
+                    if (typeUpper === 'RESERVATION' || titleUpper.includes('RESERVATION')) {
+                        targetLink = '/my-reservations';
+                    } else if (typeUpper === 'ORDER' || typeUpper === 'DELIVERY' || titleUpper.includes('ORDER')) {
+                        targetLink = '/my-orders';
+                    }
+                }
+
+                if (targetLink) {
+                    item.href = targetLink;
+                    item.style.cursor = 'pointer';
+                    item.title = `Click to view details`;
+                    
+                    item.onclick = (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        // Visual feedback
+                        item.style.background = 'rgba(139, 99, 75, 0.1)';
+                        
+                        markAsReadAndRedirect(`${n.id}`, targetLink);
+                    };
+                } else {
+                    item.href = 'javascript:void(0)';
+                    item.style.cursor = 'default';
+                }
+                
                 item.innerHTML = `
-                    <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div class="d-flex justify-content-between align-items-start mb-2" style="pointer-events: none;">
                         <div class="d-flex align-items-center gap-2">
                             <div style="width: 8px; height: 8px; border-radius: 50%; background: #8B634B; display: ${n.is_read ? 'none' : 'block'};"></div>
-                            <strong style="color: #4E342E; font-size: 0.88rem; font-weight: 700; font-family: 'Inter', sans-serif;">${n.title}</strong>
+                            <strong style="color: #4E342E; font-size: 0.88rem; font-weight: 700;">${n.title}</strong>
                         </div>
                         <small style="font-size: 0.65rem; color: #A1887F; font-weight: 600;">${n.created_at}</small>
                     </div>
-                    <p class="mb-0" style="font-size: 0.78rem; line-height: 1.6; color: #6D4C41; font-weight: 400; padding-left: ${n.is_read ? '0' : '16px'}; border-left: ${n.is_read ? 'none' : '1.5px solid rgba(139, 99, 75, 0.1)'};">${n.message}</p>
+                    <p class="mb-0" style="font-size: 0.78rem; line-height: 1.6; color: #6D4C41; font-weight: 400; padding-left: ${n.is_read ? '0' : '16px'}; border-left: ${n.is_read ? 'none' : '1.5px solid rgba(139, 99, 75, 0.1)'}; pointer-events: none;">${n.message}</p>
                 `;
                 list.appendChild(item);
             });
@@ -473,6 +531,31 @@
                 }
             })
             .catch(err => console.error('Error marking read:', err));
+    }
+
+    function markAsReadAndRedirect(notifId, link) {
+        if (!link) return;
+        
+        // Immediate visual feedback could go here if needed
+        
+        // Create a controller to timeout the fetch if it's too slow
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+        console.log(`Redirecting to: ${link} for notif: ${notifId}`);
+        
+        fetch(`/api/notification/${notifId}/read`, { 
+            method: 'POST',
+            signal: controller.signal
+        }).catch(err => {
+            console.warn('Notification read sync failed:', err);
+        }).finally(() => {
+            clearTimeout(timeoutId);
+            // Small delay to ensure the UI feels responsive to the click
+            setTimeout(() => {
+                window.location.href = link;
+            }, 100);
+        });
     }
 
     // Initialize when everything is ready

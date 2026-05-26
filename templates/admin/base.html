@@ -845,7 +845,7 @@
 
                 <!-- Notification Dropdown Panel -->
                 <div id="adminNotifPanel"
-                    style="display:none; position: absolute; right: 0; top: 48px; width: 370px; max-height: 480px; background: #fff; border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,0.15); z-index: 9999; overflow: hidden; border: 1px solid rgba(0,0,0,0.08);">
+                    style="display:none; position: absolute; right: 0; top: 48px; width: 370px; min-height: 200px; max-height: 480px; background: #fff; border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,0.15); z-index: 9999; overflow: hidden; border: 1px solid rgba(0,0,0,0.08);">
                     <div
                         style="padding: 16px 20px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #8b634b, #8b634b);">
                         <span style="font-weight: 700; font-size: 0.95rem; color: #fff;"><i
@@ -1193,6 +1193,7 @@
         async function fetchAdminNotifs() {
             try {
                 const resp = await fetch('/admin/api/notifications');
+                if (!resp.ok) throw new Error('API Error');
                 const data = await resp.json();
                 const list = document.getElementById('adminNotifList');
                 const empty = document.getElementById('adminNotifEmpty');
@@ -1204,12 +1205,13 @@
                 }
                 empty.style.display = 'none';
                 list.innerHTML = data.notifications.map(n => `
-                    <div style="padding: 12px 20px; border-bottom: 1px solid #f5f5f5; display: flex; gap: 12px; align-items: flex-start; background: ${n.is_read ? '#fff' : '#faf6f2'}; transition: background 0.2s; cursor: default;"
+                    <div style="padding: 12px 20px; border-bottom: 1px solid #f5f5f5; display: flex; gap: 12px; align-items: flex-start; background: ${n.is_read ? '#fff' : '#faf6f2'}; transition: background 0.2s; cursor: ${n.link ? 'pointer' : 'default'};"
+                         onclick="${n.link ? `markAsReadAndRedirect('${n.id}', '${n.link}')` : ''}"
                          onmouseover="this.style.background='#f5f0eb'" onmouseout="this.style.background='${n.is_read ? '#fff' : '#faf6f2'}'">
-                        <div style="width: 36px; height: 36px; border-radius: 50%; background: ${n.is_read ? '#f0f0f0' : 'rgba(139, 99, 75,0.1)'}; display:flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.85rem;">
+                        <div style="width: 36px; height: 36px; border-radius: 50%; background: ${n.is_read ? '#f0f0f0' : 'rgba(139, 99, 75,0.1)'}; display:flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.85rem; pointer-events: none;">
                             ${_notifIcon(n.type)}
                         </div>
-                        <div style="flex: 1; min-width: 0;">
+                        <div style="flex: 1; min-width: 0; pointer-events: none;">
                             <div style="font-weight: ${n.is_read ? '400' : '600'}; font-size: 0.82rem; color: #333; margin-bottom: 2px;">${n.title}</div>
                             <div style="font-size: 0.75rem; color: #777; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${n.message}</div>
                             <div style="font-size: 0.65rem; color: #aaa; margin-top: 4px;"><i class="far fa-clock me-1"></i>${n.created_at}</div>
@@ -1217,8 +1219,10 @@
                         ${!n.is_read ? '<div style="width:8px;height:8px;border-radius:50%;background:#8b634b;flex-shrink:0;margin-top:6px;"></div>' : ''}
                     </div>
                 `).join('');
-            } catch (e) {
-                console.error('Notif fetch error:', e);
+            } catch (err) {
+                console.error('Error fetching admin notifs:', err);
+                const list = document.getElementById('adminNotifList');
+                if (list) list.innerHTML = '<div style="padding:20px;text-align:center;color:#dc3545;font-size:0.8rem;">Failed to load updates</div>';
             }
         }
 
@@ -1259,6 +1263,27 @@
                 fetchAdminUnreadCount();
                 fetchAdminNotifs();
             } catch (e) { }
+        }
+
+        async function markAsReadAndRedirect(notifId, link) {
+            try {
+                // Mark as read first
+                await fetch(`/admin/api/notifications/${notifId}/read`, { method: 'POST' });
+                
+                // Hide panel
+                _notifPanelOpen = false;
+                document.getElementById('adminNotifPanel').style.display = 'none';
+                
+                // Redirect using SPA loader if it's an admin link
+                if (link.startsWith('/admin/')) {
+                    adminLoadPage(link, true);
+                } else {
+                    window.location.href = link;
+                }
+            } catch (e) {
+                console.error('Redirect error:', e);
+                window.location.href = link;
+            }
         }
 
         // Initial load + auto-poll every 15 seconds

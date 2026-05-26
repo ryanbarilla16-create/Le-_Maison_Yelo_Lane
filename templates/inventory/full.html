@@ -14,9 +14,7 @@
 {% block page_title %}Full Warehouse Inventory{% endblock %}
 {% block page_subtitle %}
     Comprehensive list of all tracked ingredients and supplies
-    <span id="syncIndicator" style="font-size: 0.72rem; color: var(--muted); opacity: 0.8; margin-left: 10px; font-weight: 500;">
-        <i class="fas fa-sync-alt fa-spin me-1"></i> Live Update (5s) • Last: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
-    </span>
+    
 {% endblock %}
 
 {% block extra_style %}
@@ -51,6 +49,9 @@
     }
     .btn-secondary { background: #e0d6cf; color: #5d4037; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 600; }
     .btn-primary { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 600; }
+    .btn-danger { background: #c62828; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+    .btn-danger:hover { background: #b71c1c; transform: translateY(-1px); }
+
 
     .premium-dropdown {
         position: relative;
@@ -158,9 +159,13 @@
         </thead>
         <tbody id="fullInventoryTableBody">
             {% for ing in ingredients %}
-            <tr data-category="{{ ing.category or 'General' }}">
+            <tr data-categories="{{ ing.food_categories|join(',') }}">
                 <td style="font-weight:700; color: var(--text);">{{ ing.name }}</td>
-                <td><span class="pill" style="background:rgba(93,64,55,0.05); color:var(--muted); font-weight: 700;">{{ ing.category or 'General' }}</span></td>
+                <td>
+                    {% for cat in ing.food_categories %}
+                    <span class="pill" style="background:rgba(93,64,55,0.05); color:var(--muted); font-weight: 700; margin-right: 4px; display: inline-block; margin-bottom: 4px;">{{ cat }}</span>
+                    {% endfor %}
+                </td>
                 <td style="font-weight:800; color:var(--primary); font-size: 1.1rem;">{{ "%.2f"|format(ing.stock_qty|float) }}</td>
                 <td style="color:var(--muted); font-weight: 600;">{{ ing.unit }}</td>
                 <td style="font-weight: 600;">{{ ing.reorder_level }}</td>
@@ -177,9 +182,14 @@
                     {% endif %}
                 </td>
                 <td>
-                    <button class="btn-primary" onclick="openEditModal('{{ ing.id }}', '{{ ing.name|e }}', '{{ ing.category|e }}', '{{ ing.reorder_level }}', '{{ ing.stock_qty }}')" style="padding: 6px 12px; font-size: 0.75rem; border-radius: 8px; background: #5d4037;">
-                        <i class="fas fa-edit"></i> Edit
-                    </button>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn-primary" onclick="openEditModal('{{ ing.id }}', '{{ ing.name|e }}', '{{ ing.category|e }}', '{{ ing.reorder_level }}', '{{ ing.stock_qty }}', '{{ ing.supplier_id or '' }}')" style="padding: 6px 12px; font-size: 0.75rem; border-radius: 8px; background: #5d4037;">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="btn-danger" onclick="openDeleteIngredientModal('{{ ing.id }}', '{{ ing.name|e }}')" style="padding: 6px 12px; font-size: 0.75rem; border-radius: 8px; background: #c62828; color: white; border: none; cursor: pointer;">
+                            <i class="fas fa-trash-can"></i> Delete
+                        </button>
+                    </div>
                 </td>
             </tr>
             {% endfor %}
@@ -283,12 +293,48 @@
                     <label>Stock Quantity</label>
                     <input type="number" name="stock_qty" id="edit_stock_qty" step="0.01" required>
                 </div>
+                <div class="form-group full-width">
+                    <label>Supplier</label>
+                    <select name="supplier_id" id="edit_supplier_id">
+                        <option value="">-- No Supplier --</option>
+                        {% for sup in suppliers %}
+                        <option value="{{ sup.id }}">{{ sup.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
             <div class="modal-footer-custom">
                 <button type="button" class="btn-secondary" onclick="closeModal('editIngredientModal')">Cancel</button>
                 <button type="submit" class="btn-primary" style="background: #5d4037;">Save Changes</button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- Delete Ingredient Confirmation Modal -->
+<div id="deleteIngredientModal" class="modal-overlay">
+    <div class="modal-content-custom" style="max-width: 420px;">
+        <div class="modal-header-custom" style="background: #c62828;">
+            <h3><i class="fas fa-trash-alt me-2"></i> Delete Ingredient</h3>
+            <button class="close-modal" onclick="closeModal('deleteIngredientModal')">&times;</button>
+        </div>
+        <div class="modal-body-custom" style="text-align:center; padding: 32px 24px;">
+            <div style="width:60px; height:60px; background:rgba(198,40,40,0.1); border-radius:50%; display:flex; align-items:center; justify-content:center; margin: 0 auto 16px;">
+                <i class="fas fa-exclamation-triangle" style="font-size:1.5rem; color:#c62828;"></i>
+            </div>
+            <h4 style="margin:0 0 10px; color: var(--text); font-weight: 700;">Are you sure?</h4>
+            <p style="color: var(--muted); font-size: 0.9rem; margin:0;">
+                You are about to permanently delete <strong id="deleteIngName" style="color:#c62828;"></strong> from stock levels.<br>
+                <span style="font-size: 0.8rem; color:#c62828; font-weight: 600; margin-top: 8px; display: block;">This will also delete all its waste records, batches, and recipe links.</span>
+            </p>
+        </div>
+        <div class="modal-footer-custom" style="justify-content:center; gap:16px;">
+            <button type="button" class="btn-secondary" onclick="closeModal('deleteIngredientModal')">Cancel</button>
+            <button type="button" onclick="executeDeleteIngredient()"
+                style="background:#c62828; color:white; border:none; padding:10px 24px; border-radius:10px; cursor:pointer; font-weight:600;">
+                <i class="fas fa-trash-alt me-1"></i> Delete
+            </button>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -302,7 +348,7 @@
         document.getElementById(id).style.display = 'none';
     }
     
-    function openEditModal(id, name, category, reorderLevel, currentQty) {
+    function openEditModal(id, name, category, reorderLevel, currentQty, supplierId) {
         const form = document.getElementById('editIngredientForm');
         form.action = `/staff/inventory/ingredients/edit/${id}`;
         
@@ -310,9 +356,27 @@
         document.getElementById('edit_category').value = category || 'General';
         document.getElementById('edit_reorder_level').value = reorderLevel;
         document.getElementById('edit_stock_qty').value = currentQty || 0;
+        document.getElementById('edit_supplier_id').value = supplierId || '';
         
         openModal('editIngredientModal');
     }
+
+    let deleteIngredientId = null;
+    function openDeleteIngredientModal(id, name) {
+        deleteIngredientId = id;
+        document.getElementById('deleteIngName').textContent = name;
+        openModal('deleteIngredientModal');
+    }
+
+    function executeDeleteIngredient() {
+        if (!deleteIngredientId) return;
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/staff/inventory/ingredients/delete/${deleteIngredientId}`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+
     // Close on click outside
     window.onclick = function(event) {
         if (event.target.classList.contains('modal-overlay')) {
@@ -321,12 +385,13 @@
     }
     function filterTable(category) {
         // Filter Rows
-        let rows = document.querySelectorAll('tbody tr');
+        let rows = document.querySelectorAll('#fullInventoryTableBody tr');
         let visibleCount = 0;
         
         rows.forEach(row => {
-            let cat = row.dataset.category;
-            if (category === 'ALL' || cat === category) {
+            let catsStr = row.dataset.categories || '';
+            let cats = catsStr.split(',');
+            if (category === 'ALL' || cats.includes(category)) {
                 row.classList.remove('hidden');
                 visibleCount++;
             } else {
@@ -342,18 +407,27 @@
         if (document.getElementById('addIngredientModal').style.display === 'flex' || 
             document.getElementById('editIngredientModal').style.display === 'flex') return;
 
+        const savedScroll = window.scrollY;
+        const catSel = document.getElementById('categorySelector');
+        const savedCat = catSel ? catSel.value : 'ALL';
+
         fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
         .then(r => r.text())
         .then(html => {
             const doc = new DOMParser().parseFromString(html, 'text/html');
-            ['fullInventoryTableBody', 'lastUpdateText', 'itemCount', 'categorySelector'].forEach(id => {
+            // ★ Only update table body + timestamp — NEVER touch the filter dropdown
+            ['fullInventoryTableBody', 'lastUpdateText'].forEach(id => {
                 const o = document.getElementById(id);
                 const n = doc.getElementById(id);
                 if (o && n && o.innerHTML !== n.innerHTML) o.innerHTML = n.innerHTML;
             });
+            // Re-apply filter and scroll
+            if (catSel) catSel.value = savedCat;
+            if (savedCat !== 'ALL') filterTable(savedCat);
+            window.scrollTo(0, savedScroll);
         })
         .catch(err => console.warn('Full inventory sync failed:', err));
     }
-    setInterval(pollInventoryFull, 5000);
+    
 </script>
 {% endblock %}

@@ -91,8 +91,23 @@ def index():
     from models import Review
     approved_reviews = Review.query.filter_by(status='APPROVED').order_by(Review.rating.desc(), Review.created_at.desc()).limit(30).all()
     bestsellers = MenuItem.query.filter_by(category='Best Sellers', is_available=True, is_deleted=False).limit(6).all()
+    
+    # Fetch featured gallery photos (8 photos for 4x2 grid)
+    gallery_photos = Review.query.filter_by(
+        status='APPROVED',
+        is_featured_in_gallery=True
+    ).filter(
+        Review.photo_url.isnot(None)
+    ).order_by(Review.created_at.desc()).limit(8).all()
 
-    return render_template('public/index.html', menu_items=menu_items, site=site, categories=categories, approved_reviews=approved_reviews, bestsellers=bestsellers)
+    return render_template('public/index.html', 
+        menu_items=menu_items, 
+        site=site, 
+        categories=categories, 
+        approved_reviews=approved_reviews, 
+        bestsellers=bestsellers,
+        gallery_photos=gallery_photos
+    )
 
 @main_bp.route('/my-orders')
 @login_required
@@ -185,9 +200,18 @@ def reviews_page():
     
     from models import Review
     approved_reviews = Review.query.filter_by(status='APPROVED').order_by(Review.rating.desc(), Review.created_at.desc()).all()
+    
+    reviews_with_photos = [r for r in approved_reviews if r.photo_url]
+    reviews_without_photos = [r for r in approved_reviews if not r.photo_url]
 
     bestsellers = MenuItem.query.filter_by(category='Best Sellers', is_available=True, is_deleted=False).limit(8).all()
-    return render_template('public/reviews_page.html', site=site, approved_reviews=approved_reviews)
+    return render_template(
+        'public/reviews_page.html', 
+        site=site, 
+        approved_reviews=approved_reviews,
+        reviews_with_photos=reviews_with_photos,
+        reviews_without_photos=reviews_without_photos
+    )
 
 @main_bp.route('/locations')
 def locations_page():

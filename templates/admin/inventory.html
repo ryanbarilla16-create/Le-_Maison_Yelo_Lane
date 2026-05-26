@@ -6,11 +6,7 @@
 <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
     <div>
         <h1>Inventory Management</h1>
-        <p>Manage ingredients, suppliers, and track stock levels.
-            <span id="syncIndicator" style="font-size: 0.75rem; color: #8b7355; opacity: 0.8; margin-left: 10px;">
-                <i class="fas fa-sync-alt fa-spin me-1"></i> Real-time Sync (5s) • Last Update: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
-            </span>
-        </p>
+        <p>Manage ingredients, suppliers, and track stock levels.</p>
     </div>
 </div>
 
@@ -1580,9 +1576,25 @@
     function pollInventory() {
         if (document.querySelector('.modal.show') || document.querySelector('.da-modal-overlay.show')) return;
         
-        // Preserve active tab
-        const activeTab = document.querySelector('.inv-tab:not([style*="display:none"])');
+        // ★ Save ALL UI state before update
+        const activeTab = document.querySelector('.inv-tab:not([style*="display:none"]):not([style*="display: none"])');
         const activeTabId = activeTab ? activeTab.id : null;
+        const savedScroll = window.scrollY;
+
+        // Save search/filter states
+        const ingSearch = document.getElementById('ingredientSearch');
+        const menuFilter = document.getElementById('menuSectionFilter');
+        const supSearch = document.getElementById('supplierSearch');
+        const supFilter = document.getElementById('supplierCategoryFilter');
+        const invSearch = document.getElementById('inventorySearch');
+        
+        const state = {
+            ingSearch: ingSearch ? ingSearch.value : '',
+            menuFilter: menuFilter ? menuFilter.value : 'ALL',
+            supSearch: supSearch ? supSearch.value : '',
+            supFilter: supFilter ? supFilter.value : 'ALL',
+            invSearch: invSearch ? invSearch.value : ''
+        };
 
         fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
         .then(response => response.text())
@@ -1597,16 +1609,46 @@
                 if (oldEl && newEl && oldEl.innerHTML !== newEl.innerHTML) {
                     oldEl.innerHTML = newEl.innerHTML;
                     
-                    // If we updated the main container, we need to restore the tab display
-                    if (id === 'inventoryMainContainer' && activeTabId) {
-                        document.querySelectorAll('.inv-tab').forEach(t => t.style.display = 'none');
-                        const restoredTab = document.getElementById(activeTabId);
-                        if (restoredTab) restoredTab.style.display = 'block';
+                    // If we updated the main container, restore tab + all state
+                    if (id === 'inventoryMainContainer') {
+                        // Restore active tab
+                        if (activeTabId) {
+                            document.querySelectorAll('.inv-tab').forEach(t => t.style.display = 'none');
+                            const restoredTab = document.getElementById(activeTabId);
+                            if (restoredTab) restoredTab.style.display = 'block';
+                        }
+                        
+                        // Restore search/filter values
+                        const newIngSearch = document.getElementById('ingredientSearch');
+                        const newMenuFilter = document.getElementById('menuSectionFilter');
+                        const newSupSearch = document.getElementById('supplierSearch');
+                        const newSupFilter = document.getElementById('supplierCategoryFilter');
+                        const newInvSearch = document.getElementById('inventorySearch');
+                        
+                        if (newIngSearch) newIngSearch.value = state.ingSearch;
+                        if (newMenuFilter) newMenuFilter.value = state.menuFilter;
+                        if (newSupSearch) newSupSearch.value = state.supSearch;
+                        if (newSupFilter) newSupFilter.value = state.supFilter;
+                        if (newInvSearch) newInvSearch.value = state.invSearch;
+                        
+                        // Re-apply filters if any were active
+                        if (state.ingSearch || state.menuFilter !== 'ALL') {
+                            if (window.applyInstantInventoryFilter) applyInstantInventoryFilter();
+                        }
+                        if (state.supSearch || state.supFilter !== 'ALL') {
+                            if (window.applyInstantSupplierFilter) applyInstantSupplierFilter();
+                        }
+                        if (state.invSearch) {
+                            if (window.applyTableSearch) applyTableSearch('inventorySearch', 'tab-menu-items', 0);
+                        }
                     }
                 }
             });
             
-            // Re-initialize dynamic listeners if any (e.g. tooltips)
+            // Restore scroll
+            window.scrollTo(0, savedScroll);
+            
+            // Re-initialize tooltips
             if (window.bootstrap && window.bootstrap.Tooltip) {
                 const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
                 tooltipTriggerList.map(function (tooltipTriggerEl) {
@@ -1617,7 +1659,7 @@
         .catch(err => console.warn('Inventory sync failed:', err));
     }
 
-    setInterval(pollInventory, 5000);
+    
 </script>
 {% endblock %}
 {% endblock %}

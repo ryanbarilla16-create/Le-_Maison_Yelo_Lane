@@ -5,11 +5,7 @@
 <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
     <div>
         <h1>Dashboard Overview</h1>
-        <p>Welcome back, {{ current_user.first_name }}. Here's what's happening today.
-            <span id="syncIndicator" style="font-size: 0.75rem; color: #8b7355; opacity: 0.8; margin-left: 10px;">
-                <i class="fas fa-sync-alt fa-spin me-1"></i> Real-time Sync (5s) • Last Update: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
-            </span>
-        </p>
+        <p>Welcome back, {{ current_user.first_name }}. Here's what's happening today.</p>
     </div>
     <div class="dropdown">
         <button class="btn-admin btn-admin-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="border-radius: 10px; font-size: 0.85rem; padding: 0.5rem 1rem;">
@@ -268,7 +264,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', initOverviewCharts);
-    setInterval(pollOverview, 5000);
+    
 </script>
 
 {% endblock %}

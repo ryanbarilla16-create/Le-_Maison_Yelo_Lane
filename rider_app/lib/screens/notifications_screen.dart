@@ -38,14 +38,49 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     });
   }
 
-  Future<void> _markAsRead(int notifId) async {
+  Future<void> _markAsRead(Map<String, dynamic> n) async {
+    final int notifId = n['id'];
     await ApiService.post('/api/notification/$notifId/read', {});
     setState(() {
-      final idx = _notifications.indexWhere((n) => n['id'] == notifId);
+      final idx = _notifications.indexWhere((notif) => notif['id'] == notifId);
       if (idx >= 0) {
         _notifications[idx]['is_read'] = true;
       }
     });
+
+    _handleNotifClick(n);
+  }
+
+  void _handleNotifClick(Map<String, dynamic> n) {
+    final link = n['link'];
+    if (link == null || link.isEmpty) return;
+
+    if (link.startsWith('/rider/order/')) {
+      // Pop back to dashboard with the link so it can handle tab switching
+      Navigator.pop(context, link);
+    } else if (link.startsWith('/chat/')) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ChatScreen()),
+      );
+    } else if (link.startsWith('/rider/order-chat/')) {
+      final parts = link.split('/');
+      final orderId = int.tryParse(parts.last);
+      if (orderId != null) {
+        // Since we don't have the customer name here, we use a generic label
+        // The screen will load the messages anyway.
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OrderChatScreen(
+              orderId: orderId,
+              otherPartyName: 'Order #$orderId Chat',
+              otherPartyRole: 'Customer',
+            ),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _markAllRead() async {
@@ -174,7 +209,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
                       return GestureDetector(
                         onTap: () {
-                          if (!isRead) _markAsRead(n['id']);
+                          // Even if already read, we might want to navigate if there's a link
+                          _markAsRead(n);
                         },
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 300),

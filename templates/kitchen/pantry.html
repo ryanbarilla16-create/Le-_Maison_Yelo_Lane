@@ -43,9 +43,7 @@
     <div style="display:flex; justify-content:space-between; align-items:center;">
         <div>
             <span>Monitor on-hand ingredients in the kitchen station</span>
-            <span id="syncIndicator" style="font-size: 0.72rem; color: var(--muted); opacity: 0.8; margin-left: 10px; font-weight: 500;">
-                <i class="fas fa-sync-alt fa-spin me-1"></i> Live Update (5s) • Last: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
-            </span>
+            
         </div>
         <button class="btn-primary" style="background:#5D4037; border:1px solid rgba(255,255,255,0.1); padding:6px 14px; font-size:0.75rem;" 
                 onclick="confirmEmergency()">
@@ -250,6 +248,8 @@
         // Skip if any edit form is open
         if (document.querySelector('form[id^="form-"][style*="flex"]')) return;
 
+        const savedScroll = window.scrollY;
+
         try {
             const resp = await fetch('/staff/kitchen/api/pantry');
             if (!resp.ok) return;
@@ -289,11 +289,12 @@
                     if (qtyInput) qtyInput.value = ing.kitchen_qty;
                 }
             });
+            window.scrollTo(0, savedScroll);
         } catch (err) {
             console.warn('Pantry sync failed:', err);
         }
     }
 
-    setInterval(pollKitchenPantry, 5000);
+    
 </script>
 {% endblock %}

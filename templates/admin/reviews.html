@@ -4,71 +4,284 @@
 
 {% block content %}
 <style>
-    /* Premium Review Cards Layout */
-    .filter-tabs {
-        display: flex;
-        gap: 0.5rem;
-        background: #ffffff;
-        padding: 0.5rem;
-        border-radius: 50px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
-        border: 1px solid rgba(139, 99, 75, 0.08);
-        margin-bottom: 2rem;
-        overflow-x: auto;
+    /* Primary color system override */
+    :root {
+        --primary: #8B634B;
+        --primary-dark: #3E2723;
+        --primary-medium: #5D4037;
+        --accent: #C2934D;
+        --bg-cream: #faf6f1;
+        --border-color: rgba(139, 99, 75, 0.12);
+        --text-dark: #3E2723;
+        --text-muted: #a48c7e;
     }
 
-    .filter-tab {
-        padding: 0.6rem 1.25rem;
-        border-radius: 50px;
-        font-weight: 700;
-        font-size: 0.85rem;
-        color: #8B634B;
-        text-decoration: none;
-        transition: all 0.3s ease;
-        border: none;
-        outline: none;
-        cursor: pointer;
-        background: transparent;
-    }
-
-    .filter-tab:hover {
-        background: #faf6f1;
-    }
-
-    .filter-tab.active {
-        background: #4a3b32; /* Dark Coffee Brown */
-        color: #ffffff;
-        box-shadow: 0 4px 10px rgba(74, 59, 50, 0.2);
-    }
-
-    .review-grid {
+    /* Grid layouts */
+    .top-analytics-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        grid-template-columns: 2fr 1fr;
         gap: 1.5rem;
         margin-bottom: 2rem;
     }
 
-    .review-card {
+    @media (max-width: 992px) {
+        .top-analytics-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .reviews-stats-row {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+
+    @media (max-width: 576px) {
+        .reviews-stats-row {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Stat Cards */
+    .stat-card {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 1.25rem;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 4px 15px rgba(139, 99, 75, 0.02);
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(139, 99, 75, 0.06);
+        border-color: rgba(139, 99, 75, 0.2);
+    }
+
+    .stat-icon-wrapper {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+    }
+    
+    .stat-icon-wrapper.primary { background: rgba(139, 99, 75, 0.08); color: #8B634B; }
+    .stat-icon-wrapper.warning { background: rgba(194, 147, 77, 0.08); color: #C2934D; }
+    .stat-icon-wrapper.success { background: rgba(87, 117, 81, 0.08); color: #577551; }
+    .stat-icon-wrapper.danger { background: rgba(138, 74, 65, 0.08); color: #8A4A41; }
+
+    .stat-value {
+        font-family: 'Playfair Display', serif;
+        font-weight: 800;
+        color: var(--text-dark);
+        font-size: 1.6rem;
+        margin: 0;
+        line-height: 1.2;
+    }
+
+    .stat-label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        margin: 0;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Distribution Card */
+    .stat-card-breakdown {
         background: #ffffff;
         border-radius: 20px;
-        border: 1px solid rgba(139, 99, 75, 0.1);
-        overflow: hidden;
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.03);
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        padding: 1.25rem 1.5rem;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 4px 15px rgba(139, 99, 75, 0.02);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .breakdown-title {
+        font-family: 'Playfair Display', serif;
+        font-weight: 800;
+        color: var(--text-dark);
+        font-size: 1rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .rating-summary-top {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .breakdown-large-number {
+        font-family: 'Playfair Display', serif;
+        font-weight: 900;
+        color: var(--text-dark);
+        font-size: 2.4rem;
+        line-height: 1;
+    }
+
+    .breakdown-stars-outer {
         display: flex;
         flex-direction: column;
     }
 
+    .breakdown-stars-inner {
+        color: #C2934D;
+        font-size: 0.85rem;
+    }
+
+    .breakdown-subtitle {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .breakdown-bars-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+    }
+
+    .breakdown-bar-item {
+        display: flex;
+        align-items: center;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--primary-medium);
+    }
+
+    .breakdown-bar-label {
+        min-width: 30px;
+        display: flex;
+        align-items: center;
+        gap: 2px;
+    }
+
+    .breakdown-bar-count {
+        min-width: 20px;
+        text-align: right;
+        color: var(--text-muted);
+    }
+
+    .progress-custom {
+        height: 6px !important;
+        background-color: #faf6f1 !important;
+        border-radius: 10px !important;
+        flex-grow: 1;
+        margin: 0 0.75rem;
+    }
+    
+    .progress-bar-custom {
+        background-color: #C2934D !important;
+        border-radius: 10px !important;
+    }
+
+    /* Tabs Filter styling */
+    .filter-tabs-container {
+        margin-bottom: 2rem;
+    }
+
+    .filter-tabs {
+        display: inline-flex;
+        gap: 0.35rem;
+        background: #ffffff;
+        padding: 0.35rem;
+        border-radius: 50px;
+        box-shadow: 0 4px 15px rgba(139, 99, 75, 0.02);
+        border: 1px solid var(--border-color);
+        max-width: 100%;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
+    .filter-tab {
+        padding: 0.5rem 1.1rem;
+        border-radius: 50px;
+        font-weight: 700;
+        font-size: 0.8rem;
+        color: var(--primary);
+        text-decoration: none;
+        transition: all 0.2s ease;
+        border: none;
+        outline: none;
+        cursor: pointer;
+        background: transparent;
+        display: flex;
+        align-items: center;
+    }
+
+    .filter-tab:hover {
+        background: #faf6f1;
+        color: var(--primary-medium);
+    }
+
+    .filter-tab.active {
+        background: var(--primary-dark);
+        color: #ffffff;
+        box-shadow: 0 4px 10px rgba(62, 39, 35, 0.2);
+    }
+
+    .tab-badge {
+        background: rgba(139, 99, 75, 0.08);
+        color: var(--primary);
+        border-radius: 50px;
+        padding: 0.05rem 0.35rem;
+        font-size: 0.65rem;
+        margin-left: 0.35rem;
+        font-weight: 800;
+    }
+
+    .filter-tab.active .tab-badge {
+        background: rgba(255, 255, 255, 0.2);
+        color: #ffffff;
+    }
+
+    /* Grid configuration for Review cards */
+    .review-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 3rem;
+    }
+
+    /* Premium Review Cards */
+    .review-card {
+        background: #ffffff;
+        border-radius: 20px;
+        border: 1px solid var(--border-color);
+        overflow: hidden;
+        box-shadow: 0 6px 18px rgba(139, 99, 75, 0.015);
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        display: flex;
+        flex-direction: column;
+        opacity: 1;
+    }
+
+    .review-card.filtered-out {
+        display: none !important;
+    }
+
     .review-card:hover {
         transform: translateY(-4px);
-        box-shadow: 0 12px 35px rgba(139, 99, 75, 0.08);
-        border-color: rgba(139, 99, 75, 0.2);
+        box-shadow: 0 12px 30px rgba(139, 99, 75, 0.08);
+        border-color: rgba(139, 99, 75, 0.25);
     }
 
     .review-header {
-        padding: 1.5rem;
-        border-bottom: 1px dashed rgba(139, 99, 75, 0.1);
+        padding: 1.25rem 1.25rem 1rem;
         background: linear-gradient(180deg, #faf6f1 0%, #ffffff 100%);
+        border-bottom: 1px dashed rgba(139, 99, 75, 0.08);
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
@@ -77,45 +290,72 @@
     .review-user-info {
         display: flex;
         align-items: center;
-        gap: 0.85rem;
+        gap: 0.75rem;
     }
 
     .review-avatar {
-        width: 45px;
-        height: 45px;
+        width: 40px;
+        height: 40px;
         background: linear-gradient(135deg, #8B634B, #5D4037);
-        color: #fff;
+        color: #ffffff;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 800;
-        font-size: 1.1rem;
-        box-shadow: 0 4px 10px rgba(139, 99, 75, 0.2);
+        font-size: 1rem;
+        box-shadow: 0 4px 10px rgba(139, 99, 75, 0.15);
         flex-shrink: 0;
     }
 
     .review-name {
         font-family: 'Playfair Display', serif;
         font-weight: 800;
-        font-size: 1.1rem;
-        color: #3E2723;
+        font-size: 1rem;
+        color: var(--text-dark);
         margin: 0;
     }
 
     .review-date {
-        font-size: 0.75rem;
+        font-size: 0.7rem;
         font-weight: 600;
-        color: #a48c7e;
+        color: var(--text-muted);
+    }
+
+    .review-meta-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 0.15rem;
+    }
+
+    .order-id-badge {
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: #8B634B;
+        background: rgba(139, 99, 75, 0.06);
+        border: 1px solid rgba(139, 99, 75, 0.1);
+        padding: 0.1rem 0.4rem;
+        border-radius: 4px;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .order-id-badge:hover {
+        background: var(--primary-dark);
+        color: #ffffff;
+        border-color: var(--primary-dark);
     }
 
     .review-stars {
-        color: #C2934D; /* Warm Ochre */
-        font-size: 0.9rem;
+        color: #C2934D;
+        font-size: 0.8rem;
+        display: flex;
+        gap: 2px;
     }
 
     .review-body {
-        padding: 1.5rem;
+        padding: 1.25rem;
         flex-grow: 1;
         display: flex;
         flex-direction: column;
@@ -123,83 +363,180 @@
     }
 
     .review-comment {
-        font-size: 0.95rem;
+        font-size: 0.9rem;
         font-style: italic;
         color: #4a3b32;
         line-height: 1.5;
         margin: 0;
     }
 
-    .sentiment-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-        padding: 0.35rem 0.85rem;
-        border-radius: 50px;
-        font-size: 0.75rem;
-        font-weight: 700;
-        border: 1px solid;
+    /* Photo container and overlays */
+    .review-photo-wrapper {
+        position: relative;
+        border-radius: 12px;
+        overflow: hidden;
+        margin-top: 0.25rem;
+        border: 1px solid rgba(139, 99, 75, 0.1);
+        cursor: pointer;
+        height: 180px;
     }
 
-    .review-footer {
-        padding: 1rem 1.5rem;
-        background: #fdfaf7;
-        border-top: 1px solid rgba(139, 99, 75, 0.05);
+    .review-photo {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+    }
+
+    .review-photo-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(62, 39, 35, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        color: #ffffff;
+        font-size: 1.5rem;
+        backdrop-filter: blur(2px);
+    }
+
+    .review-photo-wrapper:hover .review-photo-overlay {
+        opacity: 1;
+    }
+
+    .review-photo-wrapper:hover .review-photo {
+        transform: scale(1.05);
+    }
+
+    /* Sentiment badges */
+    .sentiment-row {
         display: flex;
         justify-content: space-between;
         align-items: center;
     }
 
-    .status-badge {
+    .sentiment-badge-custom {
         display: inline-flex;
         align-items: center;
-        gap: 0.4rem;
-        padding: 0.35rem 0.85rem;
+        gap: 0.35rem;
+        padding: 0.25rem 0.65rem;
         border-radius: 50px;
-        font-size: 0.75rem;
-        font-weight: 800;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
     }
 
-    .status-pending { background: #fdf6e9; color: #c2934d; border: 1px solid #f6e6cd; }
-    .status-approved { background: #f0f4ef; color: #577551; border: 1px solid #dce5d9; }
-    .status-rejected { background: #f8f3f0; color: #8a4a41; border: 1px solid #eed7d3; }
+    .sentiment-badge-custom.positive { background: #f0fdf4; color: #166534; border: 1px solid #dcfce7; }
+    .sentiment-badge-custom.neutral { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
+    .sentiment-badge-custom.negative { background: #fef2f2; color: #991b1b; border: 1px solid #fee2e2; }
 
-    .review-action-form {
+    /* Footer styling */
+    .review-footer {
+        padding: 1rem 1.25rem;
+        background: #fdfaf7;
+        border-top: 1px solid rgba(139, 99, 75, 0.04);
         display: flex;
+        justify-content: space-between;
+        align-items: center;
         gap: 0.5rem;
-        margin: 0;
     }
 
-    .review-select {
+    /* Static Approved Badge */
+    .approved-static-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        background: #f0fdf4;
+        color: #166534;
+        border: 1px solid #dcfce7;
+        border-radius: 50px;
+        padding: 0.3rem 0.8rem;
+        font-size: 0.71rem;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+        text-transform: uppercase;
+    }
+
+    /* Buttons layout */
+    .review-card-actions {
+        display: flex;
+        gap: 0.4rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    /* Gallery labeled button */
+    .btn-gallery-labeled {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.38rem 0.85rem;
+        border-radius: 8px;
+        border: 1.5px solid rgba(139, 99, 75, 0.25);
         background: #ffffff;
-        color: #5D4037;
-        border: 1px solid rgba(139, 99, 75, 0.15);
-        border-radius: 8px;
-        padding: 0.35rem 0.6rem;
-        font-size: 0.75rem;
+        color: #8B634B;
+        font-size: 0.72rem;
         font-weight: 700;
         cursor: pointer;
-        outline: none;
+        transition: all 0.25s ease;
+        white-space: nowrap;
     }
 
-    .btn-update {
-        background: #4a3b32;
+    .btn-gallery-labeled:hover {
+        background: #8B634B;
         color: #ffffff;
-        border: none;
-        padding: 0.35rem 0.85rem;
-        border-radius: 8px;
-        font-size: 0.75rem;
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.2s;
-        box-shadow: 0 2px 5px rgba(74, 59, 50, 0.15);
+        border-color: #8B634B;
+        transform: translateY(-1px);
+        box-shadow: 0 3px 10px rgba(139,99,75,0.2);
     }
 
-    .btn-update:hover {
-        background: #352a23;
-        transform: translateY(-1px);
+    .btn-gallery-labeled.in-gallery {
+        background: linear-gradient(135deg, #C2934D, #a67a3d);
+        color: #ffffff;
+        border-color: #C2934D;
+        box-shadow: 0 2px 8px rgba(194, 147, 77, 0.35);
     }
-    
+
+    .btn-gallery-labeled.in-gallery:hover {
+        background: linear-gradient(135deg, #a67a3d, #8B634B);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 14px rgba(194,147,77,0.4);
+    }
+
+    .btn-gallery-labeled:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none !important;
+    }
+
+    /* Edit photo labeled button */
+    .btn-edit-photo-labeled {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.38rem 0.85rem;
+        border-radius: 8px;
+        border: 1.5px solid rgba(139, 99, 75, 0.18);
+        background: #faf6f1;
+        color: #8B634B;
+        font-size: 0.72rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        white-space: nowrap;
+    }
+
+    .btn-edit-photo-labeled:hover {
+        background: #5D4037;
+        color: #ffffff;
+        border-color: #5D4037;
+        transform: translateY(-1px);
+        box-shadow: 0 3px 10px rgba(93,64,55,0.2);
+    }
+
     .empty-reviews-state {
         text-align: center;
         padding: 4rem 2rem;
@@ -208,80 +545,848 @@
         border: 1px dashed rgba(139, 99, 75, 0.2);
         grid-column: 1 / -1;
     }
+
+    /* Custom CSS Modals (Opacity/Scale Transitions) */
+    .modal-backdrop-custom {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(62, 39, 35, 0.5); /* Brown translucent backdrop */
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+        padding: 1rem;
+        z-index: 1050;
+    }
+
+    .modal-backdrop-custom.show {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .modal-box-custom {
+        background: #ffffff;
+        border-radius: 20px;
+        border: 1px solid rgba(139, 99, 75, 0.15);
+        width: 100%;
+        max-width: 500px;
+        box-shadow: 0 20px 40px rgba(62, 39, 35, 0.15);
+        transform: translateY(-20px) scale(0.95);
+        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        overflow: hidden;
+    }
+
+    .modal-backdrop-custom.show .modal-box-custom {
+        transform: translateY(0) scale(1);
+    }
+
+    /* Modal Form Styling */
+    .upload-zone {
+        border: 2px dashed rgba(139, 99, 75, 0.25);
+        padding: 2.25rem 1.5rem;
+        border-radius: 14px;
+        text-align: center;
+        background: #faf6f1;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .upload-zone:hover {
+        border-color: #8B634B;
+        background: #f5ece2;
+        transform: scale(0.99);
+    }
+
+    /* Premium Toast Alert System */
+    .toast-container {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 99999;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        pointer-events: none;
+    }
+
+    .premium-toast {
+        pointer-events: auto;
+        width: 320px;
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 10px 40px rgba(62, 39, 35, 0.12);
+        display: flex;
+        align-items: stretch;
+        overflow: hidden;
+        border: 1px solid rgba(139, 99, 75, 0.08);
+        animation: toastSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        transition: all 0.3s ease;
+    }
+
+    @keyframes toastSlideIn {
+        from {
+            transform: translateX(120%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    .premium-toast.hiding {
+        transform: translateX(120%);
+        opacity: 0;
+    }
+
+    .toast-accent {
+        width: 6px;
+        flex-shrink: 0;
+    }
+
+    .toast-content {
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-grow: 1;
+    }
+
+    .toast-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.95rem;
+        flex-shrink: 0;
+    }
+
+    .toast-message {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #3E2723;
+        line-height: 1.4;
+    }
+
+    .toast-close {
+        padding: 8px 12px;
+        background: transparent;
+        border: none;
+        color: #ccc;
+        cursor: pointer;
+        transition: color 0.2s;
+        font-size: 0.75rem;
+    }
+
+    .toast-close:hover {
+        color: #8B634B;
+    }
+
+    /* Severity Styles */
+    .toast-success .toast-accent { background: #577551; }
+    .toast-success .toast-icon { background: rgba(87, 117, 81, 0.1); color: #577551; }
+
+    .toast-danger .toast-accent { background: #8A4A41; }
+    .toast-danger .toast-icon { background: rgba(138, 74, 65, 0.1); color: #8A4A41; }
+
+    .toast-warning .toast-accent { background: #C2934D; }
+    .toast-warning .toast-icon { background: rgba(194, 147, 77, 0.1); color: #C2934D; }
 </style>
 
-<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
     <div>
         <h1 style="font-family: 'Playfair Display', serif; font-weight: 800; color: #3E2723;">Review Management</h1>
-        <p style="color: #8B634B; opacity: 0.8; font-weight: 500;">Monitor customer feedback in real-time. 
-            <span id="syncIndicator" style="font-size: 0.75rem; color: #8b7355; opacity: 0.8; margin-left: 10px;">
-                <i class="fas fa-sync-alt fa-spin me-1"></i> Real-time Sync (5s) • Last Update: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
-            </span>
-        </p>
+        <p style="color: #8B634B; opacity: 0.8; font-weight: 500;">Monitor customer feedback and curate homepage gallery photos</p>
     </div>
 </div>
 
+<!-- ═══ ANALYTICS STATS SECTION ═══ -->
+<div class="top-analytics-grid">
+    <!-- Left: Stats Grid -->
+    <div class="reviews-stats-row">
+        <!-- Total Reviews -->
+        <div class="stat-card">
+            <div class="stat-icon-wrapper primary">
+                <i class="fas fa-comment-alt"></i>
+            </div>
+            <div class="stat-details">
+                <h4 class="stat-value" id="statValTotal">{{ total_reviews }}</h4>
+                <p class="stat-label">Total Reviews</p>
+            </div>
+        </div>
+
+        <!-- Average Rating -->
+        <div class="stat-card">
+            <div class="stat-icon-wrapper warning">
+                <i class="fas fa-star"></i>
+            </div>
+            <div class="stat-details">
+                <h4 class="stat-value" id="statValAvg">{{ avg_rating }} / 5.0</h4>
+                <p class="stat-label">Average Rating</p>
+            </div>
+        </div>
+
+        <!-- In Gallery -->
+        <div class="stat-card">
+            <div class="stat-icon-wrapper success">
+                <i class="fas fa-images"></i>
+            </div>
+            <div class="stat-details">
+                <h4 class="stat-value" id="statValFeatured">{{ featured_count }}</h4>
+                <p class="stat-label">In Homepage Gallery</p>
+            </div>
+        </div>
+
+        <!-- Sentiment -->
+        {% set pos_pct = (sentiment_dist.positive / total_reviews * 100)|round|int if total_reviews else 100 %}
+        <div class="stat-card">
+            <div class="stat-icon-wrapper primary">
+                <i class="fas fa-smile"></i>
+            </div>
+            <div class="stat-details">
+                <h4 class="stat-value" id="statValSentiment">{{ pos_pct }}%</h4>
+                <p class="stat-label">Positive Sentiment</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Distribution breakdown card -->
+    <div class="stat-card-breakdown">
+        <h4 class="breakdown-title">Rating Distribution</h4>
+        <div class="rating-summary-top">
+            <span class="breakdown-large-number" id="breakdownLargeAvg">{{ avg_rating }}</span>
+            <div class="breakdown-stars-outer">
+                <div class="breakdown-stars-inner" id="breakdownStarsContainer">
+                    {% set full_stars = avg_rating|int %}
+                    {% set half_star = (avg_rating - full_stars) >= 0.3 %}
+                    {% set empty_stars = 5 - full_stars - (1 if half_star else 0) %}
+                    {% for i in range(full_stars) %}<i class="fas fa-star"></i>{% endfor %}
+                    {% if half_star %}<i class="fas fa-star-half-alt"></i>{% endif %}
+                    {% for i in range(empty_stars) %}<i class="far fa-star" style="opacity: 0.3;"></i>{% endfor %}
+                </div>
+                <p class="breakdown-subtitle">Out of 5.0 stars</p>
+            </div>
+        </div>
+        
+        <div class="breakdown-bars-list">
+            {% for star in range(5, 0, -1) %}
+            {% set count = rating_dist[star]|default(0) %}
+            {% set pct = (count / total_reviews * 100)|round|int if total_reviews else 0 %}
+            <div class="breakdown-bar-item">
+                <span class="breakdown-bar-label">{{ star }} <i class="fas fa-star" style="color: #C2934D; font-size:0.7rem;"></i></span>
+                <div class="progress progress-custom">
+                    <div class="progress-bar progress-bar-custom" id="breakdownBar-{{ star }}" style="width: {{ pct }}%;" role="progressbar" aria-valuenow="{{ pct }}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <span class="breakdown-bar-count" id="breakdownCount-{{ star }}">{{ count }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- ═══ FILTER TABS SECTION ═══ -->
+<div class="filter-tabs-container">
+    <div class="filter-tabs">
+        <button class="filter-tab active" onclick="filterReviews('all', this)">
+            All <span class="tab-badge" id="badge-all">{{ reviews|length }}</span>
+        </button>
+        <button class="filter-tab" onclick="filterReviews('featured', this)">
+            In Gallery <span class="tab-badge" id="badge-featured">{{ reviews|selectattr('is_featured_in_gallery', 'equalto', true)|list|length }}</span>
+        </button>
+        <button class="filter-tab" onclick="filterReviews('photos', this)">
+            With Photos <span class="tab-badge" id="badge-photos">{{ reviews|rejectattr('photo_url', 'none')|list|length }}</span>
+        </button>
+        <span id="badge-pending" style="display:none;">{{ reviews|selectattr('status', 'equalto', 'PENDING')|list|length }}</span>
+        <span id="badge-approved" style="display:none;">{{ reviews|selectattr('status', 'equalto', 'APPROVED')|list|length }}</span>
+        <span id="badge-rejected" style="display:none;">0</span>
+    </div>
+</div>
+
+<!-- ═══ REVIEWS GRID ═══ -->
 <div class="review-grid" id="reviewsGridContainer">
     {% for review in reviews %}
-    <div class="review-card" data-status="{{ review.status }}">
+    <div class="review-card" 
+         data-id="{{ review.id }}"
+         data-status="{{ review.status }}" 
+         data-featured="{% if review.is_featured_in_gallery %}true{% else %}false{% endif %}"
+         data-has-photo="{% if review.photo_url %}true{% else %}false{% endif %}">
+        
         <div class="review-header">
             <div class="review-user-info">
                 <div class="review-avatar">
-                    {{ review.user.first_name[0] }}{{ review.user.last_name[0] }}
+                    {{ review.user.first_name[0]|upper }}{{ review.user.last_name[0]|upper }}
                 </div>
                 <div>
                     <h3 class="review-name">{{ review.user.first_name }} {{ review.user.last_name }}</h3>
-                    <div class="review-date">{{ review.created_at.strftime('%b %d, %Y') }}</div>
+                    <div class="review-meta-row">
+                        <span class="review-date">{{ review.created_at.strftime('%b %d, %Y') }}</span>
+                        {% if review.order_id %}
+                        <a href="{{ url_for('admin.orders') }}?search={{ review.order_id }}" class="order-id-badge" title="View details of Order #{{ review.order_id }}">
+                            <i class="fas fa-receipt me-1"></i>Order #{{ review.order_id }}
+                        </a>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
             <div class="review-stars">
-                {% for i in range(review.rating) %}<i class="fas fa-star"></i>{% endfor %}{% for i in range(5 - review.rating) %}<i class="far fa-star" style="opacity: 0.3;"></i>{% endfor %}
+                {% for i in range(review.rating) %}<i class="fas fa-star"></i>{% endfor %}{% for i in range(5 - review.rating) %}<i class="far fa-star" style="opacity: 0.25;"></i>{% endfor %}
             </div>
         </div>
 
         <div class="review-body">
-            <p class="review-comment">"{{ review.comment }}"</p>
-            <div>
-                <span class="sentiment-badge text-{{ review.ai_sentiment_color|default('secondary') }} border-{{ review.ai_sentiment_color|default('secondary') }}" style="background: rgba(0,0,0,0.02);">
-                    {{ review.ai_sentiment_icon|default('😐') }} {{ review.ai_sentiment|default('NEUTRAL') }}
+            <p class="review-comment">"{{ review.comment|default('No comment provided.', true) }}"</p>
+            
+            {% if review.photo_url %}
+            <div class="review-photo-wrapper" onclick="openLightbox('{{ review.photo_url }}', 'Review from {{ review.user.first_name }} {{ review.user.last_name }}')">
+                <img src="{{ review.photo_url }}" alt="Customer review photo" class="review-photo" id="reviewImg-{{ review.id }}">
+                <div class="review-photo-overlay">
+                    <i class="fas fa-search-plus"></i>
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="sentiment-row">
+                {% set sentiment = review.ai_sentiment|default('NEUTRAL') %}
+                {% set sentiment_icon = review.ai_sentiment_icon|default('😐') %}
+                {% set sentiment_color = review.ai_sentiment_color|default('secondary') %}
+                
+                <span class="sentiment-badge-custom {% if sentiment == 'POSITIVE' %}positive{% elif sentiment == 'NEGATIVE' %}negative{% else %}neutral{% endif %}">
+                    {{ sentiment_icon }} {{ sentiment }}
                 </span>
             </div>
         </div>
 
+        <div class="review-footer">
+            <!-- Static Approved Badge (all reviews auto-approved) -->
+            <span class="approved-static-badge">
+                <i class="fas fa-check-circle"></i> Approved
+            </span>
+
+            <!-- Action buttons -->
+            <div class="review-card-actions">
+                {% if review.photo_url %}
+                <!-- Gallery Toggle button - clearly labeled -->
+                <button 
+                    class="btn-gallery-labeled {% if review.is_featured_in_gallery %}in-gallery{% endif %}" 
+                    onclick="toggleGallery({{ review.id }}, this)"
+                    title="{% if review.is_featured_in_gallery %}Remove from Gallery{% else %}Add to Gallery{% endif %}">
+                    <i class="{% if review.is_featured_in_gallery %}fas fa-star{% else %}far fa-star{% endif %}"></i>
+                    <span class="toggle-label">{% if review.is_featured_in_gallery %}In Gallery{% else %}Add to Gallery{% endif %}</span>
+                </button>
+                
+                <!-- Edit Photo button -->
+                <button 
+                    class="btn-edit-photo-labeled" 
+                    onclick="openPhotoEditModal({{ review.id }}, '{{ review.photo_url }}')"
+                    title="Replace/Edit Photo">
+                    <i class="fas fa-pencil-alt"></i> Edit Photo
+                </button>
+                {% endif %}
+            </div>
+        </div>
     </div>
     {% else %}
-    <div class="empty-reviews-state empty-state-message">
-        <div style="width: 80px; height: 80px; background: #faf6f1; color: #8b634b; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin: 0 auto 1.5rem;">
+    <div class="empty-reviews-state">
+        <div style="width: 70px; height: 70px; background: #faf6f1; color: #8b634b; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; margin: 0 auto 1.25rem;">
             <i class="far fa-star"></i>
         </div>
         <h3 style="font-family: 'Playfair Display', serif; font-weight: 800; color: #3E2723; margin-bottom: 0.5rem;">No Reviews Found</h3>
-        <p style="color: #8D6E63; max-width: 400px; margin: 0 auto;">There are no reviews to display.</p>
+        <p style="color: #8D6E63; max-width: 400px; margin: 0 auto; font-size: 0.9rem;">There are no customer reviews matches the selected filters.</p>
     </div>
     {% endfor %}
 </div>
 
+<!-- ═══ EDIT REVIEW PHOTO MODAL ═══ -->
+<div id="editPhotoModal" class="modal-backdrop-custom" onclick="closeModal('editPhotoModal')">
+    <div class="modal-box-custom" onclick="event.stopPropagation()">
+        <div class="modal-header-custom" style="background: linear-gradient(135deg, #5D4037, #3E2723); padding: 1.25rem 1.5rem; display: flex; align-items: center; justify-content: space-between;">
+            <h5 style="color: #ffffff; font-family: 'Playfair Display', serif; font-weight: 800; margin: 0;"><i class="fas fa-edit me-2"></i>Edit Gallery Photo</h5>
+            <button onclick="closeModal('editPhotoModal')" style="background: none; border: none; color: #ffffff; opacity: 0.8; font-size: 1.1rem; cursor: pointer;"><i class="fas fa-times"></i></button>
+        </div>
+        <div style="padding: 1.5rem;">
+            <form id="editPhotoForm" onsubmit="submitPhotoEdit(event)" enctype="multipart/form-data">
+                <input type="hidden" id="editPhotoReviewId">
+                <div class="mb-3 text-center">
+                    <p style="font-size: 0.85rem; color: #8D6E63; margin-bottom: 1.25rem;">Upload a replacement image. This will update the review photo and automatically sync with the homepage gallery if featured.</p>
+                    
+                    <!-- File upload zone -->
+                    <div class="upload-zone" onclick="document.getElementById('editPhotoFileInput').click()">
+                        <i class="fas fa-cloud-upload-alt fa-2x mb-2" style="color: #8B634B;"></i>
+                        <h6 style="color: #3E2723; font-weight: 700; margin-bottom: 0.25rem;">Click to select file</h6>
+                        <p style="font-size: 0.72rem; color: #a48c7e; margin: 0;">Allowed formats: PNG, JPG, JPEG, GIF, WEBP</p>
+                        <input type="file" id="editPhotoFileInput" name="photo" accept="image/*" style="display: none;" onchange="previewSelectedPhoto(this)">
+                    </div>
+                </div>
+                
+                <!-- Image preview -->
+                <div id="photoPreviewContainer" class="mb-4 text-center" style="display: none;">
+                    <p style="font-size: 0.8rem; font-weight: 700; color: #5D4037; text-align: left; margin-bottom: 0.5rem;"><i class="far fa-image me-1"></i>New Image Preview:</p>
+                    <div style="position: relative; display: inline-block; max-width: 100%;">
+                        <img id="photoPreviewImg" src="" style="max-width: 100%; max-height: 180px; border-radius: 10px; border: 2px solid rgba(139, 99, 75, 0.12); box-shadow: 0 4px 12px rgba(0,0,0,0.04);">
+                        <button type="button" onclick="clearPhotoPreview()" style="position: absolute; top: -8px; right: -8px; width: 22px; height: 22px; border-radius: 50%; background: #8A4A41; color: white; border: none; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.15);"><i class="fas fa-times"></i></button>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 0.75rem; justify-content: flex-end; border-top: 1px solid #faf6f1; padding-top: 1rem;">
+                    <button type="button" class="btn-modal-cancel" onclick="closeModal('editPhotoModal')">Cancel</button>
+                    <button type="submit" class="btn-modal-save" id="btnSavePhotoEdit" style="background: linear-gradient(135deg, #5D4037, #795548);">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ LIGHTBOX MODAL ═══ -->
+<div id="lightboxModal" class="modal-backdrop-custom" onclick="closeModal('lightboxModal')" style="background: rgba(18, 12, 10, 0.9); z-index: 10000;">
+    <div style="position: relative; max-width: 90%; max-height: 90vh;" onclick="event.stopPropagation()">
+        <button onclick="closeModal('lightboxModal')" style="position: absolute; top: -40px; right: 0; background: none; border: none; color: #ffffff; font-size: 1rem; cursor: pointer; display: flex; align-items: center; gap: 5px;"><i class="fas fa-times"></i> Close</button>
+        <img id="lightboxImg" src="" style="max-width: 100%; max-height: 80vh; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.4); object-fit: contain; border: 3px solid rgba(255,255,255,0.1);">
+        <div id="lightboxCaption" style="color: #ffffff; text-align: center; margin-top: 1rem; font-family: 'Playfair Display', serif; font-size: 1rem; font-weight: 700;"></div>
+    </div>
+</div>
+
+<!-- Toast Notification Area -->
+<div class="toast-container" id="toastContainer"></div>
+
 <script>
-    function pollReviews() {
-        fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-        .then(response => response.text())
-        .then(html => {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            
-            const ids = ['reviewsGridContainer', 'lastUpdateText'];
-            ids.forEach(id => {
-                const oldEl = document.getElementById(id);
-                const newEl = doc.getElementById(id);
-                if (oldEl && newEl && oldEl.innerHTML !== newEl.innerHTML) {
-                    oldEl.innerHTML = newEl.innerHTML;
-                }
-            });
-        })
-        .catch(err => console.warn('Reviews sync failed:', err));
+    // Global filter states
+    let activeFilter = 'all';
+
+    // Toast alert triggers
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `premium-toast toast-${type}`;
+        
+        const accent = document.createElement('div');
+        accent.className = 'toast-accent';
+        
+        const content = document.createElement('div');
+        content.className = 'toast-content';
+        
+        const icon = document.createElement('div');
+        icon.className = 'toast-icon';
+        
+        let iconClass = 'fa-check';
+        if (type === 'danger') iconClass = 'fa-exclamation-triangle';
+        if (type === 'warning') iconClass = 'fa-exclamation-circle';
+        
+        icon.innerHTML = `<i class="fas ${iconClass}"></i>`;
+        
+        const msg = document.createElement('div');
+        msg.className = 'toast-message';
+        msg.innerText = message;
+        
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'toast-close';
+        closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+        closeBtn.onclick = () => {
+            toast.classList.add('hiding');
+            setTimeout(() => toast.remove(), 300);
+        };
+        
+        content.appendChild(icon);
+        content.appendChild(msg);
+        toast.appendChild(accent);
+        toast.appendChild(content);
+        toast.appendChild(closeBtn);
+        
+        container.appendChild(toast);
+        
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.classList.add('hiding');
+                setTimeout(() => toast.remove(), 300);
+            }
+        }, 4000);
     }
 
-    // Poll every 30 seconds
-    setInterval(pollReviews, 5000);
+    // Modal control utility functions
+    function openModal(id) {
+        const modal = document.getElementById(id);
+        if (modal) {
+            modal.classList.add('show');
+        }
+    }
+
+    function closeModal(id) {
+        const modal = document.getElementById(id);
+        if (modal) {
+            modal.classList.remove('show');
+        }
+    }
+
+    // Client-side filtering mechanism
+    function filterReviews(filterType, buttonEl) {
+        activeFilter = filterType;
+        
+        // Remove active state from all tabs and assign to current
+        document.querySelectorAll('.filter-tab').forEach(btn => btn.classList.remove('active'));
+        if (buttonEl) {
+            buttonEl.classList.add('active');
+        }
+        
+        const cards = document.querySelectorAll('.review-card');
+        let visibleCount = 0;
+        
+        cards.forEach(card => {
+            const status = card.getAttribute('data-status');
+            const isFeatured = card.getAttribute('data-featured') === 'true';
+            const hasPhoto = card.getAttribute('data-has-photo') === 'true';
+            
+            let show = false;
+            
+            if (filterType === 'all') {
+                show = true;
+            } else if (filterType === 'pending' && status === 'PENDING') {
+                show = true;
+            } else if (filterType === 'approved' && status === 'APPROVED') {
+                show = true;
+            } else if (filterType === 'rejected' && status === 'REJECTED') {
+                show = true;
+            } else if (filterType === 'featured' && isFeatured) {
+                show = true;
+            } else if (filterType === 'photos' && hasPhoto) {
+                show = true;
+            }
+            
+            if (show) {
+                card.classList.remove('filtered-out');
+                visibleCount++;
+            } else {
+                card.classList.add('filtered-out');
+            }
+        });
+
+        // Toggle empty state visibility
+        const emptyState = document.querySelector('.empty-reviews-state');
+        if (emptyState) {
+            if (visibleCount === 0) {
+                emptyState.style.display = 'block';
+            } else {
+                emptyState.style.display = 'none';
+            }
+        }
+    }
+
+    // Toggle Review Gallery featuring
+    function toggleGallery(reviewId, button) {
+        const icon = button.querySelector('i');
+        const label = button.querySelector('.toggle-label');
+        button.disabled = true;
+        
+        fetch(`/admin/reviews/toggle-gallery/${reviewId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Network response not ok');
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                const card = button.closest('.review-card');
+                
+                // Update card state
+                card.setAttribute('data-featured', data.is_featured ? 'true' : 'false');
+                
+                // Update button class, icon and label text
+                if (data.is_featured) {
+                    button.classList.add('in-gallery');
+                    icon.className = 'fas fa-star';
+                    if (label) label.textContent = 'In Gallery';
+                    button.setAttribute('title', 'Remove from Gallery');
+                    showToast('✨ Review photo added to homepage gallery!', 'success');
+                } else {
+                    button.classList.remove('in-gallery');
+                    icon.className = 'far fa-star';
+                    if (label) label.textContent = 'Add to Gallery';
+                    button.setAttribute('title', 'Add to Gallery');
+                    showToast('Review photo removed from gallery.', 'warning');
+                }
+                
+                // Refresh stats counts dynamically
+                updateStatsAndBadges();
+                
+                // Refilter cards if we are currently on the gallery tab
+                if (activeFilter === 'featured') {
+                    filterReviews('featured', null);
+                }
+            } else {
+                showToast(data.message || 'Failed to update gallery status', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('An error occurred. Failed to update gallery status.', 'danger');
+        })
+        .finally(() => {
+            button.disabled = false;
+        });
+    }
+
+    // Inline status change selector
+    function updateReviewStatus(reviewId, newStatus, selectEl) {
+        selectEl.disabled = true;
+        
+        const formData = new FormData();
+        formData.append('status', newStatus);
+        
+        fetch(`/admin/reviews/update/${reviewId}`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Status update failed');
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                const card = selectEl.closest('.review-card');
+                
+                // Update select data-status attribute for reactive CSS coloring
+                selectEl.setAttribute('data-status', newStatus);
+                card.setAttribute('data-status', newStatus);
+                
+                showToast(`Review status updated to ${newStatus}!`, 'success');
+                
+                // Refresh dashboard stats and tabs badges
+                updateStatsAndBadges();
+                
+                // Trigger re-filtering if on a specific status tab
+                if (activeFilter !== 'all' && activeFilter !== 'featured' && activeFilter !== 'photos') {
+                    filterReviews(activeFilter);
+                }
+            } else {
+                showToast(data.message || 'Failed to update status', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Failed to update status. Please try again.', 'danger');
+        })
+        .finally(() => {
+            selectEl.disabled = false;
+        });
+    }
+
+    // Modal triggers for photo replacement
+    function openPhotoEditModal(reviewId, currentPhotoUrl) {
+        document.getElementById('editPhotoReviewId').value = reviewId;
+        
+        // Reset file inputs
+        document.getElementById('editPhotoFileInput').value = '';
+        
+        // Show current photo inside upload container if it exists
+        const previewImg = document.getElementById('photoPreviewImg');
+        const container = document.getElementById('photoPreviewContainer');
+        
+        if (currentPhotoUrl) {
+            previewImg.src = currentPhotoUrl;
+            container.style.display = 'block';
+        } else {
+            previewImg.src = '';
+            container.style.display = 'none';
+        }
+        
+        openModal('editPhotoModal');
+    }
+
+    // Upload Form Preview
+    function previewSelectedPhoto(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('photoPreviewImg').src = e.target.result;
+                document.getElementById('photoPreviewContainer').style.display = 'block';
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function clearPhotoPreview() {
+        document.getElementById('editPhotoFileInput').value = '';
+        document.getElementById('photoPreviewImg').src = '';
+        document.getElementById('photoPreviewContainer').style.display = 'none';
+    }
+
+    // Handle AJAX photo replacement upload
+    function submitPhotoEdit(event) {
+        event.preventDefault();
+        
+        const reviewId = document.getElementById('editPhotoReviewId').value;
+        const fileInput = document.getElementById('editPhotoFileInput');
+        const btnSave = document.getElementById('btnSavePhotoEdit');
+        
+        if (!fileInput.files.length) {
+            showToast('Please select a file to upload first.', 'warning');
+            return;
+        }
+        
+        btnSave.disabled = true;
+        btnSave.innerText = 'Uploading...';
+        
+        const formData = new FormData();
+        formData.append('photo', fileInput.files[0]);
+        
+        fetch(`/admin/reviews/edit-photo/${reviewId}`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Photo upload failed');
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Update image element inside target card with cache buster
+                const imgEl = document.getElementById(`reviewImg-${reviewId}`);
+                if (imgEl) {
+                    imgEl.src = `${data.photo_url}?t=${Date.now()}`;
+                } else {
+                    // In case review did not have a photo originally, reload is required to draw DOM nodes
+                    showToast('Photo added! Reloading reviews list to apply changes.', 'success');
+                    setTimeout(() => location.reload(), 1000);
+                    return;
+                }
+                
+                // Update data tag of card
+                const card = document.querySelector(`.review-card[data-id="${reviewId}"]`);
+                if (card) {
+                    card.setAttribute('data-has-photo', 'true');
+                }
+                
+                showToast('Review photo updated successfully!', 'success');
+                closeModal('editPhotoModal');
+                
+                // Update page metadata totals
+                updateStatsAndBadges();
+            } else {
+                showToast(data.message || 'Failed to update photo', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('An error occurred during image upload.', 'danger');
+        })
+        .finally(() => {
+            btnSave.disabled = false;
+            btnSave.innerText = 'Save Changes';
+        });
+    }
+
+    // Lightbox triggers
+    function openLightbox(photoUrl, captionText) {
+        document.getElementById('lightboxImg').src = photoUrl;
+        document.getElementById('lightboxCaption').innerText = captionText;
+        openModal('lightboxModal');
+    }
+
+    // Dynamic metadata synchronization
+    function updateStatsAndBadges() {
+        const cards = document.querySelectorAll('.review-card');
+        
+        let total = cards.length;
+        let pending = 0;
+        let approved = 0;
+        let rejected = 0;
+        let featured = 0;
+        let hasPhoto = 0;
+        
+        let ratingsSum = 0;
+        const ratingDistribution = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
+        let positiveSentimentCount = 0;
+        
+        cards.forEach(card => {
+            const status = card.getAttribute('data-status');
+            const isFeatured = card.getAttribute('data-featured') === 'true';
+            const hasPhotoAttr = card.getAttribute('data-has-photo') === 'true';
+            
+            // Extract values from card structure
+            const starsFilled = card.querySelectorAll('.review-stars .fas.fa-star').length;
+            const sentimentBadge = card.querySelector('.sentiment-badge-custom');
+            const isPositive = sentimentBadge && sentimentBadge.classList.contains('positive');
+            
+            if (status === 'PENDING') pending++;
+            if (status === 'APPROVED') approved++;
+            if (status === 'REJECTED') rejected++;
+            if (isFeatured) featured++;
+            if (hasPhotoAttr) hasPhoto++;
+            
+            ratingsSum += starsFilled;
+            if (ratingDistribution[starsFilled] !== undefined) {
+                ratingDistribution[starsFilled]++;
+            }
+            if (isPositive) positiveSentimentCount++;
+        });
+        
+        // Calculate average
+        const avg = total > 0 ? (ratingsSum / total).toFixed(1) : '0.0';
+        const sentimentPct = total > 0 ? Math.round((positiveSentimentCount / total) * 100) : 100;
+        
+        // Update DOM Text nodes
+        document.getElementById('statValTotal').innerText = total;
+        document.getElementById('statValAvg').innerText = `${avg} / 5.0`;
+        document.getElementById('statValFeatured').innerText = featured;
+        document.getElementById('statValSentiment').innerText = `${sentimentPct}%`;
+        document.getElementById('breakdownLargeAvg').innerText = avg;
+        
+        // Update tabs counts badges
+        document.getElementById('badge-all').innerText = total;
+        document.getElementById('badge-pending').innerText = pending;
+        document.getElementById('badge-approved').innerText = approved;
+        document.getElementById('badge-rejected').innerText = rejected;
+        document.getElementById('badge-featured').innerText = featured;
+        document.getElementById('badge-photos').innerText = hasPhoto;
+        
+        // Update rating distribution bars and counts
+        for (let star = 1; star <= 5; star++) {
+            const count = ratingDistribution[star];
+            const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+            
+            const bar = document.getElementById(`breakdownBar-${star}`);
+            const countText = document.getElementById(`breakdownCount-${star}`);
+            
+            if (bar) bar.style.width = `${pct}%`;
+            if (countText) countText.innerText = count;
+        }
+        
+        // Redraw stars under Large Average in breakdown
+        const starsContainer = document.getElementById('breakdownStarsContainer');
+        if (starsContainer) {
+            starsContainer.innerHTML = '';
+            const fullStars = Math.floor(parseFloat(avg));
+            const halfStar = (parseFloat(avg) - fullStars) >= 0.3;
+            const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+            
+            for (let i = 0; i < fullStars; i++) {
+                starsContainer.innerHTML += '<i class="fas fa-star"></i>';
+            }
+            if (halfStar) {
+                starsContainer.innerHTML += '<i class="fas fa-star-half-alt"></i>';
+            }
+            for (let i = 0; i < emptyStars; i++) {
+                starsContainer.innerHTML += '<i class="far fa-star" style="opacity: 0.3;"></i>';
+            }
+        }
+    }
 </script>
 {% endblock %}
-

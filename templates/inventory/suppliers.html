@@ -15,9 +15,7 @@
 {% block page_subtitle %}
     <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
         <span>Manage and contact verified ingredient providers
-            <span id="syncIndicator" style="font-size: 0.72rem; color: var(--muted); opacity: 0.8; margin-left: 10px; font-weight: 500;">
-                <i class="fas fa-sync-alt fa-spin me-1"></i> Live Update (5s) • Last: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
-            </span>
+            
         </span>
         <button class="btn-primary" onclick="openModal('addSupplierModal')" style="padding: 8px 16px; font-size: 0.85rem;">
             <i class="fas fa-plus me-1"></i> Add Supplier
@@ -153,19 +151,65 @@
         width: 22px; height: 22px; border-radius: 50%; background: var(--primary); color: white;
         display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 800; flex-shrink: 0;
     }
+    /* Live cost subtotal per row */
+    .receive-subtotal {
+        font-size: 0.75rem; font-weight: 700; color: #c62828;
+        min-width: 70px; text-align: right; white-space: nowrap;
+    }
+    /* Running total bar */
+    .receive-total-bar {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 14px 18px; margin: 12px 0 0;
+        background: linear-gradient(135deg, #fff8f0, #fdf3e7);
+        border: 2px solid rgba(212,168,98,0.3); border-radius: 14px;
+    }
+    .receive-total-bar .label { font-size: 0.85rem; font-weight: 700; color: var(--muted); }
+    .receive-total-bar .total-amount { font-size: 1.25rem; font-weight: 900; color: #c62828; letter-spacing: -0.5px; }
+    /* Branch deduction banner */
+    .branch-deduction-banner {
+        display: flex; align-items: center; gap: 10px; padding: 10px 16px;
+        background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.18);
+        border-radius: 12px; margin-bottom: 16px; font-size: 0.78rem; font-weight: 700; color: #1d4ed8;
+    }
+    /* Payment history table */
+    .payments-history-card {
+        background: var(--card); border: 1px solid var(--card-border); border-radius: 22px;
+        padding: 0; overflow: hidden; margin-top: 32px;
+    }
+    .payments-history-header {
+        padding: 18px 24px; border-bottom: 1px solid var(--card-border);
+        display: flex; align-items: center; justify-content: space-between;
+        background: linear-gradient(135deg, rgba(93,64,55,0.05), transparent);
+    }
+    .payments-history-header h3 { margin: 0; font-size: 0.95rem; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+    .payments-history-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .payments-history-table thead tr { background: #faf8f5; }
+    .payments-history-table th { padding: 10px 18px; text-align: left; color: var(--muted); font-weight: 700; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--card-border); }
+    .payments-history-table td { padding: 12px 18px; border-bottom: 1px dashed rgba(93,64,55,0.08); vertical-align: top; color: var(--text); }
+    .payments-history-table tbody tr:hover td { background: rgba(93,64,55,0.03); }
+    .payments-history-table tbody tr:last-child td { border-bottom: none; }
 {% endblock %}
 
 {% block content %}
 <div id="supplierGridContainer">
 <div class="supplier-grid">
     {% for sup in suppliers %}
-    <div class="supplier-card" onclick="openReceiveModal({{ sup.id }}, '{{ sup.name|e }}')">
+    <div class="supplier-card" 
+         data-id="{{ sup.id }}" 
+         data-name="{{ sup.name|e }}"
+         data-contact="{{ sup.contact_person|e or '' }}"
+         data-phone="{{ sup.phone|e or '' }}"
+         data-email="{{ sup.email|e or '' }}"
+         data-address="{{ sup.address|replace('\n',' ')|e or '' }}"
+         data-catalog="{{ sup.catalog_items|e or '' }}"
+         data-category="{{ sup.category|e or '' }}"
+         onclick="handleCardClick(this)">
         <div class="sup-header">
             <div class="sup-name">{{ sup.name }}</div>
             <div style="display:flex; align-items:center; gap:8px;">
                 <div class="sup-initial">{{ sup.name[:1] }}</div>
                 <button type="button"
-                    onclick="event.stopPropagation(); openEditModal({{ sup.id }}, '{{ sup.name|e }}', '{{ sup.contact_person|e }}', '{{ sup.phone|e }}', '{{ sup.email|e }}', '{{ sup.address|replace('\n',' ')|e }}', '{{ sup.catalog_items|e }}')"
+                    onclick="event.stopPropagation(); handleEditClick(this.closest('.supplier-card'))"
                     style="background:rgba(25,118,210,0.08); border:none; color:#1565c0; width:32px; height:32px; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s;"
                     title="Edit Supplier"
                     onmouseover="this.style.background='rgba(25,118,210,0.18)'"
@@ -173,7 +217,7 @@
                     <i class="fas fa-pen" style="font-size:0.8rem;"></i>
                 </button>
                 <button type="button"
-                    onclick="event.stopPropagation(); confirmDeleteSupplier({{ sup.id }}, '{{ sup.name|e }}')"
+                    onclick="event.stopPropagation(); handleDeleteClick(this.closest('.supplier-card'))"
                     style="background:rgba(211,47,47,0.08); border:none; color:#c62828; width:32px; height:32px; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s;"
                     title="Delete Supplier"
                     onmouseover="this.style.background='rgba(211,47,47,0.18)'"
@@ -284,6 +328,16 @@
                 <textarea name="address" id="edit_address" rows="2"></textarea>
             </div>
             <div class="form-group">
+                <label>Menu Category *</label>
+                <select name="category" id="edit_category" required style="padding: 10px 14px; border: 1px solid var(--card-border); border-radius: 10px; font-size: 0.9rem;">
+                    <option value="">-- Select Menu Category --</option>
+                    {% for cat in menu_categories %}
+                    <option value="{{ cat }}">{{ cat }}</option>
+                    {% endfor %}
+                    <option value="General">General</option>
+                </select>
+            </div>
+            <div class="form-group">
                 <label>Ingredients Supplied</label>
                 <input type="text" name="new_ingredients" id="edit_ingredients" placeholder="e.g. Pork, Chicken, Beef">
                 <small style="font-size:0.7rem; color:var(--muted);">Separate items with commas. New items will be added as ingredients.</small>
@@ -327,6 +381,16 @@
                 <textarea name="address" rows="2" placeholder="Office address..."></textarea>
             </div>
             <div class="form-group">
+                <label>Menu Category *</label>
+                <select name="category" required style="padding: 10px 14px; border: 1px solid var(--card-border); border-radius: 10px; font-size: 0.9rem;">
+                    <option value="">-- Select Menu Category --</option>
+                    {% for cat in menu_categories %}
+                    <option value="{{ cat }}">{{ cat }}</option>
+                    {% endfor %}
+                    <option value="General">General</option>
+                </select>
+            </div>
+            <div class="form-group">
                 <label>Ingredients Supplied</label>
                 <input type="text" name="new_ingredients" placeholder="e.g. Pork, Chicken, Beef">
                 <small style="font-size:0.7rem; color:var(--muted);">Separate items with commas</small>
@@ -344,6 +408,8 @@
 {% block extra_script %}
 <script>
     let currentSupId = null;
+    const targetBranchName = '{{ target_branch }}';
+    const branchAvailableFunds = parseFloat('{{ available_funds or 0 }}');
 
     function openModal(id) {
         document.getElementById(id).style.display = 'flex';
@@ -397,39 +463,49 @@
                 }
 
                 // Build the receive checklist
-                let html = `
-                    <div class="steps-guide">
-                        <h4><i class="fas fa-clipboard-list me-1"></i> Paano gamitin:</h4>
-                        <div class="step-item"><span class="step-num">1</span> I-type ang dami ng na-receive sa <b style="color:#2e7d32;">berdeng input box</b></div>
-                        <div class="step-item"><span class="step-num">2</span> Lagyan lang ang mga item na kasama sa delivery</div>
-                        <div class="step-item"><span class="step-num">3</span> Pindutin ang <b>"Accept & Add to Inventory"</b> button sa baba</div>
-                    </div>
-                `;
-
+                let html = '<div style="max-height: 50vh; overflow-y: auto; border: 1px solid rgba(93,64,55,0.08); border-radius: 16px; padding: 12px; background: #fafaf9;">';
+                
                 data.ingredients.forEach(ing => {
                     html += `
-                        <div class="receive-item">
-                            <div class="receive-item-info">
-                                <div class="receive-item-name">${ing.name}</div>
-                                <div class="receive-item-meta">
-                                    <span><i class="fas fa-tag me-1"></i>${ing.category}</span>
-                                    <span><i class="fas fa-box me-1"></i>Stock: ${ing.stock_qty.toFixed(1)} ${ing.unit}</span>
+                        <div class="receive-item" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #f3ece7; background: #fff; margin-bottom: 8px;">
+                            <div class="receive-item-info" style="flex: 1; text-align: left;">
+                                <div class="receive-item-name" style="font-weight: 700; color: #5d4037; font-size: 0.95rem;">${ing.name}</div>
+                                <div class="receive-item-meta" style="font-size: 0.75rem; color: #8d6e63; margin-top: 4px;">
+                                    <span style="margin-right: 12px;"><i class="fas fa-tag me-1"></i>${ing.category}</span>
+                                    <span style="margin-right: 12px;"><i class="fas fa-box me-1"></i>Stock: ${ing.stock_qty.toFixed(1)} ${ing.unit}</span>
+                                    <span><i class="fas fa-peso-sign me-1"></i>Cost: ₱${ing.cost_per_unit.toFixed(2)} / ${ing.unit}</span>
                                 </div>
                             </div>
-                            <div class="receive-qty-wrap">
-                                <input type="number" class="receive-qty-input" 
-                                       data-ing-id="${ing.id}" 
-                                       step="0.01" min="0" value="" 
-                                       placeholder="0"
-                                       oninput="checkReceiveInputs()">
-                                <span class="receive-qty-unit">${ing.unit}</span>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div class="receive-qty-wrap" style="display: flex; align-items: center; gap: 6px;">
+                                    <input type="number" class="receive-qty-input" 
+                                           data-ing-id="${ing.id}" 
+                                           data-cost-per-unit="${ing.cost_per_unit}" 
+                                           step="0.01" min="0" value="" 
+                                           placeholder="0"
+                                           style="width: 80px; padding: 8px; border: 2px solid #2e7d32; border-radius: 8px; font-weight: 700; text-align: center; color: #2e7d32; background: #f1f8e9;"
+                                           oninput="checkReceiveInputs()">
+                                    <span class="receive-qty-unit" style="font-size: 0.8rem; font-weight: 700; color: #5d4037;">${ing.unit}</span>
+                                </div>
+                                <div class="receive-subtotal" id="subtotal_${ing.id}" style="font-size: 0.85rem; font-weight: 700; color: #c62828; min-width: 80px; text-align: right;">₱0.00</div>
                             </div>
                         </div>
                     `;
                 });
+                html += '</div>';
+
+                // Add running total and funds warning banner
+                html += `
+                    <div class="receive-total-bar" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; margin-top: 16px; background: linear-gradient(135deg, #fff8f0, #fdf3e7); border: 2px solid rgba(212,168,98,0.3); border-radius: 14px;">
+                        <span class="label" style="font-size: 0.85rem; font-weight: 700; color: #5d4037;">Running Total:</span>
+                        <span class="total-amount" id="receiveTotalCost" style="font-size: 1.25rem; font-weight: 900; color: #c62828; letter-spacing: -0.5px;">₱0.00</span>
+                    </div>
+                    <div id="fundsBanner" class="branch-deduction-banner" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-radius: 12px; margin-top: 12px; font-size: 0.78rem; font-weight: 700; transition: all 0.3s;">
+                    </div>
+                `;
 
                 body.innerHTML = html;
-                document.getElementById('btnAcceptSupply').disabled = true;
+                checkReceiveInputs();
             })
             .catch(err => {
                 body.innerHTML = `
@@ -444,11 +520,61 @@
 
     function checkReceiveInputs() {
         const inputs = document.querySelectorAll('.receive-qty-input');
+        let runningTotal = 0;
         let hasValue = false;
+
         inputs.forEach(inp => {
-            if (parseFloat(inp.value) > 0) hasValue = true;
+            const qty = parseFloat(inp.value) || 0;
+            const costPerUnit = parseFloat(inp.getAttribute('data-cost-per-unit')) || 0;
+            const itemCost = qty * costPerUnit;
+            runningTotal += itemCost;
+
+            if (qty > 0) {
+                hasValue = true;
+            }
+
+            // Update row subtotal
+            const subEl = document.getElementById('subtotal_' + inp.getAttribute('data-ing-id'));
+            if (subEl) {
+                subEl.innerHTML = '₱' + itemCost.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
         });
-        document.getElementById('btnAcceptSupply').disabled = !hasValue;
+
+        // Update overall running total display
+        const totalEl = document.getElementById('receiveTotalCost');
+        if (totalEl) {
+            totalEl.innerHTML = '₱' + runningTotal.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        // Update funds banner and validation
+        const banner = document.getElementById('fundsBanner');
+        const btnAccept = document.getElementById('btnAcceptSupply');
+        
+        if (banner) {
+            if (runningTotal > branchAvailableFunds) {
+                banner.style.background = 'rgba(220, 38, 38, 0.08)';
+                banner.style.border = '1px solid rgba(220, 38, 38, 0.25)';
+                banner.style.color = '#dc2626';
+                banner.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                        <span><i class="fas fa-exclamation-circle me-1"></i> Bawal bumili: Kulang ang pera ng ${targetBranchName} Branch!</span>
+                        <span>Mayroon lamang: <b>₱${branchAvailableFunds.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b></span>
+                    </div>
+                `;
+                if (btnAccept) btnAccept.disabled = true;
+            } else {
+                banner.style.background = 'rgba(59, 130, 246, 0.08)';
+                banner.style.border = '1px solid rgba(59, 130, 246, 0.25)';
+                banner.style.color = '#1d4ed8';
+                banner.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                        <span><i class="fas fa-wallet me-1"></i> Babayaran gamit ang pondo ng ${targetBranchName} Branch.</span>
+                        <span>Pondo: <b>₱${branchAvailableFunds.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b></span>
+                    </div>
+                `;
+                if (btnAccept) btnAccept.disabled = !hasValue;
+            }
+        }
     }
 
     function submitReceive() {
@@ -522,6 +648,31 @@
         });
     }
 
+    // JS click handlers to parse data attributes and avoid single quote escaping errors
+    function handleCardClick(card) {
+        const id = card.getAttribute('data-id');
+        const name = card.getAttribute('data-name');
+        openReceiveModal(id, name);
+    }
+
+    function handleEditClick(card) {
+        const id = card.getAttribute('data-id');
+        const name = card.getAttribute('data-name');
+        const contact = card.getAttribute('data-contact');
+        const phone = card.getAttribute('data-phone');
+        const email = card.getAttribute('data-email');
+        const address = card.getAttribute('data-address');
+        const catalog = card.getAttribute('data-catalog');
+        const category = card.getAttribute('data-category');
+        openEditModal(id, name, contact, phone, email, address, catalog, category);
+    }
+
+    function handleDeleteClick(card) {
+        const id = card.getAttribute('data-id');
+        const name = card.getAttribute('data-name');
+        confirmDeleteSupplier(id, name);
+    }
+
     // Delete Supplier Confirmation
     let deleteSupId = null;
     let deleteSupName = '';
@@ -543,7 +694,7 @@
     }
 
     // Edit Supplier
-    function openEditModal(supId, name, contact, phone, email, address, ingredients) {
+    function openEditModal(supId, name, contact, phone, email, address, ingredients, category) {
         document.getElementById('editSupplierForm').action = `/staff/inventory/suppliers/update/${supId}`;
         document.getElementById('edit_name').value = name;
         document.getElementById('edit_contact').value = contact;
@@ -551,6 +702,7 @@
         document.getElementById('edit_email').value = email;
         document.getElementById('edit_address').value = address;
         document.getElementById('edit_ingredients').value = ingredients;
+        document.getElementById('edit_category').value = category || 'General';
         openModal('editSupplierModal');
     }
 
@@ -572,7 +724,7 @@
         .catch(err => console.warn('Supplier sync failed:', err));
     }
 
-    setInterval(pollSuppliers, 5000);
+    
 </script>
 </div> <!-- end supplierGridContainer -->
 {% endblock %}

@@ -221,11 +221,7 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h2 class="h3 mb-1" style="font-family: 'Playfair Display', serif; font-weight: 800; color: #3E2723;">Contact Messages</h2>
-        <p class="text-muted small mb-0" style="font-weight: 500;">Manage inquiries and connect with your guests.
-            <span id="syncIndicator" style="font-size: 0.75rem; color: #8b7355; opacity: 0.8; margin-left: 10px;">
-                <i class="fas fa-sync-alt fa-spin me-1"></i> Real-time Sync (5s) • Last Update: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
-            </span>
-        </p>
+        <p class="text-muted small mb-0" style="font-weight: 500;">Manage inquiries and connect with your guests.</p>
     </div>
 </div>
 
@@ -397,6 +393,6 @@
     }
 
     // Poll every 30 seconds
-    setInterval(pollContactMessages, 5000);
+    
 </script>
 {% endblock %}

@@ -13,9 +13,7 @@
 {% block page_title %}Reservations{% endblock %}
 {% block page_subtitle %}
     Manage incoming table bookings and exclusive events
-    <span id="syncIndicator" style="font-size: 0.72rem; color: var(--muted); opacity: 0.8; margin-left: 10px; font-weight: 500;">
-        <i class="fas fa-sync-alt fa-spin me-1"></i> Live Update (5s) • Last: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
-    </span>
+    
 {% endblock %}
 
 {% block extra_style %}
@@ -329,27 +327,31 @@
     function pollCashierReservations() {
         if (document.getElementById('tableModal').style.display === 'flex') return;
 
+        const activeTab = document.querySelector('.filter-tab.active');
+        const savedFilter = activeTab ? activeTab.dataset.filter : 'ALL';
+        const savedScroll = window.scrollY;
+
         fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
         .then(response => response.text())
         .then(html => {
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
             
-            ids.forEach(id => {
+            // ★ Only update the grid container — NEVER touch the filter tabs
+            ['reservationsGridContainer', 'lastUpdateText'].forEach(id => {
                 const oldEl = document.getElementById(id);
                 const newEl = doc.getElementById(id);
                 if (oldEl && newEl && oldEl.innerHTML !== newEl.innerHTML) {
                     oldEl.innerHTML = newEl.innerHTML;
-                    if (id === 'reservationsGridContainer') {
-                        const activeTab = document.querySelector('.filter-tab.active');
-                        if (activeTab) filterReservations(activeTab.dataset.filter);
-                    }
                 }
             });
+            // Re-apply filter and scroll
+            if (savedFilter !== 'ALL') filterReservations(savedFilter);
+            window.scrollTo(0, savedScroll);
         })
         .catch(err => console.warn('Reservations sync failed:', err));
     }
 
-    setInterval(pollCashierReservations, 5000);
+    
 </script>
 {% endblock %}

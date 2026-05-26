@@ -595,6 +595,17 @@ def kitchen_update_order(order_id):
             
         order.status = new_status
         db.session.commit()
+
+        # Notify user
+        if order.user_id:
+            from utils import create_notification
+            msgs = {
+                'PREPARING': f'Your order #{order.id} is now being prepared! 🍳',
+                'READY': f'Your order #{order.id} is ready! 🍱',
+                'COMPLETED': f'Your order #{order.id} has been served. Enjoy! ✨'
+            }
+            if new_status in msgs:
+                create_notification(order.user_id, f'Order {new_status.capitalize()}', msgs[new_status], 'ORDER', link='/my-orders')
         
         # Notify via SocketIO if available
         try:
@@ -827,22 +838,52 @@ def inventory_login():
     # Redirect to unified staff login
     return redirect(url_for('cashier_portal.staff_login'))
 
+def _get_ingredient_food_categories():
+    """Returns a dict mapping ingredient_id -> list of food categories."""
+    cat_mappings = db.session.query(
+        MenuItemIngredient.ingredient_id, MenuItem.category
+    ).join(MenuItem, MenuItem.id == MenuItemIngredient.menu_item_id).filter(
+        MenuItem.category.isnot(None),
+        MenuItem.is_deleted == False
+    ).distinct().all()
+
+    cats_by_ing = defaultdict(list)
+    for ing_id, cat in cat_mappings:
+        if cat not in cats_by_ing[ing_id]:
+            cats_by_ing[ing_id].append(cat)
+    return cats_by_ing
+
 @inventory_bp.route('/staff/inventory')
 def inventory_dashboard():
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
         return redirect(url_for('cashier_portal.staff_login'))
         
-    all_ingredients = Ingredient.query.order_by(Ingredient.category, Ingredient.name).all()
+    user_branch = getattr(current_user, 'branch', None)
+    query = Ingredient.query
+    if user_branch and user_branch != 'ALL':
+        query = query.filter_by(branch=user_branch)
+    all_ingredients = query.order_by(Ingredient.name).all()
     total_items = len(all_ingredients)
-    low_stock_count = db.session.query(db.func.count(Ingredient.id)).filter(Ingredient.stock_qty <= Ingredient.reorder_level).scalar()
+    
+    low_stock_q = db.session.query(db.func.count(Ingredient.id)).filter(Ingredient.stock_qty <= Ingredient.reorder_level)
+    if user_branch and user_branch != 'ALL':
+        low_stock_q = low_stock_q.filter(Ingredient.branch == user_branch)
+    low_stock_count = low_stock_q.scalar()
     
     suppliers = Supplier.query.order_by(Supplier.name).all()
     
-    all_ingredients = Ingredient.query.order_by(Ingredient.category, Ingredient.name).all()
+    cats_by_ing = _get_ingredient_food_categories()
     
     grouped_ingredients = {}
-    for category, group in groupby(all_ingredients, lambda x: x.category or 'General'):
-        grouped_ingredients[category] = list(group)
+    for ing in all_ingredients:
+        ing_cats = cats_by_ing.get(ing.id) or [ing.category or 'General']
+        for cat in ing_cats:
+            if cat not in grouped_ingredients:
+                grouped_ingredients[cat] = []
+            grouped_ingredients[cat].append(ing)
+            
+    # Sort categories alphabetically
+    grouped_ingredients = dict(sorted(grouped_ingredients.items()))
         
     return render_template('inventory/dashboard.html',
                            portal_name=f"{current_user.first_name} {current_user.last_name}",
@@ -858,13 +899,26 @@ def inventory_recipes():
         return redirect(url_for('cashier_portal.staff_login'))
     
     from itertools import groupby
-    all_menu_items = MenuItem.query.filter_by(is_deleted=False).order_by(MenuItem.category, MenuItem.name).all()
+    user_branch = getattr(current_user, 'branch', None)
+    
+    menu_q = MenuItem.query.filter_by(is_deleted=False)
+    if user_branch and user_branch != 'ALL':
+        menu_q = menu_q.filter(MenuItem.branch == user_branch)
+        
+    all_menu_items = menu_q.order_by(MenuItem.category, MenuItem.name).all()
     grouped_items = {}
     for category, group in groupby(all_menu_items, lambda x: x.category or 'General'):
         grouped_items[category] = list(group)
         
-    menu_categories = [r[0] for r in db.session.query(MenuItem.category).filter(MenuItem.is_deleted == False).distinct().order_by(MenuItem.category).all()]
-    all_ingredients = Ingredient.query.order_by(Ingredient.name).all()
+    category_q = db.session.query(MenuItem.category).filter(MenuItem.is_deleted == False)
+    if user_branch and user_branch != 'ALL':
+        category_q = category_q.filter(MenuItem.branch == user_branch)
+    menu_categories = [r[0] for r in category_q.distinct().order_by(MenuItem.category).all()]
+    
+    ing_q = Ingredient.query
+    if user_branch and user_branch != 'ALL':
+        ing_q = ing_q.filter_by(branch=user_branch)
+    all_ingredients = ing_q.order_by(Ingredient.name).all()
     
     return render_template('inventory/recipes.html',
                            portal_name=f"{current_user.first_name} {current_user.last_name}",
@@ -927,6 +981,63 @@ def recipe_save_ingredients(item_id):
     db.session.commit()
     return jsonify({'success': True, 'message': f'Recipe for "{item.name}" saved successfully!'})
 
+
+@inventory_bp.route('/staff/inventory/recipes/add', methods=['POST'])
+def inventory_add_recipe_item():
+    if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        return redirect(url_for('cashier_portal.staff_login'))
+        
+    name = request.form.get('name', '').strip()
+    category = request.form.get('category', '').strip() or 'General'
+    description = request.form.get('description', '').strip()
+    
+    try:
+        price = float(request.form.get('price', 0))
+    except (ValueError, TypeError):
+        price = 0.0
+        
+    if not name:
+        flash('Menu item name is required.', 'danger')
+        return redirect(url_for('inventory_portal.inventory_recipes'))
+        
+    item = MenuItem(
+        name=name,
+        category=category,
+        price=price,
+        description=description,
+        is_available=False
+    )
+    db.session.add(item)
+    db.session.commit()
+    
+    from routes.admin import log_audit
+    try:
+        log_audit('CREATE', 'MenuItem', item.id, f'Added new menu item via Inventory: {item.name}')
+    except:
+        pass
+        
+    flash(f'Menu item "{name}" added successfully! You can now add its recipe ingredients.', 'success')
+    return redirect(url_for('inventory_portal.inventory_recipes'))
+
+
+@inventory_bp.route('/staff/inventory/recipes/<int:item_id>/delete', methods=['POST'])
+def inventory_delete_recipe_item(item_id):
+    if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        return redirect(url_for('cashier_portal.staff_login'))
+        
+    item = MenuItem.query.get_or_404(item_id)
+    item.is_deleted = True
+    db.session.commit()
+    
+    from routes.admin import log_audit
+    try:
+        log_audit('DELETE', 'MenuItem', item.id, f'Trashed menu item via Inventory: {item.name}')
+    except:
+        pass
+        
+    flash(f'Menu item "{item.name}" deleted successfully.', 'success')
+    return redirect(url_for('inventory_portal.inventory_recipes'))
+
 @inventory_bp.route('/staff/inventory/batches')
 def inventory_ingredient_batches():
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
@@ -935,19 +1046,27 @@ def inventory_ingredient_batches():
     from datetime import date
     from sqlalchemy.orm import selectinload
     
-    # Pre-fetch data for the staff FIFO dashboard
-    ingredients = Ingredient.query.order_by(Ingredient.name).all()
+    user_branch = getattr(current_user, 'branch', None)
+    ing_q = Ingredient.query
+    batch_q = IngredientBatch.query.filter_by(is_exhausted=False)
+    
+    if user_branch and user_branch != 'ALL':
+        ing_q = ing_q.filter_by(branch=user_branch)
+        batch_q = batch_q.join(Ingredient).filter(Ingredient.branch == user_branch)
+        
+    ingredients = ing_q.order_by(Ingredient.name).all()
     today = date.today()
     batches = (
-        IngredientBatch.query.filter_by(is_exhausted=False)
+        batch_q
         .options(selectinload(IngredientBatch.ingredient))
         .order_by(IngredientBatch.purchase_date.asc())
         .all()
     )
 
-    menu_categories = [r[0] for r in db.session.query(MenuItem.category)
-                       .filter(MenuItem.is_deleted == False)
-                       .distinct().order_by(MenuItem.category).all()]
+    category_q = db.session.query(MenuItem.category).filter(MenuItem.is_deleted == False)
+    if user_branch and user_branch != 'ALL':
+        category_q = category_q.filter(MenuItem.branch == user_branch)
+    menu_categories = [r[0] for r in category_q.distinct().order_by(MenuItem.category).all()]
 
     # Mapping ingredients to their menu categories for client-side filtering
     ing_menu_cats = {}
@@ -1003,12 +1122,21 @@ def inventory_full():
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
         return redirect(url_for('cashier_portal.staff_login'))
     
-    # We fetch all ingredients to allow for instant client-side filtering as requested
-    all_ingredients = Ingredient.query.order_by(Ingredient.category, Ingredient.name).all()
+    user_branch = getattr(current_user, 'branch', None)
+    query = Ingredient.query
+    if user_branch and user_branch != 'ALL':
+        query = query.filter_by(branch=user_branch)
+    all_ingredients = query.order_by(Ingredient.name).all()
+    cats_by_ing = _get_ingredient_food_categories()
     
-    # Get all unique categories for the filter buttons
-    categories = [r[0] for r in db.session.query(Ingredient.category).distinct().all() if r[0]]
-    
+    categories = set()
+    for ing in all_ingredients:
+        ing_cats = cats_by_ing.get(ing.id) or [ing.category or 'General']
+        ing.food_categories = ing_cats
+        for c in ing_cats:
+            categories.add(c)
+            
+    categories = sorted(list(categories))
     suppliers = Supplier.query.order_by(Supplier.name).all()
     
     return render_template('inventory/full.html', 
@@ -1023,6 +1151,8 @@ def inventory_suppliers():
         return redirect(url_for('cashier_portal.staff_login'))
     
     from collections import defaultdict
+    from models import SupplierPayment
+    
     suppliers_list = Supplier.query.order_by(Supplier.name).all()
     
     # Enrich suppliers with category metadata (matching admin logic to satisfy template)
@@ -1041,13 +1171,39 @@ def inventory_suppliers():
             cats_by_sup[s_id].append(cat)
             
         for sup in suppliers_list:
-            # The template uses sup.category, so we pick the first one if available
-            mapped_cats = cats_by_sup.get(sup.id, [])
-            sup.category = mapped_cats[0] if mapped_cats else "General"
+            # Use explicit category from DB if set, otherwise resolve dynamically or default to "General"
+            if sup.category:
+                pass  # already set from DB
+            else:
+                mapped_cats = cats_by_sup.get(sup.id, [])
+                sup.category = mapped_cats[0] if mapped_cats else "General"
+    
+    # Fetch all active menu categories for the dropdown selectors
+    menu_categories = [r[0] for r in db.session.query(MenuItem.category)
+                       .filter(MenuItem.is_deleted == False)
+                       .distinct().order_by(MenuItem.category).all()]
+    
+    # Kumuha ng mga kamakailang bayad sa supplier para sa branch na ito
+    user_branch = getattr(current_user, 'branch', None)
+    payment_query = SupplierPayment.query
+    if user_branch and user_branch != 'ALL':
+        payment_query = payment_query.filter_by(branch=user_branch)
+    recent_payments = payment_query.order_by(SupplierPayment.created_at.desc()).limit(15).all()
+
+    # Calculate available branch funds for validation
+    from models import Order
+    target_branch = user_branch if (user_branch and user_branch != 'ALL') else 'Pagsanjan'
+    br_order_revenue = float(db.session.query(func.coalesce(func.sum(Order.total_amount), 0)).filter(Order.branch == target_branch).scalar())
+    br_expenses = float(db.session.query(func.coalesce(func.sum(SupplierPayment.amount), 0)).filter(SupplierPayment.branch == target_branch).scalar())
+    available_funds = br_order_revenue - br_expenses
     
     return render_template('inventory/suppliers.html', 
                            suppliers=suppliers_list,
-                           portal_name=f"{current_user.first_name} {current_user.last_name}")
+                           menu_categories=menu_categories,
+                           recent_payments=recent_payments,
+                           portal_name=f"{current_user.first_name} {current_user.last_name}",
+                           available_funds=available_funds,
+                           target_branch=target_branch)
 
 @inventory_bp.route('/staff/inventory/ingredients/add', methods=['POST'])
 def inventory_add_ingredient():
@@ -1097,6 +1253,7 @@ def inventory_edit_ingredient(ing_id):
     category = request.form.get('category', 'General')
     reorder_level = request.form.get('reorder_level', 0, type=float)
     stock_qty = request.form.get('stock_qty', type=float)
+    supplier_id = request.form.get('supplier_id')
     
     if not name:
         flash('Ingredient name is required.', 'danger')
@@ -1107,6 +1264,14 @@ def inventory_edit_ingredient(ing_id):
     ing.reorder_level = reorder_level
     if stock_qty is not None:
         ing.stock_qty = stock_qty
+        
+    if supplier_id:
+        try:
+            ing.supplier_id = int(supplier_id)
+        except (ValueError, TypeError):
+            ing.supplier_id = None
+    else:
+        ing.supplier_id = None
     
     db.session.commit()
     flash(f'Changes saved for "{name}".', 'success')
@@ -1122,26 +1287,27 @@ def inventory_add_supplier():
     phone = request.form.get('phone', '').strip()
     email = request.form.get('email', '').strip()
     address = request.form.get('address', '').strip()
+    category = request.form.get('category', '').strip()
     
     if not name:
         flash('Supplier name is required.', 'danger')
         return redirect(url_for('inventory_portal.inventory_suppliers'))
         
-    sup = Supplier(name=name, contact_person=contact_person, phone=phone, email=email, address=address)
+    sup = Supplier(name=name, contact_person=contact_person, phone=phone, email=email, address=address, category=category)
     db.session.add(sup)
     db.session.commit()
     
     new_ingredients_str = request.form.get('new_ingredients', '').strip()
     if new_ingredients_str:
-        sup.catalog_items = new_ingredients_str
-        # Also create actual Ingredient records linked to this supplier
+        # Also link/create actual Ingredient records linked to this supplier
         for ing_name in [i.strip() for i in new_ingredients_str.split(',') if i.strip()]:
-            # Avoid duplicates
+            # First check if any ingredient with this name already exists in the system (linked or unlinked)
             existing = Ingredient.query.filter(
-                db.func.lower(Ingredient.name) == ing_name.lower(),
-                Ingredient.supplier_id == sup.id
+                db.func.lower(Ingredient.name) == ing_name.lower()
             ).first()
-            if not existing:
+            if existing:
+                existing.supplier_id = sup.id
+            else:
                 new_ing = Ingredient(
                     name=ing_name,
                     unit='pcs',
@@ -1150,10 +1316,13 @@ def inventory_add_supplier():
                 )
                 db.session.add(new_ing)
         db.session.commit()
+        # Update catalog_items to match actual linked ingredients
+        names = [i.name for i in sup.ingredients]
+        sup.catalog_items = ", ".join(sorted(names)) if names else ""
+        db.session.commit()
         
     flash(f'Supplier "{name}" added successfully!', 'success')
     return redirect(url_for('inventory_portal.inventory_suppliers'))
-
 
 @inventory_bp.route('/staff/inventory/suppliers/delete/<int:sup_id>', methods=['POST'])
 def inventory_delete_supplier(sup_id):
@@ -1169,7 +1338,6 @@ def inventory_delete_supplier(sup_id):
     flash(f'Supplier "{sup_name}" deleted.', 'success')
     return redirect(url_for('inventory_portal.inventory_suppliers'))
 
-
 @inventory_bp.route('/staff/inventory/suppliers/update/<int:sup_id>', methods=['POST'])
 def inventory_update_supplier(sup_id):
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
@@ -1181,23 +1349,28 @@ def inventory_update_supplier(sup_id):
     sup.phone = request.form.get('phone', '').strip()
     sup.email = request.form.get('email', '').strip()
     sup.address = request.form.get('address', '').strip()
+    sup.category = request.form.get('category', '').strip()
 
     new_catalog = request.form.get('new_ingredients', '').strip()
     if new_catalog is not None:
-        sup.catalog_items = new_catalog
-        # Create new Ingredient records for any new names not yet linked
+        # Create/Link new Ingredient records for any names not yet linked to this supplier
         for ing_name in [i.strip() for i in new_catalog.split(',') if i.strip()]:
             existing = Ingredient.query.filter(
-                db.func.lower(Ingredient.name) == ing_name.lower(),
-                Ingredient.supplier_id == sup.id
+                db.func.lower(Ingredient.name) == ing_name.lower()
             ).first()
-            if not existing:
+            if existing:
+                existing.supplier_id = sup.id
+            else:
                 db.session.add(Ingredient(
                     name=ing_name,
                     unit='pcs',
                     stock_qty=0,
                     supplier_id=sup.id
                 ))
+        db.session.commit()
+        # Update catalog_items to match actual linked ingredients
+        names = [i.name for i in sup.ingredients]
+        sup.catalog_items = ", ".join(sorted(names)) if names else ""
 
     db.session.commit()
     flash(f'Supplier "{sup.name}" updated successfully!', 'success')
@@ -1252,6 +1425,52 @@ def inventory_add_waste():
     return redirect(url_for('inventory_portal.inventory_dashboard'))
 
 
+@inventory_bp.route('/staff/inventory/ingredients/delete/<int:ing_id>', methods=['POST'])
+def inventory_delete_ingredient(ing_id):
+    if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        return redirect(url_for('cashier_portal.staff_login'))
+        
+    ing = Ingredient.query.get_or_404(ing_id)
+    ing_name = ing.name
+    
+    # Delete related records due to Foreign Key constraints
+    MenuItemIngredient.query.filter_by(ingredient_id=ing_id).delete()
+    
+    from models import InventoryLog
+    InventoryLog.query.filter_by(ingredient_id=ing_id).delete()
+    
+    WasteRecord.query.filter_by(ingredient_id=ing_id).delete()
+    
+    IngredientBatch.query.filter_by(ingredient_id=ing_id).delete()
+    
+    from models import StockRequest
+    StockRequest.query.filter_by(ingredient_id=ing_id).delete()
+    
+    # Log audit entry
+    from models import AuditLog
+    log = AuditLog(
+        user_id=current_user.id,
+        action='DELETE',
+        target_type='Ingredient',
+        target_id=ing_id,
+        description=f"Deleted Ingredient: {ing_name}",
+        ip_address=request.remote_addr
+    )
+    db.session.add(log)
+    
+    # Delete the ingredient
+    db.session.delete(ing)
+    db.session.commit()
+    
+    flash(f'Ingredient "{ing_name}" has been permanently deleted from stock levels.', 'success')
+    
+    referrer = request.referrer
+    if referrer and ('/staff/inventory/full' in referrer):
+        return redirect(url_for('inventory_portal.inventory_full'))
+    return redirect(url_for('inventory_portal.inventory_dashboard'))
+
+
+
 @inventory_bp.route('/staff/inventory/waste')
 def inventory_waste_records():
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
@@ -1295,19 +1514,63 @@ def inventory_audit():
 
 @inventory_bp.route('/staff/inventory/suppliers/<int:sup_id>/ingredients')
 def supplier_ingredients_api(sup_id):
-    """API: Return all ingredients linked to a supplier as JSON (for the receive modal)."""
+    """API: Return all ingredients used in this supplier's menu category (for the receive modal).
+    
+    Instead of filtering by supplier_id (which is a 1:1 assignment and misses shared ingredients),
+    we look up the supplier's category and return ALL ingredients used in recipes for that category.
+    This ensures the modal always shows the correct, complete list matching the supplier's role.
+    """
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
         return jsonify({'error': 'Unauthorized'}), 403
     
-    ingredients = Ingredient.query.filter_by(supplier_id=sup_id).order_by(Ingredient.category, Ingredient.name).all()
+    supplier = Supplier.query.get_or_404(sup_id)
+    sup_category = supplier.category  # e.g. "Milkshakes & Smoothies"
+    
+    if sup_category:
+        # Get all ingredient IDs used in menu items of this supplier's category
+        linked_ing_ids = (
+            db.session.query(MenuItemIngredient.ingredient_id)
+            .join(MenuItem, MenuItem.id == MenuItemIngredient.menu_item_id)
+            .filter(MenuItem.category == sup_category, MenuItem.is_deleted == False)
+            .distinct()
+            .all()
+        )
+        linked_ing_ids = [r[0] for r in linked_ing_ids]
+        
+        if linked_ing_ids:
+            ingredients = (
+                Ingredient.query
+                .filter(Ingredient.id.in_(linked_ing_ids))
+                .order_by(Ingredient.category, Ingredient.name)
+                .all()
+            )
+        else:
+            # Fallback: no recipe links found, show supplier_id-linked ingredients
+            ingredients = Ingredient.query.filter_by(supplier_id=sup_id).order_by(Ingredient.name).all()
+    else:
+        # No category set: fallback to supplier_id filtering
+        ingredients = Ingredient.query.filter_by(supplier_id=sup_id).order_by(Ingredient.name).all()
+    
     result = []
+    user_branch = getattr(current_user, 'branch', None)
     for ing in ingredients:
+        stock_qty = float(ing.stock_qty)
+        ing_id = ing.id
+        # If user is a branch staff, resolve branch-specific stock levels
+        if user_branch and user_branch != 'ALL' and ing.branch != user_branch:
+            br_ing = Ingredient.query.filter_by(name=ing.name, branch=user_branch).first()
+            if br_ing:
+                stock_qty = float(br_ing.stock_qty)
+                ing_id = br_ing.id
+            else:
+                stock_qty = 0.0
+                
         result.append({
-            'id': ing.id,
+            'id': ing_id,
             'name': ing.name,
             'unit': ing.unit,
             'category': ing.category or 'General',
-            'stock_qty': float(ing.stock_qty),
+            'stock_qty': stock_qty,
             'cost_per_unit': float(ing.cost_per_unit or 0),
         })
     return jsonify({'success': True, 'ingredients': result})
@@ -1319,6 +1582,7 @@ def supplier_receive_delivery(sup_id):
         return jsonify({'error': 'Unauthorized'}), 403
     
     from routes.admin import log_inventory_change, process_fifo_transaction
+    from models import SupplierPayment, Ingredient
     
     supplier = Supplier.query.get_or_404(sup_id)
     data = request.get_json()
@@ -1326,8 +1590,12 @@ def supplier_receive_delivery(sup_id):
     if not data or 'items' not in data:
         return jsonify({'success': False, 'message': 'No items provided.'})
     
+    user_branch = getattr(current_user, 'branch', None)
+    target_branch = user_branch if (user_branch and user_branch != 'ALL') else 'Pagsanjan'
+    
     received_items = data['items']  # list of {ingredient_id, qty_received}
     total_received = 0
+    total_cost = 0
     details = []
     
     for item in received_items:
@@ -1338,28 +1606,76 @@ def supplier_receive_delivery(sup_id):
             continue
             
         ing = Ingredient.query.get(ing_id)
-        if not ing or ing.supplier_id != sup_id:
+        if not ing:
             continue
         
+        # Awtomatikong i-tsek kung para sa ibang branch ang delivery na ito
+        target_ing = ing
+        if ing.branch != target_branch:
+            existing = Ingredient.query.filter_by(name=ing.name, branch=target_branch).first()
+            if existing:
+                target_ing = existing
+            else:
+                # I-clone ang sangkap para sa branch na nag-receive kung hindi pa umiiral
+                target_ing = Ingredient(
+                    name=ing.name,
+                    branch=target_branch,
+                    unit=ing.unit,
+                    stock_qty=0,
+                    kitchen_qty=0,
+                    reorder_level=ing.reorder_level,
+                    cost_per_unit=ing.cost_per_unit,
+                    category=ing.category or 'General',
+                    supplier_id=sup_id
+                )
+                db.session.add(target_ing)
+                db.session.flush()
+        
         # 1. Update overall stock
-        prev_stock = float(ing.stock_qty)
-        ing.stock_qty = prev_stock + qty
-        log_inventory_change(ing.id, 'ADD', qty, prev_stock, f'Supply Received from {supplier.name}')
+        prev_stock = float(target_ing.stock_qty)
+        target_ing.stock_qty = prev_stock + qty
+        log_inventory_change(target_ing.id, 'ADD', qty, prev_stock, f'Supply Received from {supplier.name} for {target_branch}')
         
         # 2. Create FIFO Batch
-        process_fifo_transaction(ing.id, 'ADD', qty)
+        unit_cost = float(target_ing.cost_per_unit or 0)
+        process_fifo_transaction(target_ing.id, 'ADD', qty, cost_per_unit=unit_cost)
+        
+        item_cost = qty * unit_cost
+        total_cost += item_cost
         
         total_received += 1
-        details.append(f'+{qty} {ing.unit} {ing.name}')
+        details.append(f'+{qty} {target_ing.unit} {target_ing.name} (₱{item_cost:,.2f})')
     
     if total_received == 0:
         return jsonify({'success': False, 'message': 'No valid items to receive. Please enter quantities.'})
+
+    # Calculate available branch funds and validate
+    from models import Order
+    br_order_revenue = float(db.session.query(func.coalesce(func.sum(Order.total_amount), 0)).filter(Order.branch == target_branch).scalar())
+    br_expenses = float(db.session.query(func.coalesce(func.sum(SupplierPayment.amount), 0)).filter(SupplierPayment.branch == target_branch).scalar())
+    available_funds = br_order_revenue - br_expenses
+
+    if total_cost > available_funds:
+        return jsonify({
+            'success': False,
+            'message': f'❌ Failed to receive: Insufficient funds in {target_branch} branch. (Available: ₱{available_funds:,.2f}, Required: ₱{total_cost:,.2f})'
+        })
+    
+    # 3. I-record ang Supplier Payment / Expense sa database
+    payment = SupplierPayment(
+        supplier_id=sup_id,
+        branch=target_branch,
+        amount=total_cost,
+        details="; ".join(details),
+        processed_by_id=current_user.id
+    )
+    db.session.add(payment)
     
     db.session.commit()
     
     return jsonify({
         'success': True,
-        'message': f'✅ Received {total_received} item(s) from {supplier.name}!',
+        'message': f'✅ Received {total_received} item(s) from {supplier.name}! Total cost: ₱{total_cost:,.2f}',
         'details': details
     })
 

@@ -14,9 +14,7 @@
 {% block page_title %}Inventory Dashboard{% endblock %}
 {% block page_subtitle %}
     Monitor stock levels and supplier health
-    <span id="syncIndicator" style="font-size: 0.72rem; color: var(--muted); opacity: 0.8; margin-left: 10px; font-weight: 500;">
-        <i class="fas fa-sync-alt fa-spin me-1"></i> Live Update (5s) • Last: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
-    </span>
+    
 {% endblock %}
 
 {% block extra_style %}
@@ -93,8 +91,11 @@
     }
     .btn-restock { background: rgba(46,125,50,0.1); color: #2e7d32; }
     .btn-restock:hover { background: #2e7d32; color: white; transform: scale(1.1); }
-    .btn-waste { background: rgba(198,40,40,0.1); color: #c62828; }
-    .btn-waste:hover { background: #c62828; color: white; transform: scale(1.1); }
+    .btn-waste { background: rgba(245,124,0,0.1); color: #f57c00; }
+    .btn-waste:hover { background: #f57c00; color: white; transform: scale(1.1); }
+    .btn-delete { background: rgba(198,40,40,0.1); color: #c62828; }
+    .btn-delete:hover { background: #c62828; color: white; transform: scale(1.1); }
+
 
     /* MODAL STYLES */
     .modal-overlay {
@@ -268,11 +269,15 @@
                             </button>
                             <button class="btn-action btn-waste" title="Record Waste"
                                     onclick="openWasteModal({{ ing.id }}, '{{ ing.name|e }}', '{{ ing.unit }}', {{ ing.stock_qty }})">
-                                <i class="fas fa-trash-can"></i>
+                                <i class="fas fa-trash-arrow-up"></i>
                             </button>
                             <button class="btn-action" title="Edit" style="background: rgba(93,64,55,0.1); color: var(--primary);"
                                     onclick="openEditModal('{{ ing.id }}', '{{ ing.name|e }}', '{{ ing.category|e }}', '{{ ing.reorder_level }}', '{{ ing.stock_qty }}')">
                                 <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn-action btn-delete" title="Delete Ingredient"
+                                    onclick="openDeleteIngredientModal({{ ing.id }}, '{{ ing.name|e }}')">
+                                <i class="fas fa-trash-can"></i>
                             </button>
                         </div>
                     </td>
@@ -454,6 +459,33 @@
             </form>
         </div>
     </div>
+
+    <!-- Delete Ingredient Confirmation Modal -->
+    <div id="deleteIngredientModal" class="modal-overlay">
+        <div class="modal-content-custom" style="max-width: 420px;">
+            <div class="modal-header-custom" style="background: #c62828;">
+                <h3><i class="fas fa-trash-alt me-2"></i> Delete Ingredient</h3>
+                <button class="close-modal" onclick="closeModal('deleteIngredientModal')">&times;</button>
+            </div>
+            <div class="modal-body-custom" style="text-align:center; padding: 32px 24px;">
+                <div style="width:60px; height:60px; background:rgba(198,40,40,0.1); border-radius:50%; display:flex; align-items:center; justify-content:center; margin: 0 auto 16px;">
+                    <i class="fas fa-exclamation-triangle" style="font-size:1.5rem; color:#c62828;"></i>
+                </div>
+                <h4 style="margin:0 0 10px; color: var(--text); font-weight: 700;">Are you sure?</h4>
+                <p style="color: var(--muted); font-size: 0.9rem; margin:0;">
+                    You are about to permanently delete <strong id="deleteIngName" style="color:#c62828;"></strong> from stock levels.<br>
+                    <span style="font-size: 0.8rem; color:#c62828; font-weight: 600; margin-top: 8px; display: block;">This will also delete all its waste records, batches, and recipe links.</span>
+                </p>
+            </div>
+            <div class="modal-footer-custom" style="justify-content:center; gap:16px;">
+                <button type="button" class="btn-secondary" onclick="closeModal('deleteIngredientModal')">Cancel</button>
+                <button type="button" onclick="executeDeleteIngredient()"
+                    style="background:#c62828; color:white; border:none; padding:10px 24px; border-radius:10px; cursor:pointer; font-weight:600;">
+                    <i class="fas fa-trash-alt me-1"></i> Delete
+                </button>
+            </div>
+        </div>
+    </div>
 </div> <!-- end inventoryDashboardContainer -->
 {% endblock %}
 
@@ -498,6 +530,23 @@
         
         openModal('editIngredientModal');
     }
+
+    let deleteIngredientId = null;
+    function openDeleteIngredientModal(id, name) {
+        deleteIngredientId = id;
+        document.getElementById('deleteIngName').textContent = name;
+        openModal('deleteIngredientModal');
+    }
+
+    function executeDeleteIngredient() {
+        if (!deleteIngredientId) return;
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/staff/inventory/ingredients/delete/${deleteIngredientId}`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+
 
     function applyDashboardFilter() {
         const category = document.getElementById('ingredientCategoryFilter').value;
@@ -757,6 +806,6 @@
         .catch(err => console.warn('Inventory sync failed:', err));
     }
 
-    setInterval(pollInventoryDashboard, 5000);
+    
 </script>
 {% endblock %}

@@ -31,9 +31,7 @@
 
 {% block page_title %}
     Stock Requests
-    <span id="syncIndicator" style="font-size: 0.72rem; color: #8b7355; opacity: 0.8; margin-left: 10px; font-weight: 500;">
-        <i class="fas fa-sync-alt fa-spin me-1"></i> Live Update (5s) • <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
-    </span>
+    
 {% endblock %}
 {% block page_subtitle %}Manage and fulfill ingredient requests sent directly from the Kitchen.{% endblock %}
 
@@ -403,23 +401,33 @@
     function pollStockRequests() {
         if (document.querySelector('.modal-v2[style*="display: flex"]')) return;
 
+        // ★ Save tab + scroll state
+        const isPendingActive = document.getElementById('btn-pending').classList.contains('active');
+        const savedScroll = window.scrollY;
+
         fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
         .then(response => response.text())
         .then(html => {
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
             
-            const ids = ['stockRequestsContainer', 'lastUpdateText'];
-            ids.forEach(id => {
+            ['stockRequestsContainer', 'lastUpdateText'].forEach(id => {
                 const oldEl = document.getElementById(id);
                 const newEl = doc.getElementById(id);
-                if (oldEl && newEl) oldEl.innerHTML = newEl.innerHTML;
+                if (oldEl && newEl && oldEl.innerHTML !== newEl.innerHTML) {
+                    oldEl.innerHTML = newEl.innerHTML;
+                }
             });
+            // ★ Restore tab state
+            if (!isPendingActive) {
+                switchTabV2('history');
+            }
+            window.scrollTo(0, savedScroll);
         })
         .catch(err => console.warn('Stock Requests sync failed:', err));
     }
 
-    setInterval(pollStockRequests, 5000);
+    
 </script>
 </div> <!-- end stockRequestsContainer -->
 {% endblock %}

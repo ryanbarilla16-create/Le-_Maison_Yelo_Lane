@@ -284,6 +284,75 @@
         box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
     }
 
+    /* Infinite Marquee Layout */
+    .marquee-container {
+        position: relative;
+        width: 100%;
+        overflow: hidden;
+        padding: 30px 0;
+        /* Soft horizontal fade effect using mask-image for premium look */
+        mask-image: linear-gradient(to right, transparent, white 15%, white 85%, transparent);
+        -webkit-mask-image: linear-gradient(to right, transparent, white 15%, white 85%, transparent);
+    }
+
+    .marquee-track {
+        display: flex;
+        width: max-content;
+        animation: scroll-left 45s linear infinite;
+    }
+
+    .marquee-track.reverse {
+        animation: scroll-right 45s linear infinite;
+    }
+
+    /* Pause animation on hover */
+    .marquee-track:hover {
+        animation-play-state: paused;
+    }
+
+    .marquee-group {
+        display: flex;
+        gap: 30px;
+        flex-shrink: 0;
+        padding-right: 30px; /* match the gap spacing */
+    }
+
+    /* Keyframes for smooth infinite scrolling */
+    @keyframes scroll-left {
+        0% {
+            transform: translateX(0);
+        }
+        100% {
+            transform: translateX(-50%);
+        }
+    }
+
+    @keyframes scroll-right {
+        0% {
+            transform: translateX(-50%);
+        }
+        100% {
+            transform: translateX(0);
+        }
+    }
+
+    /* Review card modifications for marquee */
+    .review-card {
+        width: 380px;
+        flex-shrink: 0;
+        box-sizing: border-box;
+    }
+
+    @media (max-width: 768px) {
+        .review-card {
+            width: 300px;
+            padding: 30px 25px;
+        }
+        .marquee-container {
+            padding: 20px 0;
+        }
+    }
+
     /* Remove footer top margin for this page to close the gap */
     footer {
         margin-top: 0 !important;
@@ -305,54 +374,171 @@
             </h1>
             <p data-aos="fade-up" data-aos-delay="200">
                 Every review is a story of a shared moment, a flavor discovered, and a memory made at Le Maison de Yelo Lane.
-                <span id="syncIndicator" style="display: block; font-size: 0.7rem; color: rgba(255,255,255,0.5); margin-top: 10px; letter-spacing: 1px; text-transform: uppercase;">
-                    <i class="fas fa-sync-alt fa-spin me-1"></i> Live Update (5s) • Last: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
-                </span>
+
             </p>
             <div class="section-divider" data-aos="zoom-in" data-aos-delay="400"></div>
         </div>
     </section>
 
     <!-- Reviews Grid -->
-    <section class="reviews-container">
-        <div class="container" id="reviewsGridContainer">
+    <section class="reviews-container" style="overflow: hidden;">
+        <div id="reviewsGridContainer">
             {% if approved_reviews %}
-            <div class="row g-5 justify-content-center">
-                {% for review in approved_reviews %}
-                <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="{{ (loop.index0 % 3) * 150 }}">
-                    <div class="review-card">
-                        <div class="review-stars">
-                            {% for _ in range(review.rating) %}<i class="fas fa-star"></i>{% endfor %}
-                            {% for _ in range(5 - review.rating) %}<i class="far fa-star"></i>{% endfor %}
-                        </div>
-                        <p class="review-text">"{{ review.comment }}"</p>
-                        <div class="review-author">
-                            <div class="author-avatar">{{ review.user.first_name[:1]|upper }}</div>
-                            <div>
-                                <p class="author-name">{{ review.user.first_name }} {{ review.user.last_name[:1] }}.</p>
-                                <span class="review-date">
-                                    <i class="far fa-calendar-alt me-1"></i>
-                                    {{ review.created_at.strftime('%B %d, %Y') if review.created_at else 'Verified Guest' }}
-                                </span>
+                
+                <!-- Lane 1: Reviews with Photos (Visual Stories) -->
+                {% if reviews_with_photos %}
+                {% set photo_repeat = 1 if (reviews_with_photos|length >= 4) else (2 if (reviews_with_photos|length >= 2) else 4) %}
+                <div class="lane-section mb-5" data-aos="fade-up">
+                    <div class="container text-center mb-4">
+                        <h2 style="font-family: 'Playfair Display', serif; color: var(--premium-dark); font-weight: 700; font-size: 2rem;">
+                            <i class="fas fa-camera-retro me-2" style="color: var(--premium-gold);"></i>Visual Stories
+                        </h2>
+                        <p style="color: #8B634B; font-size: 0.95rem;">Memories captured by our guests during their visits</p>
+                    </div>
+                    
+                    <div class="marquee-container">
+                        <div class="marquee-track">
+                            <div class="marquee-group">
+                                {% for _ in range(photo_repeat) %}
+                                    {% for review in reviews_with_photos %}
+                                        <div class="review-card">
+                                            <div class="review-stars">
+                                                {% for _ in range(review.rating) %}<i class="fas fa-star"></i>{% endfor %}
+                                                {% for _ in range(5 - review.rating) %}<i class="far fa-star"></i>{% endfor %}
+                                            </div>
+                                            <p class="review-text">"{{ review.comment }}"</p>
+                                            <div class="review-image-wrapper mb-3" style="border-radius: 16px; overflow: hidden; max-height: 180px; border: 1px solid rgba(201, 169, 110, 0.15);">
+                                                <img src="{{ review.photo_url }}" alt="Review photo" style="width: 100%; height: 180px; object-fit: cover;">
+                                            </div>
+                                            <div class="review-author">
+                                                <div class="author-avatar">{{ review.user.first_name[:1]|upper }}</div>
+                                                <div>
+                                                    <p class="author-name">{{ review.user.first_name }} {{ review.user.last_name[:1] }}.</p>
+                                                    <span class="review-date">
+                                                        <i class="far fa-calendar-alt me-1"></i>
+                                                        {{ review.created_at.strftime('%B %d, %Y') if review.created_at else 'Verified Guest' }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                {% endfor %}
+                            </div>
+                            
+                            <!-- Duplicate for infinite scrolling -->
+                            <div class="marquee-group" aria-hidden="true">
+                                {% for _ in range(photo_repeat) %}
+                                    {% for review in reviews_with_photos %}
+                                        <div class="review-card">
+                                            <div class="review-stars">
+                                                {% for _ in range(review.rating) %}<i class="fas fa-star"></i>{% endfor %}
+                                                {% for _ in range(5 - review.rating) %}<i class="far fa-star"></i>{% endfor %}
+                                            </div>
+                                            <p class="review-text">"{{ review.comment }}"</p>
+                                            <div class="review-image-wrapper mb-3" style="border-radius: 16px; overflow: hidden; max-height: 180px; border: 1px solid rgba(201, 169, 110, 0.15);">
+                                                <img src="{{ review.photo_url }}" alt="Review photo" style="width: 100%; height: 180px; object-fit: cover;">
+                                            </div>
+                                            <div class="review-author">
+                                                <div class="author-avatar">{{ review.user.first_name[:1]|upper }}</div>
+                                                <div>
+                                                    <p class="author-name">{{ review.user.first_name }} {{ review.user.last_name[:1] }}.</p>
+                                                    <span class="review-date">
+                                                        <i class="far fa-calendar-alt me-1"></i>
+                                                        {{ review.created_at.strftime('%B %d, %Y') if review.created_at else 'Verified Guest' }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                {% endfor %}
                             </div>
                         </div>
                     </div>
                 </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <div class="empty-state text-center" data-aos="fade-up">
-                <div class="mb-4">
-                    <span class="author-avatar mx-auto" style="width: 80px; height: 80px; font-size: 2rem;">
-                        <i class="fas fa-quote-left"></i>
-                    </span>
+                {% endif %}
+
+                <!-- Lane 2: Reviews without Photos (Heartfelt Words) -->
+                {% if reviews_without_photos %}
+                {% set text_repeat = 1 if (reviews_without_photos|length >= 4) else (2 if (reviews_without_photos|length >= 2) else 4) %}
+                <div class="lane-section mt-5" data-aos="fade-up">
+                    <div class="container text-center mb-4">
+                        <h2 style="font-family: 'Playfair Display', serif; color: var(--premium-dark); font-weight: 700; font-size: 2rem;">
+                            <i class="fas fa-quote-left me-2" style="color: var(--premium-gold);"></i>Heartfelt Words
+                        </h2>
+                        <p style="color: #8B634B; font-size: 0.95rem;">What our customers say about their experiences</p>
+                    </div>
+                    
+                    <div class="marquee-container">
+                        <!-- reverse class scrolls right -->
+                        <div class="marquee-track reverse">
+                            <div class="marquee-group">
+                                {% for _ in range(text_repeat) %}
+                                    {% for review in reviews_without_photos %}
+                                        <div class="review-card">
+                                            <div class="review-stars">
+                                                {% for _ in range(review.rating) %}<i class="fas fa-star"></i>{% endfor %}
+                                                {% for _ in range(5 - review.rating) %}<i class="far fa-star"></i>{% endfor %}
+                                            </div>
+                                            <p class="review-text">"{{ review.comment }}"</p>
+                                            <div class="review-author">
+                                                <div class="author-avatar">{{ review.user.first_name[:1]|upper }}</div>
+                                                <div>
+                                                    <p class="author-name">{{ review.user.first_name }} {{ review.user.last_name[:1] }}.</p>
+                                                    <span class="review-date">
+                                                        <i class="far fa-calendar-alt me-1"></i>
+                                                        {{ review.created_at.strftime('%B %d, %Y') if review.created_at else 'Verified Guest' }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                {% endfor %}
+                            </div>
+                            
+                            <!-- Duplicate for infinite scrolling -->
+                            <div class="marquee-group" aria-hidden="true">
+                                {% for _ in range(text_repeat) %}
+                                    {% for review in reviews_without_photos %}
+                                        <div class="review-card">
+                                            <div class="review-stars">
+                                                {% for _ in range(review.rating) %}<i class="fas fa-star"></i>{% endfor %}
+                                                {% for _ in range(5 - review.rating) %}<i class="far fa-star"></i>{% endfor %}
+                                            </div>
+                                            <p class="review-text">"{{ review.comment }}"</p>
+                                            <div class="review-author">
+                                                <div class="author-avatar">{{ review.user.first_name[:1]|upper }}</div>
+                                                <div>
+                                                    <p class="author-name">{{ review.user.first_name }} {{ review.user.last_name[:1] }}.</p>
+                                                    <span class="review-date">
+                                                        <i class="far fa-calendar-alt me-1"></i>
+                                                        {{ review.created_at.strftime('%B %d, %Y') if review.created_at else 'Verified Guest' }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <h3 style="color: var(--premium-dark); font-family: 'Playfair Display', serif; font-weight: 700; margin-bottom: 15px;">No stories yet</h3>
-                <p style="color: #8B634B; line-height: 1.6; margin-bottom: 30px;">Be the first to share your experience with us and help others discover the magic of Le Maison.</p>
-                <a href="{{ url_for('main.menu_page') }}" class="btn-hero filled" style="padding: 15px 40px; border-radius: 50px; background: var(--premium-dark); color: white; text-decoration: none; font-weight: 700; display: inline-block; transition: all 0.3s;">
-                    Explore Menu
-                </a>
-            </div>
+                {% endif %}
+
+            {% else %}
+                <div class="container">
+                    <div class="empty-state text-center" data-aos="fade-up">
+                        <div class="mb-4">
+                            <span class="author-avatar mx-auto" style="width: 80px; height: 80px; font-size: 2rem;">
+                                <i class="fas fa-quote-left"></i>
+                            </span>
+                        </div>
+                        <h3 style="color: var(--premium-dark); font-family: 'Playfair Display', serif; font-weight: 700; margin-bottom: 15px;">No stories yet</h3>
+                        <p style="color: #8B634B; line-height: 1.6; margin-bottom: 30px;">Be the first to share your experience with us and help others discover the magic of Le Maison.</p>
+                        <a href="{{ url_for('main.menu_page') }}" class="btn-hero filled" style="padding: 15px 40px; border-radius: 50px; background: var(--premium-dark); color: white; text-decoration: none; font-weight: 700; display: inline-block; transition: all 0.3s;">
+                            Explore Menu
+                        </a>
+                    </div>
+                </div>
             {% endif %}
         </div>
     </section>
@@ -391,7 +577,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
             
-            const ids = ['reviewsGridContainer', 'lastUpdateText'];
+            const ids = ['reviewsGridContainer'];
             ids.forEach(id => {
                 const oldEl = document.getElementById(id);
                 const newEl = doc.getElementById(id);
@@ -406,7 +592,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(err => console.warn('Public Reviews sync failed:', err));
     }
 
-    setInterval(pollPublicReviews, 5000);
+    
 });
 </script>
 {% endblock %}

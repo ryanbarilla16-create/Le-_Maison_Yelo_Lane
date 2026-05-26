@@ -706,9 +706,7 @@
                 <p class="greeting">Welcome back,</p>
                 <h1>{{ current_user.first_name }} {{ current_user.last_name }}</h1>
                 <p class="tagline">Le Maison de Yelo Lane</p>
-                <span id="syncIndicator" style="display: block; font-size: 0.65rem; color: rgba(255,255,255,0.4); margin-top: 15px; letter-spacing: 1px; text-transform: uppercase; font-weight: 600;">
-                    <i class="fas fa-sync-alt fa-spin me-1"></i> Live Update (5s) • Last: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
-                </span>
+
             </div>
         </div>
     </section>
@@ -924,7 +922,7 @@
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
                 
-                const ids = ['customerHomeContainer', 'lastUpdateText'];
+                const ids = ['customerHomeContainer'];
                 ids.forEach(id => {
                     const oldEl = document.getElementById(id);
                     const newEl = doc.getElementById(id);
@@ -934,7 +932,7 @@
             .catch(err => console.warn('Customer Home sync failed:', err));
         }
 
-        setInterval(pollCustomerHome, 5000);
+        
     </script>
 </main>
 {% endblock %}

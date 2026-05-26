@@ -26,7 +26,8 @@
     .category-card:hover .category-img { transform: scale(1.08) !important; }
     .back-btn:hover { background-color: var(--primary) !important; color: white !important; border-color: var(--primary) !important; }
 
-    /* Fix for staff_layout content area */
+    /* Fix for staff_layout content area - ADD CREAM BACKGROUND */
+    .main { background: var(--bg) !important; }
     .walkin-content { max-width: 100%; }
     .walkin-content .card { background: #fff; }
     .walkin-content .form-control, .walkin-content .form-select { font-family: 'Outfit', sans-serif; }
@@ -79,7 +80,7 @@
                         </div>
 
                         <div id="categories-container"
-                            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem;">
+                            style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem;">
                             {% for cat_name, info in categories_data.items() %}
                             <div class="card border-0 shadow-sm category-card d-flex flex-column h-100"
                                 style="border-radius: 16px; overflow: hidden; cursor: pointer; transition: all 0.3s ease;"
@@ -119,46 +120,52 @@
                         <hr class="mb-4">
                         {% for cat_name, info in categories_data.items() %}
                         <div class="menu-category-section" data-category="{{ cat_name }}" style="display: none;">
-                            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.5rem; align-items: stretch;">
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem;">
                                 {% for item in items if item.category == cat_name %}
                                 <div class="card border-0 shadow-sm d-flex flex-column item-card"
                                     data-name="{{ item.name|lower }}"
-                                    style="border-radius: 16px; overflow: hidden; transition: all 0.3s; background: rgba(255, 255, 255, 0.95); height: 100%;"
-                                    onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 15px 30px rgba(139, 99, 75, 0.1)';"
-                                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 10px rgba(0,0,0,0.05)';">
+                                    style="border-radius: 20px; overflow: hidden; transition: all 0.3s; background: #fff; position: relative;"
+                                    onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 8px 20px rgba(0,0,0,0.08)';"
+                                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.04)';">
                                     {% if item.image_url %}
-                                    <div style="height: 150px; overflow: hidden; position: relative; flex-shrink: 0;">
+                                    <div style="height: 140px; overflow: hidden; position: relative;">
                                         <img loading="lazy" decoding="async" src="{{ item.image_url }}" class="w-100 h-100"
-                                            style="object-fit: cover; transition: transform 0.6s ease;"
-                                            onmouseover="this.style.transform='scale(1.08)'"
-                                            onmouseout="this.style.transform='scale(1)'"
-                                            onerror="this.style.display='none';this.parentNode.innerHTML='<div style=\'width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(139,99,75,0.05);\'><i class=\'fas fa-utensils fa-2x\' style=\'color:rgba(139,99,75,0.2);\'></i></div>'">
+                                            style="object-fit: cover;"
+                                            onerror="this.style.display='none';this.parentNode.innerHTML='<div style=\'width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f5f5f5;\'><i class=\'fas fa-utensils fa-2x\' style=\'color:#ddd;\'></i></div>'">
                                     </div>
                                     {% else %}
-                                    <div style="height: 150px; background: rgba(139, 99, 75, 0.05); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                        <i class="fas fa-utensils fa-3x" style="color: rgba(139, 99, 75, 0.2);"></i>
+                                    <div style="height: 140px; background: #f5f5f5; display: flex; align-items: center; justify-content: center;">
+                                        <i class="fas fa-utensils fa-2x" style="color: #ddd;"></i>
                                     </div>
                                     {% endif %}
-                                    <div class="card-body p-3 d-flex flex-column flex-grow-1" style="background: linear-gradient(to bottom, #ffffff, #fafafa);">
-                                        <div class="d-flex justify-content-between align-items-start mb-2">
-                                            <h6 class="card-title fw-bold m-0" style="color: var(--text); font-size: 1.05rem; line-height: 1.2;">{{ item.name }}</h6>
-                                            <span class="fw-bold px-2 py-1 ms-2 shadow-sm"
-                                                style="background: #ffffff; border: 1px solid rgba(139, 99, 75, 0.2); color: var(--primary); border-radius: 20px; font-size: 0.85rem; white-space: nowrap;">
-                                                ₱{{ "%.2f"|format(item.price) }}
-                                            </span>
+                                    <div class="card-body p-3 d-flex flex-column" style="background: #fff;">
+                                        <h6 class="card-title fw-bold m-0 mb-1" style="color: #2d2d2d; font-size: 0.95rem; line-height: 1.3; min-height: 2.6em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">{{ item.name }}</h6>
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="fw-bold" style="color: var(--primary); font-size: 1.05rem;">₱{{ "%.2f"|format(item.price) }}</span>
+                                            <span style="font-size: 0.7rem; color: #999; background: #f5f5f5; padding: 2px 8px; border-radius: 10px;">{{ item.category[:10] }}</span>
                                         </div>
                                         {% if current_user.role|upper in ['ADMIN', 'CASHIER', 'STAFF', 'KITCHEN'] %}
-                                        <div class="mt-auto d-flex align-items-center gap-2 pt-3" style="border-top: 1px dashed rgba(139, 99, 75,0.15);">
-                                            <input type="number" id="qty_{{ item.id }}" value="1" min="1" max="99"
-                                                class="form-control form-control-sm rounded-pill text-center shadow-sm"
-                                                style="width: 55px; border: 1px solid rgba(139, 99, 75,0.2); background: #ffffff; font-weight: bold;">
+                                        <div class="d-flex align-items-center gap-2 mt-auto pt-2" style="border-top: 1px solid #f0f0f0;">
+                                            <div class="d-flex align-items-center gap-1" style="background: rgba(139, 99, 75, 0.08); border-radius: 25px; padding: 2px; flex-shrink: 0;">
+                                                <button type="button" class="btn btn-sm rounded-circle d-flex align-items-center justify-content-center" 
+                                                    onclick="adjustQtyInCard(this, {{ item.id }}, -1)"
+                                                    style="width: 28px; height: 28px; padding: 0; background: #fff; border: 1px solid rgba(139, 99, 75, 0.3); color: var(--primary);">
+                                                    <i class="fas fa-minus" style="font-size: 0.7rem;"></i>
+                                                </button>
+                                                <input type="number" id="qty_{{ item.id }}" value="1" min="1" max="99" readonly
+                                                    class="text-center fw-bold"
+                                                    style="width: 35px; border: none; background: transparent; font-size: 0.9rem; color: #2d2d2d;">
+                                                <button type="button" class="btn btn-sm rounded-circle d-flex align-items-center justify-content-center"
+                                                    onclick="adjustQtyInCard(this, {{ item.id }}, 1)"
+                                                    style="width: 28px; height: 28px; padding: 0; background: var(--primary); border: none; color: white;">
+                                                    <i class="fas fa-plus" style="font-size: 0.7rem;"></i>
+                                                </button>
+                                            </div>
                                             <button type="button"
-                                                onclick="addFromInput(this, {{ item.id }}, '{{ item.name|replace("'", "\\'") }}', {{ item.price }}, '{{ item.category|replace("'", "\\'") }}')"
-                                                class="btn btn-sm flex-grow-1 rounded-pill fw-bold shadow-sm"
-                                                style="background-color: #8b634b !important; color: white !important; border: none; font-size: 0.85rem; transition: all 0.2s;"
-                                                onmousedown="this.style.transform='scale(0.95)'"
-                                                onmouseup="this.style.transform='scale(1)'">
-                                                <i class="fas fa-plus me-1"></i> Add
+                                                onclick="addFromInput(this, {{ item.id }}, '{{ item.name|replace("'", "\\'") }}', {{ item.price }}, '{{ item.category|replace("'", "\\'") }}', '{{ item.image_url|replace("'", "\\'") if item.image_url else "" }}')"
+                                                class="btn btn-sm rounded-pill fw-bold"
+                                                style="background: var(--primary); color: white; border: none; font-size: 0.8rem; padding: 6px 16px; transition: all 0.2s; flex: 1; min-width: 70px;">
+                                                <i class="fas fa-plus me-1" style="font-size: 0.7rem;"></i> Add
                                             </button>
                                         </div>
                                         {% endif %}
@@ -214,9 +221,13 @@
                                         </select>
                                     </div>
                                     <div class="col-6">
-                                        <input type="text" name="notes" class="form-control form-control-sm shadow-sm"
-                                            placeholder="Notes..."
+                                        <select name="table_number" id="tableSelect" class="form-select form-select-sm shadow-sm" required
                                             style="border-radius: 20px; border: 1px solid rgba(139, 99, 75,0.2);">
+                                            <option value="">Select Table...</option>
+                                            {% for i in range(1, 18) %}
+                                            <option value="{{ i }}">Table {{ i }}</option>
+                                            {% endfor %}
+                                        </select>
                                     </div>
                                 </div>
                             </div>
@@ -283,6 +294,13 @@
                         <label class="form-label fw-bold" style="font-size: 0.85rem; color: var(--text);">Amount Tendered (₱)</label>
                         <input type="number" class="form-control form-control-lg text-end shadow-sm" id="modalAmountTendered" min="0" step="0.01"
                             style="font-weight: bold; border-radius: 8px; border: 1px solid rgba(139, 99, 75,0.2);">
+                        <div class="d-flex gap-2 mt-2 flex-wrap">
+                            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="setTender('exact')" style="flex: 1; min-width: 70px;">Exact</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="setTender(100)" style="flex: 1; min-width: 70px;">₱100</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="setTender(200)" style="flex: 1; min-width: 70px;">₱200</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="setTender(500)" style="flex: 1; min-width: 70px;">₱500</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="setTender(1000)" style="flex: 1; min-width: 70px;">₱1000</button>
+                        </div>
                     </div>
                     <div class="mb-3 d-flex justify-content-between align-items-center p-3 rounded"
                         style="background: rgba(139, 99, 75,0.05); border: 1px dashed rgba(139, 99, 75,0.2);">
@@ -337,25 +355,49 @@
         clearSearch();
     }
 
-    function addFromInput(btn, id, name, price, category) {
+    function addFromInput(btn, id, name, price, category, imageUrl) {
         let container = btn.closest('div');
         let localInput = container.querySelector('input[type="number"]');
         let input = document.getElementById('qty_' + id);
         let qty = parseInt(localInput ? localInput.value : (input ? input.value : 1)) || 1;
 
-        if (orderItems[id]) { orderItems[id].qty += qty; } else { orderItems[id] = { name, price, qty, category }; }
+        if (orderItems[id]) { 
+            orderItems[id].qty += qty; 
+        } else { 
+            orderItems[id] = { name, price, qty, category, image: imageUrl || '' }; 
+        }
         if (localInput) localInput.value = 1; else if (input) input.value = 1;
         renderOrder();
 
-        let originalText = btn.innerHTML;
+        // Save original content and style
+        let originalHTML = btn.innerHTML;
+        let originalStyle = btn.getAttribute('style');
+        
+        // Show "Added" feedback
         btn.innerHTML = '<i class="fas fa-check"></i> Added';
-        btn.style.backgroundColor = '#28a745';
-        btn.style.boxShadow = '0 0 10px rgba(40, 167, 69, 0.3)';
-        setTimeout(() => { btn.innerHTML = originalText; btn.style.backgroundColor = '#8b634b'; btn.style.boxShadow = 'none'; }, 800);
+        btn.style.backgroundColor = '#6d4c3d';
+        btn.style.boxShadow = '0 0 10px rgba(139, 99, 75, 0.4)';
+        
+        // Restore after animation
+        setTimeout(() => { 
+            btn.innerHTML = originalHTML;
+            btn.setAttribute('style', originalStyle);
+        }, 800);
     }
 
     function removeItem(id) { delete orderItems[id]; renderOrder(); }
     function changeQty(id, delta) { if (!orderItems[id]) return; orderItems[id].qty += delta; if (orderItems[id].qty <= 0) delete orderItems[id]; renderOrder(); }
+
+    // Adjust quantity in the item card (for +/- buttons on cards)
+    function adjustQtyInCard(btn, itemId, delta) {
+        const input = document.getElementById('qty_' + itemId);
+        if (!input) return;
+        let currentQty = parseInt(input.value) || 1;
+        let newQty = currentQty + delta;
+        if (newQty < 1) newQty = 1;
+        if (newQty > 99) newQty = 99;
+        input.value = newQty;
+    }
 
     function renderOrder() {
         const container = document.getElementById('orderItems');
@@ -376,8 +418,23 @@
             const item = orderItems[id];
             const subtotal = item.price * item.qty;
             total += subtotal;
+            
+            // Create image HTML
+            let imageHtml = '';
+            if (item.image && item.image.trim() !== '') {
+                imageHtml = `<img src="${item.image}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px; margin-right: 10px;" onerror="this.style.display='none'">`;
+            } else {
+                imageHtml = `<div style="width: 50px; height: 50px; background: rgba(139, 99, 75, 0.1); border-radius: 8px; margin-right: 10px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-utensils" style="color: rgba(139, 99, 75, 0.3); font-size: 1.2rem;"></i></div>`;
+            }
+            
             html += `<div class="d-flex justify-content-between align-items-center mb-2 p-2 rounded shadow-sm" style="background: #ffffff; border: 1px solid rgba(139, 99, 75,0.1);">
-                <div style="flex: 1; padding-right: 10px;"><div class="fw-bold" style="font-size: 0.9rem; color: var(--text); line-height: 1.2;">${item.name}</div><small class="text-muted" style="font-size: 0.75rem;">₱${item.price.toFixed(2)}</small></div>
+                <div class="d-flex align-items-center" style="flex: 1; padding-right: 10px;">
+                    ${imageHtml}
+                    <div>
+                        <div class="fw-bold" style="font-size: 0.9rem; color: var(--text); line-height: 1.2;">${item.name}</div>
+                        <small class="text-muted" style="font-size: 0.75rem;">₱${item.price.toFixed(2)}</small>
+                    </div>
+                </div>
                 <div class="d-flex align-items-center gap-2">
                     <div class="d-flex align-items-center border rounded-pill overflow-hidden" style="background: rgba(139, 99, 75,0.03);">
                         <button type="button" class="btn btn-sm" style="width:28px;height:28px;padding:0;border:none;" onclick="changeQty(${id}, -1)">−</button>
@@ -454,5 +511,83 @@
         this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Processing...';
         HTMLFormElement.prototype.submit.call(document.getElementById('orderForm'));
     });
+
+    // Quick quantity setter
+    function setQty(itemId, qty) {
+        const input = document.getElementById('qty_' + itemId);
+        if (input) input.value = qty;
+    }
+
+    // Quick tender amount setter
+    function setTender(amount) {
+        const input = document.getElementById('modalAmountTendered');
+        if (amount === 'exact') {
+            const total = parseFloat(document.getElementById('totalAmount').textContent.replace('₱', '').replace(/,/g, ''));
+            input.value = total.toFixed(2);
+        } else {
+            input.value = amount;
+        }
+        input.dispatchEvent(new Event('input'));
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl/Cmd + F: Focus search
+        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+            e.preventDefault();
+            document.getElementById('globalSearch').focus();
+        }
+        // Escape: Clear search or go back to categories
+        if (e.key === 'Escape') {
+            if (document.getElementById('search-results-view').style.display !== 'none') {
+                clearSearch();
+            } else if (document.getElementById('items-view').style.display !== 'none') {
+                showCategoriesGrid();
+            }
+        }
+        // Ctrl/Cmd + Enter: Submit order (if enabled)
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            const submitBtn = document.getElementById('submitBtn');
+            if (submitBtn && !submitBtn.disabled) {
+                e.preventDefault();
+                submitBtn.click();
+            }
+        }
+    });
+
+    // Load table status on page load
+    function loadTableStatus() {
+        fetch('{{ url_for("admin.get_table_status") }}')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const tableSelect = document.getElementById('tableSelect');
+                    if (tableSelect) {
+                        // Update table options
+                        for (let i = 1; i <= 17; i++) {
+                            const option = tableSelect.querySelector(`option[value="${i}"]`);
+                            if (option) {
+                                if (data.tables[i] === 'OCCUPIED') {
+                                    option.disabled = true;
+                                    option.textContent = `Table ${i} (Occupied)`;
+                                    option.style.color = '#dc3545';
+                                } else {
+                                    option.disabled = false;
+                                    option.textContent = `Table ${i}`;
+                                    option.style.color = '';
+                                }
+                            }
+                        }
+                    }
+                }
+            })
+            .catch(error => console.error('Error loading table status:', error));
+    }
+
+    // Load table status on page load
+    loadTableStatus();
+
+    // Refresh table status every 30 seconds
+    setInterval(loadTableStatus, 30000);
 </script>
 {% endblock %}

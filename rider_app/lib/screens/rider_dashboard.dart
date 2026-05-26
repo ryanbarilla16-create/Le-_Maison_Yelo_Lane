@@ -367,6 +367,13 @@ class _RiderDashboardState extends State<RiderDashboard>
     }
   }
 
+  void _handleDeepLink(String link) {
+    if (link.startsWith('/rider/order/')) {
+      // Switch to Active tab for order-related notifications
+      _tabCtrl.animateTo(1);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -393,11 +400,14 @@ class _RiderDashboardState extends State<RiderDashboard>
           // Notification Bell
           IconButton(
             onPressed: () async {
-              await Navigator.push(
+              final result = await Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const NotificationsScreen()),
               );
               _loadUnreadCount();
+              if (result is String) {
+                _handleDeepLink(result);
+              }
             },
             icon: Badge(
               label: Text(

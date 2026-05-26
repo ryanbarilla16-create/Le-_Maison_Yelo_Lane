@@ -109,34 +109,6 @@
         </div>
     </section>
 
-    <!-- ═══ PROMO CARDS ═══ -->
-    <section class="lm-section lm-promo light" style="background: #fdfbf9; padding-top: 0;">
-        <div class="container-fluid px-3">
-            <div class="row g-4">
-                <div class="col-md-6" data-aos="fade-up">
-                    <div class="promo-card" style="background: #fff; border-radius: 12px; overflow: hidden; display: flex; box-shadow: 0 10px 30px rgba(0,0,0,0.05); height: 100%;">
-                        <div style="flex: 1; padding: 2.5rem; display: flex; flex-direction: column; justify-content: center;">
-                            <h3 style="font-family: 'Playfair Display', serif; font-weight: 800; color: #3E2723; margin-bottom: 1rem;">{{ site.card1.title }}</h3>
-                            <p style="color: #6D4C41; font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.5rem;">{{ site.card1.description }}</p>
-                            <a href="{{ url_for('main.menu_page') }}" style="color: #8B634B; font-weight: 700; text-decoration: none; text-transform: uppercase; letter-spacing: 1px; font-size: 0.85rem;">Discover More <i class="fas fa-arrow-right ms-1"></i></a>
-                        </div>
-                        <div style="flex: 1; min-height: 300px; background-image: url('{{ site.card1.image_url }}'); background-size: cover; background-position: center;"></div>
-                    </div>
-                </div>
-                <div class="col-md-6" data-aos="fade-up" data-aos-delay="100">
-                    <div class="promo-card" style="background: #fff; border-radius: 12px; overflow: hidden; display: flex; box-shadow: 0 10px 30px rgba(0,0,0,0.05); height: 100%;">
-                        <div style="flex: 1; padding: 2.5rem; display: flex; flex-direction: column; justify-content: center;">
-                            <h3 style="font-family: 'Playfair Display', serif; font-weight: 800; color: #3E2723; margin-bottom: 1rem;">{{ site.card2.title }}</h3>
-                            <p style="color: #6D4C41; font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.5rem;">{{ site.card2.description }}</p>
-                            <a href="{{ url_for('main.menu_page') }}" style="color: #8B634B; font-weight: 700; text-decoration: none; text-transform: uppercase; letter-spacing: 1px; font-size: 0.85rem;">Discover More <i class="fas fa-arrow-right ms-1"></i></a>
-                        </div>
-                        <div style="flex: 1; min-height: 300px; background-image: url('{{ site.card2.image_url }}'); background-size: cover; background-position: center;"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
     <!-- ═══ MENU GRID (SMALL BOXES) ═══ -->
     <section class="lm-section lm-menu-section">
         <div class="section-heading">
@@ -187,38 +159,66 @@
             </div>
         </div>
         <div class="gallery-grid">
-            <div class="gallery-item" data-aos="fade-up" data-aos-delay="0">
-                <img loading="lazy" src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=60&w=600&auto=format&fit=crop" alt="Fine dining">
-                <div class="gallery-overlay"><i class="fas fa-search-plus"></i></div>
-            </div>
-            <div class="gallery-item" data-aos="fade-up" data-aos-delay="50">
-                <img loading="lazy" src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=60&w=600&auto=format&fit=crop" alt="Restaurant ambiance">
-                <div class="gallery-overlay"><i class="fas fa-search-plus"></i></div>
-            </div>
-            <div class="gallery-item" data-aos="fade-up" data-aos-delay="100">
-                <img loading="lazy" src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=60&w=600&auto=format&fit=crop" alt="Dining hall">
-                <div class="gallery-overlay"><i class="fas fa-search-plus"></i></div>
-            </div>
-            <div class="gallery-item" data-aos="fade-up" data-aos-delay="150">
-                <img loading="lazy" src="https://images.unsplash.com/photo-1551218808-94e220e084d2?q=60&w=600&auto=format&fit=crop" alt="Chef preparing">
-                <div class="gallery-overlay"><i class="fas fa-search-plus"></i></div>
-            </div>
-            <div class="gallery-item" data-aos="fade-up" data-aos-delay="200">
-                <img loading="lazy" src="https://images.unsplash.com/photo-1559339352-11d035aa65de?q=60&w=600&auto=format&fit=crop" alt="Plated dish">
-                <div class="gallery-overlay"><i class="fas fa-search-plus"></i></div>
-            </div>
-            <div class="gallery-item" data-aos="fade-up" data-aos-delay="250">
-                <img loading="lazy" src="https://images.unsplash.com/photo-1497935586351-b67a49e012bf?q=60&w=600&auto=format&fit=crop" alt="Coffee and pastry">
-                <div class="gallery-overlay"><i class="fas fa-search-plus"></i></div>
-            </div>
-            <div class="gallery-item" data-aos="fade-up" data-aos-delay="300">
-                <img loading="lazy" src="https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=60&w=600&auto=format&fit=crop" alt="Latte art">
-                <div class="gallery-overlay"><i class="fas fa-search-plus"></i></div>
-            </div>
-            <div class="gallery-item" data-aos="fade-up" data-aos-delay="350">
-                <img loading="lazy" src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=60&w=600&auto=format&fit=crop" alt="Cafe interior">
-                <div class="gallery-overlay"><i class="fas fa-search-plus"></i></div>
-            </div>
+            {% if gallery_photos %}
+                {% for photo in gallery_photos %}
+                <div class="gallery-item" data-aos="fade-up" data-aos-delay="{{ loop.index0 * 50 }}">
+                    <img loading="lazy" src="{{ photo.photo_url }}" alt="Customer photo by {{ photo.user.first_name }}">
+                    <div class="gallery-overlay"><i class="fas fa-search-plus"></i></div>
+                </div>
+                {% endfor %}
+                
+                {% if gallery_photos|length < 8 %}
+                    {% set default_images = [
+                        'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=60&w=600&auto=format&fit=crop',
+                        'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=60&w=600&auto=format&fit=crop',
+                        'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=60&w=600&auto=format&fit=crop',
+                        'https://images.unsplash.com/photo-1551218808-94e220e084d2?q=60&w=600&auto=format&fit=crop',
+                        'https://images.unsplash.com/photo-1559339352-11d035aa65de?q=60&w=600&auto=format&fit=crop',
+                        'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?q=60&w=600&auto=format&fit=crop',
+                        'https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=60&w=600&auto=format&fit=crop',
+                        'https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=60&w=600&auto=format&fit=crop'
+                    ] %}
+                    {% for i in range(gallery_photos|length, 8) %}
+                    <div class="gallery-item" data-aos="fade-up" data-aos-delay="{{ i * 50 }}">
+                        <img loading="lazy" src="{{ default_images[i] }}" alt="Le Maison">
+                        <div class="gallery-overlay"><i class="fas fa-search-plus"></i></div>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            {% else %}
+                <div class="gallery-item" data-aos="fade-up" data-aos-delay="0">
+                    <img loading="lazy" src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=60&w=600&auto=format&fit=crop" alt="Fine dining">
+                    <div class="gallery-overlay"><i class="fas fa-search-plus"></i></div>
+                </div>
+                <div class="gallery-item" data-aos="fade-up" data-aos-delay="50">
+                    <img loading="lazy" src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=60&w=600&auto=format&fit=crop" alt="Restaurant ambiance">
+                    <div class="gallery-overlay"><i class="fas fa-search-plus"></i></div>
+                </div>
+                <div class="gallery-item" data-aos="fade-up" data-aos-delay="100">
+                    <img loading="lazy" src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=60&w=600&auto=format&fit=crop" alt="Dining hall">
+                    <div class="gallery-overlay"><i class="fas fa-search-plus"></i></div>
+                </div>
+                <div class="gallery-item" data-aos="fade-up" data-aos-delay="150">
+                    <img loading="lazy" src="https://images.unsplash.com/photo-1551218808-94e220e084d2?q=60&w=600&auto=format&fit=crop" alt="Chef preparing">
+                    <div class="gallery-overlay"><i class="fas fa-search-plus"></i></div>
+                </div>
+                <div class="gallery-item" data-aos="fade-up" data-aos-delay="200">
+                    <img loading="lazy" src="https://images.unsplash.com/photo-1559339352-11d035aa65de?q=60&w=600&auto=format&fit=crop" alt="Plated dish">
+                    <div class="gallery-overlay"><i class="fas fa-search-plus"></i></div>
+                </div>
+                <div class="gallery-item" data-aos="fade-up" data-aos-delay="250">
+                    <img loading="lazy" src="https://images.unsplash.com/photo-1497935586351-b67a49e012bf?q=60&w=600&auto=format&fit=crop" alt="Coffee and pastry">
+                    <div class="gallery-overlay"><i class="fas fa-search-plus"></i></div>
+                </div>
+                <div class="gallery-item" data-aos="fade-up" data-aos-delay="300">
+                    <img loading="lazy" src="https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=60&w=600&auto=format&fit=crop" alt="Latte art">
+                    <div class="gallery-overlay"><i class="fas fa-search-plus"></i></div>
+                </div>
+                <div class="gallery-item" data-aos="fade-up" data-aos-delay="350">
+                    <img loading="lazy" src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=60&w=600&auto=format&fit=crop" alt="Cafe interior">
+                    <div class="gallery-overlay"><i class="fas fa-search-plus"></i></div>
+                </div>
+            {% endif %}
         </div>
     </section>
 

@@ -540,9 +540,7 @@
             <div class="moTitle">
                 <h2><i class="fas fa-shopping-bag me-2" style="color: #8B634B; font-size: 1.4rem;"></i>My Orders</h2>
                 <p>Track and manage all your orders 
-                   <span id="syncIndicator" style="font-size: 0.72rem; color: #8b7355; opacity: 0.8; margin-left: 10px; font-weight: 500;">
-                       <i class="fas fa-sync-alt fa-spin me-1"></i> Live Update (5s) • Last: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
-                   </span>
+
                 </p>
             </div>
         </div>
@@ -679,7 +677,7 @@
                             </div>
                             {% else %}
                             <button class="moRateBtn" data-bs-toggle="modal" data-bs-target="#reviewModal"
-                                onclick="document.getElementById('reviewOrderForm').action = '/order/{{ order.id }}/review';"><i
+                                onclick="document.getElementById('reviewOrderForm').action = '/order/{{ order.id }}/review'; clearReviewForm();"><i
                                     class="fas fa-star me-1"></i>Rate Order</button>
                             {% endif %}
                             {% elif order.overall_status == 'ON_THE_WAY' %}
@@ -721,7 +719,7 @@
                 </div>
                 <div class="modal-body px-4 pb-4">
                     <p style="color: #A1887F; font-size: 0.88rem;">We'd love to hear your feedback.</p>
-                    <form id="reviewOrderForm" method="POST" action="">
+                    <form id="reviewOrderForm" method="POST" action="" enctype="multipart/form-data">
                         <div class="mb-4 text-center"><input type="hidden" name="rating" id="reviewRatingInput"
                                 value="5" required>
                             <div class="d-flex justify-content-center gap-2" style="font-size: 2.2rem; color: #e0e0e0;">
@@ -735,6 +733,23 @@
                                 style="font-size:0.88rem; color: #A1887F;">Comment (Optional)</label><textarea
                                 class="form-control" name="comment" rows="3" placeholder="Tell us what you liked..."
                                 style="background: rgba(139, 99, 75, 0.02); border-radius: 12px; border: 1px solid rgba(139, 99, 75, 0.15); resize: none;"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold" style="font-size:0.88rem; color: #A1887F;">Attach Photo (Optional)</label>
+                            <input type="file" name="photo" id="reviewPhotoInput" accept="image/*" style="display: none;" onchange="previewReviewImage(this)">
+                            <label for="reviewPhotoInput" id="uploadLabel" style="display: block; border: 2px dashed rgba(139, 99, 75, 0.2); border-radius: 12px; padding: 1.2rem; text-align: center; background: rgba(139, 99, 75, 0.02); cursor: pointer; transition: all 0.2s ease; margin: 0;">
+                                <div id="uploadPlaceholder">
+                                    <i class="fas fa-camera" style="font-size: 1.5rem; color: #8B634B; margin-bottom: 0.5rem; display: block;"></i>
+                                    <span style="font-size: 0.8rem; color: #A1887F; font-weight: 500;">Click to upload image</span>
+                                </div>
+                                <div id="uploadPreview" style="display: none; align-items: center; justify-content: center; gap: 10px;">
+                                    <img id="previewImg" src="" style="max-height: 80px; border-radius: 8px; border: 1px solid rgba(139, 99, 75, 0.15);">
+                                    <div class="text-start">
+                                        <span id="uploadFileName" style="font-size: 0.8rem; color: #4E342E; font-weight: 700; display: block; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+                                        <span class="text-danger" style="font-size: 0.75rem; font-weight: 600; cursor: pointer;" id="removePhotoBtn">Remove</span>
+                                    </div>
+                                </div>
+                            </label>
                         </div>
                         <div class="d-grid mt-4"><button type="submit" class="btn text-white fw-bold"
                                 style="background: #8B634B; border-radius: 50px; padding: 0.8rem; box-shadow: 0 4px 15px rgba(139, 99, 75, 0.2); transition: all 0.3s ease;">Submit
@@ -791,6 +806,50 @@
             document.getElementById('noOrdersFiltered').style.display = vis === 0 ? 'block' : 'none';
             document.querySelectorAll('.moTab').forEach(b => b.classList.remove('active')); btn.classList.add('active');
         }
+
+        function previewReviewImage(input) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('previewImg').src = e.target.result;
+                    document.getElementById('uploadPlaceholder').style.display = 'none';
+                    document.getElementById('uploadPreview').style.display = 'flex';
+                    document.getElementById('uploadFileName').textContent = file.name;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function removeReviewImage() {
+            document.getElementById('reviewPhotoInput').value = '';
+            document.getElementById('previewImg').src = '';
+            document.getElementById('uploadPlaceholder').style.display = 'block';
+            document.getElementById('uploadPreview').style.display = 'none';
+            document.getElementById('uploadFileName').textContent = '';
+        }
+
+        function clearReviewForm() {
+            removeReviewImage();
+            document.getElementById('reviewRatingInput').value = '5';
+            for (let i = 1; i <= 5; i++) {
+                document.getElementById('star-' + i).classList.add('text-warning');
+            }
+            const textarea = document.querySelector('#reviewOrderForm textarea[name="comment"]');
+            if (textarea) textarea.value = '';
+        }
+
+        // Attach remove handler — stopPropagation so the label doesn't re-open the file picker
+        document.addEventListener('DOMContentLoaded', function() {
+            var removeBtn = document.getElementById('removePhotoBtn');
+            if (removeBtn) {
+                removeBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    removeReviewImage();
+                });
+            }
+        });
     </script>
     <style>
         @keyframes pulse-dot {
@@ -961,23 +1020,40 @@
         function pollCustomerOrders() {
             if (document.querySelector('.modal.show')) return;
 
+            // ★ Save filter tab + scroll state
+            const activeTab = document.querySelector('.moTab.active');
+            const savedFilter = activeTab ? activeTab.textContent.trim() : 'All Orders';
+            const savedScroll = window.scrollY;
+
             fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
             .then(response => response.text())
             .then(html => {
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
                 
-                const ids = ['customerOrdersContainer', 'lastUpdateText'];
-                ids.forEach(id => {
+                ['customerOrdersContainer'].forEach(id => {
                     const oldEl = document.getElementById(id);
                     const newEl = doc.getElementById(id);
-                    if (oldEl && newEl) oldEl.innerHTML = newEl.innerHTML;
+                    if (oldEl && newEl && oldEl.innerHTML !== newEl.innerHTML) {
+                        oldEl.innerHTML = newEl.innerHTML;
+                    }
                 });
+
+                // ★ Restore filter tab state
+                if (savedFilter !== 'All Orders') {
+                    document.querySelectorAll('.moTab').forEach(btn => {
+                        if (btn.textContent.trim() === savedFilter) {
+                            const status = btn.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
+                            if (status) filterOrders(status, btn);
+                        }
+                    });
+                }
+                window.scrollTo(0, savedScroll);
             })
             .catch(err => console.warn('Customer Orders sync failed:', err));
         }
 
-        setInterval(pollCustomerOrders, 5000);
+        
     </script>
 </main>
 {% endblock %}

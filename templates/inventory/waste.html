@@ -14,9 +14,7 @@
 {% block page_title %}Waste & Shrinkage Log{% endblock %}
 {% block page_subtitle %}
     Review recorded inventory losses and disposal reasons
-    <span id="syncIndicator" style="font-size: 0.72rem; color: var(--muted); opacity: 0.8; margin-left: 10px; font-weight: 500;">
-        <i class="fas fa-sync-alt fa-spin me-1"></i> Live Update (5s) • Last: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
-    </span>
+    
 {% endblock %}
 
 {% block content %}
@@ -73,6 +71,6 @@
         })
         .catch(err => console.warn('Waste log sync failed:', err));
     }
-    setInterval(pollInventoryWaste, 5000);
+    
 </script>
 {% endblock %}

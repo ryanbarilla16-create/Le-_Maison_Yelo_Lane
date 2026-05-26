@@ -404,9 +404,7 @@
     <div>
         <h1 style="font-family: 'Playfair Display', serif; font-weight: 800; color: #3E2723;">
             Reservations
-            <span id="syncIndicator" style="font-size: 0.72rem; color: #8b7355; opacity: 0.8; margin-left: 10px; font-weight: 500;">
-                <i class="fas fa-sync-alt fa-spin me-1"></i> Live Update (5s) • Last: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
-            </span>
+            
         </h1>
         <p style="color: #8B634B; opacity: 0.8; font-weight: 500;">Manage incoming table bookings and exclusive events.</p>
     </div>
@@ -694,31 +692,32 @@
     function pollAdminReservations() {
         if (document.getElementById('tableModal').style.display === 'flex' || document.querySelector('.modal.show')) return;
 
+        const activeTab = document.querySelector('.filter-tab.active');
+        const savedFilter = activeTab ? activeTab.dataset.filter : 'ALL';
+        const savedScroll = window.scrollY;
+
         fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
         .then(response => response.text())
         .then(html => {
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
             
-            const ids = ['adminReservationsContainer', 'lastUpdateText'];
-            ids.forEach(id => {
+            // ★ Only update the grid — NEVER touch filter tabs
+            ['reservationsGridContainer', 'lastUpdateText'].forEach(id => {
                 const oldEl = document.getElementById(id);
                 const newEl = doc.getElementById(id);
                 if (oldEl && newEl && oldEl.innerHTML !== newEl.innerHTML) {
                     oldEl.innerHTML = newEl.innerHTML;
-                    
-                    // Re-apply filter if active after content update
-                    const activeTab = document.querySelector('.filter-tab.active');
-                    if (activeTab) {
-                        filterReservations(activeTab.dataset.filter);
-                    }
                 }
             });
+            // Re-apply filter and scroll
+            if (savedFilter !== 'ALL') filterReservations(savedFilter);
+            window.scrollTo(0, savedScroll);
         })
         .catch(err => console.warn('Admin Reservations sync failed:', err));
     }
 
-    setInterval(pollAdminReservations, 5000);
+    
 </script>
 </div> <!-- end adminReservationsContainer -->
 {% endblock %}

@@ -41,9 +41,7 @@
 {% block page_title %}Standard Portioning & Recipes{% endblock %}
 {% block page_subtitle %}
     Quick reference for ingredient quantities per dish
-    <span id="syncIndicator" style="font-size: 0.72rem; color: var(--muted); opacity: 0.8; margin-left: 10px; font-weight: 500;">
-        <i class="fas fa-sync-alt fa-spin me-1"></i> Live Update (5s) • Last: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
-    </span>
+    
 {% endblock %}
 
 {% block extra_style %}
@@ -295,42 +293,43 @@
 
     function pollKitchenRecipes() {
         // Skip if user is typing in search
-        const searchInput = document.getElementById('recipeSearch');
-        if (document.activeElement === searchInput) return;
+        if (document.activeElement && document.activeElement.id === 'recipeSearch') return;
 
-        // 1. Save current state
-        const currentSearch = searchInput ? searchInput.value : '';
-        const currentCat = document.getElementById('catSelect') ? document.getElementById('catSelect').value : 'ALL';
-        const scrollPos = window.scrollY;
+        // Save current filter + scroll BEFORE touching DOM
+        const catSelect = document.getElementById('catSelect');
+        const searchInput = document.getElementById('recipeSearch');
+        const savedCat = catSelect ? catSelect.value : 'ALL';
+        const savedSearch = searchInput ? searchInput.value : '';
+        const savedScroll = window.scrollY;
 
         fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
         .then(response => response.text())
         .then(html => {
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
-            
-            const ids = ['kitchenRecipesContainer', 'lastUpdateText'];
-            ids.forEach(id => {
-                const oldEl = document.getElementById(id);
-                const newEl = doc.getElementById(id);
-                if (oldEl && newEl && oldEl.innerHTML !== newEl.innerHTML) {
-                    oldEl.innerHTML = newEl.innerHTML;
-                }
-            });
-            
-            // 2. Re-apply state
-            const newSearch = document.getElementById('recipeSearch');
-            const newCat = document.getElementById('catSelect');
-            if (newSearch) newSearch.value = currentSearch;
-            if (newCat) newCat.value = currentCat;
-            
-            // 3. Restore scroll and re-filter
-            window.scrollTo(0, scrollPos);
+
+            // ★ ONLY update the recipe grid — NEVER touch the search/filter row
+            const oldGrid = document.getElementById('recipeGrid');
+            const newGrid = doc.getElementById('recipeGrid');
+            if (oldGrid && newGrid && oldGrid.innerHTML !== newGrid.innerHTML) {
+                oldGrid.innerHTML = newGrid.innerHTML;
+            }
+
+            // Update just the timestamp text
+            const oldTs = document.getElementById('lastUpdateText');
+            const newTs = doc.getElementById('lastUpdateText');
+            if (oldTs && newTs) oldTs.innerText = newTs.innerText;
+
+            // Re-apply filter (dropdown is untouched, so value is already correct)
+            // But restore just in case
+            if (catSelect) catSelect.value = savedCat;
+            if (searchInput) searchInput.value = savedSearch;
             filterRecipes();
+            window.scrollTo(0, savedScroll);
         })
         .catch(err => console.warn('Recipes sync failed:', err));
     }
 
-    setInterval(pollKitchenRecipes, 5000);
+    
 </script>
 {% endblock %}

@@ -57,8 +57,11 @@
         }
 
         .sidebar-brand {
-            padding: 28px 24px 22px;
+            padding: 20px 24px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
         .sidebar-brand .brand-name {
@@ -507,7 +510,7 @@
 
                     <!-- Notification Dropdown Panel -->
                     <div id="adminNotifPanel"
-                        style="display:none; position: absolute; right: 0; top: 48px; width: 350px; max-height: 480px; background: #fff; border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,0.15); z-index: 9999; overflow: hidden; border: 1px solid rgba(0,0,0,0.08);">
+                        style="display:none; position: absolute; right: 0; top: 48px; width: 350px; min-height: 200px; max-height: 480px; background: #fff; border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,0.15); z-index: 9999; overflow: hidden; border: 1px solid rgba(0,0,0,0.08);">
                         <div
                             style="padding: 16px 20px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #8b634b, #8b634b);">
                             <span style="font-weight: 700; font-size: 0.9rem; color: #fff;"><i
@@ -885,6 +888,7 @@
         async function fetchStaffNotifs() {
             try {
                 const resp = await fetch('/admin/api/notifications');
+                if (!resp.ok) throw new Error('API Error');
                 const data = await resp.json();
                 const list = document.getElementById('adminNotifList');
                 const empty = document.getElementById('adminNotifEmpty');
@@ -897,11 +901,12 @@
                 }
                 empty.style.display = 'none';
                 list.innerHTML = data.notifications.map(n => `
-                    <div style="padding: 12px 20px; border-bottom: 1px solid #f5f5f5; display: flex; gap: 12px; align-items: flex-start; background: ${n.is_read ? '#fff' : '#faf6f2'};">
-                        <div style="width: 32px; height: 32px; border-radius: 50%; background: ${n.is_read ? '#f0f0f0' : 'rgba(139, 99, 75,0.1)'}; display:flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.8rem;">
+                    <div style="padding: 12px 20px; border-bottom: 1px solid #f5f5f5; display: flex; gap: 12px; align-items: flex-start; background: ${n.is_read ? '#fff' : '#faf6f2'}; cursor: ${n.link ? 'pointer' : 'default'};"
+                         onclick="${n.link ? `markAsReadAndRedirect('${n.id}', '${n.link}')` : ''}">
+                        <div style="width: 32px; height: 32px; border-radius: 50%; background: ${n.is_read ? '#f0f0f0' : 'rgba(139, 99, 75,0.1)'}; display:flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.8rem; pointer-events: none;">
                             ${_staffNotifIcon(n.type)}
                         </div>
-                        <div style="flex: 1; min-width: 0;">
+                        <div style="flex: 1; min-width: 0; pointer-events: none;">
                             <div style="font-weight: ${n.is_read ? '400' : '600'}; font-size: 0.8rem; color: #333; margin-bottom: 2px;">${n.title}</div>
                             <div style="font-size: 0.72rem; color: #777; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${n.message}</div>
                         </div>
@@ -932,6 +937,20 @@
                 fetchStaffUnreadCount();
                 fetchStaffNotifs();
             } catch (e) { }
+        }
+
+        async function markAsReadAndRedirect(notifId, link) {
+            try {
+                await fetch(`/admin/api/notifications/${notifId}/read`, { method: 'POST' });
+                _notifPanelOpen = false;
+                const panel = document.getElementById('adminNotifPanel');
+                if(panel) panel.style.display = 'none';
+                window.location.href = link;
+            } catch (err) {
+                console.error('Error fetching staff notifs:', err);
+                const list = document.getElementById('adminNotifList');
+                if (list) list.innerHTML = '<div style="padding:20px;text-align:center;color:#dc3545;font-size:0.8rem;">Failed to load updates</div>';
+            }
         }
 
         // Poll every 15 seconds

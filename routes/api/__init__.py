@@ -1043,7 +1043,7 @@ def api_checkout():
         db.session.commit()
     
     # Send notification to user
-    _create_notification(user_id, 'Order Placed', f'Your order #{new_order.id} has been placed successfully! Total: ₱{total:.2f}', 'ORDER')
+    _create_notification(user_id, 'Order Placed', f'Your order #{new_order.id} has been placed successfully! Total: ₱{total:.2f}', 'ORDER', link='/my-orders')
     
     # Real-time update for Admin/Kitchen
     from extensions import socketio
@@ -1088,12 +1088,12 @@ def xendit_callback():
     if status == 'PAID':
         order.payment_status = 'PAID'
         db.session.commit()
-        _create_notification(order.user_id, 'Payment Received', f'Your GCash payment for order #{order.id} has been confirmed! ₱{float(order.total_amount):.2f}', 'ORDER')
+        _create_notification(order.user_id, 'Payment Received', f'Your GCash payment for order #{order.id} has been confirmed! ₱{float(order.total_amount):.2f}', 'ORDER', link='/my-orders')
     elif status == 'EXPIRED':
         order.payment_status = 'UNPAID'
         order.notes = (order.notes or '') + ' [Payment expired]'
         db.session.commit()
-        _create_notification(order.user_id, 'Payment Expired', f'Your payment for order #{order.id} has expired. Please pay at the counter or place a new order.', 'ORDER')
+        _create_notification(order.user_id, 'Payment Expired', f'Your payment for order #{order.id} has expired. Please pay at the counter or place a new order.', 'ORDER', link='/my-orders')
     
     return jsonify({'success': True}), 200
 
@@ -1103,6 +1103,7 @@ def api_add_review(order_id):
     user_id = data.get('user_id')
     rating = data.get('rating')
     comment = (data.get('comment') or '').strip()
+    photo_base64 = data.get('photo')  # Base64 encoded photo from mobile
     
     order = Order.query.get(order_id)
     if not order or order.user_id != user_id:
@@ -1117,7 +1118,40 @@ def api_add_review(order_id):
     if not rating or rating < 1 or rating > 5:
         return jsonify({'success': False, 'message': 'Rating must be 1-5.'}), 400
     
-    new_review = Review(user_id=user_id, order_id=order_id, rating=rating, comment=comment, status='APPROVED')
+    # Handle photo upload if provided
+    photo_url = None
+    if photo_base64:
+        try:
+            import base64
+            import os
+            from datetime import datetime
+            
+            # Decode base64
+            photo_data = base64.b64decode(photo_base64.split(',')[1] if ',' in photo_base64 else photo_base64)
+            
+            # Generate unique filename
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            filename = f"review_{user_id}_{timestamp}.jpg"
+            upload_folder = os.path.join('static', 'uploads', 'reviews')
+            os.makedirs(upload_folder, exist_ok=True)
+            
+            filepath = os.path.join(upload_folder, filename)
+            with open(filepath, 'wb') as f:
+                f.write(photo_data)
+            
+            photo_url = f"/static/uploads/reviews/{filename}"
+        except Exception as e:
+            print(f"Photo upload error: {str(e)}")
+            # Continue without photo if upload fails
+    
+    new_review = Review(
+        user_id=user_id, 
+        order_id=order_id, 
+        rating=rating, 
+        comment=comment, 
+        photo_url=photo_url,
+        status='APPROVED'
+    )
     db.session.add(new_review)
     db.session.commit()
     
@@ -1308,7 +1342,7 @@ def api_reserve():
 
     db.session.commit()
     
-    _create_notification(user_id, 'Reservation Received', f'Your reservation for {res_date_str} has been received.', 'RESERVATION')
+    _create_notification(user_id, 'Reservation Received', f'Your reservation for {res_date_str} has been received.', 'RESERVATION', link='/my-reservations')
     
     return jsonify({
         'success': True, 
@@ -1615,9 +1649,9 @@ def api_get_user_reviews(user_id):
     }), 200
 
 # ═══ NOTIFICATIONS API ═══
-def _create_notification(user_id, title, message, notif_type='SYSTEM'):
+def _create_notification(user_id, title, message, notif_type='SYSTEM', link=None):
     """Helper to create a notification (uses centralized helper)"""
-    return create_notification(user_id, title, message, notif_type)
+    return create_notification(user_id, title, message, notif_type, link)
 
 @api_bp.route('/user/<int:user_id>/notifications', methods=['GET'])
 def api_get_notifications(user_id):
@@ -1631,6 +1665,7 @@ def api_get_notifications(user_id):
             'title': n.title,
             'message': n.message,
             'type': n.type,
+            'link': n.link,
             'is_read': n.is_read,
             'created_at': n.created_at.strftime('%b %d, %Y - %I:%M %p') if n.created_at else '',
         } for n in notifications]

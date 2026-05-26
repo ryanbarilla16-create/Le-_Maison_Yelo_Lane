@@ -6,9 +6,6 @@
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
     <h2 class="admin-page-title mb-0" style="font-weight: 800; letter-spacing: -0.5px;">
         <i class="fas fa-route me-2" style="color: var(--primary-color);"></i>Delivery Fleet
-        <span id="syncIndicator" style="font-size: 0.75rem; color: #8b7355; opacity: 0.8; margin-left: 10px; font-weight: 500;">
-            <i class="fas fa-sync-alt fa-spin me-1"></i> Real-time Sync (5s) • Last Update: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
-        </span>
     </h2>
     <div class="d-flex flex-wrap gap-2">
         <a href="?status=ALL"
@@ -33,7 +30,7 @@
             </div>
             <div>
                 <h6 class="mb-0 fw-bold" style="font-size: 1.05rem; color: #333;">Live Radar</h6>
-                <span style="font-size: 0.75rem; color: #888;">Real-time GPS tracking</span>
+                <span style="font-size: 0.75rem; color: #888;">GPS tracking</span>
             </div>
             <span id="riderCount" class="badge bg-success-subtle text-success border border-success-subtle rounded-pill ms-2 px-3 py-1 text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">
                 <i class="fas fa-circle me-1" style="font-size: 0.4rem; vertical-align: middle;"></i>0 ACTIVE
@@ -318,7 +315,7 @@
         .catch(err => console.warn('Deliveries sync failed:', err));
     }
 
-    setInterval(pollDeliveriesTable, 5000);
+    
 })();
 </script>
 {% endblock %}

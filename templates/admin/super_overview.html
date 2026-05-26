@@ -273,23 +273,26 @@
 <!-- ═══ HERO HEADER ═══ -->
 <div class="sa-hero">
     <div class="sa-badge"><i class="fas fa-crown"></i> Super Admin</div>
-    <p id="dashboardSubtitle">Welcome back, {{ current_user.first_name }}. Here's your real-time overview across all branches. 
-       <span id="syncIndicator" style="font-size: 0.75rem; color: #8b7355; opacity: 0.8; margin-left: 10px;">
-           <i class="fas fa-sync-alt fa-spin me-1"></i> Auto-syncing (5s) • Last Update: <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
-       </span>
-    </p>
+    <p id="dashboardSubtitle">Welcome back, {{ current_user.first_name }}. Here's your overview across all branches.</p>
 </div>
 
 <div id="saOverviewMainContainer">
 
 <!-- ═══ GLOBAL STATS ═══ -->
-<div class="sa-global-grid" id="globalStatsGrid">
+<div class="sa-global-grid" id="globalStatsGrid" style="grid-template-columns: repeat(5,1fr);">
     <div class="sa-gstat">
         <div class="sa-gstat-icon" style="background: rgba(212,168,98,0.15); color: #D4A862;">
             <i class="fas fa-peso-sign"></i>
         </div>
-        <div class="sa-gstat-value">P{{ "{:,.2f}".format(total_revenue) }}</div>
-        <div class="sa-gstat-label">Total Revenue (All Branches)</div>
+        <div class="sa-gstat-value">₱{{ "{:,.2f}".format(total_revenue) }}</div>
+        <div class="sa-gstat-label">Gross Revenue (All Branches)</div>
+    </div>
+    <div class="sa-gstat">
+        <div class="sa-gstat-icon" style="background: rgba(239,68,68,0.12); color: #dc2626;">
+            <i class="fas fa-truck"></i>
+        </div>
+        <div class="sa-gstat-value" style="color: #dc2626;">-₱{{ "{:,.2f}".format(total_expenses) }}</div>
+        <div class="sa-gstat-label">Total Supplier Expenses</div>
     </div>
     <div class="sa-gstat">
         <div class="sa-gstat-icon" style="background: rgba(59,130,246,0.15); color: #3b82f6;">
@@ -323,11 +326,24 @@
             <span style="font-size: 0.7rem; background: rgba(212,168,98,0.1); color: #D4A862; padding: 3px 10px; border-radius: 20px; font-weight: 600;">MAIN BRANCH</span>
         </div>
         <div class="sa-branch-body">
-            <div class="sa-branch-stats">
-                <div class="sa-bstat">
-                    <div class="sa-bstat-val">P{{ "{:,.0f}".format(branch_data['Pagsanjan']['revenue']) }}</div>
-                    <div class="sa-bstat-label">Revenue</div>
+            <!-- Revenue Analytics Strip -->
+            <div style="background: linear-gradient(135deg,#fffdf9,#fdf6ec); border: 1px solid rgba(212,168,98,0.2); border-radius: 14px; padding: 14px 16px; margin-bottom: 14px;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+                    <div>
+                        <div style="font-size:0.68rem; color:#8b7355; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">Gross Revenue (Sales)</div>
+                        <div style="font-size:1.3rem; font-weight:900; color:#2d2520; margin-top:2px;">₱{{ "{:,.2f}".format(branch_data['Pagsanjan']['gross_revenue']) }}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:0.68rem; color:#dc2626; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">Supplier Expenses ({{ branch_data['Pagsanjan']['expense_count'] }} payments)</div>
+                        <div style="font-size:1.1rem; font-weight:900; color:#dc2626; margin-top:2px;">-₱{{ "{:,.2f}".format(branch_data['Pagsanjan']['expenses']) }}</div>
+                    </div>
                 </div>
+                <div style="border-top: 1px dashed rgba(212,168,98,0.3); margin-top:10px; padding-top:10px; display:flex; justify-content:space-between; align-items:center;">
+                    <div style="font-size:0.72rem; color:#6b5947; font-weight:600;">Net Revenue After Expenses</div>
+                    <div style="font-size:1.15rem; font-weight:900; color:{{ '#16a34a' if branch_data['Pagsanjan']['net_revenue'] >= 0 else '#dc2626' }};">₱{{ "{:,.2f}".format(branch_data['Pagsanjan']['net_revenue']) }}</div>
+                </div>
+            </div>
+            <div class="sa-branch-stats">
                 <div class="sa-bstat">
                     <div class="sa-bstat-val">{{ branch_data['Pagsanjan']['orders'] }}</div>
                     <div class="sa-bstat-label">Orders</div>
@@ -336,12 +352,12 @@
                     <div class="sa-bstat-val">{{ branch_data['Pagsanjan']['staff_count'] }}</div>
                     <div class="sa-bstat-label">Staff</div>
                 </div>
-            </div>
-            <div class="sa-branch-stats">
                 <div class="sa-bstat">
                     <div class="sa-bstat-val" style="color: #f59e0b;">{{ branch_data['Pagsanjan']['pending'] }}</div>
                     <div class="sa-bstat-label">Pending</div>
                 </div>
+            </div>
+            <div class="sa-branch-stats" style="margin-top:8px;">
                 <div class="sa-bstat">
                     <div class="sa-bstat-val" style="color: #22c55e;">{{ branch_data['Pagsanjan']['completed'] }}</div>
                     <div class="sa-bstat-label">Completed</div>
@@ -350,7 +366,26 @@
                     <div class="sa-bstat-val" style="color: #3b82f6;">{{ branch_data['Pagsanjan']['reservations'] }}</div>
                     <div class="sa-bstat-label">Reservations</div>
                 </div>
+                <div class="sa-bstat">
+                    <div class="sa-bstat-val" style="color: #dc2626;">{{ branch_data['Pagsanjan']['expense_count'] }}</div>
+                    <div class="sa-bstat-label">Supply Orders</div>
+                </div>
             </div>
+            <!-- Recent Supplier Payments for Pagsanjan -->
+            {% if branch_data['Pagsanjan']['recent_payments'] %}
+            <div style="margin-top:14px; border-top:1px solid #f0ebe6; padding-top:12px;">
+                <div style="font-size:0.72rem; font-weight:700; color:#8b7355; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;"><i class="fas fa-truck me-1"></i>Recent Supplier Payments</div>
+                {% for pay in branch_data['Pagsanjan']['recent_payments'] %}
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px dashed rgba(93,64,55,0.07); font-size:0.75rem;">
+                    <div>
+                        <span style="font-weight:700; color:#2d2520;">{{ pay.supplier.name if pay.supplier else 'Unknown' }}</span>
+                        <span style="color:#8b7355; margin-left:6px;">{{ pay.created_at.strftime('%b %d') if pay.created_at else '' }}</span>
+                    </div>
+                    <span style="font-weight:800; color:#dc2626;">-₱{{ "{:,.2f}".format(pay.amount) }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
             <div class="sa-branch-chart">
                 <canvas id="pagsanjanStatusChart"></canvas>
             </div>
@@ -364,11 +399,24 @@
             <span style="font-size: 0.7rem; background: rgba(139,99,75,0.1); color: #8b634b; padding: 3px 10px; border-radius: 20px; font-weight: 600;">NEWEST BRANCH</span>
         </div>
         <div class="sa-branch-body">
-            <div class="sa-branch-stats">
-                <div class="sa-bstat">
-                    <div class="sa-bstat-val">P{{ "{:,.0f}".format(branch_data['Lucban']['revenue']) }}</div>
-                    <div class="sa-bstat-label">Revenue</div>
+            <!-- Revenue Analytics Strip -->
+            <div style="background: linear-gradient(135deg,#faf9f8,#f5f0eb); border: 1px solid rgba(139,99,75,0.15); border-radius: 14px; padding: 14px 16px; margin-bottom: 14px;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+                    <div>
+                        <div style="font-size:0.68rem; color:#8b7355; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">Gross Revenue (Sales)</div>
+                        <div style="font-size:1.3rem; font-weight:900; color:#2d2520; margin-top:2px;">₱{{ "{:,.2f}".format(branch_data['Lucban']['gross_revenue']) }}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:0.68rem; color:#dc2626; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">Supplier Expenses ({{ branch_data['Lucban']['expense_count'] }} payments)</div>
+                        <div style="font-size:1.1rem; font-weight:900; color:#dc2626; margin-top:2px;">-₱{{ "{:,.2f}".format(branch_data['Lucban']['expenses']) }}</div>
+                    </div>
                 </div>
+                <div style="border-top: 1px dashed rgba(139,99,75,0.2); margin-top:10px; padding-top:10px; display:flex; justify-content:space-between; align-items:center;">
+                    <div style="font-size:0.72rem; color:#6b5947; font-weight:600;">Net Revenue After Expenses</div>
+                    <div style="font-size:1.15rem; font-weight:900; color:{{ '#16a34a' if branch_data['Lucban']['net_revenue'] >= 0 else '#dc2626' }};">₱{{ "{:,.2f}".format(branch_data['Lucban']['net_revenue']) }}</div>
+                </div>
+            </div>
+            <div class="sa-branch-stats">
                 <div class="sa-bstat">
                     <div class="sa-bstat-val">{{ branch_data['Lucban']['orders'] }}</div>
                     <div class="sa-bstat-label">Orders</div>
@@ -377,12 +425,12 @@
                     <div class="sa-bstat-val">{{ branch_data['Lucban']['staff_count'] }}</div>
                     <div class="sa-bstat-label">Staff</div>
                 </div>
-            </div>
-            <div class="sa-branch-stats">
                 <div class="sa-bstat">
                     <div class="sa-bstat-val" style="color: #f59e0b;">{{ branch_data['Lucban']['pending'] }}</div>
                     <div class="sa-bstat-label">Pending</div>
                 </div>
+            </div>
+            <div class="sa-branch-stats" style="margin-top:8px;">
                 <div class="sa-bstat">
                     <div class="sa-bstat-val" style="color: #22c55e;">{{ branch_data['Lucban']['completed'] }}</div>
                     <div class="sa-bstat-label">Completed</div>
@@ -391,7 +439,26 @@
                     <div class="sa-bstat-val" style="color: #3b82f6;">{{ branch_data['Lucban']['reservations'] }}</div>
                     <div class="sa-bstat-label">Reservations</div>
                 </div>
+                <div class="sa-bstat">
+                    <div class="sa-bstat-val" style="color: #dc2626;">{{ branch_data['Lucban']['expense_count'] }}</div>
+                    <div class="sa-bstat-label">Supply Orders</div>
+                </div>
             </div>
+            <!-- Recent Supplier Payments for Lucban -->
+            {% if branch_data['Lucban']['recent_payments'] %}
+            <div style="margin-top:14px; border-top:1px solid #f0ebe6; padding-top:12px;">
+                <div style="font-size:0.72rem; font-weight:700; color:#8b7355; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;"><i class="fas fa-truck me-1"></i>Recent Supplier Payments</div>
+                {% for pay in branch_data['Lucban']['recent_payments'] %}
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px dashed rgba(93,64,55,0.07); font-size:0.75rem;">
+                    <div>
+                        <span style="font-weight:700; color:#2d2520;">{{ pay.supplier.name if pay.supplier else 'Unknown' }}</span>
+                        <span style="color:#8b7355; margin-left:6px;">{{ pay.created_at.strftime('%b %d') if pay.created_at else '' }}</span>
+                    </div>
+                    <span style="font-weight:800; color:#dc2626;">-₱{{ "{:,.2f}".format(pay.amount) }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
             <div class="sa-branch-chart">
                 <canvas id="lucbanStatusChart"></canvas>
             </div>
@@ -527,6 +594,85 @@
     </div>
 </div>
 
+<!-- ═══ SUPPLIER PAYMENTS & EXPENSE HISTORY ═══ -->
+<div style="margin-bottom: 2rem;" id="expensesContainer">
+    <h3 style="font-size: 1.1rem; font-weight: 700; color: #2d2520; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;">
+        <i class="fas fa-receipt" style="color: #D4A862;"></i> Supplier Payments & Expense History
+    </h3>
+
+    {% if recent_expenses %}
+    <div class="sa-branch-card" style="overflow: visible;">
+        <div class="sa-branch-header" style="background: linear-gradient(135deg, rgba(212,168,98,0.08), rgba(139,99,75,0.04)); border-bottom: 1px solid rgba(212,168,98,0.15);">
+            <h3 style="font-size: 0.92rem;">
+                <i class="fas fa-clock-rotate-left me-2" style="color: #D4A862;"></i>Recent Supplier Payments (Last 10)
+            </h3>
+            {% set total_paid = namespace(val=0) %}
+            {% for exp in recent_expenses %}{% set total_paid.val = total_paid.val + exp.amount %}{% endfor %}
+            <span style="font-size: 0.78rem; background: rgba(239,68,68,0.1); color: #dc2626; padding: 4px 14px; border-radius: 20px; font-weight: 700;">
+                Total: ₱{{ "{:,.2f}".format(total_paid.val) }}
+            </span>
+        </div>
+        <div class="sa-branch-body" style="padding: 0; overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.82rem;">
+                <thead>
+                    <tr style="background: #faf8f5; border-bottom: 1px solid #f0ebe6;">
+                        <th style="padding: 10px 16px; text-align: left; color: #8b7355; font-weight: 700; text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.5px;">Date & Time</th>
+                        <th style="padding: 10px 16px; text-align: left; color: #8b7355; font-weight: 700; text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.5px;">Branch</th>
+                        <th style="padding: 10px 16px; text-align: left; color: #8b7355; font-weight: 700; text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.5px;">Supplier</th>
+                        <th style="padding: 10px 16px; text-align: left; color: #8b7355; font-weight: 700; text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.5px;">Items Received</th>
+                        <th style="padding: 10px 16px; text-align: right; color: #8b7355; font-weight: 700; text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.5px;">Amount Paid</th>
+                        <th style="padding: 10px 16px; text-align: left; color: #8b7355; font-weight: 700; text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.5px;">Received By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for exp in recent_expenses %}
+                    <tr style="border-bottom: 1px solid #f5f0eb; transition: background 0.2s;" onmouseover="this.style.background='#fdfaf8'" onmouseout="this.style.background='transparent'">
+                        <td style="padding: 10px 16px; color: #4a3b32; white-space: nowrap;">
+                            <div style="font-weight: 600;">{{ exp.created_at.strftime('%b %d, %Y') if exp.created_at else 'N/A' }}</div>
+                            <div style="font-size: 0.7rem; color: #8b7355;">{{ exp.created_at.strftime('%I:%M %p') if exp.created_at else '' }}</div>
+                        </td>
+                        <td style="padding: 10px 16px;">
+                            {% if exp.branch == 'Pagsanjan' %}
+                            <span style="background: rgba(212,168,98,0.15); color: #b8861e; padding: 3px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700;">
+                                <i class="fas fa-circle" style="font-size: 0.45rem; vertical-align: middle;"></i> {{ exp.branch }}
+                            </span>
+                            {% else %}
+                            <span style="background: rgba(139,99,75,0.15); color: #6b4226; padding: 3px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700;">
+                                <i class="fas fa-circle" style="font-size: 0.45rem; vertical-align: middle;"></i> {{ exp.branch }}
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 10px 16px; color: #2d2520; font-weight: 600; max-width: 140px;">
+                            {{ exp.supplier.name if exp.supplier else 'Unknown' }}
+                        </td>
+                        <td style="padding: 10px 16px; color: #4a3b32; max-width: 250px;">
+                            <div style="max-height: 60px; overflow: hidden; font-size: 0.75rem; line-height: 1.5; color: #6b5947;">
+                                {{ exp.details[:120] + '…' if exp.details and exp.details|length > 120 else (exp.details or '—') }}
+                            </div>
+                        </td>
+                        <td style="padding: 10px 16px; text-align: right; font-weight: 800; color: #dc2626; white-space: nowrap; font-size: 0.95rem;">
+                            -₱{{ "{:,.2f}".format(exp.amount) }}
+                        </td>
+                        <td style="padding: 10px 16px; color: #6b5947; font-size: 0.78rem;">
+                            {{ exp.processed_by.first_name ~ ' ' ~ exp.processed_by.last_name if exp.processed_by else '—' }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="sa-branch-card">
+        <div class="sa-branch-body" style="text-align: center; padding: 2.5rem 1.5rem;">
+            <i class="fas fa-receipt" style="font-size: 2.5rem; color: #d4c5b4; margin-bottom: 1rem; display: block;"></i>
+            <div style="color: #8b7355; font-size: 0.9rem; font-weight: 600;">No supplier payments recorded yet.</div>
+            <div style="color: #a89882; font-size: 0.78rem; margin-top: 0.4rem;">Payments will appear here once inventory staff receive supply deliveries.</div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
 <!-- ═══ CHART DATA ═══ -->
 <div id="saChartData" style="display: none;"
     data-rev-labels="{{ rev_labels | forceescape }}"
@@ -558,7 +704,7 @@ function pollDashboard() {
 }
 
 // Poll every 30 seconds
-setInterval(pollDashboard, 5000);
+
 
 function initSuperAdminCharts() {
     if (typeof Chart === 'undefined') {
@@ -723,7 +869,7 @@ function pollSuperOverview() {
 }
 
 // Poll every 30 seconds
-setInterval(pollSuperOverview, 5000);
+
 </script>
 </div> <!-- end saOverviewMainContainer -->
 {% endblock %}

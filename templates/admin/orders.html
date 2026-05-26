@@ -599,9 +599,7 @@
 <div class="orders-page-header">
     <h1>
         Order Management
-        <span id="syncIndicator">
-            <i class="fas fa-sync-alt fa-spin me-1"></i> Live Update (5s) • <span id="lastUpdateText">{{ get_ph_time().strftime('%I:%M:%S %p') }}</span>
-        </span>
+        
     </h1>
     <div>
         <p style="margin: 0; color: #8b634b; opacity: 0.8; font-size: 0.85rem;">Manage and process customer orders.</p>
@@ -982,6 +980,10 @@
     function pollOrders() {
         if (document.querySelector('.modal.show') || document.querySelector('.admin-modal[style*="display: flex"]')) return;
 
+        const searchEl = document.getElementById('orderSearch');
+        const savedSearch = searchEl ? searchEl.value : '';
+        const savedScroll = window.scrollY;
+
         fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
         .then(response => response.text())
         .then(html => {
@@ -997,14 +999,17 @@
                 }
             });
             
-            const searchInput = document.getElementById('orderSearch');
-            if (searchInput && searchInput.value) {
+            // ★ Restore search and scroll
+            const newSearch = document.getElementById('orderSearch');
+            if (newSearch && savedSearch) {
+                newSearch.value = savedSearch;
                 filterOrders();
             }
+            window.scrollTo(0, savedScroll);
         })
         .catch(err => console.warn('Orders sync failed:', err));
     }
-    setInterval(pollOrders, 5000);
+    
 </script>
 {% endblock %}
 
