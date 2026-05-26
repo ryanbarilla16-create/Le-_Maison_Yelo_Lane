@@ -530,9 +530,9 @@
                 <button class="btn-fulfill" onclick="openFulfillModal({{ req.id }}, '{{ req.ingredient.name }}', {{ req.quantity_requested }}, '{{ req.ingredient.unit }}', {{ req.ingredient.stock_qty }})">
                     <i class="fas fa-check-double"></i> Fulfill Request
                 </button>
-                <form method="POST" action="{{ url_for('admin.fulfill_stock_request', req_id=req.id) }}" style="margin:0;">
+                <form id="reject-form-{{ req.id }}" method="POST" action="{{ url_for('admin.fulfill_stock_request', req_id=req.id) }}" style="margin:0;">
                     <input type="hidden" name="action" value="reject">
-                    <button type="submit" class="btn-reject-circle" onclick="return confirm('Reject this request?')">
+                    <button type="button" class="btn-reject-circle" onclick="confirmReject({{ req.id }}, '{{ req.ingredient.name }}')">
                         <i class="fas fa-trash-can"></i>
                     </button>
                 </form>
@@ -660,37 +660,138 @@
     </div>
 </div>
 
+<!-- Custom Confirmation and Alert Modal -->
+<div id="confirmModal" class="modal-v2">
+    <div class="modal-v2-box" style="max-width: 400px; border-radius: 24px;">
+        <div class="m-hdr" id="confirmHeader" style="background: var(--primary); padding: 18px 24px;">
+            <h3 style="margin:0; font-family: 'Playfair Display', serif;" id="confirmTitle">Confirm Action</h3>
+            <button onclick="closeConfirmModal(false)" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer; line-height: 1;">&times;</button>
+        </div>
+        <div class="m-bdy" style="padding: 24px; text-align: center;">
+            <div id="confirmMessage" style="font-size: 0.95rem; color: var(--text); margin-bottom: 24px; font-weight: 600; line-height: 1.5;">Message here</div>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button id="confirmCancelBtn" onclick="closeConfirmModal(false)" class="btn-staff" style="background: #efebe9; color: #5d4037; border: 1px solid #d7ccc8; flex: 1; min-height: 40px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: 0.2s;">Cancel</button>
+                <button id="confirmConfirmBtn" onclick="closeConfirmModal(true)" class="btn-staff" style="background: var(--primary); color: white; border: none; flex: 1; min-height: 40px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: 0.2s;">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     const grouped_ingredients = {{ grouped_ingredients|tojson }};
     
-    function quickRequest(ingId, ingName, suggestedQty, unit) {
-        if (confirm(`Create stock request for ${ingName}?\nSuggested quantity: ${suggestedQty} ${unit}`)) {
-            const formData = new FormData();
-            formData.append('ingredient_id', ingId);
-            formData.append('quantity_requested', suggestedQty);
-            formData.append('notes', 'Auto-suggested from low stock alert');
+    function showCustomConfirm(title, message, isDanger = false) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('confirmModal');
+            const titleEl = document.getElementById('confirmTitle');
+            const messageEl = document.getElementById('confirmMessage');
+            const headerEl = document.getElementById('confirmHeader');
+            const confirmBtn = document.getElementById('confirmConfirmBtn');
+            const cancelBtn = document.getElementById('confirmCancelBtn');
             
-            fetch('{{ url_for("admin.create_stock_request") }}', {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert(data.message);
-                    location.reload();
-                } else {
-                    alert('Error: ' + data.message);
-                }
-            })
-            .catch(err => {
-                console.error('Request failed:', err);
-                alert('Failed to create request. Please try again.');
-            });
+            titleEl.textContent = title;
+            messageEl.innerHTML = message;
+            
+            cancelBtn.style.display = 'block';
+            confirmBtn.textContent = 'Confirm';
+            
+            if (isDanger) {
+                headerEl.style.backgroundColor = '#b71c1c';
+                confirmBtn.style.backgroundColor = '#b71c1c';
+            } else {
+                headerEl.style.backgroundColor = '#5d4037';
+                confirmBtn.style.backgroundColor = '#5d4037';
+            }
+            
+            modal.style.display = 'flex';
+            modal.resolveConfirm = resolve;
+        });
+    }
+
+    function showCustomAlert(title, message, isDanger = false) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('confirmModal');
+            const titleEl = document.getElementById('confirmTitle');
+            const messageEl = document.getElementById('confirmMessage');
+            const headerEl = document.getElementById('confirmHeader');
+            const confirmBtn = document.getElementById('confirmConfirmBtn');
+            const cancelBtn = document.getElementById('confirmCancelBtn');
+            
+            titleEl.textContent = title;
+            messageEl.innerHTML = message;
+            
+            cancelBtn.style.display = 'none';
+            confirmBtn.textContent = 'OK';
+            
+            if (isDanger) {
+                headerEl.style.backgroundColor = '#b71c1c';
+                confirmBtn.style.backgroundColor = '#b71c1c';
+            } else {
+                headerEl.style.backgroundColor = '#5d4037';
+                confirmBtn.style.backgroundColor = '#5d4037';
+            }
+            
+            modal.style.display = 'flex';
+            modal.resolveConfirm = resolve;
+        });
+    }
+
+    function closeConfirmModal(result) {
+        const modal = document.getElementById('confirmModal');
+        modal.style.display = 'none';
+        if (modal.resolveConfirm) {
+            modal.resolveConfirm(result);
+            modal.resolveConfirm = null;
         }
+    }
+
+    function quickRequest(ingId, ingName, suggestedQty, unit) {
+        showCustomConfirm(
+            'Confirm Request',
+            `Create stock request for <strong>${ingName}</strong>?<br>Suggested quantity: <strong>${suggestedQty} ${unit}</strong>`
+        ).then(confirmed => {
+            if (confirmed) {
+                const formData = new FormData();
+                formData.append('ingredient_id', ingId);
+                formData.append('quantity_requested', suggestedQty);
+                formData.append('notes', 'Auto-suggested from low stock alert');
+                
+                fetch('{{ url_for("admin.create_stock_request") }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showCustomAlert('Request Created', data.message).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        showCustomAlert('Error', 'Error: ' + data.message, true);
+                    }
+                })
+                .catch(err => {
+                    console.error('Request failed:', err);
+                    showCustomAlert('Failed', 'Failed to create request. Please try again.', true);
+                });
+            }
+        });
+    }
+
+    function confirmReject(reqId, ingName) {
+        showCustomConfirm(
+            'Reject Request',
+            `Are you sure you want to reject the stock request for <strong>${ingName}</strong>?`,
+            true // isDanger
+        ).then(confirmed => {
+            if (confirmed) {
+                const form = document.getElementById(`reject-form-${reqId}`);
+                if (form) form.submit();
+            }
+        });
     }
     
     function switchTabV2(id) {
@@ -736,7 +837,13 @@
     }
 
     window.onclick = function(e) {
-        if(e.target.classList.contains('modal-v2')) e.target.style.display = 'none';
+        if(e.target.classList.contains('modal-v2')) {
+            if (e.target.id === 'confirmModal') {
+                closeConfirmModal(false);
+            } else {
+                e.target.style.display = 'none';
+            }
+        }
     }
     function pollStockRequests() {
         if (document.querySelector('.modal-v2[style*="display: flex"]')) return;
