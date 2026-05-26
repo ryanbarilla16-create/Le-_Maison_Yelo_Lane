@@ -1,7 +1,7 @@
 """Add reservation_code to Reservation
 
 Revision ID: add_reservation_code
-Revises: 
+Revises: b78ce6dc2bba
 Create Date: 2024-05-27 00:00:00.000000
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = 'add_reservation_code'
-down_revision = None
+down_revision = 'b78ce6dc2bba'
 branch_labels = None
 depends_on = None
 
