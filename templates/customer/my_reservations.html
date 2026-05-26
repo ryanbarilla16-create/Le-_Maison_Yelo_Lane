@@ -394,7 +394,12 @@
 
                 <div class="resInfo">
                     <div class="resIcon"><i class="fas fa-mug-hot"></i></div>
-                    <div>
+                    <div style="flex: 1;">
+                        {% if res.reservation_code %}
+                        <div style="font-size: 0.75rem; color: #999; font-weight: 600; margin-bottom: 0.3rem;">
+                            <i class="fas fa-ticket-alt me-1" style="color: #8B634B;"></i>{{ res.reservation_code }}
+                        </div>
+                        {% endif %}
                         <div class="resDate">{{ res.date.strftime('%B %d, %Y') }}</div>
                         <div class="resTime"><i class="far fa-clock me-1"></i>{{ res.time.strftime('%I:%M %p') }}</div>
                     </div>
@@ -456,7 +461,13 @@
                 {% endif %}
 
                 <div class="mt-auto d-flex justify-content-between align-items-center pt-3 border-top" style="border-color: rgba(0,0,0,0.02) !important;">
+                    {% if res.reservation_code %}
+                    <span style="font-size: 0.72rem; color: #8B634B; font-weight: 700; font-family: 'Courier New', monospace; letter-spacing: 0.5px;">
+                        <i class="fas fa-barcode me-1"></i>{{ res.reservation_code }}
+                    </span>
+                    {% else %}
                     <span style="font-size: 0.72rem; color: #999;">Reference: #{{ res.id }}</span>
+                    {% endif %}
                     
                     {% if res.status == 'PENDING' %}
                     <button class="btn-cancel" onclick="openCancelModal('{{ res.id }}')">Cancel Booking</button>
