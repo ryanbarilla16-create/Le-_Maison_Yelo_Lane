@@ -400,7 +400,12 @@ def reserve_confirm():
 
     try:
         # 1. Create Reservation (status = PENDING, waits for admin confirm after payment)
+        # Generate unique reservation code
+        from utils import generate_reservation_code
+        reservation_code = generate_reservation_code()
+        
         new_res = Reservation(
+            reservation_code=reservation_code,
             user_id=current_user.id,
             date=res_date,
             time=res_time,
@@ -414,7 +419,12 @@ def reserve_confirm():
         db.session.flush()  # Get new_res.id
 
         # 2. Create Order linked to reservation
+        # Generate unique order code
+        from utils import generate_order_code
+        order_code = generate_order_code()
+        
         new_order = Order(
+            order_code=order_code,
             user_id=current_user.id,
             total_amount=food_total,
             status='HOLD',       # Hold until payment confirmed

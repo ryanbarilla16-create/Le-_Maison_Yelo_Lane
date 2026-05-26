@@ -39,6 +39,7 @@ class User(db.Model, UserMixin):
 
 class Reservation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    reservation_code = db.Column(db.String(50), unique=True, nullable=True, index=True)  # Unique code like 20240526-001
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     branch = db.Column(db.String(50), nullable=True, default='Pagsanjan') # Which branch this reservation belongs to
     date = db.Column(db.Date, nullable=False)
@@ -57,6 +58,7 @@ class Reservation(db.Model):
 
 class MenuItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    item_code = db.Column(db.String(50), unique=True, nullable=True, index=True)  # Unique code like PASTA-001
     name = db.Column(db.String(100), nullable=False)
     branch = db.Column(db.String(50), nullable=True, default='Pagsanjan')
     description = db.Column(db.Text, nullable=True)
@@ -82,6 +84,7 @@ class MenuItem(db.Model):
 
 class Order(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    order_code = db.Column(db.String(50), unique=True, nullable=True, index=True)  # Unique code like ORD-20240526-001
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     customer_name = db.Column(db.String(100), nullable=True)  # For walk-in customers
     branch = db.Column(db.String(50), nullable=True, default='Pagsanjan') # Which branch this order belongs to
@@ -166,6 +169,7 @@ class Supplier(db.Model):
 
 class Ingredient(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    ingredient_code = db.Column(db.String(50), unique=True, nullable=True, index=True)
     name = db.Column(db.String(150), nullable=False)
     branch = db.Column(db.String(50), nullable=True, default='Pagsanjan')
     unit = db.Column(db.String(30), nullable=False)  # e.g. grams, pieces, liters, kg

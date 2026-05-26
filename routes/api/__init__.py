@@ -153,6 +153,7 @@ def get_menu():
             for item in items:
                 menu_list.append({
                     'id': item.id,
+                    'item_code': item.item_code or '',
                     'name': item.name,
                     'description': item.description,
                     'price': float(item.price),
@@ -943,7 +944,12 @@ def api_checkout():
             total -= discount_amount
             v.times_used += 1
 
+    # Generate unique order code
+    from utils import generate_order_code
+    order_code = generate_order_code()
+    
     new_order = Order(
+        order_code=order_code,
         user_id=user_id,
         total_amount=total,
         status=status_override or 'PENDING',
@@ -1256,7 +1262,12 @@ def api_reserve():
         return jsonify({'success': False, 'message': 'This time slot overlaps with an exclusive booking.'}), 400
 
     # 1. Create Reservation
+    # Generate unique reservation code
+    from utils import generate_reservation_code
+    reservation_code = generate_reservation_code()
+    
     new_res = Reservation(
+        reservation_code=reservation_code,
         user_id=user_id,
         date=res_date,
         time=res_time,
@@ -1275,7 +1286,12 @@ def api_reserve():
     food_total = 0
     
     if menu_items:
+        # Generate unique order code
+        from utils import generate_order_code
+        order_code = generate_order_code()
+        
         new_order = Order(
+            order_code=order_code,
             user_id=user_id,
             reservation_id=new_res.id,
             status='HOLD',

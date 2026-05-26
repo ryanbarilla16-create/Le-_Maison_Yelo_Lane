@@ -32,6 +32,209 @@ def create_notification(user_id, title, message, notif_type='SYSTEM', link=None)
     db.session.commit()
     return notif
 
+def generate_menu_item_code(category):
+    """
+    Generate unique menu item code based on category.
+    Format: CATEGORY-NUMBER (e.g., PASTA-001, PIZZA-001)
+    
+    Args:
+        category: Menu item category (e.g., "Pasta & Salads", "Hand-Tossed Pizza")
+    
+    Returns:
+        str: Unique code like "PASTA-001"
+    """
+    from models import MenuItem, db
+    
+    # Clean and shorten category name for code
+    # Remove special characters, take first word or abbreviation
+    category_clean = category.upper().replace('&', '').replace('-', '').strip()
+    
+    # Extract meaningful part (first significant word)
+    words = category_clean.split()
+    if len(words) > 0:
+        # Take first word, limit to 8 characters
+        category_code = words[0][:8]
+    else:
+        category_code = "ITEM"
+    
+    # Get the last item code in this category
+    last_item = MenuItem.query.filter(
+        MenuItem.item_code.like(f'{category_code}-%')
+    ).order_by(MenuItem.item_code.desc()).first()
+    
+    # Generate next number
+    if last_item and last_item.item_code:
+        try:
+            # Extract number from code (e.g., PASTA-001 → 001)
+            last_num = int(last_item.item_code.split('-')[-1])
+            next_num = last_num + 1
+        except (ValueError, IndexError):
+            next_num = 1
+    else:
+        next_num = 1
+    
+    # Format: PASTA-001
+    return f"{category_code}-{next_num:03d}"
+
+# Ingredient category → short code prefix mapping
+_INGREDIENT_CATEGORY_MAP = {
+    'meat':    'MEAT',
+    'protein': 'MEAT',
+    'poultry': 'MEAT',
+    'produce': 'VEG',
+    'vegetable': 'VEG',
+    'vegetables': 'VEG',
+    'fruit': 'VEG',
+    'dairy': 'DAIRY',
+    'milk': 'DAIRY',
+    'cheese': 'DAIRY',
+    'spice': 'SPICE',
+    'spices': 'SPICE',
+    'herb': 'SPICE',
+    'herbs': 'SPICE',
+    'seasoning': 'SPICE',
+    'bakery': 'BAKE',
+    'baked': 'BAKE',
+    'bread': 'BAKE',
+    'pastry': 'BAKE',
+    'beverage': 'BEV',
+    'beverages': 'BEV',
+    'drink': 'BEV',
+    'drinks': 'BEV',
+    'grains': 'GRAIN',
+    'grain': 'GRAIN',
+    'rice': 'GRAIN',
+    'noodles': 'GRAIN',
+    'pantry': 'PANTRY',
+    'condiment': 'PANTRY',
+    'sauce': 'SAUCE',
+    'sauces': 'SAUCE',
+    'seafood': 'SEAF',
+    'fish': 'SEAF',
+}
+
+def generate_ingredient_code(category):
+    """
+    Generate a unique ingredient code based on its category.
+    Format: PREFIX-NUMBER (e.g., MEAT-001, VEG-001, DAIRY-001)
+
+    Category to Prefix mapping:
+        Meat / Protein  → MEAT
+        Produce / Veg   → VEG
+        Dairy           → DAIRY
+        Spice / Herbs   → SPICE
+        Bakery          → BAKE
+        Beverage        → BEV
+        Grains          → GRAIN
+        Pantry          → PANTRY
+        Sauces          → SAUCE
+        Seafood         → SEAF
+        Everything else → GEN (up to 6 chars from category name)
+
+    Args:
+        category: Ingredient category name (e.g., "Meat", "Dairy", "Pantry")
+
+    Returns:
+        str: Unique code like "MEAT-001"
+    """
+    from models import Ingredient, db
+
+    if category:
+        cat_lower = category.lower().strip()
+        prefix = _INGREDIENT_CATEGORY_MAP.get(cat_lower)
+        if not prefix:
+            # Take first 6 chars of cleaned category name
+            cat_clean = ''.join(c for c in category.upper() if c.isalpha())
+            prefix = cat_clean[:6] if cat_clean else 'GEN'
+    else:
+        prefix = 'GEN'
+
+    # Get the last ingredient code with this prefix
+    last_ing = Ingredient.query.filter(
+        Ingredient.ingredient_code.like(f'{prefix}-%')
+    ).order_by(Ingredient.ingredient_code.desc()).first()
+
+    if last_ing and last_ing.ingredient_code:
+        try:
+            last_num = int(last_ing.ingredient_code.split('-')[-1])
+            next_num = last_num + 1
+        except (ValueError, IndexError):
+            next_num = 1
+    else:
+        next_num = 1
+
+    return f"{prefix}-{next_num:03d}"
+
+def generate_order_code():
+    """
+    Generate unique order code based on date and sequence.
+    Format: ORD-YYYYMMDD-SEQUENCE (e.g., ORD-20240526-001)
+    
+    Returns:
+        str: Unique code like "ORD-20240526-001"
+    """
+    from models import Order, db
+    from datetime import date
+    
+    # Get today's date in YYYYMMDD format
+    today = date.today()
+    date_str = today.strftime('%Y%m%d')
+    
+    # Get the last order code for today
+    prefix = f'ORD-{date_str}-'
+    last_order = Order.query.filter(
+        Order.order_code.like(f'{prefix}%')
+    ).order_by(Order.order_code.desc()).first()
+    
+    # Generate next sequence number
+    if last_order and last_order.order_code:
+        try:
+            # Extract sequence number (e.g., ORD-20240526-001 → 001)
+            last_seq = int(last_order.order_code.split('-')[-1])
+            next_seq = last_seq + 1
+        except (ValueError, IndexError):
+            next_seq = 1
+    else:
+        next_seq = 1
+    
+    # Format: ORD-20240526-001
+    return f"ORD-{date_str}-{next_seq:03d}"
+
+def generate_reservation_code():
+    """
+    Generate unique reservation code based on date and sequence.
+    Format: YYYYMMDD-SEQUENCE (e.g., 20240526-001)
+    
+    Returns:
+        str: Unique code like "20240526-001"
+    """
+    from models import Reservation, db
+    from datetime import date
+    
+    # Get today's date in YYYYMMDD format
+    today = date.today()
+    date_str = today.strftime('%Y%m%d')
+    
+    # Get the last reservation code for today
+    prefix = f'{date_str}-'
+    last_reservation = Reservation.query.filter(
+        Reservation.reservation_code.like(f'{prefix}%')
+    ).order_by(Reservation.reservation_code.desc()).first()
+    
+    # Generate next sequence number
+    if last_reservation and last_reservation.reservation_code:
+        try:
+            # Extract sequence number (e.g., 20240526-001 → 001)
+            last_seq = int(last_reservation.reservation_code.split('-')[-1])
+            next_seq = last_seq + 1
+        except (ValueError, IndexError):
+            next_seq = 1
+    else:
+        next_seq = 1
+    
+    # Format: 20240526-001
+    return f"{date_str}-{next_seq:03d}"
+
 SETTINGS_FILE = os.path.join(os.path.dirname(os.path.abspath(__dirname__)) if '__dirname__' in locals() else os.path.dirname(__file__), 'site_settings.json')
 
 DEFAULT_SETTINGS = {

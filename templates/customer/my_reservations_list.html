@@ -174,6 +174,7 @@
             {% for r in reservations %}
             {% set res_data = {
                 'id': r.id,
+                'reservation_code': r.reservation_code or '',
                 'status': r.status,
                 'date': r.date.strftime('%B %d, %Y'),
                 'time': r.time.strftime('%I:%M %p'),
@@ -204,6 +205,11 @@
                     </div>
 
                     <div class="res-info">
+                        {% if r.reservation_code %}
+                        <div class="mb-2" style="font-size: 0.85rem; color: #999; font-weight: 600; letter-spacing: 0.5px;">
+                            <i class="fas fa-ticket-alt me-2" style="color: var(--res-accent);"></i>Code: <span style="color: var(--res-brown); font-weight: 800;">{{ r.reservation_code }}</span>
+                        </div>
+                        {% endif %}
                         <div class="res-date">{{ r.date.strftime('%B %d, %Y') }}</div>
                         <div class="res-time"><i class="far fa-clock me-2"></i>{{ r.time.strftime('%I:%M %p') }}</div>
                         
@@ -283,6 +289,13 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
+                <div id="reservation-code-row" class="mb-4 p-3 rounded-3" style="background: linear-gradient(135deg, #fdfaf8, #f8f5f2); border: 2px dashed rgba(93,64,55,0.15); display:none;">
+                    <div class="text-center">
+                        <div class="small text-muted fw-bold mb-2" style="letter-spacing: 1px;">RESERVATION CODE</div>
+                        <div id="det-reservation-code" class="fs-3 fw-bold" style="color: var(--res-brown); font-family: 'Courier New', monospace; letter-spacing: 2px;"></div>
+                    </div>
+                </div>
+                
                 <div class="row">
                     <div class="col-md-6">
                         <div class="detail-row">
@@ -391,6 +404,16 @@
         const cancelModalInstance = new bootstrap.Modal(cancelModalEl);
 
         window.viewDetails = function(data) {
+            // Show reservation code if available
+            const codeRow = document.getElementById('reservation-code-row');
+            const codeEl = document.getElementById('det-reservation-code');
+            if (data.reservation_code) {
+                codeRow.style.display = 'block';
+                codeEl.innerText = data.reservation_code;
+            } else {
+                codeRow.style.display = 'none';
+            }
+            
             // Fill static fields
             document.getElementById('det-status').innerText = data.status;
             document.getElementById('det-status').className = 'detail-value text-uppercase text-' + getStatusColor(data.status);
