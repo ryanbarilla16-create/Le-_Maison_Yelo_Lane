@@ -3461,11 +3461,31 @@ def stock_requests():
         grouped_ingredients[category] = [
             {'id': ing.id, 'name': ing.name, 'unit': ing.unit} for ing in group
         ]
+    
+    # Auto-suggestion: Get ingredients that need restocking
+    # Critical: kitchen_qty = 0
+    # Low: 0 < kitchen_qty <= reorder_level
+    critical_ingredients = Ingredient.query.filter(
+        Ingredient.kitchen_qty == 0
+    ).order_by(Ingredient.name).all()
+    
+    low_ingredients = Ingredient.query.filter(
+        Ingredient.kitchen_qty > 0,
+        Ingredient.kitchen_qty <= Ingredient.reorder_level
+    ).order_by(Ingredient.kitchen_qty, Ingredient.name).all()
+    
+    # Get pending request ingredient IDs to mark them
+    pending_ingredient_ids = set(
+        req.ingredient_id for req in StockRequest.query.filter_by(status='PENDING').all()
+    )
         
     pending_count = StockRequest.query.filter_by(status='PENDING').count()
     return render_template('admin/stock_requests.html',
                            requests=requests_list, 
                            grouped_ingredients=grouped_ingredients,
+                           critical_ingredients=critical_ingredients,
+                           low_ingredients=low_ingredients,
+                           pending_ingredient_ids=pending_ingredient_ids,
                            pending_count=pending_count)
 
 @admin_bp.route('/stock-requests/create', methods=['POST'])

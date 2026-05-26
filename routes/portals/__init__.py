@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_user, current_user, login_required
 from flask_mail import Message
 from models import db, User, Order, OrderItem, Ingredient, MenuItemIngredient, Supplier, WasteRecord, MenuItem, IngredientBatch
+from sqlalchemy import func
 from utils import get_ph_time, validate_password, safe_elapsed
 import random
 import threading

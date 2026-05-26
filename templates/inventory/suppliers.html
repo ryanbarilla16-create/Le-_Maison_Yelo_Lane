@@ -568,8 +568,8 @@
                 banner.style.color = '#1d4ed8';
                 banner.innerHTML = `
                     <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-                        <span><i class="fas fa-wallet me-1"></i> Babayaran gamit ang pondo ng ${targetBranchName} Branch.</span>
-                        <span>Pondo: <b>₱${branchAvailableFunds.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b></span>
+                        <span><i class="fas fa-wallet me-1"></i> Will be paid using ${targetBranchName} Branch funds.</span>
+                        <span>Available Funds: <b>₱${branchAvailableFunds.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b></span>
                     </div>
                 `;
                 if (btnAccept) btnAccept.disabled = !hasValue;
