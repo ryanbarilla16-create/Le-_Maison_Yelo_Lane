@@ -181,7 +181,7 @@
                 <i class="fas fa-sack-dollar"></i>
             </div>
             <div>
-                <div class="billing-stat-label">Gross Sales (Today)</div>
+                <div class="billing-stat-label">Total Sales Today</div>
                 <div class="billing-stat-value" id="statGross">₱{{ "{:,.2f}".format(total_sales_today) }}</div>
             </div>
         </div>
@@ -481,7 +481,7 @@
         doc.setFontSize(9);
         doc.text('Generated on: ' + timestamp, 15, 48);
         doc.text('Total Records: ' + data.length, 15, 53);
-        doc.text('Gross Sales (Today): ' + grossSales, 15, 58);
+        doc.text('Total Gross Sales: ' + grossSales, 15, 58);
 
         doc.autoTable({
             startY: 65,

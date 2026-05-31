@@ -112,11 +112,25 @@
                 <i class="fas fa-list me-2 opacity-50"></i>{{ reservations.total }} Reservation{{ 's' if reservations.total != 1 else '' }}
             </h3>
         </div>
-        <div class="filter-tabs" style="background: var(--card); padding: 4px; border-radius: 14px; border: 1px solid var(--card-border);">
-            <button onclick="filterReservations('ALL')" class="filter-tab active" data-filter="ALL" style="border:none; outline:none; font-family:inherit;">All</button>
-            <button onclick="filterReservations('PENDING')" class="filter-tab" data-filter="PENDING" style="border:none; outline:none; font-family:inherit;"><i class="fas fa-clock me-1"></i> Pending</button>
-            <button onclick="filterReservations('CONFIRMED')" class="filter-tab" data-filter="CONFIRMED" style="border:none; outline:none; font-family:inherit;"><i class="fas fa-check me-1"></i> Confirmed</button>
-            <button onclick="filterReservations('COMPLETED')" class="filter-tab" data-filter="COMPLETED" style="border:none; outline:none; font-family:inherit;"><i class="fas fa-flag-checkered me-1"></i> Completed</button>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
+            <div id="bulkCompleteBar" style="display:none; align-items:center; gap:10px; background: var(--card); padding: 8px 12px; border-radius: 14px; border: 1px solid var(--card-border);">
+                <label style="display:flex; align-items:center; gap:8px; margin:0; font-size:0.82rem; font-weight:800; color:#5D4037; cursor:pointer;">
+                    <input type="checkbox" id="selectAllConfirmed" style="width:16px; height:16px;">
+                    Select All
+                </label>
+                <form id="bulkCompleteForm" method="POST" action="{{ url_for('cashier_portal.cashier_bulk_complete_reservations') }}" style="margin:0;">
+                    <input type="hidden" name="reservation_ids" id="bulkReservationIds">
+                    <button type="submit" class="btn-res-action btn-complete" style="height:36px; padding: 0.55rem 1rem;">
+                        Auto Complete Selected
+                    </button>
+                </form>
+            </div>
+            <div class="filter-tabs" style="background: var(--card); padding: 4px; border-radius: 14px; border: 1px solid var(--card-border);">
+                <button onclick="filterReservations('ALL')" class="filter-tab active" data-filter="ALL" style="border:none; outline:none; font-family:inherit;">All</button>
+                <button onclick="filterReservations('PENDING')" class="filter-tab" data-filter="PENDING" style="border:none; outline:none; font-family:inherit;"><i class="fas fa-clock me-1"></i> Pending</button>
+                <button onclick="filterReservations('CONFIRMED')" class="filter-tab" data-filter="CONFIRMED" style="border:none; outline:none; font-family:inherit;"><i class="fas fa-check me-1"></i> Confirmed</button>
+                <button onclick="filterReservations('COMPLETED')" class="filter-tab" data-filter="COMPLETED" style="border:none; outline:none; font-family:inherit;"><i class="fas fa-flag-checkered me-1"></i> Completed</button>
+            </div>
         </div>
     </div>
 
@@ -148,7 +162,7 @@
                     </div>
                     <div class="res-detail-item">
                         <span class="res-detail-label">Table / Details</span>
-                        <span class="res-detail-value"><i class="fas fa-chair"></i> {{ res.table_number or 'Unassigned' }}</span>
+                        <span class="res-detail-value"><i class="fas fa-chair"></i> {{ 'Exclusive (All Tables)' if res.booking_type == 'EXCLUSIVE' else (res.table_number or 'Unassigned') }}</span>
                         <span class="res-detail-value" style="font-size: 0.8rem; opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ res.occasion or 'No occasion specified' }}">
                             <i class="fas fa-gift"></i> {{ res.occasion or 'No occassion' }}
                         </span>
@@ -179,7 +193,7 @@
 
                 <div class="res-actions">
                     {% if res.status == 'PENDING' %}
-                    <form method="POST" action="{{ url_for('admin.update_reservation', res_id=res.id) }}" style="margin: 0;">
+                    <form method="POST" action="{{ url_for('cashier_portal.cashier_update_reservation', res_id=res.id) }}" style="margin: 0;">
                         <input type="hidden" name="status" value="REJECTED">
                         <button type="submit" class="btn-res-action btn-reject" title="Reject"><i class="fas fa-times"></i></button>
                     </form>
@@ -188,13 +202,18 @@
                         data-res-date="{{ res.date.strftime('%b %d, %Y') }}"
                         data-res-time="{{ res.time.strftime('%I:%M %p') }}" data-guest-count="{{ res.guest_count }}"
                         data-occasion="{{ res.occasion or '' }}"
+                        data-booking-type="{{ res.booking_type }}"
                         data-has-order="{{ 'true' if res.linked_order else 'false' }}"
                         data-order-total="{{ '%.2f'|format(res.linked_order.total_amount) if res.linked_order else '0.00' }}"
                         onclick="openTableModal(this)">
                         <i class="fas fa-check"></i> Confirm
                     </button>
                     {% elif res.status == 'CONFIRMED' %}
-                    <form method="POST" action="{{ url_for('admin.update_reservation', res_id=res.id) }}" style="margin: 0;">
+                    <label style="display:flex; align-items:center; gap:8px; margin:0; font-size:0.8rem; font-weight:800; color:#8B634B; cursor:pointer;">
+                        <input type="checkbox" class="res-select" value="{{ res.id }}" style="width:16px; height:16px;">
+                        Select
+                    </label>
+                    <form method="POST" action="{{ url_for('cashier_portal.cashier_update_reservation', res_id=res.id) }}" style="margin: 0;">
                         <input type="hidden" name="status" value="COMPLETED">
                         <button type="submit" class="btn-res-action btn-complete"><i class="fas fa-flag-checkered"></i> Complete</button>
                     </form>
@@ -247,7 +266,7 @@
             </div>
             <form id="modalConfirmForm" method="POST">
                 <input type="hidden" name="status" value="CONFIRMED">
-                <div class="modal-input-group">
+                <div class="modal-input-group" id="tableNumberGroup">
                     <label for="table_number_input">Table Number</label>
                     <select id="table_number_input" name="table_number" required autofocus style="background-color: white; cursor: pointer;">
                         <option value="" disabled selected>Select a Table</option>
@@ -258,7 +277,7 @@
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn-modal btn-cancel" onclick="closeTableModal()">Cancel</button>
-                    <button type="submit" class="btn-modal btn-assign">Confirm & Assign</button>
+                    <button type="submit" class="btn-modal btn-assign" id="confirmAssignBtn">Confirm & Assign</button>
                 </div>
             </form>
         </div>
@@ -272,6 +291,9 @@
         const modal = document.getElementById('tableModal');
         const form = document.getElementById('modalConfirmForm');
         const data = btn.dataset;
+        const tableGroup = document.getElementById('tableNumberGroup');
+        const tableSelect = document.getElementById('table_number_input');
+        const confirmBtn = document.getElementById('confirmAssignBtn');
         document.getElementById('sumName').innerText = data.guestName;
         document.getElementById('sumDate').innerText = data.resDate;
         document.getElementById('sumTime').innerText = data.resTime;
@@ -289,14 +311,32 @@
         } else {
             orderBadge.style.display = 'none';
         }
-        form.action = `/admin/reservations/update/${data.resId}`;
+        form.action = `/staff/cashier/reservations/update/${data.resId}`;
         modal.style.display = 'flex';
-        document.getElementById('table_number_input').focus();
+        if ((data.bookingType || '').toUpperCase() === 'EXCLUSIVE') {
+            tableGroup.style.display = 'none';
+            tableSelect.required = false;
+            tableSelect.value = '';
+            if (confirmBtn) confirmBtn.textContent = 'Confirm';
+        } else {
+            tableGroup.style.display = 'block';
+            tableSelect.required = true;
+            if (confirmBtn) confirmBtn.textContent = 'Confirm & Assign';
+            tableSelect.focus();
+        }
     }
 
     function closeTableModal() {
         document.getElementById('tableModal').style.display = 'none';
-        document.getElementById('table_number_input').value = '';
+        const tableGroup = document.getElementById('tableNumberGroup');
+        const tableSelect = document.getElementById('table_number_input');
+        const confirmBtn = document.getElementById('confirmAssignBtn');
+        if (tableGroup) tableGroup.style.display = 'block';
+        if (tableSelect) {
+            tableSelect.value = '';
+            tableSelect.required = true;
+        }
+        if (confirmBtn) confirmBtn.textContent = 'Confirm & Assign';
     }
 
     window.onclick = function (event) {
@@ -322,7 +362,56 @@
         if (emptyState) {
             emptyState.style.display = visibleCount === 0 ? 'block' : 'none';
         }
+        syncBulkCompleteUI();
     }
+
+    function getVisibleConfirmedCheckboxes() {
+        return Array.from(document.querySelectorAll('.res-card'))
+            .filter(card => card.dataset.status === 'CONFIRMED' && card.style.display !== 'none')
+            .map(card => card.querySelector('.res-select'))
+            .filter(Boolean);
+    }
+
+    function syncBulkCompleteUI() {
+        const bar = document.getElementById('bulkCompleteBar');
+        const selectAll = document.getElementById('selectAllConfirmed');
+        const activeTab = document.querySelector('.filter-tab.active');
+        const filter = activeTab ? activeTab.dataset.filter : 'ALL';
+        const boxes = getVisibleConfirmedCheckboxes();
+        if (!bar || !selectAll) return;
+        if (filter !== 'CONFIRMED' || boxes.length === 0) {
+            bar.style.display = 'none';
+            selectAll.checked = false;
+            return;
+        }
+        bar.style.display = 'flex';
+        selectAll.checked = boxes.length > 0 && boxes.every(b => b.checked);
+    }
+
+    document.addEventListener('change', function (e) {
+        if (e.target && e.target.id === 'selectAllConfirmed') {
+            const checked = e.target.checked;
+            getVisibleConfirmedCheckboxes().forEach(b => { b.checked = checked; });
+            syncBulkCompleteUI();
+        }
+        if (e.target && e.target.classList && e.target.classList.contains('res-select')) {
+            syncBulkCompleteUI();
+        }
+    });
+
+    document.addEventListener('submit', function (e) {
+        if (e.target && e.target.id === 'bulkCompleteForm') {
+            const ids = getVisibleConfirmedCheckboxes().filter(b => b.checked).map(b => b.value);
+            document.getElementById('bulkReservationIds').value = ids.join(',');
+            if (ids.length === 0) {
+                e.preventDefault();
+            }
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        syncBulkCompleteUI();
+    });
 
     function pollCashierReservations() {
         if (document.getElementById('tableModal').style.display === 'flex') return;
@@ -347,6 +436,7 @@
             });
             // Re-apply filter and scroll
             if (savedFilter !== 'ALL') filterReservations(savedFilter);
+            syncBulkCompleteUI();
             window.scrollTo(0, savedScroll);
         })
         .catch(err => console.warn('Reservations sync failed:', err));

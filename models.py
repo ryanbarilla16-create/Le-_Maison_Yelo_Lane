@@ -112,6 +112,8 @@ class Order(db.Model):
     created_at = db.Column(db.DateTime, default=get_ph_time, index=True)
     processed_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True) # Cashier who processed
     reservation_id = db.Column(db.Integer, db.ForeignKey('reservation.id'), nullable=True) # Linked reservation (if any)
+    is_archived = db.Column(db.Boolean, default=False, index=True)
+    archived_at = db.Column(db.DateTime, nullable=True, index=True)
     
     user = db.relationship('User', foreign_keys=[user_id], backref=db.backref('orders', lazy=True))
     rider = db.relationship('User', foreign_keys=[rider_id], backref=db.backref('deliveries', lazy=True))
@@ -365,4 +367,51 @@ class SupplierPayment(db.Model):
 
     supplier = db.relationship('Supplier', backref=db.backref('payments', lazy=True))
     processed_by = db.relationship('User', backref=db.backref('processed_payments', lazy=True))
+
+
+# ── PERMISSION SYSTEM MODELS ──────────────────────────────────────────────────
+class Permission(db.Model):
+    """
+    Permission model for database-driven permission configuration (optional).
+    Permissions can also be defined in permissions_config.json.
+    """
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False, index=True)
+    description = db.Column(db.Text, nullable=True)
+    module = db.Column(db.String(50), nullable=False, index=True)
+    action = db.Column(db.String(50), nullable=False)
+    created_at = db.Column(db.DateTime, default=get_ph_time)
+
+
+class RolePermission(db.Model):
+    """
+    Role-to-permission mapping for database-driven configuration (optional).
+    Role permissions can also be defined in permissions_config.json.
+    """
+    id = db.Column(db.Integer, primary_key=True)
+    role = db.Column(db.String(20), nullable=False, index=True)
+    permission_name = db.Column(db.String(100), nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=get_ph_time)
+    
+    __table_args__ = (
+        db.UniqueConstraint('role', 'permission_name', name='uq_role_permission'),
+    )
+
+
+class PermissionAuditLog(db.Model):
+    """
+    Audit log for permission-related events and access control decisions.
+    Tracks permission grants, denials, and configuration changes.
+    """
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    action = db.Column(db.String(50), nullable=False)  # GRANTED, REVOKED, DENIED, CONFIG_CHANGED
+    permission_name = db.Column(db.String(100), nullable=True)
+    route = db.Column(db.String(255), nullable=True)
+    reason = db.Column(db.Text, nullable=True)
+    ip_address = db.Column(db.String(45), nullable=True)
+    user_agent = db.Column(db.String(255), nullable=True)
+    created_at = db.Column(db.DateTime, default=get_ph_time, index=True)
+    
+    user = db.relationship('User', backref=db.backref('permission_audit_logs', lazy=True))
 

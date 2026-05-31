@@ -31,7 +31,12 @@
                         <td class="ps-4 text-muted" style="font-size: 0.85rem;">
                             {{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
                         </td>
-                        <td class="fw-bold">{{ log.ingredient.name }}</td>
+                        <td class="fw-bold">
+                            {{ log.ingredient.name }}
+                            {% if log.ingredient.ingredient_code %}
+                            <span style="font-family: monospace; font-size: 0.72rem; font-weight: 700; background: rgba(93,64,55,0.08); color: #5d4037; padding: 1px 7px; border-radius: 5px; margin-left: 7px;">{{ log.ingredient.ingredient_code }}</span>
+                            {% endif %}
+                        </td>
                         <td>
                             {% if log.action == 'ADD' %}
                             <span class="badge bg-success-subtle text-success">RESTOCK</span>

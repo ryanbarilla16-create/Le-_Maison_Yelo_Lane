@@ -225,8 +225,13 @@ def checkout():
         flash("Items in your cart are no longer available.", "danger")
         session['cart'] = {}
         return redirect(url_for('main.view_cart'))
+    
+    # Generate unique order code
+    from utils import generate_order_code
+    order_code = generate_order_code()
         
     new_order = Order(
+        order_code=order_code,
         user_id=current_user.id,
         total_amount=total,
         status=status_override or 'PENDING', # Use status_override (e.g., 'HOLD')

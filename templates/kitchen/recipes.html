@@ -242,6 +242,9 @@
                     <span class="ing-name">
                         <i class="fas fa-leaf" style="font-size: 0.75rem; color: var(--success); opacity: 0.5;"></i>
                         {{ recipe.ingredient.name }}
+                        {% if recipe.ingredient.ingredient_code %}
+                        <span style="font-family: monospace; font-size: 0.72rem; color: var(--primary); opacity: 0.8; font-weight: 700; background: rgba(93,64,55,0.06); padding: 1px 6px; border-radius: 4px; margin-left: 6px;">{{ recipe.ingredient.ingredient_code }}</span>
+                        {% endif %}
                     </span>
                     <span class="ing-qty">{{ "%.2f"|format(recipe.quantity_needed) }} <small style="font-size: 0.6rem; opacity: 0.7;">{{ recipe.ingredient.unit }}</small></span>
                 </div>

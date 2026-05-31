@@ -42,7 +42,12 @@
             {% for record in records %}
             <tr>
                 <td style="color: var(--admin-text-light);">{{ record.created_at.strftime('%b %d, %Y %I:%M %p') }}</td>
-                <td style="font-weight: 500;">{{ record.ingredient.name }}</td>
+                <td style="font-weight: 500;">
+                    {{ record.ingredient.name }}
+                    {% if record.ingredient.ingredient_code %}
+                    <span style="font-family: monospace; font-size: 0.72rem; font-weight: 700; background: rgba(93,64,55,0.08); color: #5d4037; padding: 1px 7px; border-radius: 5px; margin-left: 7px;">{{ record.ingredient.ingredient_code }}</span>
+                    {% endif %}
+                </td>
                 <td style="color: #ef4444; font-weight: 500;">-{{ record.quantity_wasted }} {{ record.ingredient.unit }}
                 </td>
                 <td><span class="badge" style="background: #ef4444; color: white;">{{ record.reason }}</span></td>
@@ -74,7 +79,7 @@
                     <select name="ingredient_id" class="form-control" required style="width: 100%; border: 1px solid #d7ccc8; padding: 0.6rem; border-radius: 8px; background: #fafafa;">
                         <option value="">-- Choose --</option>
                         {% for ing in ingredients %}
-                        <option value="{{ ing.id }}">{{ ing.name }} ({{ ing.stock_qty }}{{ ing.unit }})</option>
+                        <option value="{{ ing.id }}">{% if ing.ingredient_code %}[{{ ing.ingredient_code }}] {% endif %}{{ ing.name }} ({{ ing.stock_qty }}{{ ing.unit }})</option>
                         {% endfor %}
                     </select>
                 </div>

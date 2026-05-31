@@ -1,0 +1,73 @@
+{% extends "admin/base.html" %}
+{% block title %}Archived Orders{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+    <div>
+        <h1>Archived Orders</h1>
+        <p>Historical orders hidden from active lists.</p>
+    </div>
+    <a href="{{ url_for('admin.archive_dashboard') }}" class="btn btn-outline-secondary">Back to Archive</a>
+</div>
+
+<form method="GET" class="mb-3" style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+    <select name="source" class="form-control" style="max-width:220px;">
+        <option value="soft" {% if source != 'legacy' %}selected{% endif %}>Soft Archived (Main DB)</option>
+        <option value="legacy" {% if source == 'legacy' %}selected{% endif %}>Legacy Archived (Archive DB)</option>
+    </select>
+    <input type="text" name="branch" value="{{ branch }}" placeholder="Branch" class="form-control" style="max-width:160px;">
+    <input type="text" name="status" value="{{ status }}" placeholder="Status" class="form-control" style="max-width:160px;">
+    <button type="submit" class="btn btn-outline-secondary">Filter</button>
+</form>
+
+<div class="admin-card">
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Original ID</th>
+                    <th>Code</th>
+                    <th>Branch</th>
+                    <th>Status</th>
+                    <th>Total</th>
+                    <th>Created</th>
+                    <th>Archived</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in pagination.items %}
+                <tr>
+                    <td>#{{ order.original_id if source == 'legacy' else order.id }}</td>
+                    <td>{{ order.order_code or '—' }}</td>
+                    <td>{{ order.branch or '—' }}</td>
+                    <td>{{ order.status }}</td>
+                    <td>₱{{ '%.2f'|format(order.total_amount|float) }}</td>
+                    <td>{{ order.created_at.strftime('%Y-%m-%d') if order.created_at else '—' }}</td>
+                    <td>{{ order.archived_at.strftime('%Y-%m-%d') if order.archived_at else '—' }}</td>
+                    <td>
+                        <a href="{{ url_for('admin.archive_order_detail', original_id=(order.original_id if source == 'legacy' else order.id), source=source) }}">View</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8" class="text-center text-muted">No archived orders yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if pagination.pages > 1 %}
+    <nav>
+        <ul class="pagination">
+            {% if pagination.has_prev %}
+            <li class="page-item"><a class="page-link" href="?page={{ pagination.prev_num }}&branch={{ branch }}&status={{ status }}&source={{ source }}">Prev</a></li>
+            {% endif %}
+            <li class="page-item disabled"><span class="page-link">Page {{ pagination.page }} / {{ pagination.pages }}</span></li>
+            {% if pagination.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ pagination.next_num }}&branch={{ branch }}&status={{ status }}&source={{ source }}">Next</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

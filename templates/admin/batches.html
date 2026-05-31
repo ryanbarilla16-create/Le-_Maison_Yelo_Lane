@@ -134,7 +134,7 @@
                         style="width:100%; border:1px solid #d7ccc8; padding:0.6rem; border-radius:8px; background:#fafafa;">
                         <option value="">-- Select Ingredient --</option>
                         {% for ing in ingredients %}
-                        <option value="{{ ing.id }}">{{ ing.name }} ({{ ing.stock_qty }}{{ ing.unit }})</option>
+                        <option value="{{ ing.id }}">{% if ing.ingredient_code %}[{{ ing.ingredient_code }}] {% endif %}{{ ing.name }} ({{ ing.stock_qty }}{{ ing.unit }})</option>
                         {% endfor %}
                     </select>
                 </div>

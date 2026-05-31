@@ -1,0 +1,283 @@
+{
+  "version": "1.0.0",
+  "permissions": {
+    "menu.view": {
+      "description": "View menu items",
+      "module": "menu"
+    },
+    "menu.create": {
+      "description": "Create new menu items",
+      "module": "menu"
+    },
+    "menu.edit": {
+      "description": "Edit existing menu items",
+      "module": "menu"
+    },
+    "menu.delete": {
+      "description": "Delete menu items",
+      "module": "menu"
+    },
+    "menu.toggle_availability": {
+      "description": "Toggle menu item availability",
+      "module": "menu"
+    },
+    "menu.view_prices": {
+      "description": "View menu item prices",
+      "module": "menu"
+    },
+    "menu.edit_prices": {
+      "description": "Edit menu item prices",
+      "module": "menu"
+    },
+    "menu.view_costs": {
+      "description": "View menu item costs",
+      "module": "menu"
+    },
+    "orders.view": {
+      "description": "View orders",
+      "module": "orders"
+    },
+    "orders.create": {
+      "description": "Create new orders",
+      "module": "orders"
+    },
+    "orders.create_own": {
+      "description": "Create own orders (customer)",
+      "module": "orders"
+    },
+    "orders.view_own": {
+      "description": "View own orders (customer)",
+      "module": "orders"
+    },
+    "orders.view_branch": {
+      "description": "View orders for assigned branch",
+      "module": "orders"
+    },
+    "orders.view_all": {
+      "description": "View all orders across branches",
+      "module": "orders"
+    },
+    "orders.update_status": {
+      "description": "Update order status",
+      "module": "orders"
+    },
+    "orders.void": {
+      "description": "Void orders",
+      "module": "orders"
+    },
+    "orders.delete": {
+      "description": "Delete orders",
+      "module": "orders"
+    },
+    "inventory.view": {
+      "description": "View inventory",
+      "module": "inventory"
+    },
+    "inventory.manage": {
+      "description": "Manage inventory (add, update, delete)",
+      "module": "inventory"
+    },
+    "inventory.view_costs": {
+      "description": "View inventory costs",
+      "module": "inventory"
+    },
+    "suppliers.manage": {
+      "description": "Manage suppliers",
+      "module": "inventory"
+    },
+    "stock_requests.create": {
+      "description": "Create stock requests",
+      "module": "inventory"
+    },
+    "stock_requests.approve": {
+      "description": "Approve stock requests",
+      "module": "inventory"
+    },
+    "reports.view": {
+      "description": "View reports",
+      "module": "reports"
+    },
+    "reports.view_daily_sales": {
+      "description": "View daily sales reports",
+      "module": "reports"
+    },
+    "reports.view_branch": {
+      "description": "View branch-specific reports",
+      "module": "reports"
+    },
+    "reports.view_sales": {
+      "description": "View sales reports",
+      "module": "reports"
+    },
+    "reservations.create": {
+      "description": "Create reservations",
+      "module": "reservations"
+    },
+    "reservations.view_own": {
+      "description": "View own reservations",
+      "module": "reservations"
+    },
+    "reservations.manage_branch": {
+      "description": "Manage reservations for assigned branch",
+      "module": "reservations"
+    },
+    "users.manage_branch": {
+      "description": "Manage users for assigned branch",
+      "module": "users"
+    },
+    "users.access_other_branches": {
+      "description": "Access data from other branches",
+      "module": "users"
+    },
+    "deliveries.view_assigned": {
+      "description": "View assigned deliveries",
+      "module": "deliveries"
+    },
+    "deliveries.update_status": {
+      "description": "Update delivery status",
+      "module": "deliveries"
+    },
+    "order_chat.access": {
+      "description": "Access order chat",
+      "module": "deliveries"
+    },
+    "reviews.create": {
+      "description": "Create reviews",
+      "module": "reviews"
+    },
+    "recipes.view": {
+      "description": "View recipes",
+      "module": "menu"
+    },
+    "payments.process": {
+      "description": "Process payments",
+      "module": "orders"
+    }
+  },
+  "roles": {
+    "USER": {
+      "description": "Regular customer",
+      "permissions": [
+        "menu.view",
+        "orders.create_own",
+        "orders.view_own",
+        "reservations.create",
+        "reservations.view_own",
+        "reviews.create"
+      ]
+    },
+    "KITCHEN": {
+      "description": "Kitchen staff",
+      "permissions": [
+        "orders.view",
+        "orders.update_status",
+        "recipes.view",
+        "stock_requests.create"
+      ]
+    },
+    "CASHIER": {
+      "description": "Cashier staff",
+      "permissions": [
+        "orders.create",
+        "orders.view",
+        "orders.view_branch",
+        "reservations.manage_branch",
+        "payments.process",
+        "reports.view_daily_sales",
+        "menu.view",
+        "menu.view_prices"
+      ]
+    },
+    "STAFF": {
+      "description": "General staff (cashier portal access)",
+      "permissions": [
+        "orders.create",
+        "orders.view",
+        "orders.view_branch",
+        "reservations.manage_branch",
+        "payments.process",
+        "reports.view_daily_sales",
+        "menu.view",
+        "menu.view_prices"
+      ]
+    },
+    "INVENTORY_STAFF": {
+      "description": "Inventory management staff",
+      "permissions": [
+        "inventory.manage",
+        "inventory.view",
+        "inventory.view_costs",
+        "suppliers.manage",
+        "stock_requests.approve"
+      ]
+    },
+    "INVENTORY": {
+      "description": "Inventory staff (alias)",
+      "permissions": [
+        "inventory.manage",
+        "inventory.view",
+        "inventory.view_costs",
+        "suppliers.manage",
+        "stock_requests.approve"
+      ]
+    },
+    "ADMIN": {
+      "description": "Branch administrator",
+      "permissions": [
+        "menu.view",
+        "menu.create",
+        "menu.edit",
+        "menu.toggle_availability",
+        "menu.view_prices",
+        "orders.view_branch",
+        "orders.create",
+        "orders.update_status",
+        "reports.view_branch",
+        "reservations.manage_branch",
+        "users.manage_branch",
+        "inventory.view",
+        "payments.process"
+      ]
+    },
+    "SUPER_ADMIN": {
+      "description": "System administrator with full access",
+      "permissions": ["*"]
+    },
+    "RIDER": {
+      "description": "Delivery rider",
+      "permissions": [
+        "deliveries.view_assigned",
+        "deliveries.update_status",
+        "order_chat.access"
+      ]
+    }
+  },
+  "permission_groups": {
+    "menu_full": [
+      "menu.view",
+      "menu.create",
+      "menu.edit",
+      "menu.delete",
+      "menu.toggle_availability",
+      "menu.view_prices",
+      "menu.edit_prices",
+      "menu.view_costs"
+    ],
+    "orders_full": [
+      "orders.view",
+      "orders.create",
+      "orders.update_status",
+      "orders.void",
+      "orders.delete",
+      "orders.view_all"
+    ],
+    "inventory_full": [
+      "inventory.view",
+      "inventory.manage",
+      "inventory.view_costs",
+      "suppliers.manage",
+      "stock_requests.create",
+      "stock_requests.approve"
+    ]
+  }
+}

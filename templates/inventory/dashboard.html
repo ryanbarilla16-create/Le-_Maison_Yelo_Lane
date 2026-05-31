@@ -218,6 +218,7 @@
         <table>
             <thead>
                 <tr>
+                    <th>Code</th>
                     <th>Ingredient</th>
                     <th>Unit</th>
                     <th>Stock Level</th>
@@ -230,13 +231,14 @@
             <tbody>
                 {% for category, items in grouped_ingredients.items() %}
                 <tr class="ing-category-header" data-cat="{{ category|replace(' ', '-')|lower }}" style="background: rgba(93,64,55,0.03); border-left: 3px solid var(--primary);">
-                    <td colspan="7" style="padding:10px 16px; font-weight:700; color:var(--primary); text-transform:uppercase; font-size:0.8rem; letter-spacing:1px;">{{ category }}</td>
+                    <td colspan="8" style="padding:10px 16px; font-weight:700; color:var(--primary); text-transform:uppercase; font-size:0.8rem; letter-spacing:1px;">{{ category }}</td>
                 </tr>
                 {% for ing in items %}
                 {% set pct = [(ing.stock_qty|float / (ing.reorder_level|float) * 100)|int, 100]|min if ing.reorder_level and ing.reorder_level|float > 0 else 50 %}
                 {% set is_critical = ing.stock_qty|float <= (ing.reorder_level|float * 0.5) %}
                 {% set is_running_low = (ing.stock_qty|float <= ing.reorder_level|float) and not is_critical %}
                 <tr class="ing-row" data-cat="{{ category|replace(' ', '-')|lower }}">
+                    <td style="font-family: monospace; font-weight: 600; color: var(--primary);">{{ ing.ingredient_code or '' }}</td>
                     <td class="ingredient-name">{{ ing.name }}</td>
                     <td><span class="tag-unit">{{ ing.unit }}</span></td>
                     <td>
@@ -629,14 +631,15 @@
             }
 
             const cells = row.querySelectorAll('td');
-            if (cells.length >= 6) {
+            if (cells.length >= 7) {
                 data.push({
                     category: currentCategory,
-                    name: cells[0].textContent.trim(),
-                    unit: cells[1].textContent.trim(),
-                    qty: cells[3].textContent.trim(),
-                    reorder: cells[4].textContent.trim().replace('≤', '').trim(),
-                    status: cells[5].textContent.trim()
+                    code: cells[0].textContent.trim(),
+                    name: cells[1].textContent.trim(),
+                    unit: cells[2].textContent.trim(),
+                    qty: cells[4].textContent.trim(),
+                    reorder: cells[5].textContent.trim().replace('≤', '').trim(),
+                    status: cells[6].textContent.trim()
                 });
             }
         });
@@ -681,11 +684,11 @@
 
         // Table
         const data = getReportData();
-        const tableRows = data.map(d => [d.category, d.name, d.unit, d.qty, d.reorder, d.status]);
+        const tableRows = data.map(d => [d.category, d.code, d.name, d.unit, d.qty, d.reorder, d.status]);
 
         doc.autoTable({
             startY: 46,
-            head: [['Category', 'Ingredient', 'Unit', 'Qty', 'Reorder At', 'Status']],
+            head: [['Category', 'Code', 'Ingredient', 'Unit', 'Qty', 'Reorder At', 'Status']],
             body: tableRows,
             theme: 'grid',
             headStyles: {
@@ -698,10 +701,11 @@
             alternateRowStyles: { fillColor: [250, 246, 242] },
             columnStyles: {
                 0: { cellWidth: 35, fontStyle: 'bold', textColor: [93, 64, 55] },
-                5: { halign: 'center' }
+                1: { cellWidth: 25, fontStyle: 'bold', textColor: [60, 60, 60] },
+                6: { halign: 'center' }
             },
             didParseCell: function(data) {
-                if (data.section === 'body' && data.column.index === 5) {
+                if (data.section === 'body' && data.column.index === 6) {
                     const val = data.cell.raw || '';
                     if (val.includes('Low')) {
                         data.cell.styles.textColor = [198, 40, 40];
@@ -740,11 +744,12 @@
         csv += 'Le Maison de Yelo Lane - Inventory Stock Level Report\r\n';
         csv += `Generated: ${dateStr}\r\n`;
         csv += '\r\n';
-        csv += 'Category,Ingredient,Unit,Stock Qty,Reorder Level,Status\r\n';
+        csv += 'Category,Code,Ingredient,Unit,Stock Qty,Reorder Level,Status\r\n';
 
         data.forEach(d => {
             const row = [
                 `"${d.category}"`,
+                `"${d.code}"`,
                 `"${d.name}"`,
                 `"${d.unit}"`,
                 d.qty,

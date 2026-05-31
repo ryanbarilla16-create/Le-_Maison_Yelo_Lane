@@ -351,6 +351,82 @@ def cashier_reservations():
     pagination = MockPagination(all_reservations)
     return render_template('cashier/reservations.html', reservations=pagination, status_filter='ALL')
 
+@cashier_bp.route('/staff/cashier/reservations/update/<int:res_id>', methods=['POST'])
+def cashier_update_reservation(res_id):
+    if not current_user.is_authenticated or current_user.role not in CASHIER_ROLES:
+        return redirect(url_for('cashier_portal.staff_login'))
+
+    from models import Reservation
+
+    res = Reservation.query.get_or_404(res_id)
+    user_branch = getattr(current_user, 'branch', None)
+    if user_branch and user_branch != 'ALL' and res.branch != user_branch:
+        flash("Access denied.", "danger")
+        return redirect(url_for('cashier_portal.cashier_reservations'))
+
+    new_status = request.form.get('status')
+    table_number = request.form.get('table_number')
+
+    if new_status == 'CONFIRMED' and table_number:
+        conflict = Reservation.query.filter(
+            Reservation.id != res.id,
+            Reservation.branch == res.branch,
+            Reservation.date == res.date,
+            Reservation.time == res.time,
+            Reservation.table_number == table_number,
+            Reservation.status == 'CONFIRMED'
+        ).first()
+        if conflict:
+            flash(f"{table_number} is already booked for this date and time.", "danger")
+            return redirect(url_for('cashier_portal.cashier_reservations'))
+
+    res.status = new_status
+    if table_number:
+        res.table_number = table_number
+    db.session.commit()
+
+    flash(f"Reservation #{res.id} updated to {new_status}.", "success")
+    return redirect(url_for('cashier_portal.cashier_reservations'))
+
+@cashier_bp.route('/staff/cashier/reservations/bulk-complete', methods=['POST'])
+def cashier_bulk_complete_reservations():
+    if not current_user.is_authenticated or current_user.role not in CASHIER_ROLES:
+        return redirect(url_for('cashier_portal.staff_login'))
+
+    from models import Reservation
+
+    ids_raw = (request.form.get('reservation_ids') or '').strip()
+    if not ids_raw:
+        flash("No reservations selected.", "warning")
+        return redirect(url_for('cashier_portal.cashier_reservations'))
+
+    try:
+        res_ids = [int(x) for x in ids_raw.split(',') if x.strip().isdigit()]
+    except Exception:
+        flash("Invalid selection.", "danger")
+        return redirect(url_for('cashier_portal.cashier_reservations'))
+
+    if not res_ids:
+        flash("No reservations selected.", "warning")
+        return redirect(url_for('cashier_portal.cashier_reservations'))
+
+    user_branch = getattr(current_user, 'branch', None)
+    q = Reservation.query.filter(Reservation.id.in_(res_ids), Reservation.status == 'CONFIRMED')
+    if user_branch and user_branch != 'ALL':
+        q = q.filter(Reservation.branch == user_branch)
+    rows = q.all()
+
+    if not rows:
+        flash("No eligible reservations to complete.", "warning")
+        return redirect(url_for('cashier_portal.cashier_reservations'))
+
+    for r in rows:
+        r.status = 'COMPLETED'
+    db.session.commit()
+
+    flash(f"{len(rows)} reservation(s) marked as COMPLETED.", "success")
+    return redirect(url_for('cashier_portal.cashier_reservations'))
+
 @cashier_bp.route('/staff/cashier/billing')
 def cashier_billing():
     if not current_user.is_authenticated or current_user.role not in CASHIER_ROLES:
@@ -359,7 +435,10 @@ def cashier_billing():
     status_filter = request.args.get('status', 'UNPAID')
     page = request.args.get('page', 1, type=int)
 
-    query = Order.query
+    query = Order.query.filter(Order.is_archived.is_(False))
+    user_branch = getattr(current_user, 'branch', None)
+    if user_branch and user_branch != 'ALL':
+        query = query.filter_by(branch=user_branch)
     if status_filter != 'ALL':
         query = query.filter_by(payment_status=status_filter)
 
@@ -367,15 +446,21 @@ def cashier_billing():
 
     today = get_ph_time().date()
     # Stats for TODAY (for sales performance)
-    today_stats = db.session.query(
+    today_stats_q = db.session.query(
         Order.payment_status, Order.payment_method,
         db.func.count(Order.id), db.func.sum(Order.total_amount)
-    ).filter(db.func.date(Order.created_at) == today).group_by(Order.payment_status, Order.payment_method).all()
+    ).filter(db.func.date(Order.created_at) == today, Order.is_archived.is_(False))
+    if user_branch and user_branch != 'ALL':
+        today_stats_q = today_stats_q.filter(Order.branch == user_branch)
+    today_stats = today_stats_q.group_by(Order.payment_status, Order.payment_method).all()
 
     # Stats for ALL UNPAID (for balance tracking)
-    all_unpaid_stats = db.session.query(
+    all_unpaid_q = db.session.query(
         db.func.count(Order.id), db.func.sum(Order.total_amount)
-    ).filter(Order.payment_status == 'UNPAID').first()
+    ).filter(Order.payment_status == 'UNPAID', Order.is_archived.is_(False))
+    if user_branch and user_branch != 'ALL':
+        all_unpaid_q = all_unpaid_q.filter(Order.branch == user_branch)
+    all_unpaid_stats = all_unpaid_q.first()
 
     total_sales_today = 0
     cash_sales = 0
@@ -406,7 +491,7 @@ def cashier_orders_history():
         return redirect(url_for('cashier_portal.staff_login'))
     
     page = request.args.get('page', 1, type=int)
-    orders_pg = Order.query.order_by(Order.created_at.desc()).paginate(page=page, per_page=20)
+    orders_pg = Order.query.filter(Order.is_archived.is_(False)).order_by(Order.created_at.desc()).paginate(page=page, per_page=20)
     
     return render_template('cashier/orders_history.html', 
                            orders=orders_pg, 

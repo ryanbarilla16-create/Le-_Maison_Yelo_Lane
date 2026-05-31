@@ -136,7 +136,7 @@
 
     <div class="info-row">
         <span>Order #:</span>
-        <strong>#LM-{{ order.id }}</strong>
+        <strong>{{ order.order_code or ('#LM-' ~ order.id) }}</strong>
     </div>
     <div class="info-row">
         <span>Date:</span>

@@ -800,7 +800,7 @@
                 <div class="dashItem">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <span class="itemTitle">Order #{{ order.id }}</span>
+                            <span class="itemTitle">{{ order.order_code or ('Order #' ~ order.id) }}</span>
                             <span style="color: var(--text-muted); margin: 0 6px;">·</span>
                             <span style="color: var(--text-muted); font-size: 0.8rem;">{{ order.created_at.strftime('%b
                                 %d') }}</span>

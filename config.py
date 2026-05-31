@@ -36,7 +36,46 @@ class Config:
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_pre_ping": True,
         "pool_recycle": 300,
+        "pool_size": 10,
+        "max_overflow": 20,
+        "pool_timeout": 30,
+        "connect_args": {
+            "connect_timeout": 10,
+            "keepalives": 1,
+            "keepalives_idle": 30,
+            "keepalives_interval": 10,
+            "keepalives_count": 5,
+        } if "postgresql" in _db_url else {}
     }
+
+    # Archive database (separate file for SQLite, or `archive` schema on same Postgres DB)
+    @staticmethod
+    def _build_archive_uri(main_uri):
+        explicit = os.environ.get("ARCHIVE_DATABASE_URL")
+        if explicit:
+            url = explicit
+        elif main_uri.startswith("sqlite"):
+            url = "sqlite:///lemaison_archive.db"
+        elif "postgresql" in main_uri or "postgres" in main_uri:
+            # Same Neon/Postgres database — tables stored in `archive` schema
+            url = main_uri
+        else:
+            url = "sqlite:///lemaison_archive.db"
+
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql://", 1)
+        if "postgresql" in url and "sslmode" not in url:
+            url += ("&" if "?" in url else "?") + "sslmode=require"
+        return url
+
+    ARCHIVE_DATABASE_URI = _build_archive_uri.__func__(_db_url)
+    SQLALCHEMY_BINDS = {"archive": ARCHIVE_DATABASE_URI}
+    ARCHIVE_CONFIG_PATH = os.environ.get("ARCHIVE_CONFIG_PATH", "archive/config.json")
+    # When True, archive tables use PostgreSQL schema `archive` (no second database needed)
+    ARCHIVE_USE_SCHEMA = (
+        ("postgresql" in _db_url or "postgres" in _db_url)
+        and not os.environ.get("ARCHIVE_DATABASE_URL")
+    )
     
     SUPABASE_URL = os.environ.get("SUPABASE_URL")
     SUPABASE_KEY = os.environ.get("SUPABASE_KEY")

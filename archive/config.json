@@ -1,0 +1,17 @@
+{
+  "version": "1.0.0",
+  "description": "Retention policy: records older than these days are moved to the archive database.",
+  "retention_days": {
+    "orders": 1,
+    "reservations": 1,
+    "audit_logs": 1,
+    "inventory_logs": 1,
+    "notifications": 1,
+    "permission_audit_logs": 1
+  },
+  "eligible_order_statuses": ["COMPLETED", "CANCELLED"],
+  "eligible_reservation_statuses": ["COMPLETED", "REJECTED", "CANCELLED"],
+  "batch_size": 200,
+  "auto_archive_enabled": false,
+  "auto_archive_interval_hours": 168
+}

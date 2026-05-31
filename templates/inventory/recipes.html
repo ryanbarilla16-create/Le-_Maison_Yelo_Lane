@@ -231,10 +231,12 @@
             {% if item.ingredients|length > 0 %}
             <div class="ingredient-list">
                 {% for recipe in item.ingredients %}
-                <div class="ingredient-item">
                     <span class="ing-name">
                         <i class="fas fa-circle" style="font-size: 0.4rem; color: var(--primary); opacity: 0.5;"></i>
                         {{ recipe.ingredient.name }}
+                        {% if recipe.ingredient.ingredient_code %}
+                        <span style="font-family: monospace; font-size: 0.72rem; color: var(--primary); opacity: 0.8; font-weight: 700; background: rgba(93,64,55,0.06); padding: 1px 6px; border-radius: 4px; margin-left: 6px;">{{ recipe.ingredient.ingredient_code }}</span>
+                        {% endif %}
                     </span>
                     <span class="ing-qty">{{ "%.2f"|format(recipe.quantity_needed) }} {{ recipe.ingredient.unit }}</span>
                 </div>
@@ -374,7 +376,7 @@
 <script>
     const ALL_INGREDIENTS = [
         {% for ing in all_ingredients %}
-        { id: {{ ing.id }}, name: "{{ ing.name|e }}", unit: "{{ ing.unit|e }}" }{% if not loop.last %},{% endif %}
+        { id: {{ ing.id }}, name: "{{ ing.name|e }}", code: "{{ ing.ingredient_code or '' }}", unit: "{{ ing.unit|e }}" }{% if not loop.last %},{% endif %}
         {% endfor %}
     ];
 </script>
@@ -441,7 +443,7 @@
 
     function buildIngredientOptions(selectedId) {
         return ALL_INGREDIENTS.map(ing =>
-            `<option value="${ing.id}" data-unit="${ing.unit}" ${ing.id == selectedId ? 'selected' : ''}>${ing.name} (${ing.unit})</option>`
+            `<option value="${ing.id}" data-unit="${ing.unit}" ${ing.id == selectedId ? 'selected' : ''}>${ing.code ? '[' + ing.code + '] ' : ''}${ing.name} (${ing.unit})</option>`
         ).join('');
     }
 

@@ -662,7 +662,7 @@
                 {% elif current_user.role|upper in ['INVENTORY_STAFF', 'INVENTORY'] %}Le Maison Inventory
                 {% elif current_user.role|upper == 'KITCHEN' %}Le Maison Kitchen
                 {% elif current_user.role|upper == 'RIDER' %}Le Maison Deliveries
-                {% else %}Le Maison Staff{% endif %}
+                {% else %}Le Maison Admin{% endif %}
             </span>
         </div>
 
@@ -816,6 +816,9 @@
                 <li><a href="{{ url_for('admin.audit_logs') }}"
                         class="{% if request.endpoint == 'admin.audit_logs' %}active{% endif %}"><i
                             class="fas fa-clipboard-list"></i><span class="sidebar-label">Audit Logs</span></a></li>
+                <li><a href="{{ url_for('admin.archive_dashboard') }}"
+                        class="{% if request.endpoint in ['admin.archive_dashboard', 'admin.archive_orders', 'admin.archive_order_detail'] %}active{% endif %}"><i
+                            class="fas fa-database"></i><span class="sidebar-label">Data Archive</span></a></li>
                 <li><a href="{{ url_for('admin.settings') }}"
                         class="{% if request.endpoint == 'admin.settings' %}active{% endif %}"><i
                             class="fas fa-cog"></i><span class="sidebar-label">Settings</span></a></li>

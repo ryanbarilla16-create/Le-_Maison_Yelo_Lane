@@ -408,7 +408,12 @@
                                         class="form-check-input ingredient-cb"
                                         onchange="updateBulkBtnState('ingredient-cb', 'btnDeleteIngredients')"></td>
                                 {% endif %}
-                                <td style="font-weight: 600;">{{ ing.name }}</td>
+                                <td style="font-weight: 600;">
+                                    {{ ing.name }}
+                                    {% if ing.ingredient_code %}
+                                    <span style="font-family: monospace; font-size: 0.72rem; font-weight: 700; background: rgba(93,64,55,0.08); color: #5d4037; padding: 1px 7px; border-radius: 5px; margin-left: 7px;">{{ ing.ingredient_code }}</span>
+                                    {% endif %}
+                                </td>
                                 <td>{{ ing.unit }}</td>
                                 <td style="font-weight: 700;">{{ "%.1f"|format(ing.stock_qty|float) }}</td>
                                 <td>

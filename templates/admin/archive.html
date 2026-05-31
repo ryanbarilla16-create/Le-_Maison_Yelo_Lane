@@ -1,0 +1,787 @@
+{% extends "admin/base.html" %}
+{% block title %}Data Archive{% endblock %}
+
+{% block content %}
+<style>
+    .archive-container {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .page-header {
+        margin-bottom: 2rem;
+        animation: slideInDown 0.5s ease;
+    }
+
+    .page-header h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--admin-text);
+        margin-bottom: 0.5rem;
+    }
+
+    .page-header > p {
+        font-size: 1rem;
+        color: var(--admin-text-muted);
+        margin: 0;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.25rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: linear-gradient(135deg, rgba(248, 241, 235, 0.95) 0%, rgba(255, 248, 245, 0.95) 100%);
+        border: 1px solid var(--admin-border);
+        border-radius: 16px;
+        padding: 1.75rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(139, 99, 75, 0.12);
+        border-color: rgba(139, 99, 75, 0.25);
+    }
+
+    .stat-card-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1.25rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--admin-accent-light);
+    }
+
+    .stat-card-header i {
+        font-size: 1.5rem;
+        color: var(--admin-accent);
+        opacity: 0.8;
+    }
+
+    .stat-card-header h3 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--admin-text);
+        margin: 0;
+    }
+
+    .stat-card-subtitle {
+        font-size: 0.8rem;
+        color: var(--admin-text-muted);
+        margin-bottom: 1rem;
+        font-weight: 500;
+    }
+
+    .stat-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .stat-list li {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.6rem 0;
+        font-size: 0.95rem;
+        color: var(--admin-text);
+        border-bottom: 1px solid rgba(139, 99, 75, 0.08);
+    }
+
+    .stat-list li:last-child {
+        border-bottom: none;
+    }
+
+    .stat-list strong {
+        font-weight: 700;
+        color: var(--admin-accent);
+        font-size: 1.1rem;
+    }
+
+    .btn-browse-orders {
+        margin-top: 1.25rem;
+        padding: 0.65rem 1.25rem;
+        background: linear-gradient(135deg, var(--admin-accent) 0%, #6D4C41 100%);
+        border: none;
+        border-radius: 8px;
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+        box-shadow: 0 4px 12px rgba(139, 99, 75, 0.2);
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+
+    .btn-browse-orders:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(139, 99, 75, 0.3);
+    }
+
+    .btn-browse-orders:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .spinner-mini {
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: white;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    @keyframes slideInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .orders-section {
+        margin-top: 2.5rem;
+        opacity: 0;
+        max-height: 0;
+        overflow: hidden;
+        transition: opacity 0.4s ease, max-height 0.4s ease;
+    }
+
+    .orders-section.visible {
+        opacity: 1;
+        max-height: 5000px;
+    }
+
+    .orders-card {
+        background: linear-gradient(135deg, rgba(248, 241, 235, 0.95) 0%, rgba(255, 248, 245, 0.95) 100%);
+        border: 1px solid var(--admin-border);
+        border-radius: 16px;
+        padding: 2rem;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .orders-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .orders-header h2 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--admin-text);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .orders-header i {
+        color: var(--admin-accent);
+    }
+
+    .filter-group {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        margin-bottom: 1.5rem;
+    }
+
+    .filter-input {
+        padding: 0.65rem 1rem;
+        border: 1px solid var(--admin-border);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.6);
+        color: var(--admin-text);
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+    }
+
+    .filter-input:focus {
+        outline: none;
+        border-color: var(--admin-accent);
+        background: white;
+        box-shadow: 0 0 0 3px rgba(139, 99, 75, 0.1);
+    }
+
+    .orders-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+    }
+
+    .orders-table thead {
+        background: rgba(139, 99, 75, 0.05);
+    }
+
+    .orders-table th {
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        color: var(--admin-text);
+        border-bottom: 2px solid var(--admin-border);
+    }
+
+    .orders-table td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--admin-border);
+        color: var(--admin-text);
+    }
+
+    .orders-table tbody tr:hover {
+        background-color: rgba(139, 99, 75, 0.03);
+    }
+
+    .order-id {
+        font-weight: 600;
+        color: var(--admin-accent);
+    }
+
+    .order-status {
+        display: inline-block;
+        padding: 0.4rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        background: rgba(139, 99, 75, 0.1);
+        color: var(--admin-accent);
+    }
+
+    .view-link {
+        color: var(--admin-accent);
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .view-link:hover {
+        color: #6D4C41;
+        transform: translateX(2px);
+    }
+
+    .no-orders {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--admin-text-muted);
+    }
+
+    .no-orders i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.3;
+    }
+
+    .pagination-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+        margin-top: 2rem;
+        flex-wrap: wrap;
+    }
+
+    .pagination-btn {
+        padding: 0.6rem 1rem;
+        border: 1px solid var(--admin-border);
+        background: rgba(255, 255, 255, 0.6);
+        border-radius: 8px;
+        color: var(--admin-text);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-weight: 500;
+    }
+
+    .pagination-btn:hover:not(:disabled) {
+        background: var(--admin-accent);
+        color: white;
+        border-color: var(--admin-accent);
+    }
+
+    .pagination-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .pagination-info {
+        color: var(--admin-text-muted);
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .close-orders-btn {
+        background: none;
+        border: none;
+        color: var(--admin-text-muted);
+        font-size: 1.5rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        padding: 0;
+    }
+
+    .close-orders-btn:hover {
+        color: var(--admin-text);
+    }
+
+    .retention-card {
+        background: linear-gradient(135deg, rgba(248, 241, 235, 0.95) 0%, rgba(255, 248, 245, 0.95) 100%);
+        border: 1px solid var(--admin-border);
+        border-radius: 16px;
+        padding: 1.75rem;
+        margin-top: 1.25rem;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .retention-card h3 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--admin-text);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .retention-card i {
+        color: var(--admin-accent);
+    }
+
+    .retention-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+    }
+
+    .retention-table thead {
+        background: rgba(139, 99, 75, 0.05);
+    }
+
+    .retention-table th {
+        padding: 0.8rem;
+        text-align: left;
+        font-weight: 600;
+        color: var(--admin-text);
+        border-bottom: 2px solid var(--admin-border);
+    }
+
+    .retention-table td {
+        padding: 0.8rem;
+        border-bottom: 1px solid var(--admin-border);
+        color: var(--admin-text);
+    }
+
+    .retention-note {
+        font-size: 0.85rem;
+        color: var(--admin-text-muted);
+        margin-top: 1rem;
+        padding: 1rem;
+        background: rgba(139, 99, 75, 0.05);
+        border-radius: 8px;
+        border-left: 3px solid var(--admin-accent);
+    }
+
+    .archive-actions {
+        margin-top: 2rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.25rem;
+    }
+
+    .action-card {
+        background: linear-gradient(135deg, rgba(248, 241, 235, 0.95) 0%, rgba(255, 248, 245, 0.95) 100%);
+        border: 1px solid var(--admin-border);
+        border-radius: 16px;
+        padding: 1.75rem;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .action-card h3 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--admin-text);
+        margin-top: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .action-card i {
+        color: var(--admin-accent);
+    }
+
+    .action-card p {
+        color: var(--admin-text-muted);
+        font-size: 0.9rem;
+        margin: 0.75rem 0;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .btn-action {
+        padding: 0.65rem 1.25rem;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+        flex: 1;
+        min-width: 140px;
+    }
+
+    .btn-primary-action {
+        background: linear-gradient(135deg, var(--admin-accent) 0%, #6D4C41 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(139, 99, 75, 0.2);
+    }
+
+    .btn-primary-action:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(139, 99, 75, 0.3);
+    }
+
+    .btn-secondary-action {
+        background: rgba(139, 99, 75, 0.1);
+        color: var(--admin-accent);
+        border: 1px solid var(--admin-border);
+    }
+
+    .btn-secondary-action:hover:not(:disabled) {
+        background: var(--admin-accent);
+        color: white;
+    }
+</style>
+
+<div class="archive-container">
+    <div class="page-header">
+        <h1><i class="fas fa-database me-2"></i>Data Archive</h1>
+        <p>Move old operational data to a separate archive database to keep the main system fast.</p>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <i class="fas fa-server"></i>
+                <h3>Main Database</h3>
+            </div>
+            <p class="stat-card-subtitle">Active / daily operations</p>
+            <ul class="stat-list">
+                <li>Orders <span><strong>{{ stats.main.orders }}</strong></span></li>
+                <li>Reservations <span><strong>{{ stats.main.reservations }}</strong></span></li>
+                <li>Audit Logs <span><strong>{{ stats.main.audit_logs }}</strong></span></li>
+                <li>Inventory Logs <span><strong>{{ stats.main.inventory_logs }}</strong></span></li>
+                <li>Notifications <span><strong>{{ stats.main.notifications }}</strong></span></li>
+            </ul>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <i class="fas fa-archive"></i>
+                <h3>Archive Database</h3>
+            </div>
+            <p class="stat-card-subtitle">Historical / cold storage</p>
+            <ul class="stat-list">
+                <li>Orders <span><strong>{{ stats.archive.orders }}</strong></span></li>
+                <li>Order Items <span><strong>{{ stats.archive.order_items }}</strong></span></li>
+                <li>Reservations <span><strong>{{ stats.archive.reservations }}</strong></span></li>
+                <li>Audit Logs <span><strong>{{ stats.archive.audit_logs }}</strong></span></li>
+                <li>Inventory Logs <span><strong>{{ stats.archive.inventory_logs }}</strong></span></li>
+            </ul>
+            <button class="btn-browse-orders" onclick="toggleOrdersBrowser()" id="browseBtn">
+                <i class="fas fa-eye"></i> Browse Archived Orders
+            </button>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <i class="fas fa-inbox"></i>
+                <h3>Eligible Now</h3>
+            </div>
+            <p class="stat-card-subtitle">Ready to move based on retention policy</p>
+            <ul class="stat-list">
+                <li>Orders <span><strong>{{ stats.eligible_now.orders }}</strong></span></li>
+                <li>Reservations <span><strong>{{ stats.eligible_now.reservations }}</strong></span></li>
+                <li>Audit Logs <span><strong>{{ stats.eligible_now.audit_logs }}</strong></span></li>
+                <li>Inventory Logs <span><strong>{{ stats.eligible_now.inventory_logs }}</strong></span></li>
+                <li>Notifications <span><strong>{{ stats.eligible_now.notifications }}</strong></span></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="orders-section" id="ordersBrowser">
+        <div class="orders-card">
+            <div class="orders-header">
+                <h2><i class="fas fa-list"></i>Archived Orders</h2>
+                <button class="close-orders-btn" onclick="toggleOrdersBrowser()" title="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="filter-group">
+                <select class="filter-input" id="filterSource" onchange="loadArchivedOrders(1)">
+                    <option value="soft" selected>Soft Archived (Main DB)</option>
+                    <option value="legacy">Legacy Archived (Archive DB)</option>
+                </select>
+                <input type="text" class="filter-input" id="filterBranch" placeholder="Filter by branch..." onchange="loadArchivedOrders(1)">
+                <input type="text" class="filter-input" id="filterStatus" placeholder="Filter by status..." onchange="loadArchivedOrders(1)">
+                <button class="btn-action btn-secondary-action" onclick="loadArchivedOrders(1)">
+                    <i class="fas fa-search"></i> Search
+                </button>
+            </div>
+
+            <div id="ordersContent" style="min-height: 300px;">
+                <div style="text-align: center; padding: 2rem; color: var(--admin-text-muted);">
+                    <div class="spinner-mini" style="width: 30px; height: 30px; margin: 0 auto 1rem;"></div>
+                    <p>Loading archived orders...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="retention-card">
+        <h3><i class="fas fa-clock"></i>Retention Policy</h3>
+        <div style="overflow-x: auto;">
+            <table class="retention-table">
+                <thead>
+                    <tr>
+                        <th>Data Type</th>
+                        <th>Keep in Main DB For</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for key, days in stats.retention_days.items() %}
+                    <tr>
+                        <td>{{ key.replace('_', ' ')|title }}</td>
+                        <td><strong>{{ days }} days</strong></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="retention-note">
+            <i class="fas fa-info-circle"></i> Edit <code style="background: rgba(139, 99, 75, 0.1); padding: 0.2rem 0.4rem; border-radius: 4px;">archive/config.json</code> to change retention rules.
+        </div>
+    </div>
+
+    <div class="archive-actions">
+        <div class="action-card">
+            <h3><i class="fas fa-play-circle"></i>Run Archive Job</h3>
+            <p>Copies eligible old records to the archive database, then removes them from the main database.</p>
+            <div class="action-buttons">
+                <form method="POST" action="{{ url_for('admin.archive_run_now') }}" style="flex: 1;">
+                    <input type="hidden" name="dry_run" value="1">
+                    <button type="submit" class="btn-action btn-secondary-action">
+                        <i class="fas fa-eye"></i> Preview (Dry Run)
+                    </button>
+                </form>
+                <form method="POST" action="{{ url_for('admin.archive_run_now') }}" style="flex: 1;" onsubmit="return confirm('Move eligible old data to archive database?');">
+                    <button type="submit" class="btn-action btn-primary-action">
+                        <i class="fas fa-rocket"></i> Run Archive Now
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        {% if timeline %}
+        <div class="action-card">
+            <h3><i class="fas fa-chart-bar"></i>Archive Statistics</h3>
+            <p>Orders archived by period</p>
+            <div style="max-height: 300px; overflow-y: auto;">
+                <table class="retention-table" style="font-size: 0.85rem;">
+                    <thead>
+                        <tr>
+                            <th>Period</th>
+                            <th>Orders</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in timeline %}
+                        <tr>
+                            <td>{{ row.period }}</td>
+                            <td><strong>{{ row.count }}</strong></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+const currentPage = {};
+
+function toggleOrdersBrowser() {
+    const section = document.getElementById('ordersBrowser');
+    section.classList.toggle('visible');
+    
+    if (section.classList.contains('visible') && !currentPage.loaded) {
+        loadArchivedOrders(1);
+    }
+}
+
+function loadArchivedOrders(page = 1) {
+    const source = document.getElementById('filterSource').value;
+    const branch = document.getElementById('filterBranch').value;
+    const status = document.getElementById('filterStatus').value;
+    const ordersContent = document.getElementById('ordersContent');
+    
+    ordersContent.innerHTML = `
+        <div style="text-align: center; padding: 2rem; color: var(--admin-text-muted);">
+            <div class="spinner-mini" style="width: 30px; height: 30px; margin: 0 auto 1rem;"></div>
+            <p>Loading archived orders...</p>
+        </div>
+    `;
+
+    const params = new URLSearchParams({
+        page: page,
+        per_page: 15,
+        source: source || 'soft',
+        branch: branch || '',
+        status: status || ''
+    });
+
+    fetch(`{{ url_for('admin.api_archive_orders') }}?${params}`)
+        .then(response => {
+            if (!response.ok) throw new Error('Failed to load orders');
+            return response.json();
+        })
+        .then(data => {
+            currentPage.loaded = true;
+            currentPage.page = page;
+            currentPage.totalPages = data.pagination.total_pages;
+            renderOrders(data);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            ordersContent.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: #d32f2f;">
+                    <i class="fas fa-exclamation-circle" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i>
+                    <p>Error loading archived orders. Please try again.</p>
+                </div>
+            `;
+        });
+}
+
+function renderOrders(data) {
+    const ordersContent = document.getElementById('ordersContent');
+    
+    if (data.orders.length === 0) {
+        ordersContent.innerHTML = `
+            <div class="no-orders">
+                <i class="fas fa-inbox"></i>
+                <p>No archived orders found.</p>
+            </div>
+        `;
+        return;
+    }
+
+    let html = `
+        <div style="overflow-x: auto;">
+            <table class="orders-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Order Code</th>
+                        <th>Branch</th>
+                        <th>Status</th>
+                        <th>Total</th>
+                        <th>Created</th>
+                        <th>Archived</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+
+    data.orders.forEach(order => {
+        const detailUrl = `/admin/archive/orders/${order.original_id}`;
+        html += `
+            <tr>
+                <td><span class="order-id">#${order.original_id}</span></td>
+                <td>${order.order_code}</td>
+                <td>${order.branch}</td>
+                <td><span class="order-status">${order.status}</span></td>
+                <td><strong>₱${order.total_amount.toFixed(2)}</strong></td>
+                <td>${order.created_at}</td>
+                <td>${order.archived_at}</td>
+                <td>
+                    <a href="${detailUrl}" class="view-link">
+                        <i class="fas fa-arrow-right"></i> View
+                    </a>
+                </td>
+            </tr>
+        `;
+    });
+
+    html += `
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    if (data.pagination.total_pages > 1) {
+        html += `
+            <div class="pagination-container">
+                ${data.pagination.has_prev ? `
+                    <button class="pagination-btn" onclick="loadArchivedOrders(${data.pagination.page - 1})">
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </button>
+                ` : `
+                    <button class="pagination-btn" disabled>
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </button>
+                `}
+                <span class="pagination-info">
+                    Page ${data.pagination.page} of ${data.pagination.total_pages} 
+                    (${data.pagination.total_items} total orders)
+                </span>
+                ${data.pagination.has_next ? `
+                    <button class="pagination-btn" onclick="loadArchivedOrders(${data.pagination.page + 1})">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </button>
+                ` : `
+                    <button class="pagination-btn" disabled>
+                        Next <i class="fas fa-chevron-right"></i>
+                    </button>
+                `}
+            </div>
+        `;
+    }
+
+    ordersContent.innerHTML = html;
+}
+</script>
+{% endblock %}

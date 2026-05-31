@@ -148,6 +148,7 @@
     <table>
         <thead>
             <tr>
+                <th>Code</th>
                 <th>Ingredient Name</th>
                 <th>Category</th>
                 <th>Current Stock</th>
@@ -160,6 +161,7 @@
         <tbody id="fullInventoryTableBody">
             {% for ing in ingredients %}
             <tr data-categories="{{ ing.food_categories|join(',') }}">
+                <td style="font-family: monospace; font-weight: 700; color: var(--primary);">{{ ing.ingredient_code or '' }}</td>
                 <td style="font-weight:700; color: var(--text);">{{ ing.name }}</td>
                 <td>
                     {% for cat in ing.food_categories %}

@@ -47,7 +47,7 @@
                         <select name="ingredient_id" class="form-select-premium">
                             <option value="">— Show All Ingredients —</option>
                             {% for ing in ingredients %}
-                            <option value="{{ ing.id }}" {% if ing_filter == ing.id %}selected{% endif %}>{{ ing.name }}</option>
+                            <option value="{{ ing.id }}" {% if ing_filter == ing.id %}selected{% endif %}>{% if ing.ingredient_code %}[{{ ing.ingredient_code }}] {% endif %}{{ ing.name }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -118,7 +118,12 @@
                     <td>
                         <div class="d-flex align-items-center">
                             <div class="ing-icon-mini">{{ log.ingredient.name[0] | upper }}</div>
-                            <span style="font-weight: 600;">{{ log.ingredient.name }}</span>
+                            <span style="font-weight: 600;">
+                                {{ log.ingredient.name }}
+                                {% if log.ingredient.ingredient_code %}
+                                <span style="font-family: monospace; font-size: 0.72rem; font-weight: 700; background: rgba(93,64,55,0.08); color: #5d4037; padding: 1px 7px; border-radius: 5px; margin-left: 7px;">{{ log.ingredient.ingredient_code }}</span>
+                                {% endif %}
+                            </span>
                         </div>
                     </td>
                     <td>

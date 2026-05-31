@@ -1,0 +1,60 @@
+{% extends "admin/base.html" %}
+{% set display_id = detail['order'].original_id if detail['source'] == 'legacy' else detail['order'].id %}
+{% block title %}Archived Order #{{ display_id }}{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+    <div>
+        <h1>Archived Order #{{ display_id }}</h1>
+        <p>{{ detail['order'].order_code or 'No order code' }} · {{ detail['order'].status }}</p>
+    </div>
+    <a href="{{ url_for('admin.archive_orders') }}" class="btn btn-outline-secondary">Back</a>
+</div>
+
+{% if detail['source'] != 'legacy' %}
+<form method="POST" action="{{ url_for('admin.archive_order_restore', order_id=detail['order'].id) }}" class="mb-3" onsubmit="return confirm('Restore this order back to active lists?');">
+    <button type="submit" class="btn btn-success">Restore / Unarchive</button>
+</form>
+{% endif %}
+
+<div class="admin-cards-grid">
+    <div class="admin-card">
+        <h3>Order Info</h3>
+        <ul style="list-style:none; padding:0; margin:0;">
+            <li>Branch: <strong>{{ detail['order'].branch or '—' }}</strong></li>
+            <li>Dining: <strong>{{ detail['order'].dining_option or '—' }}</strong></li>
+            <li>Payment: <strong>{{ detail['order'].payment_status or '—' }}</strong></li>
+            <li>Total: <strong>₱{{ '%.2f'|format(detail['order'].total_amount|float) }}</strong></li>
+            <li>Created: <strong>{{ detail['order'].created_at.strftime('%Y-%m-%d %H:%M') if detail['order'].created_at else '—' }}</strong></li>
+            <li>Archived: <strong>{{ detail['order'].archived_at.strftime('%Y-%m-%d %H:%M') if detail['order'].archived_at else '—' }}</strong></li>
+        </ul>
+    </div>
+
+    <div class="admin-card">
+        <h3>Items ({{ detail['items']|length }})</h3>
+        <ul style="list-style:none; padding:0; margin:0;">
+            {% for item in detail['items'] %}
+            {% if detail['source'] == 'legacy' %}
+            <li>{{ item.quantity }}x Menu Item #{{ item.menu_item_id }} — ₱{{ '%.2f'|format(item.price_at_time|float) }}</li>
+            {% else %}
+            <li>{{ item.quantity }}x {{ item.menu_item.name if item.menu_item else ('Menu Item #' ~ item.menu_item_id) }} — ₱{{ '%.2f'|format(item.price_at_time|float) }}</li>
+            {% endif %}
+            {% else %}
+            <li class="text-muted">No items recorded.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+
+{% if detail['chats'] %}
+<div class="admin-card mt-4">
+    <h3>Order Chat</h3>
+    {% for chat in detail['chats'] %}
+    <div style="padding: 0.5rem 0; border-bottom: 1px solid var(--admin-border);">
+        <small class="text-muted">{{ chat.created_at.strftime('%Y-%m-%d %H:%M') if chat.created_at else '' }}</small>
+        <div>{{ chat.message }}</div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

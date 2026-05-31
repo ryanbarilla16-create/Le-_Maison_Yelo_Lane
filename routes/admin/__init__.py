@@ -5,6 +5,7 @@ from models import db, User, Reservation, MenuItem, Order, OrderItem, Review, No
 from datetime import datetime, date, timedelta
 from utils import get_ph_time, create_notification, validate_name, validate_email, validate_username, validate_password
 from sqlalchemy import func
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import load_only, selectinload
 from functools import wraps
 import traceback
@@ -14,6 +15,7 @@ from itertools import groupby
 from sqlalchemy import text as sql_text
 import random
 from utils import get_ph_time, create_notification, validate_name, validate_email, validate_username, validate_password, safe_elapsed
+from permissions import requires_permission, requires_branch_access
 
 # Small TTL caches to make admin tabs feel snappy (especially on remote DBs)
 _ADMIN_CACHE = {
@@ -147,6 +149,10 @@ _REVIEW_SENTIMENT_CACHE = {}  # {cache_key: (loaded_at_monotonic, (sentiment, ic
 _REVIEW_SENTIMENT_CACHE_TTL_SECONDS = 600  # 10 minutes
 
 def admin_required(f):
+    """
+    Admin access decorator - now powered by the permission system.
+    Allows staff roles to access admin routes based on their permissions.
+    """
     @wraps(f)
     def decorated_function(*args, **kwargs):
         allowed_roles = ['ADMIN', 'SUPER_ADMIN', 'CASHIER', 'INVENTORY_STAFF', 'INVENTORY', 'KITCHEN', 'STAFF', 'RIDER']
@@ -540,7 +546,21 @@ def super_admin_overview():
     total_staff = User.query.filter(User.role.in_(['ADMIN', 'CASHIER', 'KITCHEN', 'INVENTORY_STAFF', 'INVENTORY', 'STAFF', 'RIDER'])).count()
     total_menu = MenuItem.query.filter_by(is_deleted=False).count()
     from models import SupplierPayment
-    total_order_revenue = float(db.session.query(func.coalesce(func.sum(Order.total_amount), 0)).scalar())
+    
+    # Get ALL PAID orders revenue (Main DB + Archive DB)
+    from archive.models import ArchiveOrder
+    main_db_revenue = float(db.session.query(func.coalesce(func.sum(Order.total_amount), 0)).filter(
+        Order.payment_status == 'PAID'
+    ).scalar())
+    try:
+        archive_db_revenue = float(db.session.query(func.coalesce(func.sum(ArchiveOrder.total_amount), 0)).filter(
+            ArchiveOrder.payment_status == 'PAID'
+        ).scalar())
+    except OperationalError:
+        db.session.rollback()
+        archive_db_revenue = 0.0
+    total_order_revenue = main_db_revenue + archive_db_revenue
+    
     total_expenses = float(db.session.query(func.coalesce(func.sum(SupplierPayment.amount), 0)).scalar())
     total_revenue = total_order_revenue  # GROSS only - expenses shown separately per branch
     total_orders = Order.query.count()
@@ -548,13 +568,29 @@ def super_admin_overview():
     pending_orders = Order.query.filter_by(status='PENDING').count()
 
     # ── PER-BRANCH STATS ──
+    from archive.models import ArchiveOrder
     branch_data = {}
     for br in branches:
-        br_order_revenue = float(db.session.query(func.coalesce(func.sum(Order.total_amount), 0)).filter(Order.branch == br).scalar())
+        # Get ALL PAID orders revenue (Main DB + Archive DB)
+        main_db_revenue = float(db.session.query(func.coalesce(func.sum(Order.total_amount), 0)).filter(
+            Order.branch == br,
+            Order.payment_status == 'PAID'
+        ).scalar())
+        try:
+            archive_db_revenue = float(db.session.query(func.coalesce(func.sum(ArchiveOrder.total_amount), 0)).filter(
+                ArchiveOrder.branch == br,
+                ArchiveOrder.payment_status == 'PAID'
+            ).scalar())
+        except OperationalError:
+            db.session.rollback()
+            archive_db_revenue = 0.0
+        br_order_revenue = main_db_revenue + archive_db_revenue
+        
         br_expenses = float(db.session.query(func.coalesce(func.sum(SupplierPayment.amount), 0)).filter(SupplierPayment.branch == br).scalar())
         br_expense_count = db.session.query(func.count(SupplierPayment.id)).filter(SupplierPayment.branch == br).scalar() or 0
         br_net_revenue = br_order_revenue - br_expenses  # After supplier deductions
         
+        # Count orders (Main DB only for active operations)
         br_orders = Order.query.filter_by(branch=br).count()
         br_pending = Order.query.filter_by(branch=br, status='PENDING').count()
         br_completed = Order.query.filter_by(branch=br, status='COMPLETED').count()
@@ -1163,7 +1199,7 @@ MENU_CATEGORIES = [
 # ─── MAIN: MENU ─────────────────────────────────────
 @admin_bp.route('/menu')
 @login_required
-@admin_required
+@requires_permission('menu.view')
 def menu():
     # Fetch all items counts per category (excluding deleted)
     raw_counts = db.session.query(MenuItem.category, func.count(MenuItem.id))\
@@ -1192,11 +1228,8 @@ def menu():
 
 @admin_bp.route('/menu/item/<int:item_id>', methods=['GET'])
 @login_required
-@admin_required
+@requires_permission('menu.view')
 def menu_item_json(item_id):
-    if current_user.role.upper() not in ('ADMIN', 'SUPER_ADMIN'):
-        return jsonify({'success': False, 'message': 'Admin only.'}), 403
-
     item = MenuItem.query.get_or_404(item_id)
     return jsonify({
         'id': item.id,
@@ -1210,7 +1243,7 @@ def menu_item_json(item_id):
 
 @admin_bp.route('/menu/items', methods=['GET'])
 @login_required
-@admin_required
+@requires_permission('menu.view')
 def menu_items_json():
     """Lazy-load menu items per category (keeps /admin/menu page fast)."""
     category = (request.args.get('category') or '').strip()
@@ -1227,6 +1260,7 @@ def menu_items_json():
         MenuItem.query.options(
             load_only(
                 MenuItem.id,
+                MenuItem.item_code,
                 MenuItem.name,
                 MenuItem.description,
                 MenuItem.price,
@@ -1253,6 +1287,7 @@ def menu_items_json():
         'has_more': has_more,
         'items': [{
             'id': i.id,
+            'item_code': i.item_code or '',
             'name': i.name,
             'description': i.description or '',
             'price': float(i.price or 0),
@@ -1264,12 +1299,8 @@ def menu_items_json():
 
 @admin_bp.route('/menu/add', methods=['POST'])
 @login_required
-@admin_required
+@requires_permission('menu.create')
 def menu_add():
-    if current_user.role.upper() not in ('ADMIN', 'SUPER_ADMIN'):
-        flash("Access denied. Admin only.", "danger")
-        return redirect(url_for('admin.menu'))
-
     name = (request.form.get('name') or '').strip()[:50]
     description = request.form.get('description', '')[:255]
     image_url = (request.form.get('image_url') or '')[:255]
@@ -1287,7 +1318,12 @@ def menu_add():
         return redirect(url_for('admin.menu'))
 
     try:
+        # Generate unique item code
+        from utils import generate_menu_item_code
+        item_code = generate_menu_item_code(category)
+        
         item = MenuItem(
+            item_code=item_code,
             name=name,
             description=description,
             price=price,
@@ -1297,8 +1333,8 @@ def menu_add():
         )
         db.session.add(item)
         db.session.commit()
-        log_audit('CREATE', 'MenuItem', item.id, f'Added new menu item: {item.name}')
-        flash("Menu item added successfully.", "success")
+        log_audit('CREATE', 'MenuItem', item.id, f'Added new menu item: {item.name} ({item_code})')
+        flash(f"Menu item added successfully with code: {item_code}", "success")
         return redirect(url_for('admin.menu', category=item.category))
     except Exception as e:
         db.session.rollback()
@@ -1307,12 +1343,8 @@ def menu_add():
 
 @admin_bp.route('/menu/edit/<int:item_id>', methods=['POST'])
 @login_required
-@admin_required
+@requires_permission('menu.edit')
 def menu_edit(item_id):
-    if current_user.role.upper() not in ('ADMIN', 'SUPER_ADMIN'):
-        flash("Access denied. Admin only.", "danger")
-        return redirect(url_for('admin.menu'))
-
     item = MenuItem.query.get_or_404(item_id)
 
     name = (request.form.get('name') or '').strip()[:50]
@@ -1349,14 +1381,8 @@ def menu_edit(item_id):
 
 @admin_bp.route('/menu/delete/<int:item_id>', methods=['POST'])
 @login_required
-@admin_required
+@requires_permission('menu.delete')
 def menu_delete(item_id):
-    if current_user.role.upper() not in ('ADMIN', 'SUPER_ADMIN'):
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'success': False, 'message': 'Admin only.'}), 403
-        flash("Access denied. Admin only.", "danger")
-        return redirect(url_for('admin.menu'))
-
     item = MenuItem.query.get_or_404(item_id)
     category = item.category
     item.is_deleted = True
@@ -1371,7 +1397,7 @@ def menu_delete(item_id):
 
 @admin_bp.route('/menu/trash')
 @login_required
-@admin_required
+@requires_permission('menu.view')
 def menu_trash():
     """View items that have been moved to trash."""
     trashed_items = MenuItem.query.filter_by(is_deleted=True).order_by(MenuItem.created_at.desc()).all()
@@ -1379,13 +1405,9 @@ def menu_trash():
 
 @admin_bp.route('/menu/restore/<int:item_id>', methods=['POST'])
 @login_required
-@admin_required
+@requires_permission('menu.edit')
 def menu_restore(item_id):
     """Restore a trashed menu item."""
-    if current_user.role.upper() not in ('ADMIN', 'SUPER_ADMIN'):
-        flash("Access denied.", "danger")
-        return redirect(url_for('admin.menu_trash'))
-        
     item = MenuItem.query.get_or_404(item_id)
     item.is_deleted = False
     db.session.commit()
@@ -1509,12 +1531,8 @@ def users():
 
 @admin_bp.route('/users/update-role/<int:user_id>', methods=['POST'])
 @login_required
-@admin_required
+@requires_permission('users.manage_branch')
 def update_user_role(user_id):
-    if current_user.role.upper() != 'SUPER_ADMIN':
-        flash("Access denied. Admin Boss only.", "danger")
-        return redirect(url_for('admin.overview'))
-
     user = User.query.get_or_404(user_id)
     new_role = request.form.get('role')
     old_role = user.role
@@ -1527,12 +1545,8 @@ def update_user_role(user_id):
 
 @admin_bp.route('/users/broadcast', methods=['POST'])
 @login_required
-@admin_required
+@requires_permission('users.manage_branch')
 def broadcast():
-    if current_user.role.upper() != 'SUPER_ADMIN':
-        flash("Access denied. Admin Boss only.", "danger")
-        return redirect(url_for('admin.overview'))
-
     user_ids = request.form.getlist('user_ids')
     message_content = request.form.get('message_content')
     
@@ -1607,7 +1621,7 @@ def api_user_details(user_id):
 # ─── MANAGEMENT: RESERVATIONS ────────────────────────
 @admin_bp.route('/reservations')
 @login_required
-@admin_required
+@requires_permission('reservations.manage_branch')
 def reservations():
     # Redirect to cashier portal reservations (staff layout)
     return redirect(url_for('cashier_portal.cashier_reservations'))
@@ -1866,7 +1880,12 @@ def walkin_order_submit():
                     change_amount = amount_tendered - float(total)
                 except ValueError: pass
 
+        # Generate unique order code
+        from utils import generate_order_code
+        order_code = generate_order_code()
+        
         order = Order(
+            order_code=order_code,
             user_id=None,
             customer_name=customer_name,
             total_amount=total,
@@ -1985,7 +2004,7 @@ def deliveries():
     status_filter = request.args.get('status', 'ALL')
     page = request.args.get('page', 1, type=int)
     
-    query = Order.query.filter_by(dining_option='DELIVERY')
+    query = Order.query.filter(Order.is_archived.is_(False)).filter_by(dining_option='DELIVERY')
     user_branch = getattr(current_user, 'branch', None)
     if user_branch and user_branch != 'ALL':
         query = query.filter_by(branch=user_branch)
@@ -2002,12 +2021,12 @@ def deliveries():
 # ─── ORDERS ──────────────────────────────────────────
 @admin_bp.route('/orders')
 @login_required
-@admin_required
+@requires_permission('orders.view_branch')
 def orders():
     status_filter = request.args.get('status', 'ALL')
     page = request.args.get('page', 1, type=int)
     
-    query = Order.query
+    query = Order.query.filter(Order.is_archived.is_(False))
     user_branch = getattr(current_user, 'branch', None)
     if user_branch and user_branch != 'ALL':
         query = query.filter_by(branch=user_branch)
@@ -2026,7 +2045,7 @@ def orders():
         Order.payment_method,
         func.count(Order.id),
         func.sum(Order.total_amount)
-    ).filter(func.date(Order.created_at) == today)
+    ).filter(func.date(Order.created_at) == today, Order.is_archived.is_(False))
     
     if user_branch and user_branch != 'ALL':
         today_stats_q = today_stats_q.filter(Order.branch == user_branch)
@@ -2062,12 +2081,12 @@ def orders():
 
 @admin_bp.route('/billing')
 @login_required
-@admin_required
+@requires_permission('orders.view_branch')
 def billing():
     status_filter = request.args.get('status', 'UNPAID')
     page = request.args.get('page', 1, type=int)
     
-    query = Order.query
+    query = Order.query.filter(Order.is_archived.is_(False))
     if status_filter != 'ALL':
         query = query.filter_by(payment_status=status_filter)
         
@@ -2080,7 +2099,7 @@ def billing():
         Order.payment_method,
         func.count(Order.id),
         func.sum(Order.total_amount)
-    ).filter(func.date(Order.created_at) == today).group_by(Order.payment_status, Order.payment_method).all()
+    ).filter(func.date(Order.created_at) == today, Order.is_archived.is_(False)).group_by(Order.payment_status, Order.payment_method).all()
     
     total_sales_today = 0
     unpaid_count = 0
@@ -2320,6 +2339,147 @@ def update_payment_status(order_id):
         return redirect(referrer)
     return redirect(url_for('admin.orders'))
 
+@admin_bp.route('/orders/<int:order_id>/update-table', methods=['POST'])
+@login_required
+@admin_required
+def update_order_table_number(order_id):
+    """
+    Update table number for a pending dine-in order.
+    
+    Request Body (JSON):
+        {
+            "table_number": <positive integer 1-17>
+        }
+    
+    Returns:
+        JSON response with success status and message
+    """
+    try:
+        # Parse request data
+        data = request.get_json()
+        if not data or 'table_number' not in data:
+            return jsonify({
+                'success': False,
+                'message': 'Missing table_number in request'
+            }), 400
+        
+        new_table_number = data['table_number']
+        
+        # Validate table number is a positive integer
+        try:
+            new_table_number = int(new_table_number)
+            if new_table_number < 1 or new_table_number > 17:
+                return jsonify({
+                    'success': False,
+                    'message': 'Table number must be between 1 and 17'
+                }), 400
+        except (ValueError, TypeError):
+            return jsonify({
+                'success': False,
+                'message': 'Table number must be a valid integer'
+            }), 400
+        
+        # Fetch the order
+        order = Order.query.get(order_id)
+        if not order:
+            return jsonify({
+                'success': False,
+                'message': 'Order not found'
+            }), 404
+        
+        # Validate order is dine-in
+        if order.dining_option != 'DINE_IN':
+            return jsonify({
+                'success': False,
+                'message': 'Table number can only be updated for dine-in orders'
+            }), 400
+        
+        # Validate order status is PENDING
+        if order.status != 'PENDING':
+            return jsonify({
+                'success': False,
+                'message': 'Table number can only be updated for pending orders'
+            }), 400
+        
+        # Check if the new table is already occupied (by a different order)
+        if new_table_number != order.table_number:
+            occupied_order = Order.query.filter(
+                Order.id != order_id,
+                Order.table_number == new_table_number,
+                Order.table_status == 'OCCUPIED',
+                Order.status.in_(['PENDING', 'PREPARING'])
+            ).first()
+            
+            if occupied_order:
+                return jsonify({
+                    'success': False,
+                    'message': f'Table {new_table_number} is already occupied by Order #{occupied_order.id}'
+                }), 400
+        
+        # Update the table number
+        old_table_number = order.table_number
+        order.table_number = new_table_number
+        order.table_status = 'OCCUPIED'  # Mark as occupied
+        db.session.commit()
+        
+        # Return success response
+        return jsonify({
+            'success': True,
+            'message': f'Table number updated from {old_table_number or "unset"} to {new_table_number}',
+            'old_value': old_table_number,
+            'new_value': new_table_number
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error updating table number for order {order_id}: {e}")
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'message': 'Internal server error'
+        }), 500
+
+@admin_bp.route('/orders/<int:order_id>/available-tables', methods=['GET'])
+@login_required
+@admin_required
+def get_available_tables(order_id):
+    """
+    Get list of available tables (1-17) excluding occupied ones.
+    
+    Returns:
+        JSON response with list of available table numbers
+    """
+    try:
+        # Get all occupied tables (excluding the current order's table)
+        occupied_tables = db.session.query(Order.table_number).filter(
+            Order.id != order_id,
+            Order.table_status == 'OCCUPIED',
+            Order.table_number.isnot(None),
+            Order.status.in_(['PENDING', 'PREPARING'])
+        ).all()
+        
+        occupied_set = {t[0] for t in occupied_tables if t[0]}
+        
+        # All tables 1-17
+        all_tables = list(range(1, 18))
+        
+        # Available tables
+        available_tables = [t for t in all_tables if t not in occupied_set]
+        
+        return jsonify({
+            'success': True,
+            'available_tables': available_tables,
+            'occupied_tables': list(occupied_set)
+        }), 200
+        
+    except Exception as e:
+        print(f"Error fetching available tables: {e}")
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'message': 'Internal server error'
+        }), 500
+
 @admin_bp.route('/orders/split/<int:order_id>', methods=['POST'])
 @login_required
 @admin_required
@@ -2339,7 +2499,12 @@ def split_order(order_id):
 
     try:
         # Create new order as a shell copy
+        # Generate unique order code
+        from utils import generate_order_code
+        order_code = generate_order_code()
+        
         new_order = Order(
+            order_code=order_code,
             user_id=original_order.user_id,
             customer_name=original_order.customer_name,
             total_amount=0,
@@ -2993,6 +3158,7 @@ def update_ingredient(ing_id):
                 'category': ing.category,
                 'supplier_name': supplier_name,
                 'expiration_date': ing.expiration_date.strftime('%b %d, %Y') if ing.expiration_date else None,
+                'ingredient_code': ing.ingredient_code or '',
             }
         })
 
@@ -3459,7 +3625,7 @@ def stock_requests():
     for category, group in groupby(ingredients, lambda x: x.category or 'General'):
         # Convert objects to dicts for JSON serialization in template
         grouped_ingredients[category] = [
-            {'id': ing.id, 'name': ing.name, 'unit': ing.unit} for ing in group
+            {'id': ing.id, 'name': ing.name, 'unit': ing.unit, 'ingredient_code': ing.ingredient_code or ''} for ing in group
         ]
     
     # Auto-suggestion: Get ingredients that need restocking
@@ -4145,3 +4311,205 @@ def reply_contact_message(msg_id):
         flash('Reply message cannot be empty.', 'danger')
         
     return redirect(url_for('admin.contact_messages'))
+
+
+# ─── DATA ARCHIVE MANAGEMENT ─────────────────────────────────────
+@admin_bp.route('/archive')
+@login_required
+@admin_required
+def archive_dashboard():
+    if current_user.role.upper() != 'SUPER_ADMIN':
+        flash("Access denied. Super Admin only.", "danger")
+        return redirect(url_for('admin.overview'))
+
+    from archive import get_archive_manager
+    from sqlalchemy.exc import OperationalError
+    
+    manager = get_archive_manager()
+    if not manager:
+        flash("Archive system is not initialized.", "danger")
+        return redirect(url_for('admin.overview'))
+
+    try:
+        stats = manager.get_stats()
+        timeline = manager.get_archive_storage_summary()
+    except OperationalError as e:
+        from models import db
+        db.session.rollback()
+        flash(f"Database connection error. Please try again. Error: {str(e)}", "danger")
+        return redirect(url_for('admin.overview'))
+    except Exception as e:
+        flash(f"Error loading archive data: {str(e)}", "danger")
+        return redirect(url_for('admin.overview'))
+    
+    return render_template(
+        'admin/archive.html',
+        stats=stats,
+        timeline=timeline,
+        config=manager.config,
+    )
+
+
+@admin_bp.route('/archive/run', methods=['POST'])
+@login_required
+@admin_required
+def archive_run_now():
+    if current_user.role.upper() != 'SUPER_ADMIN':
+        flash("Access denied. Super Admin only.", "danger")
+        return redirect(url_for('admin.overview'))
+
+    from archive import get_archive_manager
+    from sqlalchemy.exc import OperationalError
+    
+    manager = get_archive_manager()
+    dry_run = request.form.get('dry_run') == '1'
+
+    try:
+        result = manager.run(triggered_by='admin', user_id=current_user.id, dry_run=dry_run)
+    except OperationalError as e:
+        from models import db
+        db.session.rollback()
+        flash(f"Database connection error during archive: {str(e)}", "danger")
+        return redirect(url_for('admin.archive_dashboard'))
+    except Exception as e:
+        flash(f"Unexpected error during archive: {str(e)}", "danger")
+        return redirect(url_for('admin.archive_dashboard'))
+
+    if result['success']:
+        summary = result['summary']
+        if dry_run:
+            flash(
+                f"Dry run complete. Eligible preview — orders: {summary.get('orders', 0)}, "
+                f"reservations: {summary.get('reservations', 0)}, audit logs: {summary.get('audit_logs', 0)}.",
+                "info",
+            )
+        else:
+            flash(
+                f"Archive completed. Moved — orders: {summary.get('orders', 0)}, "
+                f"reservations: {summary.get('reservations', 0)}, audit logs: {summary.get('audit_logs', 0)}, "
+                f"inventory logs: {summary.get('inventory_logs', 0)}, notifications: {summary.get('notifications', 0)}.",
+                "success",
+            )
+    else:
+        flash(f"Archive failed: {result.get('error', 'Unknown error')}", "danger")
+
+    return redirect(url_for('admin.archive_dashboard'))
+
+
+@admin_bp.route('/archive/orders')
+@login_required
+@admin_required
+def archive_orders():
+    if current_user.role.upper() != 'SUPER_ADMIN':
+        flash("Access denied. Super Admin only.", "danger")
+        return redirect(url_for('admin.overview'))
+
+    from archive import get_archive_manager
+    manager = get_archive_manager()
+    page = request.args.get('page', 1, type=int)
+    branch = request.args.get('branch', '')
+    status = request.args.get('status', '')
+    source = request.args.get('source', 'soft')
+
+    pagination = manager.search_archived_orders(
+        page=page,
+        branch=branch or None,
+        status=status or None,
+        source=source,
+    )
+    return render_template(
+        'admin/archive_orders.html',
+        pagination=pagination,
+        branch=branch,
+        status=status,
+        source=source,
+    )
+
+
+@admin_bp.route('/archive/orders/<int:original_id>')
+@login_required
+@admin_required
+def archive_order_detail(original_id):
+    if current_user.role.upper() != 'SUPER_ADMIN':
+        flash("Access denied. Super Admin only.", "danger")
+        return redirect(url_for('admin.overview'))
+
+    from archive import get_archive_manager
+    manager = get_archive_manager()
+    source = request.args.get('source')
+    detail = manager.get_archived_order_detail(original_id, source=source)
+    if not detail:
+        flash("Archived order not found.", "warning")
+        return redirect(url_for('admin.archive_orders'))
+
+    return render_template('admin/archive_order_detail.html', detail=detail)
+
+
+@admin_bp.route('/archive/orders/<int:order_id>/restore', methods=['POST'])
+@login_required
+@admin_required
+def archive_order_restore(order_id):
+    if current_user.role.upper() != 'SUPER_ADMIN':
+        flash("Access denied. Super Admin only.", "danger")
+        return redirect(url_for('admin.overview'))
+
+    order = Order.query.get_or_404(order_id)
+    if not order.is_archived:
+        flash("Order is not archived.", "warning")
+        return redirect(url_for('admin.orders'))
+
+    order.is_archived = False
+    order.archived_at = None
+    db.session.commit()
+    log_audit('RESTORE', 'Order', order.id, f'Unarchived order #{order.id}')
+    flash("Order restored successfully.", "success")
+    return redirect(url_for('admin.orders'))
+
+
+@admin_bp.route('/api/archive/orders', methods=['GET'])
+@login_required
+@admin_required
+def api_archive_orders():
+    """API endpoint for fetching archived orders as JSON"""
+    if current_user.role.upper() != 'SUPER_ADMIN':
+        return jsonify({'error': 'Access denied'}), 403
+
+    from archive import get_archive_manager
+    manager = get_archive_manager()
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 15, type=int)
+    branch = request.args.get('branch', '')
+    status = request.args.get('status', '')
+    source = request.args.get('source', 'soft')
+
+    pagination = manager.search_archived_orders(
+        page=page,
+        per_page=per_page,
+        branch=branch or None,
+        status=status or None,
+        source=source,
+    )
+
+    orders_data = []
+    for order in pagination.items:
+        original_id = order.original_id if source == 'legacy' else order.id
+        orders_data.append({
+            'original_id': original_id,
+            'order_code': order.order_code or '—',
+            'branch': order.branch or '—',
+            'status': order.status,
+            'total_amount': float(order.total_amount) if order.total_amount else 0,
+            'created_at': order.created_at.strftime('%Y-%m-%d') if order.created_at else '—',
+            'archived_at': order.archived_at.strftime('%Y-%m-%d') if order.archived_at else '—',
+        })
+
+    return jsonify({
+        'orders': orders_data,
+        'pagination': {
+            'page': pagination.page,
+            'total_pages': pagination.pages,
+            'total_items': pagination.total,
+            'has_prev': pagination.has_prev,
+            'has_next': pagination.has_next,
+        }
+    })

@@ -432,7 +432,12 @@
                 <!-- Card Header: icon + name + badge -->
                 <div class="suggest-card-header">
                     <div class="suggest-ing-icon"><i class="fas fa-exclamation-triangle"></i></div>
-                    <div class="suggest-ing-name" style="margin: 0 10px; flex:1;">{{ ing.name }}</div>
+                    <div class="suggest-ing-name" style="margin: 0 10px; flex:1;">
+                        {{ ing.name }}
+                        {% if ing.ingredient_code %}
+                        <span style="font-family: monospace; font-size: 0.72rem; font-weight: 700; background: rgba(93,64,55,0.08); color: #5d4037; padding: 1px 7px; border-radius: 5px; margin-left: 7px;">{{ ing.ingredient_code }}</span>
+                        {% endif %}
+                    </div>
                     {% if ing.id in pending_ingredient_ids %}
                     <span class="suggest-badge pending-badge"><i class="fas fa-clock"></i> Pending</span>
                     {% else %}
@@ -456,21 +461,24 @@
                         </div>
                     </div>
                     <button class="suggest-action-btn"
-                            onclick="openQuickRequestModal({{ ing.id }}, '{{ ing.name }}', {{ ing.reorder_level }}, '{{ ing.unit }}', {{ ing.stock_qty }})"
+                            onclick="openQuickRequestModal({{ ing.id }}, '{{ ing.name }}', {{ ing.reorder_level }}, '{{ ing.unit }}', {{ ing.stock_qty }}, '{{ ing.ingredient_code or '' }}')"
                             {% if ing.id in pending_ingredient_ids %}disabled{% endif %}>
                         <i class="fas fa-plus-circle"></i>
                         {% if ing.id in pending_ingredient_ids %}Already Requested{% else %}+ Request{% endif %}
                     </button>
                 </div>
             </div>
-            {% endfor %}
-
-            {% for ing in low_ingredients %}
+            {% endfor %}             {% for ing in low_ingredients %}
             <div class="suggest-card low">
                 <!-- Card Header: icon + name + badge -->
                 <div class="suggest-card-header">
                     <div class="suggest-ing-icon"><i class="fas fa-arrow-trend-down"></i></div>
-                    <div class="suggest-ing-name" style="margin: 0 10px; flex:1;">{{ ing.name }}</div>
+                    <div class="suggest-ing-name" style="margin: 0 10px; flex:1;">
+                        {{ ing.name }}
+                        {% if ing.ingredient_code %}
+                        <span style="font-family: monospace; font-size: 0.72rem; font-weight: 700; background: rgba(93,64,55,0.08); color: #5d4037; padding: 1px 7px; border-radius: 5px; margin-left: 7px;">{{ ing.ingredient_code }}</span>
+                        {% endif %}
+                    </div>
                     {% if ing.id in pending_ingredient_ids %}
                     <span class="suggest-badge pending-badge"><i class="fas fa-clock"></i> Pending</span>
                     {% else %}
@@ -494,7 +502,7 @@
                         </div>
                     </div>
                     <button class="suggest-action-btn"
-                            onclick="openQuickRequestModal({{ ing.id }}, '{{ ing.name }}', {{ ing.reorder_level - ing.kitchen_qty }}, '{{ ing.unit }}', {{ ing.stock_qty }})"
+                            onclick="openQuickRequestModal({{ ing.id }}, '{{ ing.name }}', {{ ing.reorder_level - ing.kitchen_qty }}, '{{ ing.unit }}', {{ ing.stock_qty }}, '{{ ing.ingredient_code or '' }}')"
                             {% if ing.id in pending_ingredient_ids %}disabled{% endif %}>
                         <i class="fas fa-plus-circle"></i>
                         {% if ing.id in pending_ingredient_ids %}Already Requested{% else %}+ Request{% endif %}
@@ -527,16 +535,19 @@
             <div class="item-box">
                 <div class="item-icon"><i class="fas fa-carrot"></i></div>
                 <div class="item-details">
-                    <div class="item-name">{{ req.ingredient.name }}</div>
+                    <div class="item-name">
+                        {{ req.ingredient.name }}
+                        {% if req.ingredient.ingredient_code %}
+                        <span style="font-family: monospace; font-size: 0.72rem; font-weight: 700; background: rgba(93,64,55,0.08); color: #5d4037; padding: 1px 7px; border-radius: 5px; margin-left: 7px;">{{ req.ingredient.ingredient_code }}</span>
+                        {% endif %}
+                    </div>
                     <div><span class="item-qty">{{ req.quantity_requested }}</span><span class="item-unit">{{ req.ingredient.unit }}</span></div>
                 </div>
             </div>
-
-
-
+            
             {% if is_inventory %}
             <div class="card-actions-row">
-                <button class="btn-fulfill" onclick="openFulfillModal({{ req.id }}, '{{ req.ingredient.name }}', {{ req.quantity_requested }}, '{{ req.ingredient.unit }}', {{ req.ingredient.stock_qty }})">
+                <button class="btn-fulfill" onclick="openFulfillModal({{ req.id }}, '{{ req.ingredient.name }}', {{ req.quantity_requested }}, '{{ req.ingredient.unit }}', {{ req.ingredient.stock_qty }}, '{{ req.ingredient.ingredient_code or '' }}')">
                     <i class="fas fa-check-double"></i> Fulfill Request
                 </button>
                 <form id="reject-form-{{ req.id }}" method="POST" action="{{ url_for('admin.fulfill_stock_request', req_id=req.id) }}" style="margin:0;">
@@ -581,7 +592,14 @@
                 {% for req in history_list %}
                 <tr>
                     <td style="font-weight: 800; color: var(--muted); opacity:0.6;">#{{ req.id }}</td>
-                    <td><div style="font-weight: 800; color: var(--primary);">{{ req.ingredient.name }}</div></td>
+                    <td>
+                        <div style="font-weight: 800; color: var(--primary);">
+                            {{ req.ingredient.name }}
+                            {% if req.ingredient.ingredient_code %}
+                            <span style="font-family: monospace; font-size: 0.72rem; font-weight: 700; background: rgba(93,64,55,0.08); color: #5d4037; padding: 1px 7px; border-radius: 5px; margin-left: 7px;">{{ req.ingredient.ingredient_code }}</span>
+                            {% endif %}
+                        </div>
+                    </td>
                     <td>
                         <div style="font-weight: 800;">{{ req.quantity_requested }} {{ req.ingredient.unit }}</div>
                         {% if req.quantity_fulfilled and req.quantity_fulfilled != req.quantity_requested %}
@@ -834,7 +852,7 @@
         warehouseStock: 0
     };
     
-    function openQuickRequestModal(ingId, ingName, suggestedQty, unit, warehouseStock) {
+    function openQuickRequestModal(ingId, ingName, suggestedQty, unit, warehouseStock, ingCode = '') {
         currentQuickRequest = {
             ingredientId: ingId,
             ingredientName: ingName,
@@ -843,7 +861,11 @@
             warehouseStock: warehouseStock
         };
         
-        document.getElementById('quick_ing_name').textContent = ingName;
+        if (ingCode) {
+            document.getElementById('quick_ing_name').innerHTML = `${ingName} <span style="font-family: monospace; font-size: 0.9rem; font-weight: 700; background: rgba(93,64,55,0.08); color: #5d4037; padding: 2px 8px; border-radius: 6px; margin-left: 8px;">${ingCode}</span>`;
+        } else {
+            document.getElementById('quick_ing_name').textContent = ingName;
+        }
         document.getElementById('quick_suggested_qty').textContent = suggestedQty;
         document.getElementById('quick_warehouse_stock').textContent = warehouseStock;
         document.getElementById('quick_max_display').textContent = warehouseStock;
@@ -993,7 +1015,9 @@
             select.disabled = false;
             grouped_ingredients[cat].forEach(ing => {
                 const opt = document.createElement('option');
-                opt.value = ing.id; opt.textContent = ing.name; opt.dataset.unit = ing.unit;
+                opt.value = ing.id;
+                opt.textContent = ing.ingredient_code ? `${ing.name} (${ing.ingredient_code})` : ing.name;
+                opt.dataset.unit = ing.unit;
                 select.appendChild(opt);
             });
         } else { select.disabled = true; }
@@ -1006,7 +1030,7 @@
         unitLabel.textContent = (selectedOpt && selectedOpt.dataset.unit) ? selectedOpt.dataset.unit : '--';
     }
 
-    function openFulfillModal(reqId, ingName, reqQty, unit, warehouseStock) {
+    function openFulfillModal(reqId, ingName, reqQty, unit, warehouseStock, ingCode = '') {
         const baseUrl = window.location.pathname.includes('/staff/') ? '/staff' : '/admin';
         const role = window.location.pathname.includes('/kitchen/') ? 'kitchen' : 
                      window.location.pathname.includes('/inventory/') ? 'inventory' : 'admin';
@@ -1019,7 +1043,11 @@
         }
         
         document.getElementById('fulfillForm').action = actionUrl;
-        document.getElementById('fulfill_ing_name').textContent = ingName;
+        if (ingCode) {
+            document.getElementById('fulfill_ing_name').innerHTML = `${ingName} <span style="font-family: monospace; font-size: 0.9rem; font-weight: 700; background: rgba(93,64,55,0.08); color: #5d4037; padding: 2px 8px; border-radius: 6px; margin-left: 8px;">${ingCode}</span>`;
+        } else {
+            document.getElementById('fulfill_ing_name').textContent = ingName;
+        }
         document.getElementById('fulfill_warehouse_stock').textContent = warehouseStock;
         document.getElementById('fulfill_input_qty').value = reqQty;
         document.getElementById('fulfill_input_qty').max = warehouseStock;

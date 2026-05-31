@@ -130,7 +130,7 @@
         <form method="POST" action="{{ url_for('inventory_portal.inventory_add_ingredient_batch') }}">
             <select name="ingredient_id" required class="select-premium" style="width: 100%; margin-bottom: 15px;">
                 <option value="">Select Ingredient...</option>
-                {% for ing in ingredients %}<option value="{{ ing.id }}">{{ ing.name }}</option>{% endfor %}
+                {% for ing in ingredients %}<option value="{{ ing.id }}">{% if ing.ingredient_code %}[{{ ing.ingredient_code }}] {% endif %}{{ ing.name }}</option>{% endfor %}
             </select>
             <input type="number" step="0.01" name="batch_qty" placeholder="Quantity" required style="width: 100%; margin-bottom: 15px; padding: 10px;">
             <input type="number" step="0.01" name="cost_per_unit" placeholder="Unit Cost" style="width: 100%; margin-bottom: 15px; padding: 10px;">

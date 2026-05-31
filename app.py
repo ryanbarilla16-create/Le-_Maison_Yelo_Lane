@@ -21,6 +21,10 @@ from flask_compress import Compress
 import threading
 from sqlalchemy import text as sql_text
 
+# Import permission system
+from permissions import PermissionManager, init_permissions
+from permissions.cli import init_cli
+
 app = Flask(__name__)
 # Initialize extensions
 Compress(app)
@@ -63,6 +67,53 @@ login_manager.init_app(app)
 # Initialize Flask-Mail
 mail = Mail(app)
 
+# Initialize permission system
+permission_manager = PermissionManager('permissions_config.json')
+init_permissions(app, permission_manager)
+init_cli(app)
+
+# Initialize archive database (separate DB for old records)
+import archive.models  # noqa: F401 — register archive models
+from archive import init_archive
+from archive.cli import init_archive_cli
+init_archive(app)
+init_archive_cli(app)
+
+# Add database session cleanup on request teardown
+@app.teardown_appcontext
+def shutdown_session(exception=None):
+    """Clean up database sessions after each request."""
+    if exception:
+        db.session.rollback()
+    db.session.remove()
+
+# Add error handler for database connection errors
+@app.errorhandler(Exception)
+def handle_database_error(error):
+    """Handle database connection errors gracefully."""
+    from sqlalchemy.exc import OperationalError, DBAPIError
+    
+    if isinstance(error, (OperationalError, DBAPIError)):
+        db.session.rollback()
+        db.session.remove()
+        
+        # Log the error
+        app.logger.error(f"Database error: {str(error)}")
+        
+        # Return a user-friendly error
+        if request.path.startswith('/api/'):
+            return jsonify({
+                'error': 'Database connection error. Please try again.',
+                'details': str(error) if app.debug else None
+            }), 500
+        else:
+            from flask import flash, redirect, url_for
+            flash('Database connection error. Please try again.', 'danger')
+            return redirect(url_for('main.index'))
+    
+    # Re-raise other exceptions
+    raise error
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -96,6 +147,22 @@ app.register_blueprint(debug_bp)
 with app.app_context():
     try:
         db.create_all()
+        try:
+            dialect = db.engine.dialect.name
+        except Exception:
+            dialect = None
+        if dialect in ("postgresql", "postgres"):
+            enabled = os.environ.get("AUTO_FIX_SCHEMA", "").strip()
+            if enabled != "0":
+                conn = db.engine.connect()
+                try:
+                    conn.execute(sql_text("ALTER TABLE \"order\" ADD COLUMN IF NOT EXISTS is_archived BOOLEAN NOT NULL DEFAULT FALSE"))
+                    conn.execute(sql_text("ALTER TABLE \"order\" ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP"))
+                    conn.execute(sql_text("CREATE INDEX IF NOT EXISTS ix_order_is_archived ON \"order\" (is_archived)"))
+                    conn.execute(sql_text("CREATE INDEX IF NOT EXISTS ix_order_archived_at ON \"order\" (archived_at)"))
+                    conn.commit()
+                finally:
+                    conn.close()
         print("--- DB INIT: Tables verified/created successfully ---")
     except Exception as e:
         print(f"--- DB INIT ERROR: {e} ---")

@@ -17,7 +17,7 @@
             <select name="ingredient_id" class="form-control admin-input">
                 <option value="">All Ingredients</option>
                 {% for ing in ingredients %}
-                <option value="{{ ing.id }}" {% if ing_filter==ing.id %}selected{% endif %}>{{ ing.name }}</option>
+                <option value="{{ ing.id }}" {% if ing_filter==ing.id %}selected{% endif %}>{% if ing.ingredient_code %}[{{ ing.ingredient_code }}] {% endif %}{{ ing.name }}</option>
                 {% endfor %}
             </select>
         </div>
@@ -82,7 +82,12 @@
                     <span class="badge bg-secondary">{{ log.action }}</span>
                     {% endif %}
                 </td>
-                <td style="font-weight: 600;">{{ log.ingredient.name }}</td>
+                <td style="font-weight: 600;">
+                    {{ log.ingredient.name }}
+                    {% if log.ingredient.ingredient_code %}
+                    <span style="font-family: monospace; font-size: 0.72rem; font-weight: 700; background: rgba(93,64,55,0.08); color: #5d4037; padding: 1px 7px; border-radius: 5px; margin-left: 7px;">{{ log.ingredient.ingredient_code }}</span>
+                    {% endif %}
+                </td>
                 <td
                     style="font-weight: bold; font-size: 1.1rem; {% if log.action == 'ADD' %}color: var(--admin-green);{% else %}color: #ef4444;{% endif %}">
                     {% if log.action == 'ADD' %}+{% else %}-{% endif %}{{ log.quantity }} <span

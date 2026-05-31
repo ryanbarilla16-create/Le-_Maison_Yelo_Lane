@@ -583,7 +583,7 @@
             <div class="moCard">
                 <div class="moCard-head">
                     <div>
-                        <div class="moCard-id">Order #{{ order.id }}</div>
+                        <div class="moCard-id">{{ order.order_code or ('Order #' ~ order.id) }}</div>
                         <div class="moCard-date">{{ order.created_at.strftime('%b %d, %Y - %I:%M %p') }}</div>
                     </div>
                     <div class="text-end">

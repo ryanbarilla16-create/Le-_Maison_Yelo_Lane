@@ -285,7 +285,7 @@
             {% for order in pending_orders %}
             <div class="order-card" style="display:flex; flex-direction:column; height:100%;">
                 <div class="order-header">
-                    <span class="order-num" style="font-size:1.1rem;">#{{ '%04d' % order.id }}</span>
+                    <span class="order-num" style="font-size:1.1rem;">{{ order.order_code or '#' + order.id|string }}</span>
                     <span class="order-time">{{ order.created_at.strftime('%I:%M %p') if order.created_at else '' }}</span>
                 </div>
                 <div class="order-customer" style="font-size:1rem;">
@@ -326,7 +326,7 @@
             {% for order in preparing_orders %}
             <div class="order-card card-preparing" style="display:flex; flex-direction:column; height:100%;">
                 <div class="order-header">
-                    <span class="order-num" style="font-size:1.1rem;">#{{ '%04d' % order.id }}</span>
+                    <span class="order-num" style="font-size:1.1rem;">{{ order.order_code or '#' + order.id|string }}</span>
                     <span class="order-time">{{ order.created_at.strftime('%I:%M %p') if order.created_at else '' }}</span>
                 </div>
                 <div class="order-customer" style="font-size:1rem;">
@@ -367,7 +367,7 @@
             {% for order in ready_orders %}
             <div class="order-card card-ready" style="display:flex; flex-direction:column; height:100%;">
                 <div class="order-header">
-                    <span class="order-num" style="font-size:1.1rem;">#{{ '%04d' % order.id }}</span>
+                    <span class="order-num" style="font-size:1.1rem;">{{ order.order_code or '#' + order.id|string }}</span>
                     <span class="order-time">{{ order.created_at.strftime('%I:%M %p') if order.created_at else '' }}</span>
                 </div>
                 <div class="order-customer" style="font-size:1rem;">

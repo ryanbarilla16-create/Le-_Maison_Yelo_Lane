@@ -71,6 +71,136 @@
         50% { transform: scale(1.1); opacity: 0.3; }
     }
 
+    /* ─── ELEGANT MODAL DIALOG ─────────────────────────────────────── */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.15s ease;
+    }
+    
+    .modal-dialog {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        max-width: 520px;
+        width: 92%;
+        overflow: hidden;
+        animation: modalSlide 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    
+    .modal-header {
+        background: linear-gradient(to bottom, #fafafa, #f5f5f5);
+        padding: 22px 28px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .modal-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #2c2c2c;
+        margin: 0;
+        letter-spacing: -0.2px;
+    }
+    
+    .modal-body {
+        padding: 40px 28px;
+        color: #555;
+        font-size: 1rem;
+        line-height: 1.7;
+        text-align: left;
+    }
+    
+    .modal-footer {
+        padding: 20px 28px;
+        background: white;
+        border-top: 1px solid #e8e8e8;
+        display: flex;
+        gap: 14px;
+        justify-content: flex-end;
+    }
+    
+    .modal-btn {
+        padding: 11px 32px;
+        border: none;
+        border-radius: 7px;
+        font-size: 0.95rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        min-width: 100px;
+        letter-spacing: 0.2px;
+    }
+    
+    .modal-btn-primary {
+        background: #007aff;
+        color: white;
+        box-shadow: 0 2px 8px rgba(0, 122, 255, 0.25);
+    }
+    
+    .modal-btn-primary:hover {
+        background: #0051d5;
+        box-shadow: 0 4px 12px rgba(0, 122, 255, 0.35);
+        transform: translateY(-1px);
+    }
+    
+    .modal-btn-primary:active {
+        transform: translateY(0);
+        box-shadow: 0 1px 4px rgba(0, 122, 255, 0.3);
+    }
+    
+    .modal-btn-secondary {
+        background: white;
+        color: #555;
+        border: 1.5px solid #d0d0d0;
+    }
+    
+    .modal-btn-secondary:hover {
+        background: #f8f8f8;
+        border-color: #b0b0b0;
+    }
+    
+    .modal-btn-secondary:active {
+        background: #f0f0f0;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    @keyframes modalSlide {
+        from { 
+            opacity: 0;
+            transform: translateY(-30px) scale(0.96);
+        }
+        to { 
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+    
+    /* Release button hover effect */
+    .release-table-btn:hover {
+        background: #e8e8e8 !important;
+        border-color: #d0d0d0 !important;
+        color: #333 !important;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+    
+    .release-table-btn:active {
+        transform: translateY(0);
+        box-shadow: none;
+    }
+
     @media (max-width: 768px) {
         .stats-row { grid-template-columns: 1fr; }
     }
@@ -115,13 +245,14 @@
                     <th>Service</th>
                     <th>Order Status</th>
                     <th>Payment</th>
+                    <th>Table #</th>
                     <th>Created</th>
                 </tr>
             </thead>
             <tbody>
                 {% for order in orders %}
                 <tr>
-                    <td><span class="order-id">#{{ '%04d' % order.id }}</span></td>
+                    <td><span class="order-id">{{ order.order_code or '#' + order.id|string }}</span></td>
                     <td style="font-weight:500; text-align:left;">
                         {% if order.user %}
                         <i class="fas fa-user-circle" style="opacity:0.3; margin-right:6px;"></i>
@@ -137,6 +268,43 @@
                     <td><span class="pill service">{{ order.dining_option.replace('_', ' ').title() }}</span></td>
                     <td><span class="pill {{ order.status.lower() }}">{{ order.status.title() }}</span></td>
                     <td><span class="pill {{ order.payment_status.lower() }}">{{ order.payment_status.title() }}</span></td>
+                    <td class="table-number-cell" data-order-id="{{ order.id }}" data-status="{{ order.status }}" data-payment-status="{{ order.payment_status }}" data-dining-option="{{ order.dining_option }}">
+                        {% if order.dining_option == 'DINE_IN' %}
+                            {% if order.status == 'PENDING' %}
+                                <span class="table-number-display" style="font-weight:600; color:var(--primary);">{{ order.table_number or 'Not Set' }}</span>
+                                <button class="btn-icon edit-table-btn" title="Edit table number" style="margin-left:6px; padding:4px 8px; font-size:0.75rem; background:rgba(139,99,75,0.08); border:none; border-radius:6px; cursor:pointer; color:#8b634b;">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <div class="table-number-edit-form" style="display:none; margin-top:8px;">
+                                    <select class="table-number-select" 
+                                            style="width:100px; padding:6px 8px; border:1px solid #ddd; border-radius:6px; font-size:0.85rem; margin-right:6px; background:white;">
+                                        <option value="">Loading...</option>
+                                    </select>
+                                    <button class="btn-icon save-table-btn" style="padding:6px 10px; font-size:0.75rem; background:#28a745; color:white; border:none; border-radius:6px; cursor:pointer; margin-right:4px;">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <button class="btn-icon cancel-table-btn" style="padding:6px 10px; font-size:0.75rem; background:#6c757d; color:white; border:none; border-radius:6px; cursor:pointer;">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            {% elif order.status == 'READY' and order.payment_status == 'PAID' %}
+                                <span class="table-number-readonly" style="font-weight:600; color:#5d4037;">{{ order.table_number or 'Not Set' }}</span>
+                                {% if order.table_number %}
+                                <button class="btn-icon release-table-btn" 
+                                        title="Release table for new customers"
+                                        data-order-id="{{ order.id }}"
+                                        data-table-number="{{ order.table_number }}"
+                                        style="margin-left:8px; padding:6px 12px; font-size:0.8rem; background:#f5f5f5; border:1px solid #e0e0e0; border-radius:6px; cursor:pointer; color:#666; font-weight:500; transition:all 0.2s ease;">
+                                    <i class="fas fa-unlock" style="margin-right:4px; font-size:0.75rem;"></i>Release
+                                </button>
+                                {% endif %}
+                            {% else %}
+                                <span class="table-number-readonly" style="font-weight:500; color:var(--muted);">{{ order.table_number or 'Not Set' }}</span>
+                            {% endif %}
+                        {% else %}
+                            <span style="color:var(--muted); font-size:0.8rem;">N/A</span>
+                        {% endif %}
+                    </td>
                     <td style="color:var(--muted); font-size:0.8rem; font-weight:500;">
                         {{ order.created_at.strftime('%I:%M %p') if order.created_at else 'N/A' }}
                     </td>
@@ -156,6 +324,282 @@
 
 {% block extra_script %}
 <script>
+    // ─── TABLE NUMBER INLINE EDITING WITH DROPDOWN ───────────────────────────────────
+    document.addEventListener('DOMContentLoaded', function() {
+        // Edit button click handler
+        document.querySelectorAll('.edit-table-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const cell = this.closest('.table-number-cell');
+                const orderId = cell.dataset.orderId;
+                const select = cell.querySelector('.table-number-select');
+                
+                // Hide display, show form
+                cell.querySelector('.table-number-display').style.display = 'none';
+                cell.querySelector('.edit-table-btn').style.display = 'none';
+                cell.querySelector('.table-number-edit-form').style.display = 'block';
+                
+                // Load available tables
+                loadAvailableTables(orderId, select);
+            });
+        });
+
+        // Cancel button handler
+        document.querySelectorAll('.cancel-table-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const cell = this.closest('.table-number-cell');
+                cell.querySelector('.table-number-edit-form').style.display = 'none';
+                cell.querySelector('.table-number-display').style.display = 'inline';
+                cell.querySelector('.edit-table-btn').style.display = 'inline';
+            });
+        });
+
+        // Save button handler
+        document.querySelectorAll('.save-table-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const cell = this.closest('.table-number-cell');
+                const orderId = cell.dataset.orderId;
+                const select = cell.querySelector('.table-number-select');
+                const newTableNumber = parseInt(select.value);
+
+                // Client-side validation
+                if (!newTableNumber || newTableNumber < 1) {
+                    showError('Please select a table number');
+                    select.focus();
+                    return;
+                }
+
+                // Submit via AJAX
+                fetch(`/admin/orders/${orderId}/update-table`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ table_number: newTableNumber })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        cell.querySelector('.table-number-display').textContent = newTableNumber;
+                        cell.querySelector('.table-number-edit-form').style.display = 'none';
+                        cell.querySelector('.table-number-display').style.display = 'inline';
+                        cell.querySelector('.edit-table-btn').style.display = 'inline';
+                        showSuccess(`Table number updated to ${newTableNumber}`);
+                    } else {
+                        showError(data.message || 'Failed to update table number');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showError('Server error occurred');
+                });
+            });
+        });
+
+        // ─── RELEASE TABLE BUTTON HANDLER ───────────────────────────────────
+        document.querySelectorAll('.release-table-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const orderId = this.dataset.orderId;
+                const tableNumber = this.dataset.tableNumber;
+                
+                showReleaseTableModal(orderId, tableNumber, this);
+            });
+        });
+    });
+
+    // Load available tables from server
+    function loadAvailableTables(orderId, selectElement) {
+        selectElement.innerHTML = '<option value="">Loading...</option>';
+        
+        fetch(`/admin/orders/${orderId}/available-tables`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                selectElement.innerHTML = '<option value="">-- Select Table --</option>';
+                
+                // Add available tables
+                data.available_tables.forEach(tableNum => {
+                    const option = document.createElement('option');
+                    option.value = tableNum;
+                    option.textContent = `Table ${tableNum}`;
+                    selectElement.appendChild(option);
+                });
+                
+                // Add occupied tables (disabled)
+                if (data.occupied_tables.length > 0) {
+                    const optgroup = document.createElement('optgroup');
+                    optgroup.label = '── Occupied ──';
+                    data.occupied_tables.forEach(tableNum => {
+                        const option = document.createElement('option');
+                        option.value = tableNum;
+                        option.textContent = `Table ${tableNum} (Occupied)`;
+                        option.disabled = true;
+                        option.style.color = '#999';
+                        optgroup.appendChild(option);
+                    });
+                    selectElement.appendChild(optgroup);
+                }
+                
+                selectElement.focus();
+            } else {
+                showError('Failed to load available tables');
+                selectElement.innerHTML = '<option value="">Error loading tables</option>';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showError('Failed to load available tables');
+            selectElement.innerHTML = '<option value="">Error loading tables</option>';
+        });
+    }
+
+    // ─── ELEGANT MODAL DIALOG FOR TABLE RELEASE ───────────────────────────────────
+    function showReleaseTableModal(orderId, tableNumber, btnElement) {
+        // Create modal overlay
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        
+        // Create modal dialog
+        const modal = document.createElement('div');
+        modal.className = 'modal-dialog';
+        
+        modal.innerHTML = `
+            <div class="modal-header">
+                <h3 class="modal-title">127.0.0.1:5000 says</h3>
+            </div>
+            <div class="modal-body">
+                Release Table ${tableNumber}? This will make it available for new customers.
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn modal-btn-primary" id="modal-ok-btn">OK</button>
+                <button class="modal-btn modal-btn-secondary" id="modal-cancel-btn">Cancel</button>
+            </div>
+        `;
+        
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+        
+        // Focus on OK button
+        setTimeout(() => {
+            document.getElementById('modal-ok-btn').focus();
+        }, 100);
+        
+        // OK button handler
+        document.getElementById('modal-ok-btn').addEventListener('click', function() {
+            overlay.remove();
+            releaseTable(orderId, tableNumber, btnElement);
+        });
+        
+        // Cancel button handler
+        document.getElementById('modal-cancel-btn').addEventListener('click', function() {
+            overlay.remove();
+        });
+        
+        // Click outside to close
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) {
+                overlay.remove();
+            }
+        });
+        
+        // ESC key to close
+        const escHandler = function(e) {
+            if (e.key === 'Escape') {
+                overlay.remove();
+                document.removeEventListener('keydown', escHandler);
+            }
+        };
+        document.addEventListener('keydown', escHandler);
+    }
+
+    // ─── RELEASE TABLE FUNCTIONALITY ───────────────────────────────────
+    function releaseTable(orderId, tableNumber, btnElement) {
+        // Disable button during request
+        btnElement.disabled = true;
+        btnElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Releasing...';
+        
+        fetch(`/admin/orders/${orderId}/release-table`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showSuccess(data.message || `Table ${tableNumber} is now available`);
+                
+                // Update UI: remove button and update display
+                const cell = btnElement.closest('.table-number-cell');
+                btnElement.remove();
+                const display = cell.querySelector('.table-number-readonly');
+                if (display) {
+                    display.style.color = 'var(--muted)';
+                    display.style.textDecoration = 'line-through';
+                }
+                
+                // Trigger dashboard refresh after short delay
+                setTimeout(pollCashierDashboard, 1000);
+            } else {
+                showError(data.error || 'Failed to release table');
+                btnElement.disabled = false;
+                btnElement.innerHTML = '<i class="fas fa-unlock"></i> Release';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showError('Server error occurred while releasing table');
+            btnElement.disabled = false;
+            btnElement.innerHTML = '<i class="fas fa-unlock"></i> Release';
+        });
+    }
+
+    // Helper functions for notifications
+    function showSuccess(message) {
+        const container = document.getElementById('notification-container') || createNotificationContainer();
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-success';
+        alert.style.cssText = 'position:fixed; top:20px; right:20px; z-index:9999; padding:15px 20px; border-radius:8px; background:#d4edda; color:#155724; border:1px solid #c3e6cb; box-shadow:0 4px 12px rgba(0,0,0,0.15); animation:slideIn 0.3s ease;';
+        alert.innerHTML = `<i class="fas fa-check-circle" style="margin-right:8px;"></i>${message}`;
+        container.appendChild(alert);
+        setTimeout(() => {
+            alert.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => alert.remove(), 300);
+        }, 3000);
+    }
+
+    function showError(message) {
+        const container = document.getElementById('notification-container') || createNotificationContainer();
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-danger';
+        alert.style.cssText = 'position:fixed; top:20px; right:20px; z-index:9999; padding:15px 20px; border-radius:8px; background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; box-shadow:0 4px 12px rgba(0,0,0,0.15); animation:slideIn 0.3s ease; cursor:pointer;';
+        alert.innerHTML = `<i class="fas fa-exclamation-circle" style="margin-right:8px;"></i>${message} <span style="float:right; margin-left:15px; opacity:0.7;">&times;</span>`;
+        alert.addEventListener('click', () => alert.remove());
+        container.appendChild(alert);
+    }
+
+    function createNotificationContainer() {
+        const container = document.createElement('div');
+        container.id = 'notification-container';
+        document.body.appendChild(container);
+        
+        // Add animation styles
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(400px); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(400px); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        return container;
+    }
+
+    // ─── ORIGINAL POLLING FUNCTION ───────────────────────────────────
     function pollCashierDashboard() {
         if (document.querySelector('.modal.show')) return;
 
