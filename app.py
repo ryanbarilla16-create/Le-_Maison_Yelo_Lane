@@ -33,7 +33,7 @@ app.config['COMPRESS_REGISTER'] = True
 app.config['COMPRESS_ALGORITHM'] = ['gzip', 'br', 'deflate']
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 31536000 # Cache static resources for 1 year
 
-socketio.init_app(app, async_mode='eventlet')
+socketio.init_app(app, async_mode='gevent', cors_allowed_origins="*")
 # Tell Flask it is behind a proxy (like LocalTunnel) so redirects use the correct url
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 app.config.from_object(Config)
