@@ -288,4 +288,5 @@ if __name__ == '__main__':
     
     # Run with debug=True for development only
     debug_mode = os.environ.get('FLASK_ENV') != 'production'
-    socketio.run(app, debug=debug_mode, host='0.0.0.0', port=5000)
+    port = int(os.environ.get('PORT', 5000))
+    socketio.run(app, debug=debug_mode, host='0.0.0.0', port=port)
