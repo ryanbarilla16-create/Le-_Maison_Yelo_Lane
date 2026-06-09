@@ -15,311 +15,343 @@
 {% block page_subtitle %}
     <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
         <span>Review standard portioning and ingredient requirements</span>
-        <button class="btn-primary" onclick="openAddRecipeItemModal()" style="padding: 8px 16px; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; background: var(--primary); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: 600;">
+        <button onclick="openAddRecipeItemModal()"
+            style="padding:8px 18px; font-size:0.85rem; display:flex; align-items:center; gap:7px;
+                   background:var(--primary); color:white; border:none; border-radius:10px;
+                   cursor:pointer; font-weight:700; box-shadow:0 2px 8px rgba(93,64,55,0.2);
+                   transition:all 0.2s;"
+            onmouseover="this.style.background='#4a3028'"
+            onmouseout="this.style.background='var(--primary)'">
             <i class="fas fa-plus"></i> Add Menu Item
         </button>
     </div>
 {% endblock %}
 
 {% block extra_style %}
-    .recipe-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-        gap: 24px;
-        margin-top: 20px;
-    }
-    
-    .recipe-card {
-        background: var(--card);
-        border: 1px solid var(--card-border);
-        border-radius: 24px;
-        padding: 28px;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        box-shadow: 0 4px 15px rgba(93,64,55,0.03);
-    }
-    
-    .recipe-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 12px 30px rgba(93,64,55,0.08);
-        border-color: var(--primary);
-    }
-    
-    .recipe-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 20px;
-    }
-    
-    .recipe-title {
-        margin: 0;
-        font-size: 1.2rem;
-        font-weight: 800;
-        color: var(--text);
-        line-height: 1.3;
-    }
-    
-    .recipe-price {
-        font-weight: 800;
-        color: var(--primary);
-        font-size: 0.95rem;
-        background: rgba(93,64,55,0.05);
-        padding: 4px 12px;
-        border-radius: 50px;
-    }
-    
-    .ingredient-list {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-    }
-    
-    .ingredient-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding-bottom: 8px;
-        border-bottom: 1px dashed rgba(93,64,55,0.1);
-    }
-    
-    .ingredient-item:last-child {
-        border-bottom: none;
-    }
-    
-    .ing-name {
-        font-size: 0.9rem;
-        color: var(--text);
-        font-weight: 500;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-    
-    .ing-qty {
-        font-weight: 700;
-        color: var(--primary);
-        font-size: 0.85rem;
-        padding: 2px 8px;
-        background: rgba(93,64,55,0.04);
-        border-radius: 6px;
-    }
-    
-    .category-header {
-        grid-column: 1 / -1;
-        margin-top: 40px;
-        margin-bottom: 15px;
-        display: flex;
-        align-items: center;
-        gap: 15px;
-    }
-    
-    .category-header h3 {
-        font-size: 0.9rem;
-        font-weight: 800;
-        color: var(--primary);
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        margin: 0;
-    }
-    
-    .category-line {
-        flex: 1;
-        height: 1px;
-        background: linear-gradient(90deg, rgba(93,64,55,0.2), transparent);
-    }
-    
+/* ── Filter Bar ── */
     .filter-bar {
-        background: white;
-        padding: 20px 24px;
-        border-radius: 20px;
-        border: 1px solid var(--card-border);
-        margin-bottom: 30px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        box-shadow: 0 4px 12px rgba(93,64,55,0.03);
+        background: #fdfaf8; padding: 18px 26px; border-radius: 20px;
+        border: 1px solid rgba(93,64,55,0.12); margin-bottom: 30px;
+        display: flex; justify-content: space-between; align-items: center;
+        box-shadow: 0 4px 18px rgba(93,64,55,0.03);
     }
-    
+    .filter-left  { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
     .custom-select {
-        padding: 10px 20px;
-        border-radius: 12px;
-        border: 1px solid rgba(93,64,55,0.15);
-        background: #fdfbf9;
-        font-size: 0.9rem;
-        color: var(--text);
-        font-weight: 600;
-        outline: none;
-        cursor: pointer;
-        transition: all 0.2s;
+        padding: 9px 18px; border-radius: 12px; border: 1.5px solid rgba(93,64,55,0.15);
+        background: white; font-size: 0.87rem; color: #4e342e; font-weight: 600;
+        outline: none; cursor: pointer; transition: all 0.2s ease;
     }
-    
-    .custom-select:focus {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(93,64,55,0.1);
+    .custom-select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(93,64,55,0.1); }
+    .search-input {
+        padding: 9px 14px 9px 38px; border-radius: 12px;
+        border: 1.5px solid rgba(93,64,55,0.15); background: white;
+        font-size: 0.85rem; width: 220px; transition: all 0.2s ease; outline: none;
+        color: #4e342e;
+    }
+    .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(93,64,55,0.1); }
+    .search-wrap { position: relative; }
+    .search-wrap i { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: #8d6e63; font-size: 0.82rem; }
+    .count-pill {
+        background: rgba(93,64,55,0.08); color: var(--primary);
+        padding: 5px 16px; border-radius: 50px; font-size: 0.8rem; font-weight: 700;
+        border: 1px solid rgba(93,64,55,0.1);
     }
 
-    .empty-recipes {
-        text-align: center;
-        padding: 60px 20px;
-        background: rgba(93,64,55,0.02);
-        border-radius: 30px;
-        border: 2px dashed rgba(93,64,55,0.1);
-        grid-column: 1 / -1;
+    /* ── Category Label ── */
+    .category-section { margin-top: 40px; margin-bottom: 20px; }
+    .category-label {
+        display: flex; align-items: center; gap: 14px; margin-bottom: 18px;
     }
+    .category-label h3 {
+        margin: 0; font-size: 0.8rem; font-weight: 800; color: var(--primary);
+        text-transform: uppercase; letter-spacing: 1.8px; white-space: nowrap;
+    }
+    .cat-line { flex: 1; height: 1.5px; background: linear-gradient(90deg, rgba(93,64,55,0.18), transparent); }
+    .cat-count {
+        background: #8d6e63; color: white;
+        font-size: 0.72rem; font-weight: 700; padding: 3px 10px; border-radius: 50px;
+    }
+
+    /* ── Recipe Grid ── */
+    .recipe-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+        gap: 24px;
+    }
+
+    /* ── Recipe Card ── */
+    .recipe-card {
+        background: white; border: 1px solid rgba(93,64,55,0.12);
+        border-radius: 24px; display: flex; flex-direction: column;
+        overflow: hidden; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        box-shadow: 0 4px 16px rgba(93,64,55,0.03);
+        position: relative;
+    }
+    .recipe-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 30px rgba(93,64,55,0.09);
+        border-color: rgba(93,64,55,0.25);
+    }
+    .recipe-card::before {
+        content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+        background: linear-gradient(90deg, #8d6e63, #5d4037);
+    }
+
+    /* Card Top */
+    .card-top {
+        padding: 22px 24px 16px;
+        border-bottom: 1px solid rgba(93,64,55,0.07);
+        background: #faf7f5;
+    }
+    .card-title-row {
+        display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;
+        margin-bottom: 12px;
+    }
+    .recipe-title {
+        margin: 0; font-size: 1.1rem; font-weight: 800; color: #3e2723;
+        line-height: 1.35; flex: 1;
+    }
+    .card-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .btn-icon {
+        width: 34px; height: 34px; border-radius: 10px; border: none; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.8rem; transition: all 0.2s ease;
+    }
+    .btn-edit { background: rgba(93,64,55,0.08); color: var(--primary); }
+    .btn-edit:hover { background: var(--primary); color: white; transform: scale(1.05); }
+    .btn-del  { background: rgba(140,29,29,0.08); color: #8c1d1d; }
+    .btn-del:hover  { background: #8c1d1d; color: white; transform: scale(1.05); }
+
+    .card-meta-row {
+        display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    .recipe-price {
+        font-weight: 800; color: var(--primary); font-size: 0.9rem;
+        background: rgba(93,64,55,0.08); padding: 4px 14px; border-radius: 50px;
+        border: 1px solid rgba(93,64,55,0.06);
+    }
+    .recipe-id {
+        font-size: 0.75rem; color: #8d6e63; font-weight: 700;
+        background: rgba(93,64,55,0.04); padding: 2px 8px; border-radius: 6px;
+    }
+    .ing-count-badge {
+        background: rgba(141,110,99,0.08); color: #795548;
+        font-size: 0.7rem; font-weight: 700; padding: 4px 12px; border-radius: 50px;
+        margin-left: auto; display: inline-flex; align-items: center; gap: 5px;
+    }
+
+    /* Ingredient List */
+    .card-body { padding: 18px 24px 22px; flex: 1; display: flex; flex-direction: column; background: white; }
+    .ing-label {
+        font-size: 0.65rem; font-weight: 900; color: #8d6e63; text-transform: uppercase;
+        letter-spacing: 1.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+    }
+    .ing-label::after { content: ''; flex: 1; height: 1px; background: rgba(93,64,55,0.1); }
+
+    .ing-list { display: flex; flex-direction: column; gap: 9px; }
+    .ing-row {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 9px 14px; background: #faf8f6;
+        border: 1px solid rgba(93,64,55,0.06); border-radius: 12px;
+        transition: all 0.2s ease;
+    }
+    .ing-row:hover { background: #f5ece6; border-color: rgba(93,64,55,0.15); }
+    .ing-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+    .ing-dot { width: 6px; height: 6px; border-radius: 50%; background: #8d6e63; opacity: 0.6; flex-shrink: 0; }
+    .ing-name-text {
+        font-size: 0.85rem; font-weight: 600; color: #4e342e;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .ing-code-tag {
+        font-family: monospace; font-size: 0.68rem; font-weight: 700;
+        background: rgba(93,64,55,0.08); color: var(--primary);
+        padding: 1px 7px; border-radius: 5px; flex-shrink: 0;
+    }
+    .ing-qty-tag {
+        font-size: 0.8rem; font-weight: 800; color: var(--primary);
+        background: rgba(93,64,55,0.08); padding: 3px 12px;
+        border-radius: 8px; white-space: nowrap; flex-shrink: 0;
+        border: 1px solid rgba(93,64,55,0.04);
+    }
+
+    /* No recipe */
+    .no-recipe {
+        display: flex; align-items: center; justify-content: center; flex-direction: column;
+        gap: 10px; padding: 24px; background: #faf8f6;
+        border: 2px dashed rgba(93,64,55,0.15); border-radius: 16px;
+        text-align: center;
+    }
+    .no-recipe i { color: #8d6e63; opacity: 0.4; font-size: 1.6rem; }
+    .no-recipe p { margin: 0; font-size: 0.82rem; color: #8d6e63; font-style: italic; line-height: 1.4; }
+
+    /* Empty state */
+    .empty-state {
+        text-align: center; padding: 80px 30px; grid-column: 1 / -1;
+        color: #8d6e63;
+    }
+    .empty-state i { font-size: 3.5rem; opacity: 0.2; margin-bottom: 20px; display: block; color: var(--primary); }
 {% endblock %}
 
 {% block content %}
-    <div class="filter-bar">
-        <div style="display: flex; align-items: center; gap: 15px;">
-            <i class="fas fa-filter" style="color: var(--primary);"></i>
-            <span style="font-weight: 700; color: var(--muted); font-size: 0.9rem;">Sort by Category:</span>
-            <select class="custom-select" onchange="filterByCategory(this.value)">
-                <option value="ALL">All Menu Sections</option>
-                {% for cat in menu_categories %}
-                <option value="{{ cat|replace(' ', '-')|lower }}">{{ cat }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div style="font-size: 0.85rem; color: var(--muted); font-weight: 600;">
-            <span id="recipeCount">{{ grouped_items.values()|map('length')|sum }}</span> items available
+<!-- Filter Bar -->
+<div class="filter-bar">
+    <div class="filter-left">
+        <i class="fas fa-filter" style="color: var(--primary); font-size: 0.85rem;"></i>
+        <span style="font-weight: 700; color: var(--muted); font-size: 0.85rem;">Category:</span>
+        <select class="custom-select" id="categoryFilter" onchange="applyFilters()">
+            <option value="ALL">All Menu Sections</option>
+            {% for cat in menu_categories %}
+            <option value="{{ cat|replace(' ', '-')|lower }}">{{ cat }}</option>
+            {% endfor %}
+        </select>
+        <div class="search-wrap">
+            <i class="fas fa-search"></i>
+            <input type="text" class="search-input" id="recipeSearch"
+                   placeholder="Search menu item..." oninput="applyFilters()">
         </div>
     </div>
+    <div class="count-pill">
+        <span id="recipeCount">{{ grouped_items.values()|map('length')|sum }}</span> items
+    </div>
+</div>
 
-    <div class="recipe-grid" id="recipeGrid">
-        {% for category, items in grouped_items.items() %}
-        <div class="category-header" data-cat="{{ category|replace(' ', '-')|lower }}">
-            <h3>{{ category }}</h3>
-            <div class="category-line"></div>
-        </div>
-        
-        {% for item in items %}
-        <div class="recipe-card" data-cat="{{ category|replace(' ', '-')|lower }}">
-            <div class="recipe-header">
-                <h4 class="recipe-title">{{ item.name }}</h4>
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <div class="recipe-price">₱{{ "%.2f"|format(item.price) }}</div>
-                    <button type="button"
-                        onclick="openRecipeEdit({{ item.id }}, '{{ item.name|e }}')"
-                        style="background:rgba(93,64,55,0.08); border:none; color:var(--primary); width:34px; height:34px; border-radius:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s; flex-shrink:0;"
-                        title="Edit Ingredients"
-                        onmouseover="this.style.background='var(--primary)'; this.style.color='white';"
-                        onmouseout="this.style.background='rgba(93,64,55,0.08)'; this.style.color='var(--primary)';">
-                        <i class="fas fa-pen" style="font-size:0.78rem;"></i>
-                    </button>
-                    <button type="button"
-                        onclick="confirmDeleteRecipeItem({{ item.id }}, '{{ item.name|e }}')"
-                        style="background:rgba(211,47,47,0.08); border:none; color:#c62828; width:34px; height:34px; border-radius:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s; flex-shrink:0;"
-                        title="Delete Menu Item & Recipe"
-                        onmouseover="this.style.background='#c62828'; this.style.color='white';"
-                        onmouseout="this.style.background='rgba(211,47,47,0.08)'; this.style.color='#c62828';">
-                        <i class="fas fa-trash-alt" style="font-size:0.78rem;"></i>
-                    </button>
-                </div>
-            </div>
-            
-            <div style="margin-bottom: 15px;">
-                <span style="font-size: 0.65rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 1px;">Ingredients List</span>
-            </div>
-            
-            {% if item.ingredients|length > 0 %}
-            <div class="ingredient-list">
-                {% for recipe in item.ingredients %}
-                    <span class="ing-name">
-                        <i class="fas fa-circle" style="font-size: 0.4rem; color: var(--primary); opacity: 0.5;"></i>
-                        {{ recipe.ingredient.name }}
-                        {% if recipe.ingredient.ingredient_code %}
-                        <span style="font-family: monospace; font-size: 0.72rem; color: var(--primary); opacity: 0.8; font-weight: 700; background: rgba(93,64,55,0.06); padding: 1px 6px; border-radius: 4px; margin-left: 6px;">{{ recipe.ingredient.ingredient_code }}</span>
-                        {% endif %}
-                    </span>
-                    <span class="ing-qty">{{ "%.2f"|format(recipe.quantity_needed) }} {{ recipe.ingredient.unit }}</span>
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <div style="flex:1; display:flex; align-items:center; justify-content:center; background:rgba(93,64,55,0.03); border-radius:15px; padding:20px;">
-                <p style="font-style:italic; color:var(--muted); font-size:0.85rem; margin:0; text-align:center;">No recipe details added for this item.</p>
-            </div>
-            {% endif %}
-            
-            <div style="margin-top: 25px; padding-top: 15px; border-top: 1px solid rgba(93,64,55,0.05); display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 0.75rem; color: var(--muted);">Reference ID: #{{ item.id }}</span>
-                <i class="fas fa-chevron-right" style="font-size: 0.8rem; color: var(--primary); opacity: 0.3;"></i>
-            </div>
-        </div>
-        {% endfor %}
-        {% endfor %}
-        
-        {% if not grouped_items %}
-        <div class="empty-recipes">
-            <i class="fas fa-utensils" style="font-size: 3rem; color: rgba(93,64,55,0.1); margin-bottom: 20px; display: block;"></i>
-            <h3 style="color: var(--muted);">No Recipes Found</h3>
-            <p style="color: var(--muted); font-size: 0.9rem;">Start adding ingredients to your menu items in the Admin panel.</p>
-        </div>
-        {% endif %}
+<!-- Recipe Sections -->
+<div id="recipeContainer">
+{% for category, items in grouped_items.items() %}
+<div class="category-section" data-cat="{{ category|replace(' ', '-')|lower }}" id="section_{{ category|replace(' ', '-')|lower }}">
+    <div class="category-label">
+        <h3>{{ category }}</h3>
+        <div class="cat-line"></div>
+        <span class="cat-count">{{ items|length }}</span>
     </div>
+    <div class="recipe-grid">
+        {% for item in items %}
+        <div class="recipe-card"
+             data-cat="{{ category|replace(' ', '-')|lower }}"
+             data-name="{{ item.name|lower }}"
+             id="card_{{ item.id }}">
+
+            <!-- Card Top -->
+            <div class="card-top">
+                <div class="card-title-row">
+                    <h4 class="recipe-title">{{ item.name }}</h4>
+                    <div class="card-actions">
+                        <button class="btn-icon btn-edit"
+                                title="Edit Recipe Ingredients"
+                                onclick="openRecipeEdit({{ item.id }}, '{{ item.name|e }}')">
+                            <i class="fas fa-pen"></i>
+                        </button>
+                        <button class="btn-icon btn-del"
+                                title="Delete Menu Item"
+                                onclick="confirmDeleteRecipeItem({{ item.id }}, '{{ item.name|e }}')">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-meta-row">
+                    <span class="recipe-price">₱{{ "%.2f"|format(item.price) }}</span>
+                    <span class="recipe-id">#{{ item.id }}</span>
+                    <span class="ing-count-badge">
+                        <i class="fas fa-leaf me-1" style="font-size:0.6rem;"></i>
+                        {{ item.ingredients|length }} ingredient{{ 's' if item.ingredients|length != 1 }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Card Body — Ingredients -->
+            <div class="card-body">
+                <div class="ing-label">
+                    Ingredients List
+                </div>
+                {% if item.ingredients|length > 0 %}
+                <div class="ing-list">
+                    {% for recipe in item.ingredients %}
+                    <div class="ing-row">
+                        <div class="ing-left">
+                            <div class="ing-dot"></div>
+                            <span class="ing-name-text" title="{{ recipe.ingredient.name }}">
+                                {{ recipe.ingredient.name }}
+                            </span>
+                            {% if recipe.ingredient.ingredient_code %}
+                            <span class="ing-code-tag">{{ recipe.ingredient.ingredient_code }}</span>
+                            {% endif %}
+                        </div>
+                        <span class="ing-qty-tag">
+                            {{ "%.2f"|format(recipe.quantity_needed) }} {{ recipe.ingredient.unit }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="no-recipe">
+                    <i class="fas fa-flask"></i>
+                    <p>No recipe defined yet.<br>Click <strong>✎ edit</strong> to add ingredients.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div><!-- .recipe-grid -->
+</div><!-- .category-section -->
+{% endfor %}
+
+{% if not grouped_items %}
+<div class="empty-state">
+    <i class="fas fa-utensils"></i>
+    <h3 style="color: var(--muted); margin: 0 0 8px;">No Recipes Found</h3>
+    <p style="font-size: 0.88rem; margin: 0;">Start adding menu items and then define their ingredient recipes.</p>
+</div>
+{% endif %}
+</div><!-- #recipeContainer -->
+
 
 <!-- ═══════════ EDIT RECIPE MODAL ═══════════ -->
-<div id="editRecipeModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); backdrop-filter:blur(5px); display:none; align-items:center; justify-content:center; z-index:2000;">
-    <div style="background:white; border-radius:24px; width:100%; max-width:620px; max-height:90vh; display:flex; flex-direction:column; box-shadow:0 25px 60px rgba(0,0,0,0.2); overflow:hidden;">
-        <!-- Header -->
-        <div style="background:var(--primary); padding:20px 24px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
+<div id="editRecipeModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); backdrop-filter:blur(6px); display:none; align-items:center; justify-content:center; z-index:2000;">
+    <div style="background:white; border-radius:24px; width:100%; max-width:640px; max-height:90vh; display:flex; flex-direction:column; box-shadow:0 30px 70px rgba(0,0,0,0.22); overflow:hidden; animation:modalIn 0.25s ease-out;">
+        <div style="background:var(--primary); padding:22px 28px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
             <div>
-                <h3 style="margin:0; color:white; font-size:1.05rem;"><i class="fas fa-pen me-2"></i> Edit Recipe</h3>
-                <p id="editRecipeSubtitle" style="margin:4px 0 0; color:rgba(255,255,255,0.7); font-size:0.8rem;"></p>
+                <h3 style="margin:0; color:white; font-size:1.1rem; font-weight:800;"><i class="fas fa-flask me-2"></i>Edit Recipe</h3>
+                <p id="editRecipeSubtitle" style="margin:4px 0 0; color:rgba(255,255,255,0.7); font-size:0.82rem;"></p>
             </div>
-            <button onclick="closeRecipeEdit()" style="background:none; border:none; color:white; font-size:1.4rem; cursor:pointer; opacity:0.7; line-height:1;">&times;</button>
+            <button onclick="closeRecipeEdit()" style="background:rgba(255,255,255,0.15); border:none; color:white; width:34px; height:34px; border-radius:50%; cursor:pointer; font-size:1.2rem; display:flex; align-items:center; justify-content:center; transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.28)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">&times;</button>
         </div>
-
-        <!-- Body -->
         <div style="padding:24px; overflow-y:auto; flex:1;">
-            <!-- Ingredient rows container -->
             <div id="recipeIngRows"></div>
-
-            <!-- Add row button -->
             <button type="button" onclick="addIngRow()"
-                style="width:100%; padding:12px; border:2px dashed rgba(93,64,55,0.2); border-radius:14px; background:rgba(93,64,55,0.02); color:var(--primary); font-weight:700; font-size:0.85rem; cursor:pointer; transition:all 0.2s; margin-top:8px;"
+                style="width:100%; padding:12px; border:2px dashed rgba(93,64,55,0.18); border-radius:14px; background:rgba(93,64,55,0.02); color:var(--primary); font-weight:700; font-size:0.85rem; cursor:pointer; transition:all 0.2s; margin-top:6px;"
                 onmouseover="this.style.borderColor='var(--primary)'; this.style.background='rgba(93,64,55,0.06)';"
-                onmouseout="this.style.borderColor='rgba(93,64,55,0.2)'; this.style.background='rgba(93,64,55,0.02)';">
-                <i class="fas fa-plus me-2"></i> Add Ingredient
+                onmouseout="this.style.borderColor='rgba(93,64,55,0.18)'; this.style.background='rgba(93,64,55,0.02)';">
+                <i class="fas fa-plus me-2"></i>Add Ingredient Row
             </button>
         </div>
-
-        <!-- Footer -->
-        <div style="padding:20px 24px; background:#fdfaf8; border-top:1px solid rgba(93,64,55,0.08); display:flex; justify-content:flex-end; gap:12px; flex-shrink:0;">
-            <button onclick="closeRecipeEdit()" style="background:#e0d6cf; color:#5d4037; border:none; padding:10px 22px; border-radius:12px; cursor:pointer; font-weight:600;">Cancel</button>
+        <div style="padding:18px 28px; background:#fdfaf8; border-top:1px solid rgba(93,64,55,0.08); display:flex; justify-content:flex-end; gap:12px; flex-shrink:0;">
+            <button onclick="closeRecipeEdit()" style="background:#e0d6cf; color:#5d4037; border:none; padding:10px 22px; border-radius:12px; cursor:pointer; font-weight:700;">Cancel</button>
             <button onclick="saveRecipe()" id="btnSaveRecipe"
-                style="background:var(--primary); color:white; border:none; padding:10px 22px; border-radius:12px; cursor:pointer; font-weight:600;">
-                <i class="fas fa-save me-1"></i> Save Recipe
+                style="background:var(--primary); color:white; border:none; padding:10px 22px; border-radius:12px; cursor:pointer; font-weight:700; display:inline-flex; align-items:center; gap:7px; box-shadow:0 2px 8px rgba(93,64,55,0.2);">
+                <i class="fas fa-save"></i>Save Recipe
             </button>
         </div>
     </div>
 </div>
 
-<!-- ═══════════ ADD MENU ITEM & RECIPE MODAL ═══════════ -->
-<div id="addRecipeItemModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); backdrop-filter:blur(5px); display:none; align-items:center; justify-content:center; z-index:2000;">
-    <div style="background:white; border-radius:24px; width:100%; max-width:500px; display:flex; flex-direction:column; box-shadow:0 25px 60px rgba(0,0,0,0.2); overflow:hidden;">
-        <!-- Header -->
-        <div style="background:var(--primary); padding:20px 24px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
-            <h3 style="margin:0; color:white; font-size:1.05rem;"><i class="fas fa-plus me-2"></i> Add New Menu Item</h3>
-            <button onclick="closeAddRecipeItemModal()" style="background:none; border:none; color:white; font-size:1.4rem; cursor:pointer; opacity:0.7; line-height:1;">&times;</button>
+<!-- ═══════════ ADD MENU ITEM MODAL ═══════════ -->
+<div id="addRecipeItemModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); backdrop-filter:blur(6px); display:none; align-items:center; justify-content:center; z-index:2000;">
+    <div style="background:white; border-radius:24px; width:100%; max-width:500px; display:flex; flex-direction:column; box-shadow:0 30px 70px rgba(0,0,0,0.22); overflow:hidden; animation:modalIn 0.25s ease-out;">
+        <div style="background:var(--primary); padding:22px 28px; display:flex; justify-content:space-between; align-items:center;">
+            <h3 style="margin:0; color:white; font-size:1.1rem; font-weight:800;"><i class="fas fa-plus me-2"></i>Add New Menu Item</h3>
+            <button onclick="closeAddRecipeItemModal()" style="background:rgba(255,255,255,0.15); border:none; color:white; width:34px; height:34px; border-radius:50%; cursor:pointer; font-size:1.2rem; display:flex; align-items:center; justify-content:center; transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">&times;</button>
         </div>
-
-        <!-- Body -->
-        <form action="{{ url_for('inventory_portal.inventory_add_recipe_item') }}" method="POST" style="padding:24px; display:flex; flex-direction:column; gap:16px;">
+        <form id="addRecipeItemForm" onsubmit="submitAddRecipeItem(event)" method="POST" style="padding:24px; display:flex; flex-direction:column; gap:16px;">
             <div style="display:flex; flex-direction:column; gap:6px;">
-                <label style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Item Name *</label>
-                <input type="text" name="name" required placeholder="e.g. Garlic Butter Chicken" style="padding:10px 14px; border:1px solid var(--card-border); border-radius:10px; font-size:0.9rem;">
+                <label style="font-size:0.72rem; font-weight:800; color:#8d6e63; text-transform:uppercase; letter-spacing:0.5px;">Item Name *</label>
+                <input type="text" name="name" required placeholder="e.g. Garlic Butter Chicken"
+                    style="padding:10px 14px; border:1.5px solid rgba(93,64,55,0.15); border-radius:11px; font-size:0.9rem; outline:none; transition:all 0.2s; color:#4e342e;"
+                    onfocus="this.style.borderColor='var(--primary)'; this.style.boxShadow='0 0 0 3px rgba(93,64,55,0.08)'" onblur="this.style.borderColor='rgba(93,64,55,0.15)'; this.style.boxShadow='none'">
             </div>
             <div style="display:flex; flex-direction:column; gap:6px;">
-                <label style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Category</label>
-                <select name="category" style="padding:10px 14px; border:1px solid var(--card-border); border-radius:10px; font-size:0.9rem; background:white;">
+                <label style="font-size:0.72rem; font-weight:800; color:#8d6e63; text-transform:uppercase; letter-spacing:0.5px;">Category</label>
+                <select name="category" style="padding:10px 14px; border:1.5px solid rgba(93,64,55,0.15); border-radius:11px; font-size:0.9rem; background:white; outline:none; transition:all 0.2s; color:#4e342e;"
+                    onfocus="this.style.borderColor='var(--primary)'; this.style.boxShadow='0 0 0 3px rgba(93,64,55,0.08)'" onblur="this.style.borderColor='rgba(93,64,55,0.15)'; this.style.boxShadow='none'">
                     {% for cat in menu_categories %}
                     <option value="{{ cat }}">{{ cat }}</option>
                     {% endfor %}
@@ -327,52 +359,56 @@
                 </select>
             </div>
             <div style="display:flex; flex-direction:column; gap:6px;">
-                <label style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Price (₱) *</label>
-                <input type="number" name="price" step="0.01" min="0" required value="0.00" style="padding:10px 14px; border:1px solid var(--card-border); border-radius:10px; font-size:0.9rem;">
+                <label style="font-size:0.72rem; font-weight:800; color:#8d6e63; text-transform:uppercase; letter-spacing:0.5px;">Price (₱) *</label>
+                <input type="number" name="price" step="0.01" min="0" required value="0.00"
+                    style="padding:10px 14px; border:1.5px solid rgba(93,64,55,0.15); border-radius:11px; font-size:0.9rem; outline:none; transition:all 0.2s; color:#4e342e;"
+                    onfocus="this.style.borderColor='var(--primary)'; this.style.boxShadow='0 0 0 3px rgba(93,64,55,0.08)'" onblur="this.style.borderColor='rgba(93,64,55,0.15)'; this.style.boxShadow='none'">
             </div>
             <div style="display:flex; flex-direction:column; gap:6px;">
-                <label style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Description</label>
-                <textarea name="description" placeholder="Item description..." rows="2" style="padding:10px 14px; border:1px solid var(--card-border); border-radius:10px; font-size:0.9rem; resize:none;"></textarea>
+                <label style="font-size:0.72rem; font-weight:800; color:#8d6e63; text-transform:uppercase; letter-spacing:0.5px;">Description</label>
+                <textarea name="description" placeholder="Optional description..." rows="2"
+                    style="padding:10px 14px; border:1.5px solid rgba(93,64,55,0.15); border-radius:11px; font-size:0.9rem; resize:none; outline:none; transition:all 0.2s; color:#4e342e;"
+                    onfocus="this.style.borderColor='var(--primary)'; this.style.boxShadow='0 0 0 3px rgba(93,64,55,0.08)'" onblur="this.style.borderColor='rgba(93,64,55,0.15)'; this.style.boxShadow='none'"></textarea>
             </div>
-            <!-- Footer inside form -->
-            <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:8px;">
-                <button type="button" onclick="closeAddRecipeItemModal()" style="background:#e0d6cf; color:#5d4037; border:none; padding:10px 22px; border-radius:12px; cursor:pointer; font-weight:600;">Cancel</button>
-                <button type="submit" style="background:var(--primary); color:white; border:none; padding:10px 22px; border-radius:12px; cursor:pointer; font-weight:600;">Add Menu Item</button>
+            <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:4px;">
+                <button type="button" onclick="closeAddRecipeItemModal()" style="background:#e0d6cf; color:#5d4037; border:none; padding:10px 22px; border-radius:12px; cursor:pointer; font-weight:700; transition:background 0.2s;" onmouseover="this.style.background='#d2c4bc'" onmouseout="this.style.background='#e0d6cf'">Cancel</button>
+                <button type="submit" style="background:var(--primary); color:white; border:none; padding:10px 22px; border-radius:12px; cursor:pointer; font-weight:700; transition:all 0.2s; box-shadow:0 2px 8px rgba(93,64,55,0.2);" onmouseover="this.style.background='#4a3028'; this.style.transform='scale(1.02)'" onmouseout="this.style.background='var(--primary)'; this.style.transform='scale(1)'">Add Menu Item</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- ═══════════ DELETE MENU ITEM MODAL ═══════════ -->
-<div id="deleteRecipeItemModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); backdrop-filter:blur(5px); display:none; align-items:center; justify-content:center; z-index:2000;">
-    <div style="background:white; border-radius:24px; width:100%; max-width:420px; box-shadow:0 25px 60px rgba(0,0,0,0.2); overflow:hidden;">
-        <!-- Header -->
-        <div style="background:#c62828; padding:20px 24px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
-            <h3 style="margin:0; color:white; font-size:1.05rem;"><i class="fas fa-trash-alt me-2"></i> Delete Menu Item</h3>
-            <button onclick="closeDeleteRecipeItemModal()" style="background:none; border:none; color:white; font-size:1.4rem; cursor:pointer; opacity:0.7; line-height:1;">&times;</button>
+<!-- ═══════════ DELETE MODAL ═══════════ -->
+<div id="deleteRecipeItemModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); backdrop-filter:blur(6px); display:none; align-items:center; justify-content:center; z-index:2000;">
+    <div style="background:white; border-radius:24px; width:100%; max-width:420px; box-shadow:0 30px 70px rgba(0,0,0,0.22); overflow:hidden; animation:modalIn 0.25s ease-out;">
+        <div style="background:#8c1d1d; padding:20px 24px; display:flex; justify-content:space-between; align-items:center;">
+            <h3 style="margin:0; color:white; font-size:1.05rem; font-weight:800;"><i class="fas fa-trash-alt me-2"></i>Delete Menu Item</h3>
+            <button onclick="closeDeleteRecipeItemModal()" style="background:rgba(255,255,255,0.15); border:none; color:white; width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:1.2rem; display:flex; align-items:center; justify-content:center; transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">&times;</button>
         </div>
-        <!-- Body -->
         <div style="padding:32px 24px; text-align:center;">
-            <div style="width:60px; height:60px; background:rgba(198,40,40,0.1); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 16px;">
-                <i class="fas fa-exclamation-triangle" style="font-size:1.5rem; color:#c62828;"></i>
+            <div style="width:62px; height:62px; background:rgba(140,29,29,0.1); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 16px;">
+                <i class="fas fa-exclamation-triangle" style="font-size:1.5rem; color:#8c1d1d;"></i>
             </div>
-            <h4 style="margin:0 0 10px; color:var(--text);">Are you sure?</h4>
-            <p style="color:var(--muted); font-size:0.9rem; margin:0; line-height:1.4;">
-                You are about to delete <strong id="deleteRecipeItemName" style="color:#c62828;"></strong>.<br>
-                This menu item and its recipe will be soft-deleted.
+            <h4 style="margin:0 0 10px; color:#3e2723; font-weight:800;">Are you sure?</h4>
+            <p style="color:#8d6e63; font-size:0.88rem; margin:0; line-height:1.5;">
+                You are about to delete <strong id="deleteRecipeItemName" style="color:#8c1d1d;"></strong>.<br>
+                <span style="font-size:0.78rem;">This menu item and its recipe will be removed.</span>
             </p>
         </div>
-        <!-- Footer -->
-        <div style="padding:20px 24px; background:#fdfaf8; border-top:1px solid rgba(93,64,55,0.08); display:flex; justify-content:center; gap:16px;">
-            <button type="button" onclick="closeDeleteRecipeItemModal()" style="background:#e0d6cf; color:#5d4037; border:none; padding:10px 22px; border-radius:12px; cursor:pointer; font-weight:600;">Cancel</button>
-            <button type="button" onclick="executeDeleteRecipeItem()" style="background:#c62828; color:white; border:none; padding:10px 22px; border-radius:12px; cursor:pointer; font-weight:600;">
-                <i class="fas fa-trash-alt me-1"></i> Delete
+        <div style="padding:18px 24px; background:#fdfaf8; border-top:1px solid rgba(93,64,55,0.08); display:flex; justify-content:center; gap:14px;">
+            <button onclick="closeDeleteRecipeItemModal()" style="background:#e0d6cf; color:#5d4037; border:none; padding:10px 22px; border-radius:12px; cursor:pointer; font-weight:700; transition:background 0.2s;" onmouseover="this.style.background='#d2c4bc'" onmouseout="this.style.background='#e0d6cf'">Cancel</button>
+            <button onclick="executeDeleteRecipeItem()" style="background:#8c1d1d; color:white; border:none; padding:10px 22px; border-radius:12px; cursor:pointer; font-weight:700; transition:all 0.2s;" onmouseover="this.style.background='#721717'; this.style.transform='scale(1.02)'" onmouseout="this.style.background='#8c1d1d'; this.style.transform='scale(1)'">
+                <i class="fas fa-trash-alt me-1"></i>Delete
             </button>
         </div>
     </div>
 </div>
 
-<!-- Hidden ingredient data for JS -->
+<style>
+@keyframes modalIn { from { transform: translateY(18px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+</style>
+
+<!-- Ingredient data for JS -->
 <script>
     const ALL_INGREDIENTS = [
         {% for ing in all_ingredients %}
@@ -384,56 +420,57 @@
 
 {% block extra_script %}
 <script>
-    function filterByCategory(category) {
-        const cards = document.querySelectorAll('.recipe-card');
-        const headers = document.querySelectorAll('.category-header');
-        let visibleCount = 0;
-        
-        cards.forEach(card => {
-            if (category === 'ALL' || card.dataset.cat === category) {
-                card.style.display = 'flex';
-                visibleCount++;
-            } else {
-                card.style.display = 'none';
-            }
+    /* ── Filter / Search ── */
+    function applyFilters() {
+        const catVal    = document.getElementById('categoryFilter').value;
+        const searchVal = document.getElementById('recipeSearch').value.toLowerCase();
+        const sections  = document.querySelectorAll('.category-section');
+        let totalVisible = 0;
+
+        sections.forEach(section => {
+            const sectionCat = section.dataset.cat;
+            const cards = section.querySelectorAll('.recipe-card');
+            let visibleInSection = 0;
+
+            cards.forEach(card => {
+                const matchCat    = (catVal === 'ALL' || card.dataset.cat === catVal);
+                const matchSearch = card.dataset.name.includes(searchVal);
+                const show = matchCat && matchSearch;
+                card.style.display = show ? '' : 'none';
+                if (show) { visibleInSection++; totalVisible++; }
+            });
+
+            section.style.display = visibleInSection > 0 ? '' : 'none';
         });
-        
-        headers.forEach(header => {
-            if (category === 'ALL' || header.dataset.cat === category) {
-                header.style.display = 'flex';
-            } else {
-                header.style.display = 'none';
-            }
-        });
-        
-        document.getElementById('recipeCount').innerText = visibleCount;
+
+        document.getElementById('recipeCount').textContent = totalVisible;
     }
 
-    // ── Recipe Edit ──────────────────────────────────────────────
+    /* ── Edit Recipe Modal ── */
     let currentEditItemId = null;
 
     function openRecipeEdit(itemId, itemName) {
         currentEditItemId = itemId;
         document.getElementById('editRecipeSubtitle').textContent = itemName;
-        document.getElementById('recipeIngRows').innerHTML = `
+        const container = document.getElementById('recipeIngRows');
+        container.innerHTML = `
             <div style="text-align:center; padding:30px; color:var(--muted);">
                 <i class="fas fa-spinner fa-spin" style="font-size:1.4rem;"></i>
-                <p style="margin-top:10px; font-size:0.85rem;">Loading ingredients...</p>
+                <p style="margin-top:10px; font-size:0.85rem;">Loading recipe...</p>
             </div>`;
         document.getElementById('editRecipeModal').style.display = 'flex';
 
         fetch(`/staff/inventory/recipes/${itemId}/ingredients`)
             .then(r => r.json())
             .then(data => {
-                const container = document.getElementById('recipeIngRows');
                 container.innerHTML = '';
                 if (data.success && data.ingredients.length > 0) {
                     data.ingredients.forEach(ing => addIngRow(ing.ingredient_id, ing.quantity_needed));
                 } else {
-                    addIngRow(); // start with one empty row
+                    addIngRow();
                 }
             })
-            .catch(() => { addIngRow(); });
+            .catch(() => { container.innerHTML = ''; addIngRow(); });
     }
 
     function closeRecipeEdit() {
@@ -451,27 +488,29 @@
         const container = document.getElementById('recipeIngRows');
         const row = document.createElement('div');
         row.className = 'ing-edit-row';
-        row.style.cssText = 'display:flex; align-items:center; gap:10px; margin-bottom:10px; background:#fdfaf8; border:1px solid rgba(93,64,55,0.08); border-radius:14px; padding:12px 14px;';
+        row.style.cssText = 'display:flex; align-items:center; gap:10px; margin-bottom:10px; background:#fdfaf8; border:1px solid rgba(93,64,55,0.12); border-radius:14px; padding:12px 14px; transition: all 0.2s ease;';
         row.innerHTML = `
             <select onchange="updateUnit(this)"
-                style="flex:1; padding:9px 12px; border:1px solid rgba(93,64,55,0.15); border-radius:10px; font-size:0.85rem; color:var(--text); background:#fff; outline:none; cursor:pointer;">
+                style="flex:1; padding:9px 12px; border:1.5px solid rgba(93,64,55,0.15); border-radius:10px; font-size:0.84rem; color:#4e342e; background:#fff; outline:none; cursor:pointer; transition: all 0.2s ease;"
+                onfocus="this.style.borderColor='var(--primary)'; this.style.boxShadow='0 0 0 3px rgba(93,64,55,0.08)'"
+                onblur="this.style.borderColor='rgba(93,64,55,0.15)'; this.style.boxShadow='none'">
                 <option value="">— Select Ingredient —</option>
                 ${buildIngredientOptions(selectedIngId)}
             </select>
             <input type="number" step="0.01" min="0.01" value="${qty}" placeholder="Qty"
-                style="width:90px; padding:9px 10px; border:1px solid rgba(93,64,55,0.15); border-radius:10px; font-size:0.85rem; text-align:center; font-weight:700; color:var(--primary); outline:none;">
-            <span class="unit-label" style="font-size:0.78rem; font-weight:700; color:var(--muted); min-width:40px; text-align:left;"></span>
+                style="width:90px; padding:9px 10px; border:1.5px solid rgba(93,64,55,0.15); border-radius:10px; font-size:0.85rem; text-align:center; font-weight:700; color:var(--primary); outline:none; transition: all 0.2s ease;"
+                onfocus="this.style.borderColor='var(--primary)'; this.style.boxShadow='0 0 0 3px rgba(93,64,55,0.08)'"
+                onblur="this.style.borderColor='rgba(93,64,55,0.15)'; this.style.boxShadow='none'">
+            <span class="unit-label" style="font-size:0.75rem; font-weight:700; color:#8d6e63; min-width:38px;"></span>
             <button type="button" onclick="this.closest('.ing-edit-row').remove()"
-                style="background:rgba(198,40,40,0.08); border:none; color:#c62828; width:30px; height:30px; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0;"
-                onmouseover="this.style.background='rgba(198,40,40,0.18)'"
-                onmouseout="this.style.background='rgba(198,40,40,0.08)'">
-                <i class="fas fa-times" style="font-size:0.75rem;"></i>
+                style="background:rgba(140,29,29,0.08); border:none; color:#8c1d1d; width:30px; height:30px; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.2s;"
+                onmouseover="this.style.background='rgba(140,29,29,0.18)'"
+                onmouseout="this.style.background='rgba(140,29,29,0.08)'">
+                <i class="fas fa-times" style="font-size:0.72rem;"></i>
             </button>
         `;
         container.appendChild(row);
-        // Set unit label for pre-filled rows
-        const sel = row.querySelector('select');
-        updateUnit(sel);
+        updateUnit(row.querySelector('select'));
     }
 
     function updateUnit(selectEl) {
@@ -480,11 +519,35 @@
         selectEl.closest('.ing-edit-row').querySelector('.unit-label').textContent = unit;
     }
 
+    function reloadRecipesList() {
+        return fetch('/staff/inventory/recipes')
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newContainer = doc.getElementById('recipeContainer');
+                const newCount = doc.getElementById('recipeCount');
+                
+                if (newContainer) {
+                    document.getElementById('recipeContainer').innerHTML = newContainer.innerHTML;
+                }
+                if (newCount) {
+                    document.getElementById('recipeCount').textContent = newCount.textContent;
+                }
+                
+                // Re-apply any active filters/search
+                applyFilters();
+            })
+            .catch(err => {
+                console.error("Error reloading recipes list:", err);
+            });
+    }
+
     function saveRecipe() {
         if (!currentEditItemId) return;
         const btn = document.getElementById('btnSaveRecipe');
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Saving...';
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving...';
 
         const rows = document.querySelectorAll('.ing-edit-row');
         const ingredients = [];
@@ -492,7 +555,7 @@
             const sel = row.querySelector('select');
             const inp = row.querySelector('input[type="number"]');
             const ingId = parseInt(sel.value);
-            const qty = parseFloat(inp.value);
+            const qty   = parseFloat(inp.value);
             if (ingId && qty > 0) {
                 ingredients.push({ ingredient_id: ingId, quantity_needed: qty });
             }
@@ -507,41 +570,88 @@
         .then(data => {
             if (data.success) {
                 closeRecipeEdit();
-                // Show flash-style toast
-                const toast = document.createElement('div');
-                toast.style.cssText = 'position:fixed; bottom:24px; right:24px; background:var(--primary); color:white; padding:14px 22px; border-radius:14px; font-weight:600; font-size:0.9rem; z-index:9999; box-shadow:0 8px 24px rgba(93,64,55,0.25); transition:opacity 0.4s;';
-                toast.innerHTML = `<i class="fas fa-check-circle me-2"></i>${data.message}`;
-                document.body.appendChild(toast);
-                setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 400); }, 3000);
-                // Reload page to reflect changes
-                setTimeout(() => location.reload(), 1200);
+                if (window.showToast) {
+                    window.showToast('success', data.message || 'Recipe saved!');
+                }
+                reloadRecipesList();
             } else {
-                alert(data.message || 'Error saving recipe.');
+                if (window.showToast) {
+                    window.showToast('danger', data.message || 'Error saving recipe.');
+                }
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-save me-1"></i> Save Recipe';
+                btn.innerHTML = '<i class="fas fa-save me-1"></i>Save Recipe';
             }
         })
         .catch(() => {
-            alert('Network error. Please try again.');
+            if (window.showToast) {
+                window.showToast('danger', 'Network error. Please try again.');
+            }
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-save me-1"></i> Save Recipe';
+            btn.innerHTML = '<i class="fas fa-save me-1"></i>Save Recipe';
         });
     }
 
-    // Close modal on outside click
     document.getElementById('editRecipeModal').addEventListener('click', function(e) {
         if (e.target === this) closeRecipeEdit();
     });
 
-    // --- Add Menu Item Modal ---
-    function openAddRecipeItemModal() {
-        document.getElementById('addRecipeItemModal').style.display = 'flex';
-    }
-    function closeAddRecipeItemModal() {
-        document.getElementById('addRecipeItemModal').style.display = 'none';
+    /* ── Add Menu Item Modal ── */
+    function openAddRecipeItemModal() { document.getElementById('addRecipeItemModal').style.display = 'flex'; }
+    function closeAddRecipeItemModal() { document.getElementById('addRecipeItemModal').style.display = 'none'; }
+    document.getElementById('addRecipeItemModal').addEventListener('click', function(e) {
+        if (e.target === this) closeAddRecipeItemModal();
+    });
+
+    function submitAddRecipeItem(event) {
+        event.preventDefault();
+        const form = event.target;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn ? submitBtn.innerHTML : 'Add Menu Item';
+        
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        }
+        
+        const formData = new FormData(form);
+        fetch('/staff/inventory/recipes/add', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+            }
+            if (data.success) {
+                closeAddRecipeItemModal();
+                form.reset();
+                if (window.showToast) {
+                    window.showToast('success', data.message);
+                }
+                reloadRecipesList();
+            } else {
+                if (window.showToast) {
+                    window.showToast('danger', data.message || 'Failed to add menu item.');
+                }
+            }
+        })
+        .catch(err => {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+            }
+            if (window.showToast) {
+                window.showToast('danger', 'Network error. Failed to add menu item.');
+            }
+        });
     }
 
-    // --- Delete Menu Item Modal ---
+    /* ── Delete Menu Item Modal ── */
     let deleteRecipeItemId = null;
     function confirmDeleteRecipeItem(itemId, itemName) {
         deleteRecipeItemId = itemId;
@@ -554,39 +664,51 @@
     }
     function executeDeleteRecipeItem() {
         if (!deleteRecipeItemId) return;
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/staff/inventory/recipes/${deleteRecipeItemId}/delete`;
-        document.body.appendChild(form);
-        form.submit();
-    }
-
-    function pollInventoryRecipes() {
-        if (document.getElementById('editRecipeModal').style.display === 'flex' || 
-            document.getElementById('addRecipeItemModal').style.display === 'flex' || 
-            document.getElementById('deleteRecipeItemModal').style.display === 'flex') return;
-
-        const savedScroll = window.scrollY;
-        const filterSelect = document.querySelector('.filter-bar .custom-select');
-        const savedFilter = filterSelect ? filterSelect.value : 'ALL';
-
-        fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-        .then(r => r.text())
-        .then(html => {
-            const doc = new DOMParser().parseFromString(html, 'text/html');
-            // Only update the grid and count — NEVER touch the filter bar
-            ['recipeGrid', 'recipeCount', 'lastUpdateText'].forEach(id => {
-                const o = document.getElementById(id);
-                const n = doc.getElementById(id);
-                if (o && n && o.innerHTML !== n.innerHTML) o.innerHTML = n.innerHTML;
-            });
-            // Re-apply filter and scroll
-            if (filterSelect) filterSelect.value = savedFilter;
-            if (savedFilter !== 'ALL') filterByCategory(savedFilter);
-            window.scrollTo(0, savedScroll);
+        
+        const btn = document.querySelector('#deleteRecipeItemModal button[onclick="executeDeleteRecipeItem()"]');
+        const originalHtml = btn ? btn.innerHTML : 'Delete';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+        }
+        
+        fetch(`/staff/inventory/recipes/${deleteRecipeItemId}/delete`, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
         })
-        .catch(err => console.warn('Inventory recipes sync failed:', err));
+        .then(r => r.json())
+        .then(data => {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+            closeDeleteRecipeItemModal();
+            if (data.success) {
+                if (window.showToast) {
+                    window.showToast('success', data.message);
+                }
+                reloadRecipesList();
+            } else {
+                if (window.showToast) {
+                    window.showToast('danger', data.message || 'Failed to delete menu item.');
+                }
+            }
+        })
+        .catch(err => {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+            closeDeleteRecipeItemModal();
+            if (window.showToast) {
+                window.showToast('danger', 'Network error. Failed to delete menu item.');
+            }
+        });
     }
-    
+    document.getElementById('deleteRecipeItemModal').addEventListener('click', function(e) {
+        if (e.target === this) closeDeleteRecipeItemModal();
+    });
 </script>
 {% endblock %}

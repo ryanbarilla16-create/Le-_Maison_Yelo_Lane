@@ -312,6 +312,41 @@
         })
         .catch(err => console.warn('History sync failed:', err));
     }
-    
+
+    let _lastCompletedToday = 0;
+    let _knownLatestOrderId = null;
+
+    function pollHistorySummary() {
+        fetch('{{ url_for("cashier_portal.cashier_api_history_summary") }}')
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) return;
+            if (_lastCompletedToday > 0 && data.completed_today > _lastCompletedToday) {
+                if (window.showToast) showToast('success', 'New completed order recorded!');
+                pollOrderHistory();
+            }
+            _lastCompletedToday = data.completed_today;
+            const latest = data.latest && data.latest[0];
+            if (latest && _knownLatestOrderId && latest.id !== _knownLatestOrderId && latest.status === 'COMPLETED') {
+                if (window.showToast) showToast('info', `Order ${latest.order_code} completed.`);
+                pollOrderHistory();
+            }
+            if (latest) _knownLatestOrderId = latest.id;
+        })
+        .catch(() => {});
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        fetch('{{ url_for("cashier_portal.cashier_api_history_summary") }}')
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                _lastCompletedToday = data.completed_today;
+                if (data.latest && data.latest[0]) _knownLatestOrderId = data.latest[0].id;
+            }
+        });
+        setInterval(pollHistorySummary, 10000);
+        setInterval(pollOrderHistory, 15000);
+    });
 </script>
 {% endblock %}

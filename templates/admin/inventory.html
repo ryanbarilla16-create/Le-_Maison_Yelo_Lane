@@ -1664,7 +1664,39 @@
         .catch(err => console.warn('Inventory sync failed:', err));
     }
 
-    
+    let _adminLowStockCount = 0;
+
+    function pollLowStockAlerts() {
+        fetch('{{ url_for("admin.inventory_alerts_api") }}')
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) return;
+            let banner = document.getElementById('adminLowStockBanner');
+            if (data.count > 0) {
+                if (!banner) {
+                    banner = document.createElement('div');
+                    banner.id = 'adminLowStockBanner';
+                    banner.style.cssText = 'background:#fff3e0;border:1px solid #ffcc80;border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:0.85rem;color:#e65100;font-weight:600;';
+                    const container = document.getElementById('inventoryMainContainer');
+                    if (container) container.prepend(banner);
+                }
+                const names = data.alerts.slice(0, 4).map(a => a.name).join(', ');
+                const more = data.count > 4 ? ` (+${data.count - 4} more)` : '';
+                banner.innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i><strong>${data.count} low-stock:</strong> ${names}${more}`;
+            } else if (banner) {
+                banner.remove();
+            }
+            if (_adminLowStockCount > 0 && data.count > _adminLowStockCount && window.showToast) {
+                showToast('warning', 'New low-stock inventory alert!');
+            }
+            _adminLowStockCount = data.count;
+        })
+        .catch(() => {});
+    }
+
+    setInterval(pollInventory, 30000);
+    setInterval(pollLowStockAlerts, 20000);
+    document.addEventListener('DOMContentLoaded', pollLowStockAlerts);
 </script>
 {% endblock %}
 {% endblock %}

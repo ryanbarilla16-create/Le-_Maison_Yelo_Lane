@@ -1,0 +1,125 @@
+{% extends "layouts/staff_layout.html" %}
+
+{% block title %}Table Management — Le Maison{% endblock %}
+
+{% block portal_sub %}POS Terminal{% endblock %}
+{% block portal_role %}Cashier Staff{% endblock %}
+{% block logout_url %}{{ url_for('cashier_portal.cashier_logout') }}{% endblock %}
+
+{% block sidebar_nav %}
+    {% include "cashier/_sidebar.html" %}
+{% endblock %}
+
+{% block page_title %}Table Management{% endblock %}
+{% block page_subtitle %}Real-time view of dine-in table availability (Tables 1–17){% endblock %}
+
+{% block extra_style %}
+    .table-summary {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+    .table-summary-card {
+        background: var(--card);
+        border: 1px solid var(--card-border);
+        border-radius: 16px;
+        padding: 20px;
+        text-align: center;
+    }
+    .table-summary-card h3 { font-size: 2rem; font-weight: 800; margin: 0; }
+    .table-summary-card p { margin: 4px 0 0; font-size: 0.72rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+    .table-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 14px;
+    }
+    .table-tile {
+        border-radius: 14px;
+        padding: 18px 14px;
+        text-align: center;
+        border: 2px solid transparent;
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: default;
+    }
+    .table-tile:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(62,39,35,0.08); }
+    .table-tile.available { background: rgba(46,125,50,0.08); border-color: rgba(46,125,50,0.2); color: #2e7d32; }
+    .table-tile.occupied { background: rgba(198,40,40,0.06); border-color: rgba(198,40,40,0.15); color: #c62828; }
+    .table-tile .num { font-size: 1.5rem; font-weight: 800; line-height: 1; }
+    .table-tile .label { font-size: 0.68rem; font-weight: 700; margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .table-tile .meta { font-size: 0.7rem; margin-top: 8px; opacity: 0.85; line-height: 1.3; }
+    .live-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #2e7d32; margin-right: 6px; animation: pulse-live 2s infinite; }
+    @keyframes pulse-live {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+    }
+    @media (max-width: 768px) { .table-summary { grid-template-columns: 1fr; } }
+{% endblock %}
+
+{% block content %}
+<div id="tableManagementContainer">
+    <div class="table-summary">
+        <div class="table-summary-card">
+            <h3 id="tblTotal">17</h3>
+            <p>Total Tables</p>
+        </div>
+        <div class="table-summary-card">
+            <h3 id="tblAvailable" style="color:#2e7d32;">17</h3>
+            <p>Available</p>
+        </div>
+        <div class="table-summary-card">
+            <h3 id="tblOccupied" style="color:#c62828;">0</h3>
+            <p>Occupied</p>
+        </div>
+    </div>
+
+    <div class="section-card">
+        <div class="section-header">
+            <h2><i class="fas fa-chair" style="opacity:0.5; margin-right:10px;"></i>Floor Plan</h2>
+            <span class="pill" style="background:rgba(46,125,50,0.08); color:#2e7d32; font-weight:700;">
+                <span class="live-dot"></span><span id="tableLastUpdate">Live</span>
+            </span>
+        </div>
+        <div class="table-grid" id="tableGrid"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_script %}
+<script>
+    function renderTableGrid(tables) {
+        const grid = document.getElementById('tableGrid');
+        if (!grid) return;
+        grid.innerHTML = '';
+        for (let i = 1; i <= 17; i++) {
+            const info = tables[i] || { status: 'AVAILABLE' };
+            const isOcc = info.status === 'OCCUPIED';
+            const tile = document.createElement('div');
+            tile.className = `table-tile ${isOcc ? 'occupied' : 'available'}`;
+            tile.innerHTML = `
+                <div class="num">${i}</div>
+                <div class="label">${isOcc ? 'Occupied' : 'Available'}</div>
+                ${isOcc ? `<div class="meta">${info.customer || 'Guest'}<br><small>${info.status || ''}</small></div>` : ''}
+            `;
+            grid.appendChild(tile);
+        }
+    }
+
+    function pollTableStatus() {
+        fetch('{{ url_for("cashier_portal.cashier_api_tables") }}')
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) return;
+            document.getElementById('tblAvailable').textContent = data.available_count;
+            document.getElementById('tblOccupied').textContent = data.occupied_count;
+            const lu = document.getElementById('tableLastUpdate');
+            if (lu) lu.textContent = `Updated ${data.time}`;
+            renderTableGrid(data.tables);
+        })
+        .catch(err => console.warn('Table sync failed:', err));
+    }
+
+    document.addEventListener('DOMContentLoaded', pollTableStatus);
+    setInterval(pollTableStatus, 5000);
+</script>
+{% endblock %}

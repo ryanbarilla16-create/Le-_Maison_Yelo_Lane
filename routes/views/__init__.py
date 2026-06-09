@@ -1,8 +1,8 @@
-from flask import render_template
+from flask import render_template, jsonify
 from flask_login import current_user, login_required
 from .. import main_bp
 from models import db, MenuItem, Reservation
-from utils import load_site_settings
+from utils import load_site_settings, get_ph_time
 from sqlalchemy import func
 from datetime import date
 from sqlalchemy.orm import load_only
@@ -145,6 +145,56 @@ def my_orders():
         user_reviews_by_order=user_reviews_by_order
     )
 
+
+def _customer_order_overall_status(order):
+    if order.dining_option == 'DELIVERY' and order.status == 'COMPLETED' and order.delivery_status != 'DELIVERED':
+        if order.delivery_status in ['WAITING', 'PICKED_UP']:
+            return 'PREPARING'
+        return order.delivery_status or order.status
+    if order.dining_option == 'DELIVERY' and order.delivery_status == 'DELIVERED':
+        return 'COMPLETED'
+    return order.status
+
+
+@main_bp.route('/api/my-orders/status')
+@login_required
+def api_my_orders_status():
+    """JSON polling endpoint for customer order tracking."""
+    from models import Order
+
+    orders = Order.query.filter_by(user_id=current_user.id).order_by(Order.created_at.desc()).limit(30).all()
+    payload = []
+    for o in orders:
+        overall = _customer_order_overall_status(o)
+        payload.append({
+            'id': o.id,
+            'order_code': o.order_code or f'Order #{o.id}',
+            'overall_status': overall,
+            'status': o.status,
+            'delivery_status': o.delivery_status,
+            'payment_status': o.payment_status,
+            'dining_option': o.dining_option,
+            'total_amount': float(o.total_amount or 0),
+            'created_at': o.created_at.strftime('%b %d, %Y - %I:%M %p') if o.created_at else '',
+        })
+
+    pending_count = sum(1 for o in payload if o['overall_status'] == 'PENDING')
+    preparing_count = sum(1 for o in payload if o['overall_status'] in ['PREPARING', 'WAITING', 'PICKED_UP'])
+    completed_count = sum(1 for o in payload if o['overall_status'] in ['COMPLETED', 'DELIVERED'])
+
+    return jsonify({
+        'success': True,
+        'time': get_ph_time().strftime('%I:%M:%S %p'),
+        'stats': {
+            'total': len(payload),
+            'pending': pending_count,
+            'preparing': preparing_count,
+            'completed': completed_count,
+        },
+        'orders': payload,
+    })
+
+
 @main_bp.route('/my-reservations')
 @login_required
 def my_reservations():
@@ -203,6 +253,9 @@ def reviews_page():
     
     reviews_with_photos = [r for r in approved_reviews if r.photo_url]
     reviews_without_photos = [r for r in approved_reviews if not r.photo_url]
+    # Fallback to all approved reviews if no text-only reviews exist, to ensure Lane 2 remains visible
+    if not reviews_without_photos and approved_reviews:
+        reviews_without_photos = approved_reviews
 
     bestsellers = MenuItem.query.filter_by(category='Best Sellers', is_available=True, is_deleted=False).limit(8).all()
     return render_template(

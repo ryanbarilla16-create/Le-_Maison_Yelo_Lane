@@ -241,19 +241,19 @@ DEFAULT_SETTINGS = {
     "hero1": {
         "title1": "Experience Premium",
         "title2": "French Dining",
-        "description": "Discover a thoughtfully crafted menu designed to bring you and your famille together at Le Maison de Yelo Lane.",
+        "description": "Indulge in our beautifully presented, gourmet French-inspired dishes crafted with culinary passion.",
         "image_url": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=70&w=1500&auto=format&fit=crop"
     },
     "hero2": {
-        "title1": "Good Food,",
-        "title2": "Great Company",
-        "description": "From signature lattes to artisan pastries, every dish carries a story of passion and tradition.",
+        "title1": "Bold Sizzling",
+        "title2": "Rustic Steaks",
+        "description": "Savor the rich flavors of premium, flame-grilled cuts served hot on our signature wooden carving boards.",
         "image_url": "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=70&w=1500&auto=format&fit=crop"
     },
     "hero3": {
-        "title1": "Premium French Dining",
-        "title2": "Drift into Joy",
-        "description": "Order your favorite organic blends and freshly baked pastries right to your table, or reserve a spot for your next coffee run.",
+        "title1": "Crispy & Loaded",
+        "title2": "Comfort Bites",
+        "description": "Share the joy with our golden hand-cut fries, stacked nachos, and savory snack spreads made for great company.",
         "image_url": "https://i.postimg.cc/cCRnWV9j/htdhtht.webp"
     },
     "welcome": {

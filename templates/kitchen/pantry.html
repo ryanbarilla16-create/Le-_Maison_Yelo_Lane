@@ -191,12 +191,12 @@
                 _syncIngredientDisplay(ingId, parseFloat(newQty));
                 if (window.showToast) showToast('success', `${data.name} → ${data.new_qty} ${data.unit}`);
             } else {
-                alert(data.message || "Failed to save changes.");
+                if (window.showToast) showToast('danger', data.message || 'Failed to save changes.');
             }
         })
         .catch(err => {
             console.error("Error saving:", err);
-            alert("Network error. Please try again.");
+            if (window.showToast) showToast('danger', 'Network error. Please try again.');
         })
         .finally(() => {
             saveBtn.disabled = false;
@@ -227,9 +227,27 @@
     }
     
     function confirmEmergency() {
-        if (confirm("Are you sure you want to set ALL ingredients to 100.0? Use only for testing.")) {
-            document.getElementById('emergencyForm').submit();
-        }
+        if (!confirm("Are you sure you want to set ALL ingredients to 100.0? Use only for testing.")) return;
+        
+        const form = document.getElementById('emergencyForm');
+        const formData = new FormData(form);
+        
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(r => r.ok ? r.text() : Promise.reject(r.status))
+        .then(() => {
+            if (window.showToast) showToast('warning', 'Emergency fill done! All ingredients set to 100.0');
+            // Update all displayed quantities immediately
+            document.querySelectorAll('[id^="qty-"]').forEach(el => { el.innerText = '100.0'; });
+            document.querySelectorAll('input[name="kitchen_qty"]').forEach(el => { el.value = 100.0; });
+        })
+        .catch(err => {
+            console.error('Emergency fill error:', err);
+            if (window.showToast) showToast('danger', 'Emergency fill failed. Please try again.');
+        });
     }
 
     function filterPantry(category) {
@@ -295,6 +313,8 @@
         }
     }
 
-    
+    /* ═══ Auto-poll every 10s to keep pantry quantities live ═══ */
+    setInterval(pollKitchenPantry, 10000);
+
 </script>
 {% endblock %}

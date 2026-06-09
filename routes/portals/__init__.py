@@ -322,6 +322,140 @@ def cashier_dashboard():
                            unpaid_orders=unpaid_orders_count,
                            orders=live_orders)
 
+
+def _serialize_cashier_order(o):
+    """Lightweight order payload for cashier dashboard polling."""
+    if o.user:
+        customer = f"{o.user.first_name} {o.user.last_name}".strip()
+    elif o.customer_name:
+        customer = o.customer_name
+    else:
+        customer = 'Walk-in Guest'
+    dining = (o.dining_option or 'DINE_IN').replace('_', ' ').title()
+    return {
+        'id': o.id,
+        'order_code': o.order_code or f'#{o.id}',
+        'customer': customer,
+        'total_amount': float(o.total_amount or 0),
+        'dining_option': o.dining_option or 'DINE_IN',
+        'dining_label': dining,
+        'status': o.status,
+        'payment_status': o.payment_status,
+        'table_number': o.table_number,
+        'created_at': o.created_at.strftime('%I:%M %p') if o.created_at else '',
+    }
+
+
+@cashier_bp.route('/staff/cashier/api/dashboard')
+def cashier_api_dashboard():
+    """JSON endpoint for real-time cashier dashboard updates."""
+    if not current_user.is_authenticated or current_user.role not in CASHIER_ROLES:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    today = get_ph_time().date()
+    live_orders = (
+        Order.query.filter(Order.is_archived.is_(False), Order.status.in_(['PENDING', 'PREPARING', 'READY']))
+        .order_by(Order.created_at.desc())
+        .limit(50)
+        .all()
+    )
+    return jsonify({
+        'success': True,
+        'time': get_ph_time().strftime('%I:%M:%S %p'),
+        'stats': {
+            'active_orders': Order.query.filter(
+                Order.is_archived.is_(False),
+                Order.status.in_(['PENDING', 'PREPARING', 'READY'])
+            ).count(),
+            'completed_today': Order.query.filter(
+                Order.is_archived.is_(False),
+                Order.status == 'COMPLETED',
+                db.func.date(Order.created_at) == today
+            ).count(),
+            'unpaid_orders': Order.query.filter_by(payment_status='UNPAID', is_archived=False).count(),
+        },
+        'orders': [_serialize_cashier_order(o) for o in live_orders],
+    })
+
+
+@cashier_bp.route('/staff/cashier/api/tables')
+def cashier_api_tables():
+    """Real-time table availability for staff (tables 1–17)."""
+    if not current_user.is_authenticated or current_user.role not in CASHIER_ROLES:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    occupied_rows = db.session.query(Order.table_number, Order.id, Order.customer_name, Order.status).filter(
+        Order.table_status == 'OCCUPIED',
+        Order.table_number.isnot(None),
+        Order.is_archived.is_(False),
+    ).all()
+    occupied_map = {}
+    for table_num, order_id, customer_name, status in occupied_rows:
+        occupied_map[int(table_num)] = {
+            'order_id': order_id,
+            'customer': customer_name or f'Order #{order_id}',
+            'status': status,
+        }
+
+    tables = {}
+    for i in range(1, 18):
+        if i in occupied_map:
+            tables[i] = {'status': 'OCCUPIED', **occupied_map[i]}
+        else:
+            tables[i] = {'status': 'AVAILABLE'}
+
+    return jsonify({
+        'success': True,
+        'time': get_ph_time().strftime('%I:%M:%S %p'),
+        'tables': tables,
+        'occupied_count': len(occupied_map),
+        'available_count': 17 - len(occupied_map),
+    })
+
+
+@cashier_bp.route('/staff/cashier/tables')
+def cashier_table_management():
+    """Visual table management board for staff."""
+    if not current_user.is_authenticated or current_user.role not in CASHIER_ROLES:
+        return redirect(url_for('cashier_portal.staff_login'))
+    return render_template(
+        'cashier/table_management.html',
+        portal_name=f"{current_user.first_name} {current_user.last_name}",
+    )
+
+
+@cashier_bp.route('/staff/cashier/api/history-summary')
+def cashier_api_history_summary():
+    """Lightweight stats for order history auto-refresh."""
+    if not current_user.is_authenticated or current_user.role not in CASHIER_ROLES:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    today = get_ph_time().date()
+    completed_today = Order.query.filter(
+        Order.is_archived.is_(False),
+        Order.status == 'COMPLETED',
+        db.func.date(Order.created_at) == today,
+    ).count()
+    latest = (
+        Order.query.filter(Order.is_archived.is_(False))
+        .order_by(Order.created_at.desc())
+        .limit(5)
+        .all()
+    )
+    return jsonify({
+        'success': True,
+        'time': get_ph_time().strftime('%I:%M:%S %p'),
+        'completed_today': completed_today,
+        'total_records': Order.query.filter(Order.is_archived.is_(False)).count(),
+        'latest': [{
+            'id': o.id,
+            'order_code': o.order_code or f'#{o.id}',
+            'status': o.status,
+            'created_at': o.created_at.isoformat() if o.created_at else None,
+        } for o in latest],
+    })
+
+
 @cashier_bp.route('/staff/cashier/walkin-order')
 def cashier_walkin_order():
     if not current_user.is_authenticated or current_user.role not in CASHIER_ROLES:
@@ -354,14 +488,22 @@ def cashier_reservations():
 @cashier_bp.route('/staff/cashier/reservations/update/<int:res_id>', methods=['POST'])
 def cashier_update_reservation(res_id):
     if not current_user.is_authenticated or current_user.role not in CASHIER_ROLES:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+            return jsonify({'success': False, 'message': 'Session expired or unauthorized.'}), 403
         return redirect(url_for('cashier_portal.staff_login'))
 
     from models import Reservation
 
     res = Reservation.query.get_or_404(res_id)
     user_branch = getattr(current_user, 'branch', None)
+    
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
+    
     if user_branch and user_branch != 'ALL' and res.branch != user_branch:
-        flash("Access denied.", "danger")
+        msg = "Access denied."
+        if is_ajax:
+            return jsonify({'success': False, 'message': msg}), 403
+        flash(msg, "danger")
         return redirect(url_for('cashier_portal.cashier_reservations'))
 
     new_status = request.form.get('status')
@@ -377,7 +519,10 @@ def cashier_update_reservation(res_id):
             Reservation.status == 'CONFIRMED'
         ).first()
         if conflict:
-            flash(f"{table_number} is already booked for this date and time.", "danger")
+            msg = f"{table_number} is already booked for this date and time."
+            if is_ajax:
+                return jsonify({'success': False, 'message': msg}), 400
+            flash(msg, "danger")
             return redirect(url_for('cashier_portal.cashier_reservations'))
 
     res.status = new_status
@@ -385,29 +530,45 @@ def cashier_update_reservation(res_id):
         res.table_number = table_number
     db.session.commit()
 
-    flash(f"Reservation #{res.id} updated to {new_status}.", "success")
+    msg = f"Reservation #{res.id} updated to {new_status}."
+    if is_ajax:
+        return jsonify({'success': True, 'message': msg})
+    flash(msg, "success")
     return redirect(url_for('cashier_portal.cashier_reservations'))
 
 @cashier_bp.route('/staff/cashier/reservations/bulk-complete', methods=['POST'])
 def cashier_bulk_complete_reservations():
     if not current_user.is_authenticated or current_user.role not in CASHIER_ROLES:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+            return jsonify({'success': False, 'message': 'Session expired or unauthorized.'}), 403
         return redirect(url_for('cashier_portal.staff_login'))
 
     from models import Reservation
 
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
+
     ids_raw = (request.form.get('reservation_ids') or '').strip()
     if not ids_raw:
-        flash("No reservations selected.", "warning")
+        msg = "No reservations selected."
+        if is_ajax:
+            return jsonify({'success': False, 'message': msg}), 400
+        flash(msg, "warning")
         return redirect(url_for('cashier_portal.cashier_reservations'))
 
     try:
         res_ids = [int(x) for x in ids_raw.split(',') if x.strip().isdigit()]
     except Exception:
-        flash("Invalid selection.", "danger")
+        msg = "Invalid selection."
+        if is_ajax:
+            return jsonify({'success': False, 'message': msg}), 400
+        flash(msg, "danger")
         return redirect(url_for('cashier_portal.cashier_reservations'))
 
     if not res_ids:
-        flash("No reservations selected.", "warning")
+        msg = "No reservations selected."
+        if is_ajax:
+            return jsonify({'success': False, 'message': msg}), 400
+        flash(msg, "warning")
         return redirect(url_for('cashier_portal.cashier_reservations'))
 
     user_branch = getattr(current_user, 'branch', None)
@@ -417,14 +578,20 @@ def cashier_bulk_complete_reservations():
     rows = q.all()
 
     if not rows:
-        flash("No eligible reservations to complete.", "warning")
+        msg = "No eligible reservations to complete."
+        if is_ajax:
+            return jsonify({'success': False, 'message': msg}), 400
+        flash(msg, "warning")
         return redirect(url_for('cashier_portal.cashier_reservations'))
 
     for r in rows:
         r.status = 'COMPLETED'
     db.session.commit()
 
-    flash(f"{len(rows)} reservation(s) marked as COMPLETED.", "success")
+    msg = f"{len(rows)} reservation(s) marked as COMPLETED."
+    if is_ajax:
+        return jsonify({'success': True, 'message': msg})
+    flash(msg, "success")
     return redirect(url_for('cashier_portal.cashier_reservations'))
 
 @cashier_bp.route('/staff/cashier/billing')
@@ -609,6 +776,46 @@ def kitchen_reservations():
         import traceback
         traceback.print_exc()
         return f"Internal Error: {str(e)}", 500
+
+
+def _serialize_reserve_order(o):
+    from models import Reservation
+    res = o.reservation
+    items = [{'qty': i.quantity, 'name': i.menu_item.name if i.menu_item else 'Item'} for i in o.items]
+    return {
+        'id': o.id,
+        'status': o.status,
+        'customer': (o.user.first_name if o.user else None) or o.customer_name or 'Guest',
+        'reservation_date': res.date.strftime('%b %d, %Y') if res and res.date else '',
+        'reservation_time': res.time.strftime('%I:%M %p') if res and res.time else '',
+        'guest_count': res.guest_count if res else 0,
+        'booking_type': res.booking_type if res else '',
+        'items': items,
+    }
+
+
+@kitchen_bp.route('/staff/kitchen/api/reservations')
+def kitchen_api_reservations():
+    """JSON endpoint for kitchen event pre-order polling."""
+    if not current_user.is_authenticated or current_user.role not in KITCHEN_ROLES:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    from sqlalchemy.orm import selectinload
+    from models import Reservation
+    reserve_orders = (
+        Order.query.options(selectinload(Order.items).selectinload(OrderItem.menu_item), selectinload(Order.user))
+        .join(Reservation)
+        .filter(Order.reservation_id.isnot(None), ~Order.status.in_(['COMPLETED', 'CANCELLED']))
+        .order_by(Reservation.date.asc(), Reservation.time.asc())
+        .all()
+    )
+    return jsonify({
+        'success': True,
+        'time': get_ph_time().strftime('%I:%M:%S %p'),
+        'count': len(reserve_orders),
+        'orders': [_serialize_reserve_order(o) for o in reserve_orders],
+    })
+
 
 @kitchen_bp.route('/staff/kitchen/update/<int:order_id>', methods=['POST'])
 @login_required
@@ -979,6 +1186,34 @@ def inventory_dashboard():
                            grouped_ingredients=grouped_ingredients,
                            suppliers=suppliers)
 
+
+@inventory_bp.route('/staff/inventory/api/alerts')
+def inventory_api_alerts():
+    """Low-stock alerts for inventory staff polling."""
+    if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    user_branch = getattr(current_user, 'branch', None)
+    query = Ingredient.query.filter(Ingredient.stock_qty <= Ingredient.reorder_level)
+    if user_branch and user_branch != 'ALL':
+        query = query.filter(Ingredient.branch == user_branch)
+    low_stock = query.order_by(Ingredient.stock_qty.asc()).limit(50).all()
+    alerts = [{
+        'id': ing.id,
+        'name': ing.name,
+        'stock_qty': float(ing.stock_qty or 0),
+        'reorder_level': float(ing.reorder_level or 0),
+        'unit': ing.unit,
+        'status': 'OUT_OF_STOCK' if float(ing.stock_qty or 0) == 0 else 'LOW_STOCK',
+    } for ing in low_stock]
+    return jsonify({
+        'success': True,
+        'count': len(alerts),
+        'alerts': alerts,
+        'time': get_ph_time().strftime('%I:%M:%S %p'),
+    })
+
+
 @inventory_bp.route('/staff/inventory/recipes')
 def inventory_recipes():
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
@@ -1071,6 +1306,8 @@ def recipe_save_ingredients(item_id):
 @inventory_bp.route('/staff/inventory/recipes/add', methods=['POST'])
 def inventory_add_recipe_item():
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+            return jsonify({'success': False, 'message': 'Session expired or unauthorized.'}), 403
         return redirect(url_for('cashier_portal.staff_login'))
         
     name = request.form.get('name', '').strip()
@@ -1082,7 +1319,11 @@ def inventory_add_recipe_item():
     except (ValueError, TypeError):
         price = 0.0
         
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
+    
     if not name:
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'Menu item name is required.'}), 400
         flash('Menu item name is required.', 'danger')
         return redirect(url_for('inventory_portal.inventory_recipes'))
         
@@ -1102,13 +1343,18 @@ def inventory_add_recipe_item():
     except:
         pass
         
-    flash(f'Menu item "{name}" added successfully! You can now add its recipe ingredients.', 'success')
+    msg = f'Menu item "{name}" added successfully! You can now add its recipe ingredients.'
+    if is_ajax:
+        return jsonify({'success': True, 'message': msg})
+    flash(msg, 'success')
     return redirect(url_for('inventory_portal.inventory_recipes'))
 
 
 @inventory_bp.route('/staff/inventory/recipes/<int:item_id>/delete', methods=['POST'])
 def inventory_delete_recipe_item(item_id):
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+            return jsonify({'success': False, 'message': 'Session expired or unauthorized.'}), 403
         return redirect(url_for('cashier_portal.staff_login'))
         
     item = MenuItem.query.get_or_404(item_id)
@@ -1121,8 +1367,13 @@ def inventory_delete_recipe_item(item_id):
     except:
         pass
         
-    flash(f'Menu item "{item.name}" deleted successfully.', 'success')
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
+    msg = f'Menu item "{item.name}" deleted successfully.'
+    if is_ajax:
+        return jsonify({'success': True, 'message': msg})
+    flash(msg, 'success')
     return redirect(url_for('inventory_portal.inventory_recipes'))
+
 
 @inventory_bp.route('/staff/inventory/batches')
 def inventory_ingredient_batches():
@@ -1172,7 +1423,10 @@ def inventory_ingredient_batches():
 
 @inventory_bp.route('/staff/inventory/batches/add', methods=['POST'])
 def inventory_add_ingredient_batch():
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'Unauthorized'}), 403
         return redirect(url_for('cashier_portal.staff_login'))
         
     ing_id = request.form.get('ingredient_id', type=int)
@@ -1200,7 +1454,19 @@ def inventory_add_ingredient_batch():
     process_fifo_transaction(ing.id, 'ADD', batch_qty, cost_per_unit=cost, expiration_date=exp_date)
     
     db.session.commit()
-    flash(f"Inventory record updated. {batch_qty} {ing.unit} added to FIFO queue.", "success")
+    msg = f"Inventory record updated. {batch_qty} {ing.unit} added to FIFO queue."
+    if is_ajax:
+        return jsonify({
+            'success': True,
+            'message': msg,
+            'ingredient': {
+                'id': ing.id,
+                'name': ing.name,
+                'stock_qty': float(ing.stock_qty),
+                'unit': ing.unit
+            }
+        })
+    flash(msg, "success")
     return redirect(url_for('inventory_portal.inventory_ingredient_batches'))
 
 @inventory_bp.route('/staff/inventory/full')
@@ -1230,6 +1496,89 @@ def inventory_full():
                            categories=categories,
                            suppliers=suppliers,
                            portal_name=f"{current_user.first_name} {current_user.last_name}")
+
+@inventory_bp.route('/staff/inventory/ingredient-setup')
+def inventory_ingredient_setup():
+    """Dedicated page to assign supplier, category, and code to unsetup ingredients."""
+    if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        return redirect(url_for('cashier_portal.staff_login'))
+
+    from sqlalchemy import or_
+
+    user_branch = getattr(current_user, 'branch', None)
+    query = Ingredient.query.filter(
+        or_(
+            Ingredient.category == 'Unassigned',
+            Ingredient.category == None,
+            Ingredient.category == ''
+        )
+    )
+    if user_branch and user_branch != 'ALL':
+        query = query.filter_by(branch=user_branch)
+
+    unassigned_ingredients = query.order_by(Ingredient.name).all()
+
+    suppliers_list = Supplier.query.order_by(Supplier.name).all()
+
+    menu_categories = [r[0] for r in db.session.query(MenuItem.category)
+                       .filter(MenuItem.is_deleted == False)
+                       .distinct().order_by(MenuItem.category).all()]
+
+    return render_template(
+        'inventory/ingredient_setup.html',
+        ingredients=unassigned_ingredients,
+        suppliers=suppliers_list,
+        menu_categories=menu_categories,
+        portal_name=f"{current_user.first_name} {current_user.last_name}"
+    )
+
+
+@inventory_bp.route('/api/ingredients/<int:ing_id>/setup', methods=['POST'])
+def api_ingredient_setup(ing_id):
+    """API: Update category, supplier, and code for a single ingredient."""
+    if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    data = request.get_json()
+
+
+    ing = Ingredient.query.get(ing_id)
+    if not ing:
+        return jsonify({'success': False, 'message': 'Ingredient not found.'})
+
+    new_category = data.get('category', '').strip()
+    new_supplier_id = data.get('supplier_id')
+    new_code = data.get('ingredient_code', '').strip()
+
+    if new_category:
+        ing.category = new_category
+    if new_supplier_id:
+        ing.supplier_id = int(new_supplier_id)
+    elif new_supplier_id == 0 or new_supplier_id is None and 'supplier_id' in data:
+        ing.supplier_id = None
+    if new_code:
+        # Check uniqueness
+        existing = Ingredient.query.filter(
+            Ingredient.ingredient_code == new_code,
+            Ingredient.id != ing.id
+        ).first()
+        if existing:
+            return jsonify({'success': False, 'message': f'Code "{new_code}" is already used by "{existing.name}".'})
+        ing.ingredient_code = new_code
+
+    db.session.commit()
+    return jsonify({
+        'success': True,
+        'message': f'"{ing.name}" updated successfully.',
+        'ingredient': {
+            'id': ing.id,
+            'name': ing.name,
+            'category': ing.category,
+            'supplier_id': ing.supplier_id,
+            'ingredient_code': ing.ingredient_code
+        }
+    })
+
 
 @inventory_bp.route('/staff/inventory/suppliers')
 def inventory_suppliers():
@@ -1293,7 +1642,10 @@ def inventory_suppliers():
 
 @inventory_bp.route('/staff/inventory/ingredients/add', methods=['POST'])
 def inventory_add_ingredient():
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'Unauthorized'}), 403
         return redirect(url_for('cashier_portal.staff_login'))
     
     name = request.form.get('name', '').strip()
@@ -1314,7 +1666,10 @@ def inventory_add_ingredient():
             pass
             
     if not name:
-        flash('Ingredient name is required.', 'danger')
+        msg = 'Ingredient name is required.'
+        if is_ajax:
+            return jsonify({'success': False, 'message': msg}), 400
+        flash(msg, 'danger')
         return redirect(url_for('inventory_portal.inventory_dashboard'))
         
     ing = Ingredient(
@@ -1325,12 +1680,28 @@ def inventory_add_ingredient():
     )
     db.session.add(ing)
     db.session.commit()
-    flash(f'Ingredient "{name}" added successfully!', 'success')
+    msg = f'Ingredient "{name}" added successfully!'
+    if is_ajax:
+        return jsonify({
+            'success': True,
+            'message': msg,
+            'ingredient': {
+                'id': ing.id,
+                'name': ing.name,
+                'unit': ing.unit,
+                'category': ing.category,
+                'stock_qty': float(ing.stock_qty)
+            }
+        })
+    flash(msg, 'success')
     return redirect(url_for('inventory_portal.inventory_full'))
 
 @inventory_bp.route('/staff/inventory/ingredients/edit/<int:ing_id>', methods=['POST'])
 def inventory_edit_ingredient(ing_id):
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'Unauthorized'}), 403
         return redirect(url_for('cashier_portal.staff_login'))
     
     ing = Ingredient.query.get_or_404(ing_id)
@@ -1342,7 +1713,10 @@ def inventory_edit_ingredient(ing_id):
     supplier_id = request.form.get('supplier_id')
     
     if not name:
-        flash('Ingredient name is required.', 'danger')
+        msg = 'Ingredient name is required.'
+        if is_ajax:
+            return jsonify({'success': False, 'message': msg}), 400
+        flash(msg, 'danger')
         return redirect(url_for('inventory_portal.inventory_full'))
         
     ing.name = name
@@ -1360,12 +1734,28 @@ def inventory_edit_ingredient(ing_id):
         ing.supplier_id = None
     
     db.session.commit()
-    flash(f'Changes saved for "{name}".', 'success')
+    msg = f'Changes saved for "{name}".'
+    if is_ajax:
+        return jsonify({
+            'success': True,
+            'message': msg,
+            'ingredient': {
+                'id': ing.id,
+                'name': ing.name,
+                'category': ing.category,
+                'stock_qty': float(ing.stock_qty),
+                'reorder_level': float(ing.reorder_level)
+            }
+        })
+    flash(msg, 'success')
     return redirect(url_for('inventory_portal.inventory_full'))
 
 @inventory_bp.route('/staff/inventory/suppliers/add', methods=['POST'])
 def inventory_add_supplier():
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'Unauthorized'}), 403
         return redirect(url_for('cashier_portal.staff_login'))
         
     name = request.form.get('name', '').strip()
@@ -1376,7 +1766,10 @@ def inventory_add_supplier():
     category = request.form.get('category', '').strip()
     
     if not name:
-        flash('Supplier name is required.', 'danger')
+        msg = 'Supplier name is required.'
+        if is_ajax:
+            return jsonify({'success': False, 'message': msg}), 400
+        flash(msg, 'danger')
         return redirect(url_for('inventory_portal.inventory_suppliers'))
         
     sup = Supplier(name=name, contact_person=contact_person, phone=phone, email=email, address=address, category=category)
@@ -1407,12 +1800,27 @@ def inventory_add_supplier():
         sup.catalog_items = ", ".join(sorted(names)) if names else ""
         db.session.commit()
         
-    flash(f'Supplier "{name}" added successfully!', 'success')
+    msg = f'Supplier "{name}" added successfully!'
+    if is_ajax:
+        return jsonify({
+            'success': True,
+            'message': msg,
+            'supplier': {
+                'id': sup.id,
+                'name': sup.name,
+                'category': sup.category,
+                'catalog_items': sup.catalog_items
+            }
+        })
+    flash(msg, 'success')
     return redirect(url_for('inventory_portal.inventory_suppliers'))
 
 @inventory_bp.route('/staff/inventory/suppliers/delete/<int:sup_id>', methods=['POST'])
 def inventory_delete_supplier(sup_id):
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'Unauthorized'}), 403
         return redirect(url_for('cashier_portal.staff_login'))
 
     sup = Supplier.query.get_or_404(sup_id)
@@ -1421,12 +1829,19 @@ def inventory_delete_supplier(sup_id):
     Ingredient.query.filter_by(supplier_id=sup_id).update({'supplier_id': None})
     db.session.delete(sup)
     db.session.commit()
-    flash(f'Supplier "{sup_name}" deleted.', 'success')
+    
+    msg = f'Supplier "{sup_name}" deleted.'
+    if is_ajax:
+        return jsonify({'success': True, 'message': msg})
+    flash(msg, 'success')
     return redirect(url_for('inventory_portal.inventory_suppliers'))
 
 @inventory_bp.route('/staff/inventory/suppliers/update/<int:sup_id>', methods=['POST'])
 def inventory_update_supplier(sup_id):
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'Unauthorized'}), 403
         return redirect(url_for('cashier_portal.staff_login'))
 
     sup = Supplier.query.get_or_404(sup_id)
@@ -1459,12 +1874,27 @@ def inventory_update_supplier(sup_id):
         sup.catalog_items = ", ".join(sorted(names)) if names else ""
 
     db.session.commit()
-    flash(f'Supplier "{sup.name}" updated successfully!', 'success')
+    msg = f'Supplier "{sup.name}" updated successfully!'
+    if is_ajax:
+        return jsonify({
+            'success': True,
+            'message': msg,
+            'supplier': {
+                'id': sup.id,
+                'name': sup.name,
+                'category': sup.category,
+                'catalog_items': sup.catalog_items
+            }
+        })
+    flash(msg, 'success')
     return redirect(url_for('inventory_portal.inventory_suppliers'))
 
 @inventory_bp.route('/staff/inventory/ingredients/restock/<int:ing_id>', methods=['POST'])
 def inventory_restock(ing_id):
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'Unauthorized'}), 403
         return redirect(url_for('cashier_portal.staff_login'))
     
     ing = Ingredient.query.get_or_404(ing_id)
@@ -1472,12 +1902,27 @@ def inventory_restock(ing_id):
     if add_qty > 0:
         ing.stock_qty += add_qty
         db.session.commit()
-        flash(f'Restocked {add_qty} {ing.unit} to {ing.name}.', 'success')
+        msg = f'Restocked {add_qty} {ing.unit} to {ing.name}.'
+        if is_ajax:
+            return jsonify({
+                'success': True,
+                'message': msg,
+                'ingredient': {
+                    'id': ing.id,
+                    'name': ing.name,
+                    'stock_qty': float(ing.stock_qty),
+                    'unit': ing.unit
+                }
+            })
+        flash(msg, 'success')
     return redirect(url_for('inventory_portal.inventory_dashboard'))
 
 @inventory_bp.route('/staff/inventory/ingredients/waste/add', methods=['POST'])
 def inventory_add_waste():
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'Unauthorized'}), 403
         return redirect(url_for('cashier_portal.staff_login'))
         
     ing_id = request.form.get('ingredient_id', type=int)
@@ -1507,13 +1952,28 @@ def inventory_add_waste():
     db.session.add(waste)
     db.session.commit()
     
-    flash(f'Recorded waste for {ing.name}.', 'warning')
+    msg = f'Recorded waste for {ing.name}.'
+    if is_ajax:
+        return jsonify({
+            'success': True,
+            'message': msg,
+            'ingredient': {
+                'id': ing.id,
+                'name': ing.name,
+                'stock_qty': float(ing.stock_qty),
+                'unit': ing.unit
+            }
+        })
+    flash(msg, 'warning')
     return redirect(url_for('inventory_portal.inventory_dashboard'))
 
 
 @inventory_bp.route('/staff/inventory/ingredients/delete/<int:ing_id>', methods=['POST'])
 def inventory_delete_ingredient(ing_id):
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'Unauthorized'}), 403
         return redirect(url_for('cashier_portal.staff_login'))
         
     ing = Ingredient.query.get_or_404(ing_id)
@@ -1548,7 +2008,10 @@ def inventory_delete_ingredient(ing_id):
     db.session.delete(ing)
     db.session.commit()
     
-    flash(f'Ingredient "{ing_name}" has been permanently deleted from stock levels.', 'success')
+    msg = f'Ingredient "{ing_name}" has been permanently deleted from stock levels.'
+    if is_ajax:
+        return jsonify({'success': True, 'message': msg})
+    flash(msg, 'success')
     
     referrer = request.referrer
     if referrer and ('/staff/inventory/full' in referrer):
@@ -1612,8 +2075,15 @@ def supplier_ingredients_api(sup_id):
     supplier = Supplier.query.get_or_404(sup_id)
     sup_category = supplier.category  # e.g. "Milkshakes & Smoothies"
     
+    ingredients_dict = {}
+    
+    # 1. Fetch ingredients directly assigned to the supplier by supplier_id
+    direct_ings = Ingredient.query.filter_by(supplier_id=sup_id).all()
+    for ing in direct_ings:
+        ingredients_dict[ing.id] = ing
+        
+    # 2. Fetch ingredients associated with recipes in the supplier's category
     if sup_category:
-        # Get all ingredient IDs used in menu items of this supplier's category
         linked_ing_ids = (
             db.session.query(MenuItemIngredient.ingredient_id)
             .join(MenuItem, MenuItem.id == MenuItemIngredient.menu_item_id)
@@ -1622,20 +2092,13 @@ def supplier_ingredients_api(sup_id):
             .all()
         )
         linked_ing_ids = [r[0] for r in linked_ing_ids]
-        
         if linked_ing_ids:
-            ingredients = (
-                Ingredient.query
-                .filter(Ingredient.id.in_(linked_ing_ids))
-                .order_by(Ingredient.category, Ingredient.name)
-                .all()
-            )
-        else:
-            # Fallback: no recipe links found, show supplier_id-linked ingredients
-            ingredients = Ingredient.query.filter_by(supplier_id=sup_id).order_by(Ingredient.name).all()
-    else:
-        # No category set: fallback to supplier_id filtering
-        ingredients = Ingredient.query.filter_by(supplier_id=sup_id).order_by(Ingredient.name).all()
+            cat_ings = Ingredient.query.filter(Ingredient.id.in_(linked_ing_ids)).all()
+            for ing in cat_ings:
+                ingredients_dict[ing.id] = ing
+                
+    # Sort ingredients by category, then name
+    ingredients = sorted(ingredients_dict.values(), key=lambda x: (x.category or 'General', x.name))
     
     result = []
     user_branch = getattr(current_user, 'branch', None)
@@ -1654,12 +2117,179 @@ def supplier_ingredients_api(sup_id):
         result.append({
             'id': ing_id,
             'name': ing.name,
+            'ingredient_code': ing.ingredient_code,
             'unit': ing.unit,
             'category': ing.category or 'General',
             'stock_qty': stock_qty,
             'cost_per_unit': float(ing.cost_per_unit or 0),
         })
     return jsonify({'success': True, 'ingredients': result})
+
+
+@inventory_bp.route('/api/ingredients/all')
+def get_all_ingredients():
+    """API: Return all ingredients in the system for dropdown population."""
+    if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    user_branch = getattr(current_user, 'branch', None)
+    query = Ingredient.query
+    
+    # Filter by branch if applicable
+    if user_branch and user_branch != 'ALL':
+        query = query.filter_by(branch=user_branch)
+    
+    ingredients = query.order_by(Ingredient.name).all()
+    
+    result = [{
+        'id': ing.id,
+        'name': ing.name,
+        'unit': ing.unit,
+        'category': ing.category or 'General',
+        'supplier_id': ing.supplier_id
+    } for ing in ingredients]
+    
+    return jsonify({'success': True, 'ingredients': result})
+
+
+@inventory_bp.route('/api/suppliers/<int:sup_id>/ingredients')
+def get_supplier_ingredients(sup_id):
+    """API: Return only ingredients linked to this specific supplier."""
+    if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    # Get only ingredients assigned to this supplier
+    ingredients = Ingredient.query.filter_by(supplier_id=sup_id).order_by(Ingredient.name).all()
+    
+    result = [{
+        'id': ing.id,
+        'name': ing.name,
+        'unit': ing.unit,
+        'category': ing.category or 'General',
+        'supplier_id': ing.supplier_id
+    } for ing in ingredients]
+    
+    return jsonify({'success': True, 'ingredients': result})
+
+
+@inventory_bp.route('/api/ingredients/add', methods=['POST'])
+def add_ingredient_api():
+    """API: Add a new ingredient to the system."""
+    if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    data = request.get_json()
+    name = data.get('name', '').strip()
+    unit = data.get('unit', 'pcs').strip()
+    category = data.get('category', 'General').strip()
+    cost_per_unit = float(data.get('cost_per_unit', 0))
+    reorder_level = float(data.get('reorder_level', 10))
+    
+    if not name:
+        return jsonify({'success': False, 'message': 'Ingredient name is required.'})
+    
+    # Check if ingredient already exists
+    existing = Ingredient.query.filter(db.func.lower(Ingredient.name) == name.lower()).first()
+    if existing:
+        return jsonify({'success': False, 'message': 'Ingredient already exists.'})
+    
+    # Get user's branch
+    user_branch = getattr(current_user, 'branch', 'Pagsanjan')
+    if user_branch == 'ALL':
+        user_branch = 'Pagsanjan'  # Default for super admin
+    
+    # Create new ingredient
+    new_ing = Ingredient(
+        name=name,
+        unit=unit,
+        category=category,
+        cost_per_unit=cost_per_unit,
+        reorder_level=reorder_level,
+        stock_qty=0,
+        kitchen_qty=0,
+        branch=user_branch,
+        supplier_id=None
+    )
+    
+    db.session.add(new_ing)
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'message': 'Ingredient added successfully!',
+        'ingredient': {
+            'id': new_ing.id,
+            'name': new_ing.name,
+            'unit': new_ing.unit,
+            'category': new_ing.category,
+            'supplier_id': new_ing.supplier_id
+        }
+    })
+
+
+@inventory_bp.route('/api/ingredients/assign-supplier', methods=['POST'])
+def assign_ingredient_supplier():
+    """API: Assign an ingredient to a supplier (or unassign by passing supplier_id=null)."""
+    if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    data = request.get_json()
+    ingredient_id = data.get('ingredient_id')
+    supplier_id = data.get('supplier_id')  # None means unassign
+
+    if not ingredient_id:
+        return jsonify({'success': False, 'message': 'ingredient_id is required.'})
+
+    ing = Ingredient.query.get(ingredient_id)
+    if not ing:
+        return jsonify({'success': False, 'message': 'Ingredient not found.'})
+
+    if supplier_id:
+        sup = Supplier.query.get(supplier_id)
+        if not sup:
+            return jsonify({'success': False, 'message': 'Supplier not found.'})
+        ing.supplier_id = int(supplier_id)
+    else:
+        ing.supplier_id = None
+
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'message': f'Ingredient "{ing.name}" assigned successfully.',
+        'ingredient': {
+            'id': ing.id,
+            'name': ing.name,
+            'supplier_id': ing.supplier_id
+        }
+    })
+
+
+@inventory_bp.route('/api/ingredients/unassigned')
+def get_unassigned_ingredients():
+    """API: Return all ingredients with no supplier assigned."""
+    if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    user_branch = getattr(current_user, 'branch', None)
+    query = Ingredient.query.filter(Ingredient.supplier_id == None)
+
+    if user_branch and user_branch != 'ALL':
+        query = query.filter_by(branch=user_branch)
+
+    ingredients = query.order_by(Ingredient.name).all()
+
+    result = [{
+        'id': ing.id,
+        'name': ing.name,
+        'unit': ing.unit,
+        'category': ing.category or 'Unassigned',
+        'stock_qty': float(ing.stock_qty or 0),
+        'cost_per_unit': float(ing.cost_per_unit or 0)
+    } for ing in ingredients]
+
+    return jsonify({'success': True, 'ingredients': result})
+
 
 @inventory_bp.route('/staff/inventory/suppliers/<int:sup_id>/receive', methods=['POST'])
 def supplier_receive_delivery(sup_id):
@@ -1673,17 +2303,68 @@ def supplier_receive_delivery(sup_id):
     supplier = Supplier.query.get_or_404(sup_id)
     data = request.get_json()
     
-    if not data or 'items' not in data:
-        return jsonify({'success': False, 'message': 'No items provided.'})
+    if not data:
+        return jsonify({'success': False, 'message': 'No data provided.'})
     
     user_branch = getattr(current_user, 'branch', None)
     target_branch = user_branch if (user_branch and user_branch != 'ALL') else 'Pagsanjan'
     
-    received_items = data['items']  # list of {ingredient_id, qty_received}
+    received_items = data.get('items', [])  # Existing ingredients
+    new_items = data.get('new_items', [])  # New ingredients to create
+    
     total_received = 0
     total_cost = 0
     details = []
     
+    # Process NEW ingredients first (create them)
+    for new_item in new_items:
+        name = new_item.get('name', '').strip()
+        unit = new_item.get('unit', 'pcs')
+        cost_per_unit = float(new_item.get('cost_per_unit', 0))
+        qty = float(new_item.get('qty_received', 0))
+        
+        if not name or qty <= 0:
+            continue
+        
+        # Check if ingredient already exists
+        existing_ing = Ingredient.query.filter(
+            db.func.lower(Ingredient.name) == name.lower(),
+            Ingredient.branch == target_branch
+        ).first()
+        
+        if existing_ing:
+            # Use existing ingredient
+            target_ing = existing_ing
+        else:
+            # Create new ingredient with "Unassigned" category
+            target_ing = Ingredient(
+                name=name,
+                branch=target_branch,
+                unit=unit,
+                stock_qty=0,
+                kitchen_qty=0,
+                reorder_level=10,
+                cost_per_unit=cost_per_unit,
+                category='Unassigned',  # ← KEY! Will appear in sidebar
+                supplier_id=sup_id
+            )
+            db.session.add(target_ing)
+            db.session.flush()  # Get the ID
+        
+        # Update stock
+        prev_stock = float(target_ing.stock_qty)
+        target_ing.stock_qty = prev_stock + qty
+        log_inventory_change(target_ing.id, 'ADD', qty, prev_stock, f'New Supply from {supplier.name} (First Delivery)')
+        
+        # Create FIFO Batch
+        process_fifo_transaction(target_ing.id, 'ADD', qty, cost_per_unit=cost_per_unit)
+        
+        item_cost = qty * cost_per_unit
+        total_cost += item_cost
+        total_received += 1
+        details.append(f'🆕 +{qty} {unit} {name} (₱{item_cost:,.2f}) - NEW!')
+    
+    # Process EXISTING ingredients
     for item in received_items:
         ing_id = item.get('ingredient_id')
         qty = float(item.get('qty_received', 0))
@@ -1695,14 +2376,14 @@ def supplier_receive_delivery(sup_id):
         if not ing:
             continue
         
-        # Awtomatikong i-tsek kung para sa ibang branch ang delivery na ito
+        # Check if delivery is for different branch
         target_ing = ing
         if ing.branch != target_branch:
             existing = Ingredient.query.filter_by(name=ing.name, branch=target_branch).first()
             if existing:
                 target_ing = existing
             else:
-                # I-clone ang sangkap para sa branch na nag-receive kung hindi pa umiiral
+                # Clone ingredient for this branch
                 target_ing = Ingredient(
                     name=ing.name,
                     branch=target_branch,
@@ -1717,18 +2398,17 @@ def supplier_receive_delivery(sup_id):
                 db.session.add(target_ing)
                 db.session.flush()
         
-        # 1. Update overall stock
+        # Update stock
         prev_stock = float(target_ing.stock_qty)
         target_ing.stock_qty = prev_stock + qty
         log_inventory_change(target_ing.id, 'ADD', qty, prev_stock, f'Supply Received from {supplier.name} for {target_branch}')
         
-        # 2. Create FIFO Batch
+        # Create FIFO Batch
         unit_cost = float(target_ing.cost_per_unit or 0)
         process_fifo_transaction(target_ing.id, 'ADD', qty, cost_per_unit=unit_cost)
         
         item_cost = qty * unit_cost
         total_cost += item_cost
-        
         total_received += 1
         details.append(f'+{qty} {target_ing.unit} {target_ing.name} (₱{item_cost:,.2f})')
     
@@ -1742,12 +2422,13 @@ def supplier_receive_delivery(sup_id):
     available_funds = br_order_revenue - br_expenses
 
     if total_cost > available_funds:
+        db.session.rollback()
         return jsonify({
             'success': False,
             'message': f'❌ Failed to receive: Insufficient funds in {target_branch} branch. (Available: ₱{available_funds:,.2f}, Required: ₱{total_cost:,.2f})'
         })
     
-    # 3. I-record ang Supplier Payment / Expense sa database
+    # Record Supplier Payment / Expense
     payment = SupplierPayment(
         supplier_id=sup_id,
         branch=target_branch,

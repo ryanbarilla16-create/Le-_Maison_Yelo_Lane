@@ -208,7 +208,7 @@
             <h3><i class="fas fa-plus"></i> Add New Ingredient</h3>
             <button class="close-modal" onclick="closeModal('addIngredientModal')">&times;</button>
         </div>
-        <form action="{{ url_for('inventory_portal.inventory_add_ingredient') }}" method="POST" class="modal-body-custom">
+        <form action="{{ url_for('inventory_portal.inventory_add_ingredient') }}" method="POST" class="modal-body-custom" onsubmit="submitAjaxForm(event, 'addIngredientModal')">
             <div class="form-grid">
                 <div class="form-group">
                     <label>Ingredient Name *</label>
@@ -273,7 +273,7 @@
             <h3><i class="fas fa-edit"></i> Edit Ingredient</h3>
             <button class="close-modal" onclick="closeModal('editIngredientModal')">&times;</button>
         </div>
-        <form id="editIngredientForm" method="POST" class="modal-body-custom">
+        <form id="editIngredientForm" method="POST" class="modal-body-custom" onsubmit="submitAjaxForm(event, 'editIngredientModal')">
             <div class="form-grid">
                 <div class="form-group full-width">
                     <label>Ingredient Name *</label>
@@ -372,11 +372,25 @@
 
     function executeDeleteIngredient() {
         if (!deleteIngredientId) return;
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/staff/inventory/ingredients/delete/${deleteIngredientId}`;
-        document.body.appendChild(form);
-        form.submit();
+        closeModal('deleteIngredientModal');
+        
+        fetch(`/staff/inventory/ingredients/delete/${deleteIngredientId}`, {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (window.showToast) window.showToast('success', data.message);
+                refreshFullInventory();
+            } else {
+                if (window.showToast) window.showToast('danger', data.message || 'Failed to delete ingredient.');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            if (window.showToast) window.showToast('danger', 'Network error. Failed to delete ingredient.');
+        });
     }
 
     // Close on click outside
@@ -429,6 +443,74 @@
             window.scrollTo(0, savedScroll);
         })
         .catch(err => console.warn('Full inventory sync failed:', err));
+    }
+
+    function refreshFullInventory() {
+        const savedScroll = window.scrollY;
+        const catSel = document.getElementById('categorySelector');
+        const savedCat = catSel ? catSel.value : 'ALL';
+
+        return fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(r => r.text())
+        .then(html => {
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            ['fullInventoryTableBody', 'lastUpdateText'].forEach(id => {
+                const o = document.getElementById(id);
+                const n = doc.getElementById(id);
+                if (o && n) o.innerHTML = n.innerHTML;
+            });
+            if (catSel) catSel.value = savedCat;
+            if (savedCat !== 'ALL') filterTable(savedCat);
+            window.scrollTo(0, savedScroll);
+        })
+        .catch(err => console.error('Error refreshing warehouse stock:', err));
+    }
+
+    function submitAjaxForm(event, modalId) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+        const url = form.action || form.getAttribute('action');
+        const method = form.method || 'POST';
+        
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn ? submitBtn.innerHTML : 'Submit';
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        }
+        
+        fetch(url, {
+            method: method,
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(errData => { throw new Error(errData.message || 'Server error'); });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                closeModal(modalId);
+                form.reset();
+                if (window.showToast) window.showToast('success', data.message);
+                refreshFullInventory();
+            } else {
+                if (window.showToast) window.showToast('danger', data.message || 'Operation failed.');
+            }
+        })
+        .catch(err => {
+            console.error('AJAX Error:', err);
+            if (window.showToast) window.showToast('danger', err.message || 'Network error. Please try again.');
+        })
+        .finally(() => {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+            }
+        });
     }
     
 </script>

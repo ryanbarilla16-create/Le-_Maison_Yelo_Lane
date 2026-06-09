@@ -400,21 +400,118 @@
     });
 
     document.addEventListener('submit', function (e) {
-        if (e.target && e.target.id === 'bulkCompleteForm') {
+        const form = e.target;
+        if (!form) return;
+        
+        // 1. Bulk Complete Form Submit Handler
+        if (form.id === 'bulkCompleteForm') {
+            e.preventDefault();
             const ids = getVisibleConfirmedCheckboxes().filter(b => b.checked).map(b => b.value);
             document.getElementById('bulkReservationIds').value = ids.join(',');
             if (ids.length === 0) {
-                e.preventDefault();
+                return;
             }
+            
+            const btn = form.querySelector('button[type="submit"]');
+            const originalText = btn ? btn.innerHTML : 'Auto Complete Selected';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            }
+            
+            const formData = new FormData(form);
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
+                if (data.success) {
+                    if (window.showToast) {
+                        window.showToast('success', data.message);
+                    }
+                    pollCashierReservations(true);
+                } else {
+                    if (window.showToast) {
+                        window.showToast('danger', data.message || 'Action failed.');
+                    }
+                }
+            })
+            .catch(err => {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
+                if (window.showToast) {
+                    window.showToast('danger', 'Network error. Please try again.');
+                }
+            });
+        }
+        
+        // 2. Inline Action Forms submit handler
+        else if (form.action && form.action.includes('/staff/cashier/reservations/update/')) {
+            e.preventDefault();
+            
+            const isModal = form.id === 'modalConfirmForm';
+            const btn = isModal ? document.getElementById('confirmAssignBtn') : form.querySelector('button[type="submit"]');
+            const originalHtml = btn ? btn.innerHTML : '';
+            
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = isModal ? '<i class="fas fa-spinner fa-spin"></i> Confirming...' : '<i class="fas fa-spinner fa-spin"></i>';
+            }
+            
+            const formData = new FormData(form);
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                }
+                if (data.success) {
+                    if (isModal) {
+                        closeTableModal();
+                    }
+                    if (window.showToast) {
+                        window.showToast('success', data.message);
+                    }
+                    pollCashierReservations(true);
+                } else {
+                    if (window.showToast) {
+                        window.showToast('danger', data.message || 'Action failed.');
+                    }
+                }
+            })
+            .catch(err => {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                }
+                if (window.showToast) {
+                    window.showToast('danger', 'Network error. Please try again.');
+                }
+            });
         }
     });
 
     document.addEventListener('DOMContentLoaded', function () {
         syncBulkCompleteUI();
+        // Set up real-time polling every 10 seconds
+        setInterval(pollCashierReservations, 10000);
     });
 
-    function pollCashierReservations() {
-        if (document.getElementById('tableModal').style.display === 'flex') return;
+    function pollCashierReservations(force = false) {
+        if (!force && document.getElementById('tableModal').style.display === 'flex') return;
 
         const activeTab = document.querySelector('.filter-tab.active');
         const savedFilter = activeTab ? activeTab.dataset.filter : 'ALL';
@@ -441,7 +538,5 @@
         })
         .catch(err => console.warn('Reservations sync failed:', err));
     }
-
-    
 </script>
 {% endblock %}

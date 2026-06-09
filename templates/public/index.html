@@ -13,10 +13,11 @@
             <div class="slider-item" style="background-image: url('{{ site.hero1.image_url }}');">
                 <div class="overlay"></div>
                 <div class="slider-text">
-                    <div>
-                        <h1 data-aos="fade-up">{{ site.hero1.title1|safe }}<br>{{ site.hero1.title2|safe }}</h1>
-                        <p data-aos="fade-up" data-aos-delay="200">{{ site.hero1.description }}</p>
-                        <div data-aos="fade-up" data-aos-delay="400">
+                    <div class="slider-text-inner" data-aos="fade-up">
+                        <span class="slide-tag">Fine Dining & Artistry</span>
+                        <h1>{{ site.hero1.title1|safe }}<br>{{ site.hero1.title2|safe }}</h1>
+                        <p>{{ site.hero1.description }}</p>
+                        <div>
                             <a href="{{ url_for('main.menu_page') }}" class="btn-hero filled">Order Now</a>
                             <a href="{{ url_for('main.menu_page') }}" class="btn-hero">View Menu</a>
                         </div>
@@ -27,7 +28,8 @@
             <div class="slider-item" style="background-image: url('{{ site.hero2.image_url }}');">
                 <div class="overlay"></div>
                 <div class="slider-text">
-                    <div>
+                    <div class="slider-text-inner" data-aos="fade-up">
+                        <span class="slide-tag">Rustic & Hearty Cuts</span>
                         <h1>{{ site.hero2.title1|safe }}<br>{{ site.hero2.title2|safe }}</h1>
                         <p>{{ site.hero2.description }}</p>
                         <div>
@@ -45,7 +47,8 @@
             <div class="slider-item" style="background-image: url('{{ site.hero3.image_url }}');">
                 <div class="overlay"></div>
                 <div class="slider-text">
-                    <div>
+                    <div class="slider-text-inner" data-aos="fade-up">
+                        <span class="slide-tag">Comfort Food Favorites</span>
                         <h1>{{ site.hero3.title1|safe }}<br>{{ site.hero3.title2|safe }}</h1>
                         <p>{{ site.hero3.description }}</p>
                         <div>
@@ -403,8 +406,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Initialize Owl Carousel
         if ($.fn.owlCarousel) {
             $('.home-slider').owlCarousel({
-                items: 1, loop: true, autoplay: true, autoplayTimeout: 5000,
-                autoplayHoverPause: true, nav: false, dots: true,
+                items: 1, loop: true, autoplay: true, autoplayTimeout: 3000,
+                autoplayHoverPause: true, nav: false, dots: false,
                 animateOut: 'fadeOut', animateIn: 'fadeIn',
                 smartSpeed: 1000, mouseDrag: true, touchDrag: true
             });

@@ -1,635 +1,715 @@
 {% extends "admin/base.html" %}
-{% block title %}Data Archive{% endblock %}
+{% block title %}Data Archive — Le Maison Admin{% endblock %}
 
 {% block content %}
 <style>
-    .archive-container {
-        max-width: 1400px;
-        margin: 0 auto;
-    }
-
-    .page-header {
-        margin-bottom: 2rem;
-        animation: slideInDown 0.5s ease;
-    }
-
-    .page-header h1 {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: var(--admin-text);
-        margin-bottom: 0.5rem;
-    }
-
-    .page-header > p {
-        font-size: 1rem;
-        color: var(--admin-text-muted);
-        margin: 0;
-    }
-
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 1.25rem;
-        margin-bottom: 2rem;
-    }
-
-    .stat-card {
-        background: linear-gradient(135deg, rgba(248, 241, 235, 0.95) 0%, rgba(255, 248, 245, 0.95) 100%);
-        border: 1px solid var(--admin-border);
-        border-radius: 16px;
-        padding: 1.75rem;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        backdrop-filter: blur(10px);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-    }
-
-    .stat-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 12px 24px rgba(139, 99, 75, 0.12);
-        border-color: rgba(139, 99, 75, 0.25);
-    }
-
-    .stat-card-header {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        margin-bottom: 1.25rem;
-        padding-bottom: 1rem;
-        border-bottom: 2px solid var(--admin-accent-light);
-    }
-
-    .stat-card-header i {
-        font-size: 1.5rem;
-        color: var(--admin-accent);
-        opacity: 0.8;
-    }
-
-    .stat-card-header h3 {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: var(--admin-text);
-        margin: 0;
-    }
-
-    .stat-card-subtitle {
-        font-size: 0.8rem;
-        color: var(--admin-text-muted);
-        margin-bottom: 1rem;
-        font-weight: 500;
-    }
-
-    .stat-list {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
-
-    .stat-list li {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.6rem 0;
-        font-size: 0.95rem;
-        color: var(--admin-text);
-        border-bottom: 1px solid rgba(139, 99, 75, 0.08);
-    }
-
-    .stat-list li:last-child {
-        border-bottom: none;
-    }
-
-    .stat-list strong {
-        font-weight: 700;
-        color: var(--admin-accent);
-        font-size: 1.1rem;
-    }
-
-    .btn-browse-orders {
-        margin-top: 1.25rem;
-        padding: 0.65rem 1.25rem;
-        background: linear-gradient(135deg, var(--admin-accent) 0%, #6D4C41 100%);
-        border: none;
-        border-radius: 8px;
-        color: white;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        font-size: 0.9rem;
-        box-shadow: 0 4px 12px rgba(139, 99, 75, 0.2);
-        width: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-    }
-
-    .btn-browse-orders:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(139, 99, 75, 0.3);
-    }
-
-    .btn-browse-orders:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-    }
-
-    .spinner-mini {
-        width: 16px;
-        height: 16px;
-        border: 2px solid rgba(255, 255, 255, 0.3);
-        border-radius: 50%;
-        border-top-color: white;
-        animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-        to { transform: rotate(360deg); }
-    }
-
-    @keyframes slideInDown {
-        from {
-            opacity: 0;
-            transform: translateY(-20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    .orders-section {
-        margin-top: 2.5rem;
-        opacity: 0;
-        max-height: 0;
-        overflow: hidden;
-        transition: opacity 0.4s ease, max-height 0.4s ease;
-    }
-
-    .orders-section.visible {
-        opacity: 1;
-        max-height: 5000px;
-    }
-
-    .orders-card {
-        background: linear-gradient(135deg, rgba(248, 241, 235, 0.95) 0%, rgba(255, 248, 245, 0.95) 100%);
-        border: 1px solid var(--admin-border);
-        border-radius: 16px;
-        padding: 2rem;
-        backdrop-filter: blur(10px);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-    }
-
-    .orders-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1.5rem;
-        flex-wrap: wrap;
-        gap: 1rem;
-    }
-
-    .orders-header h2 {
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: var(--admin-text);
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-
-    .orders-header i {
-        color: var(--admin-accent);
-    }
-
-    .filter-group {
-        display: flex;
-        gap: 0.75rem;
-        flex-wrap: wrap;
-        margin-bottom: 1.5rem;
-    }
-
-    .filter-input {
-        padding: 0.65rem 1rem;
-        border: 1px solid var(--admin-border);
-        border-radius: 8px;
-        background: rgba(255, 255, 255, 0.6);
-        color: var(--admin-text);
-        font-size: 0.9rem;
-        transition: all 0.3s ease;
-    }
-
-    .filter-input:focus {
-        outline: none;
-        border-color: var(--admin-accent);
-        background: white;
-        box-shadow: 0 0 0 3px rgba(139, 99, 75, 0.1);
-    }
-
-    .orders-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 0.9rem;
-    }
-
-    .orders-table thead {
-        background: rgba(139, 99, 75, 0.05);
-    }
-
-    .orders-table th {
-        padding: 1rem;
-        text-align: left;
-        font-weight: 600;
-        color: var(--admin-text);
-        border-bottom: 2px solid var(--admin-border);
-    }
-
-    .orders-table td {
-        padding: 1rem;
-        border-bottom: 1px solid var(--admin-border);
-        color: var(--admin-text);
-    }
-
-    .orders-table tbody tr:hover {
-        background-color: rgba(139, 99, 75, 0.03);
-    }
-
-    .order-id {
-        font-weight: 600;
-        color: var(--admin-accent);
-    }
-
-    .order-status {
-        display: inline-block;
-        padding: 0.4rem 0.75rem;
-        border-radius: 6px;
-        font-size: 0.8rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        background: rgba(139, 99, 75, 0.1);
-        color: var(--admin-accent);
-    }
-
-    .view-link {
-        color: var(--admin-accent);
-        text-decoration: none;
-        font-weight: 600;
-        transition: all 0.2s ease;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-    }
-
-    .view-link:hover {
-        color: #6D4C41;
-        transform: translateX(2px);
-    }
-
-    .no-orders {
-        text-align: center;
-        padding: 3rem 1rem;
-        color: var(--admin-text-muted);
-    }
-
-    .no-orders i {
-        font-size: 3rem;
-        margin-bottom: 1rem;
-        opacity: 0.3;
-    }
-
-    .pagination-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 1rem;
-        margin-top: 2rem;
-        flex-wrap: wrap;
-    }
-
-    .pagination-btn {
-        padding: 0.6rem 1rem;
-        border: 1px solid var(--admin-border);
-        background: rgba(255, 255, 255, 0.6);
-        border-radius: 8px;
-        color: var(--admin-text);
-        cursor: pointer;
-        transition: all 0.2s ease;
-        font-weight: 500;
-    }
-
-    .pagination-btn:hover:not(:disabled) {
-        background: var(--admin-accent);
-        color: white;
-        border-color: var(--admin-accent);
-    }
-
-    .pagination-btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    .pagination-info {
-        color: var(--admin-text-muted);
-        font-size: 0.9rem;
-        font-weight: 500;
-    }
-
-    .close-orders-btn {
-        background: none;
-        border: none;
-        color: var(--admin-text-muted);
-        font-size: 1.5rem;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        padding: 0;
-    }
-
-    .close-orders-btn:hover {
-        color: var(--admin-text);
-    }
-
-    .retention-card {
-        background: linear-gradient(135deg, rgba(248, 241, 235, 0.95) 0%, rgba(255, 248, 245, 0.95) 100%);
-        border: 1px solid var(--admin-border);
-        border-radius: 16px;
-        padding: 1.75rem;
-        margin-top: 1.25rem;
-        backdrop-filter: blur(10px);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-    }
-
-    .retention-card h3 {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: var(--admin-text);
-        margin-bottom: 1rem;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-
-    .retention-card i {
-        color: var(--admin-accent);
-    }
-
-    .retention-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 0.9rem;
-    }
-
-    .retention-table thead {
-        background: rgba(139, 99, 75, 0.05);
-    }
-
-    .retention-table th {
-        padding: 0.8rem;
-        text-align: left;
-        font-weight: 600;
-        color: var(--admin-text);
-        border-bottom: 2px solid var(--admin-border);
-    }
-
-    .retention-table td {
-        padding: 0.8rem;
-        border-bottom: 1px solid var(--admin-border);
-        color: var(--admin-text);
-    }
-
-    .retention-note {
-        font-size: 0.85rem;
-        color: var(--admin-text-muted);
-        margin-top: 1rem;
-        padding: 1rem;
-        background: rgba(139, 99, 75, 0.05);
-        border-radius: 8px;
-        border-left: 3px solid var(--admin-accent);
-    }
-
-    .archive-actions {
-        margin-top: 2rem;
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1.25rem;
-    }
-
-    .action-card {
-        background: linear-gradient(135deg, rgba(248, 241, 235, 0.95) 0%, rgba(255, 248, 245, 0.95) 100%);
-        border: 1px solid var(--admin-border);
-        border-radius: 16px;
-        padding: 1.75rem;
-        backdrop-filter: blur(10px);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-    }
-
-    .action-card h3 {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: var(--admin-text);
-        margin-top: 0;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-
-    .action-card i {
-        color: var(--admin-accent);
-    }
-
-    .action-card p {
-        color: var(--admin-text-muted);
-        font-size: 0.9rem;
-        margin: 0.75rem 0;
-    }
-
-    .action-buttons {
-        display: flex;
-        gap: 0.75rem;
-        flex-wrap: wrap;
-    }
-
-    .btn-action {
-        padding: 0.65rem 1.25rem;
-        border: none;
-        border-radius: 8px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        font-size: 0.9rem;
-        flex: 1;
-        min-width: 140px;
-    }
-
-    .btn-primary-action {
-        background: linear-gradient(135deg, var(--admin-accent) 0%, #6D4C41 100%);
-        color: white;
-        box-shadow: 0 4px 12px rgba(139, 99, 75, 0.2);
-    }
-
-    .btn-primary-action:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(139, 99, 75, 0.3);
-    }
-
-    .btn-secondary-action {
-        background: rgba(139, 99, 75, 0.1);
-        color: var(--admin-accent);
-        border: 1px solid var(--admin-border);
-    }
-
-    .btn-secondary-action:hover:not(:disabled) {
-        background: var(--admin-accent);
-        color: white;
-    }
+/* ══════════════════════════════════════
+   DATA ARCHIVE — PREMIUM ELEGANT UI
+══════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+.arc-wrap { max-width: 1380px; margin: 0 auto; }
+
+/* ── Page Header ── */
+.arc-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 2.2rem; flex-wrap: wrap; gap: 1rem;
+    animation: arcFadeUp 0.5s ease both;
+}
+.arc-header-left h1 {
+    font-size: 1.85rem; font-weight: 800; color: var(--admin-text);
+    margin: 0 0 6px; display: flex; align-items: center; gap: 12px;
+    letter-spacing: -0.5px;
+}
+.arc-header-left h1 .arc-icon-badge {
+    width: 44px; height: 44px; border-radius: 14px;
+    background: linear-gradient(135deg, var(--admin-accent), #6D4C41);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; color: white;
+    box-shadow: 0 6px 16px rgba(139,99,75,0.3);
+}
+.arc-header-left p {
+    color: var(--admin-text-muted); font-size: 0.88rem; margin: 0;
+}
+.arc-header-right { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ── Quick Stat Pills ── */
+.arc-pill-row {
+    display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 2rem;
+    animation: arcFadeUp 0.55s 0.05s ease both;
+}
+.arc-pill {
+    display: flex; align-items: center; gap: 9px;
+    background: white; border: 1px solid var(--admin-border);
+    border-radius: 50px; padding: 8px 18px;
+    font-size: 0.82rem; font-weight: 600; color: var(--admin-text);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+}
+.arc-pill i { color: var(--admin-accent); font-size: 0.78rem; }
+.arc-pill .pill-val { color: var(--admin-accent); font-weight: 800; }
+
+/* ── Health Score Banner ── */
+.arc-health {
+    background: linear-gradient(135deg, #3E2723 0%, #5D4037 60%, #6D4C41 100%);
+    border-radius: 22px; padding: 24px 28px;
+    display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
+    margin-bottom: 2rem; position: relative; overflow: hidden;
+    box-shadow: 0 8px 28px rgba(62,39,35,0.22);
+    animation: arcFadeUp 0.6s 0.1s ease both;
+}
+.arc-health::before {
+    content: ''; position: absolute; top: -60px; right: -60px;
+    width: 200px; height: 200px; border-radius: 50%;
+    background: rgba(255,255,255,0.04); pointer-events: none;
+}
+.arc-health-score {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: rgba(255,255,255,0.12);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    border: 3px solid rgba(201,169,110,0.5); flex-shrink: 0;
+    backdrop-filter: blur(10px);
+}
+.arc-health-score .score-num {
+    font-size: 1.7rem; font-weight: 900; color: #c9a96e; line-height: 1;
+}
+.arc-health-score .score-label {
+    font-size: 0.55rem; font-weight: 700; color: rgba(255,255,255,0.6);
+    text-transform: uppercase; letter-spacing: 1px; margin-top: 2px;
+}
+.arc-health-text { flex: 1; }
+.arc-health-text h3 {
+    color: white; font-size: 1.05rem; font-weight: 800; margin: 0 0 5px;
+}
+.arc-health-text p {
+    color: rgba(255,255,255,0.7); font-size: 0.82rem; margin: 0;
+    line-height: 1.5;
+}
+.arc-health-meta {
+    display: flex; gap: 20px; flex-wrap: wrap;
+}
+.arc-health-meta-item {
+    display: flex; flex-direction: column; align-items: center;
+    background: rgba(255,255,255,0.08); border-radius: 12px; padding: 10px 18px;
+    border: 1px solid rgba(255,255,255,0.08);
+}
+.arc-health-meta-item .mval {
+    font-size: 1.15rem; font-weight: 800; color: #c9a96e;
+}
+.arc-health-meta-item .mlabel {
+    font-size: 0.65rem; font-weight: 600; color: rgba(255,255,255,0.55);
+    text-transform: uppercase; letter-spacing: 1px; margin-top: 3px;
+}
+
+/* ── Stats Grid ── */
+.arc-stats-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 18px; margin-bottom: 2rem;
+    animation: arcFadeUp 0.65s 0.15s ease both;
+}
+@media (max-width: 900px) { .arc-stats-grid { grid-template-columns: 1fr; } }
+
+.arc-stat-card {
+    background: white; border: 1px solid var(--admin-border);
+    border-radius: 20px; overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+    transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+    display: flex; flex-direction: column;
+}
+.arc-stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 14px 32px rgba(139,99,75,0.1);
+    border-color: rgba(139,99,75,0.2);
+}
+
+/* Card top colour stripe */
+.arc-stat-card .card-stripe {
+    height: 4px;
+    background: linear-gradient(90deg, var(--admin-accent), #a8813a);
+}
+.arc-stat-card.archive-stripe .card-stripe {
+    background: linear-gradient(90deg, #4a7c59, #2d6a4f);
+}
+.arc-stat-card.eligible-stripe .card-stripe {
+    background: linear-gradient(90deg, #c9a96e, #a8813a);
+}
+
+.arc-stat-inner { padding: 22px 24px; flex: 1; display: flex; flex-direction: column; }
+
+.arc-stat-head {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 6px;
+}
+.arc-stat-head .head-icon {
+    width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 1rem;
+}
+.main-icon { background: rgba(139,99,75,0.1); color: var(--admin-accent); }
+.archive-icon { background: rgba(74,124,89,0.1); color: #4a7c59; }
+.eligible-icon { background: rgba(201,169,110,0.15); color: #a8813a; }
+
+.arc-stat-head h3 {
+    font-size: 0.95rem; font-weight: 700; color: var(--admin-text); margin: 0;
+}
+.arc-stat-subtitle {
+    font-size: 0.74rem; color: var(--admin-text-muted); font-weight: 500;
+    margin: 0 0 18px; padding-left: 52px;
+}
+
+/* Stat rows */
+.arc-stat-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 0; border-bottom: 1px solid rgba(139,99,75,0.07);
+}
+.arc-stat-row:last-of-type { border-bottom: none; }
+.arc-stat-row-label {
+    font-size: 0.85rem; color: var(--admin-text-muted); font-weight: 500;
+    display: flex; align-items: center; gap: 8px;
+}
+.arc-stat-row-label i { font-size: 0.7rem; opacity: 0.6; }
+.arc-stat-row-val {
+    font-size: 1rem; font-weight: 800; color: var(--admin-text);
+}
+.arc-stat-row-val.accent { color: var(--admin-accent); }
+.arc-stat-row-val.green  { color: #4a7c59; }
+.arc-stat-row-val.gold   { color: #a8813a; }
+
+/* Progress bar for eligible */
+.arc-bar-wrap { margin-top: 4px; }
+.arc-bar-label {
+    display: flex; justify-content: space-between;
+    font-size: 0.72rem; color: var(--admin-text-muted); font-weight: 600;
+    margin-bottom: 5px;
+}
+.arc-bar { height: 6px; border-radius: 50px; background: rgba(139,99,75,0.08); }
+.arc-bar-fill {
+    height: 100%; border-radius: 50px;
+    background: linear-gradient(90deg, #c9a96e, #a8813a);
+    transition: width 1s ease;
+}
+
+/* Card footer button */
+.arc-card-footer {
+    padding: 14px 24px; border-top: 1px solid rgba(139,99,75,0.07);
+    background: rgba(248,241,235,0.4);
+}
+
+/* ── Buttons ── */
+.btn-arc-primary {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 22px; border-radius: 12px; border: none; cursor: pointer;
+    font-weight: 700; font-size: 0.85rem;
+    background: linear-gradient(135deg, var(--admin-accent), #6D4C41);
+    color: white; transition: all 0.3s ease;
+    box-shadow: 0 4px 14px rgba(139,99,75,0.25);
+    text-decoration: none;
+}
+.btn-arc-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(139,99,75,0.35);
+    color: white;
+}
+.btn-arc-primary:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.btn-arc-secondary {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 22px; border-radius: 12px; cursor: pointer;
+    font-weight: 700; font-size: 0.85rem;
+    background: white; color: var(--admin-accent);
+    border: 1.5px solid var(--admin-border);
+    transition: all 0.3s ease; text-decoration: none;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+}
+.btn-arc-secondary:hover:not(:disabled) {
+    background: var(--admin-accent); color: white;
+    border-color: var(--admin-accent);
+    transform: translateY(-2px);
+}
+.btn-arc-secondary:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.btn-arc-browse {
+    width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 11px; border-radius: 12px; border: none; cursor: pointer;
+    font-weight: 700; font-size: 0.84rem;
+    background: linear-gradient(135deg, #4a7c59, #2d6a4f);
+    color: white; transition: all 0.3s ease;
+    box-shadow: 0 4px 14px rgba(74,124,89,0.25);
+}
+.btn-arc-browse:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(74,124,89,0.35);
+}
+
+/* ── Action Cards ── */
+.arc-actions-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px; margin-bottom: 2rem;
+    animation: arcFadeUp 0.7s 0.2s ease both;
+}
+.arc-action-card {
+    background: white; border: 1px solid var(--admin-border);
+    border-radius: 20px; padding: 24px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+    transition: all 0.3s ease;
+}
+.arc-action-card:hover {
+    box-shadow: 0 10px 28px rgba(139,99,75,0.08);
+    border-color: rgba(139,99,75,0.18);
+}
+.arc-action-head {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 10px;
+}
+.arc-action-head .act-icon {
+    width: 42px; height: 42px; border-radius: 13px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 1.05rem;
+}
+.act-run   { background: rgba(139,99,75,0.1); color: var(--admin-accent); }
+.act-chart { background: rgba(74,124,89,0.1); color: #4a7c59; }
+.act-policy{ background: rgba(201,169,110,0.15); color: #a8813a; }
+.arc-action-head h3 {
+    font-size: 1rem; font-weight: 700; color: var(--admin-text); margin: 0;
+}
+.arc-action-card p {
+    font-size: 0.84rem; color: var(--admin-text-muted); margin: 0 0 18px; line-height: 1.6;
+}
+.arc-btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.arc-btn-row form { flex: 1; }
+.arc-btn-row .btn-arc-primary,
+.arc-btn-row .btn-arc-secondary { width: 100%; justify-content: center; }
+
+/* ── Retention Table ── */
+.arc-table-wrap { overflow-x: auto; }
+.arc-retention-table {
+    width: 100%; border-collapse: collapse; font-size: 0.88rem;
+}
+.arc-retention-table thead { background: rgba(139,99,75,0.04); }
+.arc-retention-table th {
+    padding: 11px 16px; text-align: left; font-weight: 700;
+    color: var(--admin-text-muted); font-size: 0.75rem;
+    text-transform: uppercase; letter-spacing: 1px;
+    border-bottom: 2px solid var(--admin-border);
+}
+.arc-retention-table td {
+    padding: 11px 16px; border-bottom: 1px solid rgba(139,99,75,0.07);
+    color: var(--admin-text);
+}
+.arc-retention-table tbody tr:hover { background: rgba(139,99,75,0.02); }
+.arc-retention-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(201,169,110,0.12); color: #a8813a;
+    padding: 4px 12px; border-radius: 50px; font-weight: 700; font-size: 0.8rem;
+    border: 1px solid rgba(201,169,110,0.2);
+}
+.arc-retention-note {
+    display: flex; align-items: flex-start; gap: 10px;
+    background: rgba(139,99,75,0.04); border-left: 3px solid var(--admin-accent);
+    border-radius: 0 10px 10px 0; padding: 12px 16px; margin-top: 14px;
+    font-size: 0.83rem; color: var(--admin-text-muted); line-height: 1.5;
+}
+.arc-retention-note i { color: var(--admin-accent); margin-top: 2px; flex-shrink: 0; }
+.arc-retention-note code {
+    background: rgba(139,99,75,0.1); padding: 1px 6px;
+    border-radius: 4px; font-size: 0.82rem; color: var(--admin-accent);
+}
+
+/* ── Timeline Table ── */
+.arc-timeline-wrap { max-height: 260px; overflow-y: auto; }
+.arc-timeline-table {
+    width: 100%; border-collapse: collapse; font-size: 0.86rem;
+}
+.arc-timeline-table th {
+    padding: 9px 14px; font-weight: 700; color: var(--admin-text-muted);
+    font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px;
+    border-bottom: 2px solid var(--admin-border); background: rgba(139,99,75,0.03);
+    position: sticky; top: 0; z-index: 1;
+}
+.arc-timeline-table td {
+    padding: 10px 14px; border-bottom: 1px solid rgba(139,99,75,0.06);
+    color: var(--admin-text);
+}
+.arc-period-badge {
+    background: rgba(139,99,75,0.07); color: var(--admin-accent);
+    padding: 3px 10px; border-radius: 50px; font-size: 0.78rem; font-weight: 600;
+}
+.arc-count-chip {
+    background: linear-gradient(135deg, var(--admin-accent), #6D4C41);
+    color: white; padding: 3px 12px; border-radius: 50px;
+    font-size: 0.78rem; font-weight: 800;
+    box-shadow: 0 2px 6px rgba(139,99,75,0.25);
+}
+
+/* ── Orders Browser ── */
+.arc-orders-section {
+    margin-top: 2rem; margin-bottom: 2rem;
+    max-height: 0; overflow: hidden; opacity: 0;
+    transition: opacity 0.4s ease, max-height 0.5s ease;
+    animation: none;
+}
+.arc-orders-section.visible { max-height: 5000px; opacity: 1; }
+.arc-orders-card {
+    background: white; border: 1px solid var(--admin-border);
+    border-radius: 20px; overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+}
+.arc-orders-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 20px 24px; border-bottom: 1px solid var(--admin-border);
+    background: rgba(248,241,235,0.5); flex-wrap: wrap; gap: 12px;
+}
+.arc-orders-head h2 {
+    font-size: 1.05rem; font-weight: 800; color: var(--admin-text);
+    margin: 0; display: flex; align-items: center; gap: 10px;
+}
+.arc-orders-head h2 i { color: var(--admin-accent); }
+.arc-close-btn {
+    background: rgba(139,99,75,0.07); border: none; border-radius: 50%;
+    width: 34px; height: 34px; color: var(--admin-text-muted);
+    cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center;
+}
+.arc-close-btn:hover { background: var(--admin-accent); color: white; }
+
+.arc-filter-row {
+    display: flex; gap: 10px; flex-wrap: wrap;
+    padding: 16px 24px; border-bottom: 1px solid var(--admin-border);
+    background: rgba(248,241,235,0.25);
+}
+.arc-filter-input {
+    padding: 9px 14px; border: 1.5px solid var(--admin-border);
+    border-radius: 10px; background: white; color: var(--admin-text);
+    font-size: 0.85rem; transition: all 0.25s; outline: none;
+    flex: 1; min-width: 140px;
+}
+.arc-filter-input:focus {
+    border-color: var(--admin-accent);
+    box-shadow: 0 0 0 3px rgba(139,99,75,0.1);
+}
+
+/* Orders Table */
+.arc-orders-table { width: 100%; border-collapse: collapse; font-size: 0.87rem; }
+.arc-orders-table thead { background: rgba(139,99,75,0.04); }
+.arc-orders-table th {
+    padding: 12px 16px; text-align: left; font-weight: 700;
+    color: var(--admin-text-muted); font-size: 0.73rem;
+    text-transform: uppercase; letter-spacing: 1px;
+    border-bottom: 2px solid var(--admin-border);
+}
+.arc-orders-table td {
+    padding: 12px 16px; border-bottom: 1px solid rgba(139,99,75,0.06);
+    color: var(--admin-text);
+}
+.arc-orders-table tbody tr:hover { background: rgba(139,99,75,0.025); }
+.arc-order-id { font-weight: 800; color: var(--admin-accent); font-size: 0.88rem; }
+.arc-order-code { font-family: monospace; font-size: 0.8rem; color: var(--admin-text-muted); }
+.arc-status-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 8px; font-size: 0.76rem;
+    font-weight: 700; text-transform: uppercase;
+    background: rgba(139,99,75,0.08); color: var(--admin-accent);
+    border: 1px solid rgba(139,99,75,0.12);
+}
+.arc-view-link {
+    display: inline-flex; align-items: center; gap: 5px;
+    color: var(--admin-accent); font-weight: 700; font-size: 0.82rem;
+    text-decoration: none; padding: 5px 12px; border-radius: 8px;
+    background: rgba(139,99,75,0.06); border: 1px solid rgba(139,99,75,0.1);
+    transition: all 0.2s;
+}
+.arc-view-link:hover {
+    background: var(--admin-accent); color: white; border-color: var(--admin-accent);
+}
+
+.arc-pagination {
+    display: flex; justify-content: center; align-items: center;
+    gap: 10px; padding: 18px 24px; flex-wrap: wrap;
+    border-top: 1px solid var(--admin-border);
+    background: rgba(248,241,235,0.25);
+}
+.arc-page-btn {
+    padding: 8px 16px; border: 1.5px solid var(--admin-border);
+    border-radius: 10px; background: white; color: var(--admin-text);
+    cursor: pointer; transition: all 0.2s; font-weight: 600; font-size: 0.83rem;
+}
+.arc-page-btn:hover:not(:disabled) {
+    background: var(--admin-accent); color: white; border-color: var(--admin-accent);
+}
+.arc-page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.arc-page-info { font-size: 0.82rem; color: var(--admin-text-muted); font-weight: 600; }
+
+/* ── Spinner ── */
+.arc-spinner {
+    width: 28px; height: 28px; border: 3px solid rgba(139,99,75,0.15);
+    border-top-color: var(--admin-accent); border-radius: 50%;
+    animation: arcSpin 0.8s linear infinite; margin: 0 auto 14px;
+}
+
+/* ── Animations ── */
+@keyframes arcFadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes arcSpin { to { transform: rotate(360deg); } }
 </style>
 
-<div class="archive-container">
-    <div class="page-header">
-        <h1><i class="fas fa-database me-2"></i>Data Archive</h1>
-        <p>Move old operational data to a separate archive database to keep the main system fast.</p>
-    </div>
+<div class="arc-wrap">
 
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-card-header">
-                <i class="fas fa-server"></i>
-                <h3>Main Database</h3>
-            </div>
-            <p class="stat-card-subtitle">Active / daily operations</p>
-            <ul class="stat-list">
-                <li>Orders <span><strong>{{ stats.main.orders }}</strong></span></li>
-                <li>Reservations <span><strong>{{ stats.main.reservations }}</strong></span></li>
-                <li>Audit Logs <span><strong>{{ stats.main.audit_logs }}</strong></span></li>
-                <li>Inventory Logs <span><strong>{{ stats.main.inventory_logs }}</strong></span></li>
-                <li>Notifications <span><strong>{{ stats.main.notifications }}</strong></span></li>
-            </ul>
+    <!-- ════ Header ════ -->
+    <div class="arc-header">
+        <div class="arc-header-left">
+            <h1>
+                <div class="arc-icon-badge"><i class="fas fa-database"></i></div>
+                Data Archive
+            </h1>
+            <p>Move old operational data to the archive database to keep the main system fast and responsive.</p>
         </div>
-
-        <div class="stat-card">
-            <div class="stat-card-header">
-                <i class="fas fa-archive"></i>
-                <h3>Archive Database</h3>
-            </div>
-            <p class="stat-card-subtitle">Historical / cold storage</p>
-            <ul class="stat-list">
-                <li>Orders <span><strong>{{ stats.archive.orders }}</strong></span></li>
-                <li>Order Items <span><strong>{{ stats.archive.order_items }}</strong></span></li>
-                <li>Reservations <span><strong>{{ stats.archive.reservations }}</strong></span></li>
-                <li>Audit Logs <span><strong>{{ stats.archive.audit_logs }}</strong></span></li>
-                <li>Inventory Logs <span><strong>{{ stats.archive.inventory_logs }}</strong></span></li>
-            </ul>
-            <button class="btn-browse-orders" onclick="toggleOrdersBrowser()" id="browseBtn">
-                <i class="fas fa-eye"></i> Browse Archived Orders
-            </button>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-card-header">
-                <i class="fas fa-inbox"></i>
-                <h3>Eligible Now</h3>
-            </div>
-            <p class="stat-card-subtitle">Ready to move based on retention policy</p>
-            <ul class="stat-list">
-                <li>Orders <span><strong>{{ stats.eligible_now.orders }}</strong></span></li>
-                <li>Reservations <span><strong>{{ stats.eligible_now.reservations }}</strong></span></li>
-                <li>Audit Logs <span><strong>{{ stats.eligible_now.audit_logs }}</strong></span></li>
-                <li>Inventory Logs <span><strong>{{ stats.eligible_now.inventory_logs }}</strong></span></li>
-                <li>Notifications <span><strong>{{ stats.eligible_now.notifications }}</strong></span></li>
-            </ul>
+        <div class="arc-header-right">
+            <form method="POST" action="{{ url_for('admin.archive_run_now') }}">
+                <input type="hidden" name="dry_run" value="1">
+                <button type="submit" class="btn-arc-secondary">
+                    <i class="fas fa-eye"></i> Dry Run Preview
+                </button>
+            </form>
+            <form method="POST" action="{{ url_for('admin.archive_run_now') }}"
+                  onsubmit="return confirm('Move eligible old data to the archive database?');">
+                <button type="submit" class="btn-arc-primary">
+                    <i class="fas fa-rocket"></i> Run Archive Now
+                </button>
+            </form>
         </div>
     </div>
 
-    <div class="orders-section" id="ordersBrowser">
-        <div class="orders-card">
-            <div class="orders-header">
-                <h2><i class="fas fa-list"></i>Archived Orders</h2>
-                <button class="close-orders-btn" onclick="toggleOrdersBrowser()" title="Close">
-                    <i class="fas fa-times"></i>
+    <!-- ════ Quick Pills ════ -->
+    {% set total_archived = stats.archive.orders %}
+    {% set total_main     = stats.main.orders %}
+    {% set total_eligible = stats.eligible_now.orders %}
+    <div class="arc-pill-row">
+        <div class="arc-pill"><i class="fas fa-circle-dot"></i> Main DB Records: <span class="pill-val">{{ (stats.main.orders + stats.main.reservations + stats.main.audit_logs + stats.main.notifications) | int }}</span></div>
+        <div class="arc-pill"><i class="fas fa-box-archive"></i> Archived Records: <span class="pill-val">{{ (stats.archive.orders + stats.archive.order_items + stats.archive.reservations + stats.archive.audit_logs) | int }}</span></div>
+        <div class="arc-pill"><i class="fas fa-clock-rotate-left"></i> Eligible to Archive: <span class="pill-val">{{ (stats.eligible_now.orders + stats.eligible_now.reservations + stats.eligible_now.audit_logs + stats.eligible_now.notifications) | int }}</span></div>
+        <div class="arc-pill"><i class="fas fa-calendar-check"></i> Retention Rules: <span class="pill-val">{{ stats.retention_days | length }}</span></div>
+    </div>
+
+    <!-- ════ Health Score Banner ════ -->
+    {% set main_total = (stats.main.orders + stats.main.reservations + stats.main.audit_logs + stats.main.notifications + 1) %}
+    {% set elig_total = (stats.eligible_now.orders + stats.eligible_now.reservations + stats.eligible_now.audit_logs + stats.eligible_now.notifications) %}
+    {% set health_pct = [100 - ((elig_total / main_total) * 100) | int, 0] | max %}
+    <div class="arc-health">
+        <div class="arc-health-score">
+            <span class="score-num">{{ health_pct }}%</span>
+            <span class="score-label">Health</span>
+        </div>
+        <div class="arc-health-text">
+            <h3>{% if health_pct >= 80 %}System is healthy — archive is up-to-date{% elif health_pct >= 50 %}Moderate — consider running the archive soon{% else %}Attention needed — many records eligible to archive{% endif %}</h3>
+            <p>Database health score measures how much of the main DB data is current. Run the archive job regularly to maintain performance.</p>
+        </div>
+        <div class="arc-health-meta">
+            <div class="arc-health-meta-item">
+                <span class="mval">{{ stats.archive.orders }}</span>
+                <span class="mlabel">Archived Orders</span>
+            </div>
+            <div class="arc-health-meta-item">
+                <span class="mval">{{ stats.archive.order_items }}</span>
+                <span class="mlabel">Order Items</span>
+            </div>
+            <div class="arc-health-meta-item">
+                <span class="mval">{{ stats.archive.reservations }}</span>
+                <span class="mlabel">Reservations</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ════ Three Stats Cards ════ -->
+    <div class="arc-stats-grid">
+
+        <!-- Main Database -->
+        <div class="arc-stat-card">
+            <div class="card-stripe"></div>
+            <div class="arc-stat-inner">
+                <div class="arc-stat-head">
+                    <div class="head-icon main-icon"><i class="fas fa-server"></i></div>
+                    <h3>Main Database</h3>
+                </div>
+                <p class="arc-stat-subtitle">Active / daily operations</p>
+                <div class="arc-stat-row">
+                    <span class="arc-stat-row-label"><i class="fas fa-receipt"></i> Orders</span>
+                    <span class="arc-stat-row-val accent">{{ stats.main.orders }}</span>
+                </div>
+                <div class="arc-stat-row">
+                    <span class="arc-stat-row-label"><i class="fas fa-calendar"></i> Reservations</span>
+                    <span class="arc-stat-row-val accent">{{ stats.main.reservations }}</span>
+                </div>
+                <div class="arc-stat-row">
+                    <span class="arc-stat-row-label"><i class="fas fa-shield-halved"></i> Audit Logs</span>
+                    <span class="arc-stat-row-val accent">{{ stats.main.audit_logs }}</span>
+                </div>
+                <div class="arc-stat-row">
+                    <span class="arc-stat-row-label"><i class="fas fa-boxes-stacked"></i> Inventory Logs</span>
+                    <span class="arc-stat-row-val accent">{{ stats.main.inventory_logs }}</span>
+                </div>
+                <div class="arc-stat-row">
+                    <span class="arc-stat-row-label"><i class="fas fa-bell"></i> Notifications</span>
+                    <span class="arc-stat-row-val accent">{{ stats.main.notifications }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Archive Database -->
+        <div class="arc-stat-card archive-stripe">
+            <div class="card-stripe"></div>
+            <div class="arc-stat-inner">
+                <div class="arc-stat-head">
+                    <div class="head-icon archive-icon"><i class="fas fa-box-archive"></i></div>
+                    <h3>Archive Database</h3>
+                </div>
+                <p class="arc-stat-subtitle">Historical / cold storage</p>
+                <div class="arc-stat-row">
+                    <span class="arc-stat-row-label"><i class="fas fa-receipt"></i> Orders</span>
+                    <span class="arc-stat-row-val green">{{ stats.archive.orders }}</span>
+                </div>
+                <div class="arc-stat-row">
+                    <span class="arc-stat-row-label"><i class="fas fa-list-ul"></i> Order Items</span>
+                    <span class="arc-stat-row-val green">{{ stats.archive.order_items }}</span>
+                </div>
+                <div class="arc-stat-row">
+                    <span class="arc-stat-row-label"><i class="fas fa-calendar"></i> Reservations</span>
+                    <span class="arc-stat-row-val green">{{ stats.archive.reservations }}</span>
+                </div>
+                <div class="arc-stat-row">
+                    <span class="arc-stat-row-label"><i class="fas fa-shield-halved"></i> Audit Logs</span>
+                    <span class="arc-stat-row-val green">{{ stats.archive.audit_logs }}</span>
+                </div>
+                <div class="arc-stat-row">
+                    <span class="arc-stat-row-label"><i class="fas fa-boxes-stacked"></i> Inventory Logs</span>
+                    <span class="arc-stat-row-val green">{{ stats.archive.inventory_logs }}</span>
+                </div>
+            </div>
+            <div class="arc-card-footer">
+                <button class="btn-arc-browse" onclick="toggleOrdersBrowser()" id="browseBtn">
+                    <i class="fas fa-magnifying-glass"></i> Browse Archived Orders
                 </button>
             </div>
+        </div>
 
-            <div class="filter-group">
-                <select class="filter-input" id="filterSource" onchange="loadArchivedOrders(1)">
-                    <option value="soft" selected>Soft Archived (Main DB)</option>
-                    <option value="legacy">Legacy Archived (Archive DB)</option>
-                </select>
-                <input type="text" class="filter-input" id="filterBranch" placeholder="Filter by branch..." onchange="loadArchivedOrders(1)">
-                <input type="text" class="filter-input" id="filterStatus" placeholder="Filter by status..." onchange="loadArchivedOrders(1)">
-                <button class="btn-action btn-secondary-action" onclick="loadArchivedOrders(1)">
-                    <i class="fas fa-search"></i> Search
-                </button>
-            </div>
+        <!-- Eligible Now -->
+        <div class="arc-stat-card eligible-stripe">
+            <div class="card-stripe"></div>
+            <div class="arc-stat-inner">
+                <div class="arc-stat-head">
+                    <div class="head-icon eligible-icon"><i class="fas fa-hourglass-half"></i></div>
+                    <h3>Eligible Now</h3>
+                </div>
+                <p class="arc-stat-subtitle">Ready to move — retention policy met</p>
+                <div class="arc-stat-row">
+                    <span class="arc-stat-row-label"><i class="fas fa-receipt"></i> Orders</span>
+                    <span class="arc-stat-row-val gold">{{ stats.eligible_now.orders }}</span>
+                </div>
+                <div class="arc-stat-row">
+                    <span class="arc-stat-row-label"><i class="fas fa-calendar"></i> Reservations</span>
+                    <span class="arc-stat-row-val gold">{{ stats.eligible_now.reservations }}</span>
+                </div>
+                <div class="arc-stat-row">
+                    <span class="arc-stat-row-label"><i class="fas fa-shield-halved"></i> Audit Logs</span>
+                    <span class="arc-stat-row-val gold">{{ stats.eligible_now.audit_logs }}</span>
+                </div>
+                <div class="arc-stat-row">
+                    <span class="arc-stat-row-label"><i class="fas fa-boxes-stacked"></i> Inventory Logs</span>
+                    <span class="arc-stat-row-val gold">{{ stats.eligible_now.inventory_logs }}</span>
+                </div>
+                <div class="arc-stat-row">
+                    <span class="arc-stat-row-label"><i class="fas fa-bell"></i> Notifications</span>
+                    <span class="arc-stat-row-val gold">{{ stats.eligible_now.notifications }}</span>
+                </div>
 
-            <div id="ordersContent" style="min-height: 300px;">
-                <div style="text-align: center; padding: 2rem; color: var(--admin-text-muted);">
-                    <div class="spinner-mini" style="width: 30px; height: 30px; margin: 0 auto 1rem;"></div>
-                    <p>Loading archived orders...</p>
+                <!-- Progress bar -->
+                {% set elig_sum = stats.eligible_now.orders + stats.eligible_now.reservations + stats.eligible_now.audit_logs %}
+                {% set main_sum = stats.main.orders + stats.main.reservations + stats.main.audit_logs + 1 %}
+                {% set elig_pct = [(elig_sum / main_sum * 100)|int, 100]|min %}
+                <div class="arc-bar-wrap" style="margin-top: 14px;">
+                    <div class="arc-bar-label">
+                        <span>Archivable load</span>
+                        <span>{{ elig_pct }}%</span>
+                    </div>
+                    <div class="arc-bar">
+                        <div class="arc-bar-fill" style="width: {{ elig_pct }}%;"></div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="retention-card">
-        <h3><i class="fas fa-clock"></i>Retention Policy</h3>
-        <div style="overflow-x: auto;">
-            <table class="retention-table">
-                <thead>
-                    <tr>
-                        <th>Data Type</th>
-                        <th>Keep in Main DB For</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for key, days in stats.retention_days.items() %}
-                    <tr>
-                        <td>{{ key.replace('_', ' ')|title }}</td>
-                        <td><strong>{{ days }} days</strong></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        <div class="retention-note">
-            <i class="fas fa-info-circle"></i> Edit <code style="background: rgba(139, 99, 75, 0.1); padding: 0.2rem 0.4rem; border-radius: 4px;">archive/config.json</code> to change retention rules.
+    <!-- ════ Archived Orders Browser ════ -->
+    <div class="arc-orders-section" id="ordersBrowser">
+        <div class="arc-orders-card">
+            <div class="arc-orders-head">
+                <h2><i class="fas fa-list-ul"></i> Archived Orders Browser</h2>
+                <button class="arc-close-btn" onclick="toggleOrdersBrowser()" title="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="arc-filter-row">
+                <select class="arc-filter-input" id="filterSource" onchange="loadArchivedOrders(1)">
+                    <option value="soft" selected>Soft Archived (Main DB)</option>
+                    <option value="legacy">Legacy Archived (Archive DB)</option>
+                </select>
+                <input type="text" class="arc-filter-input" id="filterBranch"
+                       placeholder="Filter by branch..." onchange="loadArchivedOrders(1)">
+                <input type="text" class="arc-filter-input" id="filterStatus"
+                       placeholder="Filter by status..." onchange="loadArchivedOrders(1)">
+                <button class="btn-arc-primary" onclick="loadArchivedOrders(1)" style="flex-shrink:0;">
+                    <i class="fas fa-search"></i> Search
+                </button>
+            </div>
+            <div id="ordersContent" style="min-height: 280px; padding: 24px;">
+                <div style="text-align:center; padding:2rem; color:var(--admin-text-muted);">
+                    <div class="arc-spinner"></div>
+                    <p style="margin:0; font-size:0.88rem;">Loading archived orders...</p>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="archive-actions">
-        <div class="action-card">
-            <h3><i class="fas fa-play-circle"></i>Run Archive Job</h3>
-            <p>Copies eligible old records to the archive database, then removes them from the main database.</p>
-            <div class="action-buttons">
-                <form method="POST" action="{{ url_for('admin.archive_run_now') }}" style="flex: 1;">
+    <!-- ════ Action Cards ════ -->
+    <div class="arc-actions-grid">
+
+        <!-- Run Archive Job -->
+        <div class="arc-action-card">
+            <div class="arc-action-head">
+                <div class="act-icon act-run"><i class="fas fa-play-circle"></i></div>
+                <h3>Run Archive Job</h3>
+            </div>
+            <p>Copies eligible old records from the main database to the archive database, then removes them to free up space.</p>
+            <div class="arc-btn-row">
+                <form method="POST" action="{{ url_for('admin.archive_run_now') }}">
                     <input type="hidden" name="dry_run" value="1">
-                    <button type="submit" class="btn-action btn-secondary-action">
+                    <button type="submit" class="btn-arc-secondary">
                         <i class="fas fa-eye"></i> Preview (Dry Run)
                     </button>
                 </form>
-                <form method="POST" action="{{ url_for('admin.archive_run_now') }}" style="flex: 1;" onsubmit="return confirm('Move eligible old data to archive database?');">
-                    <button type="submit" class="btn-action btn-primary-action">
-                        <i class="fas fa-rocket"></i> Run Archive Now
+                <form method="POST" action="{{ url_for('admin.archive_run_now') }}"
+                      onsubmit="return confirm('Move eligible old data to archive database?');">
+                    <button type="submit" class="btn-arc-primary">
+                        <i class="fas fa-rocket"></i> Run Now
                     </button>
                 </form>
             </div>
         </div>
 
+        <!-- Archive Statistics (timeline) -->
         {% if timeline %}
-        <div class="action-card">
-            <h3><i class="fas fa-chart-bar"></i>Archive Statistics</h3>
-            <p>Orders archived by period</p>
-            <div style="max-height: 300px; overflow-y: auto;">
-                <table class="retention-table" style="font-size: 0.85rem;">
+        <div class="arc-action-card">
+            <div class="arc-action-head">
+                <div class="act-icon act-chart"><i class="fas fa-chart-bar"></i></div>
+                <h3>Archive History</h3>
+            </div>
+            <p>Orders archived per time period — see how data has been moved over time.</p>
+            <div class="arc-table-wrap arc-timeline-wrap">
+                <table class="arc-timeline-table">
                     <thead>
-                        <tr>
-                            <th>Period</th>
-                            <th>Orders</th>
-                        </tr>
+                        <tr><th>Period</th><th>Orders Archived</th></tr>
                     </thead>
                     <tbody>
                         {% for row in timeline %}
                         <tr>
-                            <td>{{ row.period }}</td>
-                            <td><strong>{{ row.count }}</strong></td>
+                            <td><span class="arc-period-badge">{{ row.period }}</span></td>
+                            <td><span class="arc-count-chip">{{ row.count }}</span></td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -637,151 +717,143 @@
             </div>
         </div>
         {% endif %}
+
+        <!-- Retention Policy -->
+        <div class="arc-action-card">
+            <div class="arc-action-head">
+                <div class="act-icon act-policy"><i class="fas fa-clock"></i></div>
+                <h3>Retention Policy</h3>
+            </div>
+            <p>Data is archived automatically once it exceeds the configured retention period.</p>
+            <div class="arc-table-wrap">
+                <table class="arc-retention-table">
+                    <thead>
+                        <tr><th>Data Type</th><th>Keep in Main DB</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for key, days in stats.retention_days.items() %}
+                        <tr>
+                            <td>{{ key.replace('_', ' ') | title }}</td>
+                            <td><span class="arc-retention-badge"><i class="fas fa-clock"></i>{{ days }} days</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="arc-retention-note">
+                <i class="fas fa-info-circle"></i>
+                <span>Edit <code>archive/config.json</code> to change these retention rules.</span>
+            </div>
+        </div>
     </div>
-</div>
+
+</div><!-- /.arc-wrap -->
 
 <script>
-const currentPage = {};
+const _arcPage = {};
 
 function toggleOrdersBrowser() {
     const section = document.getElementById('ordersBrowser');
     section.classList.toggle('visible');
-    
-    if (section.classList.contains('visible') && !currentPage.loaded) {
+    if (section.classList.contains('visible') && !_arcPage.loaded) {
         loadArchivedOrders(1);
     }
 }
 
 function loadArchivedOrders(page = 1) {
-    const source = document.getElementById('filterSource').value;
-    const branch = document.getElementById('filterBranch').value;
-    const status = document.getElementById('filterStatus').value;
-    const ordersContent = document.getElementById('ordersContent');
-    
-    ordersContent.innerHTML = `
-        <div style="text-align: center; padding: 2rem; color: var(--admin-text-muted);">
-            <div class="spinner-mini" style="width: 30px; height: 30px; margin: 0 auto 1rem;"></div>
-            <p>Loading archived orders...</p>
-        </div>
-    `;
+    const source  = document.getElementById('filterSource').value;
+    const branch  = document.getElementById('filterBranch').value;
+    const status  = document.getElementById('filterStatus').value;
+    const content = document.getElementById('ordersContent');
+
+    content.innerHTML = `
+        <div style="text-align:center; padding:2.5rem; color:var(--admin-text-muted);">
+            <div class="arc-spinner"></div>
+            <p style="margin:0; font-size:0.88rem;">Loading archived orders...</p>
+        </div>`;
 
     const params = new URLSearchParams({
-        page: page,
-        per_page: 15,
+        page, per_page: 15,
         source: source || 'soft',
         branch: branch || '',
         status: status || ''
     });
 
     fetch(`{{ url_for('admin.api_archive_orders') }}?${params}`)
-        .then(response => {
-            if (!response.ok) throw new Error('Failed to load orders');
-            return response.json();
-        })
+        .then(r => { if (!r.ok) throw new Error('Failed'); return r.json(); })
         .then(data => {
-            currentPage.loaded = true;
-            currentPage.page = page;
-            currentPage.totalPages = data.pagination.total_pages;
+            _arcPage.loaded = true;
+            _arcPage.page   = page;
+            _arcPage.total  = data.pagination.total_pages;
             renderOrders(data);
         })
-        .catch(error => {
-            console.error('Error:', error);
-            ordersContent.innerHTML = `
-                <div style="text-align: center; padding: 2rem; color: #d32f2f;">
-                    <i class="fas fa-exclamation-circle" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i>
-                    <p>Error loading archived orders. Please try again.</p>
-                </div>
-            `;
+        .catch(() => {
+            content.innerHTML = `
+                <div style="text-align:center; padding:2.5rem; color:#c62828;">
+                    <i class="fas fa-exclamation-circle" style="font-size:2rem; margin-bottom:12px; display:block;"></i>
+                    <p style="margin:0; font-size:0.88rem; font-weight:600;">Error loading orders. Please try again.</p>
+                </div>`;
         });
 }
 
 function renderOrders(data) {
-    const ordersContent = document.getElementById('ordersContent');
-    
-    if (data.orders.length === 0) {
-        ordersContent.innerHTML = `
-            <div class="no-orders">
-                <i class="fas fa-inbox"></i>
-                <p>No archived orders found.</p>
-            </div>
-        `;
+    const content = document.getElementById('ordersContent');
+
+    if (!data.orders || data.orders.length === 0) {
+        content.innerHTML = `
+            <div style="text-align:center; padding:3rem; color:var(--admin-text-muted);">
+                <i class="fas fa-inbox" style="font-size:2.5rem; opacity:0.2; display:block; margin-bottom:12px;"></i>
+                <p style="margin:0; font-size:0.9rem; font-weight:600;">No archived orders found.</p>
+            </div>`;
         return;
     }
 
-    let html = `
-        <div style="overflow-x: auto;">
-            <table class="orders-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Order Code</th>
-                        <th>Branch</th>
-                        <th>Status</th>
-                        <th>Total</th>
-                        <th>Created</th>
-                        <th>Archived</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-    `;
+    let rows = data.orders.map(o => `
+        <tr>
+            <td><span class="arc-order-id">#${o.original_id}</span></td>
+            <td><span class="arc-order-code">${o.order_code}</span></td>
+            <td>${o.branch}</td>
+            <td><span class="arc-status-badge">${o.status}</span></td>
+            <td><strong>₱${o.total_amount.toFixed(2)}</strong></td>
+            <td>${o.created_at}</td>
+            <td>${o.archived_at}</td>
+            <td>
+                <a href="/admin/archive/orders/${o.original_id}" class="arc-view-link">
+                    <i class="fas fa-arrow-right"></i> View
+                </a>
+            </td>
+        </tr>`).join('');
 
-    data.orders.forEach(order => {
-        const detailUrl = `/admin/archive/orders/${order.original_id}`;
-        html += `
-            <tr>
-                <td><span class="order-id">#${order.original_id}</span></td>
-                <td>${order.order_code}</td>
-                <td>${order.branch}</td>
-                <td><span class="order-status">${order.status}</span></td>
-                <td><strong>₱${order.total_amount.toFixed(2)}</strong></td>
-                <td>${order.created_at}</td>
-                <td>${order.archived_at}</td>
-                <td>
-                    <a href="${detailUrl}" class="view-link">
-                        <i class="fas fa-arrow-right"></i> View
-                    </a>
-                </td>
-            </tr>
-        `;
-    });
-
-    html += `
-                </tbody>
-            </table>
-        </div>
-    `;
-
+    let paginationHTML = '';
     if (data.pagination.total_pages > 1) {
-        html += `
-            <div class="pagination-container">
-                ${data.pagination.has_prev ? `
-                    <button class="pagination-btn" onclick="loadArchivedOrders(${data.pagination.page - 1})">
-                        <i class="fas fa-chevron-left"></i> Previous
-                    </button>
-                ` : `
-                    <button class="pagination-btn" disabled>
-                        <i class="fas fa-chevron-left"></i> Previous
-                    </button>
-                `}
-                <span class="pagination-info">
-                    Page ${data.pagination.page} of ${data.pagination.total_pages} 
-                    (${data.pagination.total_items} total orders)
-                </span>
-                ${data.pagination.has_next ? `
-                    <button class="pagination-btn" onclick="loadArchivedOrders(${data.pagination.page + 1})">
-                        Next <i class="fas fa-chevron-right"></i>
-                    </button>
-                ` : `
-                    <button class="pagination-btn" disabled>
-                        Next <i class="fas fa-chevron-right"></i>
-                    </button>
-                `}
-            </div>
-        `;
+        paginationHTML = `
+            <div class="arc-pagination">
+                <button class="arc-page-btn" onclick="loadArchivedOrders(${data.pagination.page - 1})"
+                    ${!data.pagination.has_prev ? 'disabled' : ''}>
+                    <i class="fas fa-chevron-left"></i> Prev
+                </button>
+                <span class="arc-page-info">Page ${data.pagination.page} of ${data.pagination.total_pages} &nbsp;·&nbsp; ${data.pagination.total_items} total</span>
+                <button class="arc-page-btn" onclick="loadArchivedOrders(${data.pagination.page + 1})"
+                    ${!data.pagination.has_next ? 'disabled' : ''}>
+                    Next <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>`;
     }
 
-    ordersContent.innerHTML = html;
+    content.innerHTML = `
+        <div style="overflow-x:auto; padding: 0 24px;">
+            <table class="arc-orders-table">
+                <thead>
+                    <tr>
+                        <th>ID</th><th>Order Code</th><th>Branch</th>
+                        <th>Status</th><th>Total</th>
+                        <th>Created</th><th>Archived</th><th></th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>
+        ${paginationHTML}`;
 }
 </script>
 {% endblock %}

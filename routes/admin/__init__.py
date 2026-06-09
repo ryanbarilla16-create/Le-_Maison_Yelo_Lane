@@ -549,9 +549,13 @@ def super_admin_overview():
     
     # Get ALL PAID orders revenue (Main DB + Archive DB)
     from archive.models import ArchiveOrder
-    main_db_revenue = float(db.session.query(func.coalesce(func.sum(Order.total_amount), 0)).filter(
-        Order.payment_status == 'PAID'
-    ).scalar())
+    try:
+        main_db_revenue = float(db.session.query(func.coalesce(func.sum(Order.total_amount), 0)).filter(
+            Order.payment_status == 'PAID'
+        ).scalar())
+    except OperationalError:
+        db.session.rollback()
+        main_db_revenue = 0.0
     try:
         archive_db_revenue = float(db.session.query(func.coalesce(func.sum(ArchiveOrder.total_amount), 0)).filter(
             ArchiveOrder.payment_status == 'PAID'
@@ -560,22 +564,35 @@ def super_admin_overview():
         db.session.rollback()
         archive_db_revenue = 0.0
     total_order_revenue = main_db_revenue + archive_db_revenue
-    
-    total_expenses = float(db.session.query(func.coalesce(func.sum(SupplierPayment.amount), 0)).scalar())
+
+    try:
+        total_expenses = float(db.session.query(func.coalesce(func.sum(SupplierPayment.amount), 0)).scalar())
+    except OperationalError:
+        db.session.rollback()
+        total_expenses = 0.0
     total_revenue = total_order_revenue  # GROSS only - expenses shown separately per branch
-    total_orders = Order.query.count()
-    total_reservations = Reservation.query.count()
-    pending_orders = Order.query.filter_by(status='PENDING').count()
+    try:
+        total_orders = Order.query.count()
+        total_reservations = Reservation.query.count()
+        pending_orders = Order.query.filter_by(status='PENDING').count()
+    except OperationalError:
+        db.session.rollback()
+        total_orders = total_reservations = pending_orders = 0
 
     # ── PER-BRANCH STATS ──
     from archive.models import ArchiveOrder
     branch_data = {}
     for br in branches:
         # Get ALL PAID orders revenue (Main DB + Archive DB)
-        main_db_revenue = float(db.session.query(func.coalesce(func.sum(Order.total_amount), 0)).filter(
-            Order.branch == br,
-            Order.payment_status == 'PAID'
-        ).scalar())
+        try:
+            main_db_revenue = float(db.session.query(func.coalesce(func.sum(Order.total_amount), 0)).filter(
+                Order.branch == br,
+                Order.payment_status == 'PAID'
+            ).scalar())
+        except OperationalError:
+            db.session.rollback()
+            main_db_revenue = 0.0
+
         try:
             archive_db_revenue = float(db.session.query(func.coalesce(func.sum(ArchiveOrder.total_amount), 0)).filter(
                 ArchiveOrder.branch == br,
@@ -585,27 +602,56 @@ def super_admin_overview():
             db.session.rollback()
             archive_db_revenue = 0.0
         br_order_revenue = main_db_revenue + archive_db_revenue
-        
-        br_expenses = float(db.session.query(func.coalesce(func.sum(SupplierPayment.amount), 0)).filter(SupplierPayment.branch == br).scalar())
-        br_expense_count = db.session.query(func.count(SupplierPayment.id)).filter(SupplierPayment.branch == br).scalar() or 0
+
+        try:
+            br_expenses = float(db.session.query(func.coalesce(func.sum(SupplierPayment.amount), 0)).filter(SupplierPayment.branch == br).scalar())
+        except OperationalError:
+            db.session.rollback()
+            br_expenses = 0.0
+
+        try:
+            br_expense_count = db.session.query(func.count(SupplierPayment.id)).filter(SupplierPayment.branch == br).scalar() or 0
+        except OperationalError:
+            db.session.rollback()
+            br_expense_count = 0
+
         br_net_revenue = br_order_revenue - br_expenses  # After supplier deductions
-        
+
         # Count orders (Main DB only for active operations)
-        br_orders = Order.query.filter_by(branch=br).count()
-        br_pending = Order.query.filter_by(branch=br, status='PENDING').count()
-        br_completed = Order.query.filter_by(branch=br, status='COMPLETED').count()
-        br_reservations = Reservation.query.filter_by(branch=br).count()
-        br_staff = User.query.filter(
-            User.branch == br,
-            User.role.in_(['ADMIN', 'CASHIER', 'KITCHEN', 'INVENTORY_STAFF', 'INVENTORY', 'STAFF', 'RIDER'])
-        ).count()
+        try:
+            br_orders = Order.query.filter_by(branch=br).count()
+            br_pending = Order.query.filter_by(branch=br, status='PENDING').count()
+            br_completed = Order.query.filter_by(branch=br, status='COMPLETED').count()
+        except OperationalError:
+            db.session.rollback()
+            br_orders = br_pending = br_completed = 0
+
+        try:
+            br_reservations = Reservation.query.filter_by(branch=br).count()
+        except OperationalError:
+            db.session.rollback()
+            br_reservations = 0
+
+        try:
+            br_staff = User.query.filter(
+                User.branch == br,
+                User.role.in_(['ADMIN', 'CASHIER', 'KITCHEN', 'INVENTORY_STAFF', 'INVENTORY', 'STAFF', 'RIDER'])
+            ).count()
+        except OperationalError:
+            db.session.rollback()
+            br_staff = 0
 
         # Revenue trend per branch (last 7 days)
-        br_trend = db.session.query(
-            func.date(Order.created_at).label('d'),
-            func.sum(Order.total_amount).label('rev')
-        ).filter(func.date(Order.created_at) >= week_ago, Order.branch == br).group_by('d').all()
-        br_trend_map = {row.d: float(row.rev or 0) for row in br_trend}
+        try:
+            _d_col = func.date(Order.created_at).label('d')
+            br_trend = db.session.query(
+                _d_col,
+                func.sum(Order.total_amount).label('rev')
+            ).filter(func.date(Order.created_at) >= week_ago, Order.branch == br).group_by(_d_col).all()
+            br_trend_map = {row.d: float(row.rev or 0) for row in br_trend}
+        except OperationalError:
+            db.session.rollback()
+            br_trend_map = {}
 
         br_rev_data = []
         for i in range(6, -1, -1):
@@ -613,23 +659,38 @@ def super_admin_overview():
             br_rev_data.append(br_trend_map.get(d, 0.0))
 
         # Expense trend per branch (last 7 days)
-        br_exp_trend = db.session.query(
-            func.date(SupplierPayment.created_at).label('d'),
-            func.sum(SupplierPayment.amount).label('exp')
-        ).filter(func.date(SupplierPayment.created_at) >= week_ago, SupplierPayment.branch == br).group_by('d').all()
-        br_exp_trend_map = {row.d: float(row.exp or 0) for row in br_exp_trend}
+        try:
+            _exp_d_col = func.date(SupplierPayment.created_at).label('d')
+            br_exp_trend = db.session.query(
+                _exp_d_col,
+                func.sum(SupplierPayment.amount).label('exp')
+            ).filter(func.date(SupplierPayment.created_at) >= week_ago, SupplierPayment.branch == br).group_by(_exp_d_col).all()
+            br_exp_trend_map = {row.d: float(row.exp or 0) for row in br_exp_trend}
+        except OperationalError:
+            db.session.rollback()
+            br_exp_trend_map = {}
+
         br_exp_data = []
         for i in range(6, -1, -1):
             d = today - timedelta(days=i)
             br_exp_data.append(br_exp_trend_map.get(d, 0.0))
 
         # Order status breakdown per branch
-        br_status_rows = db.session.query(Order.status, func.count(Order.id)).filter(Order.branch == br).group_by(Order.status).all()
-        br_status_labels = [r[0] for r in br_status_rows] if br_status_rows else ['No Data']
-        br_status_data = [r[1] for r in br_status_rows] if br_status_rows else [0]
+        try:
+            br_status_rows = db.session.query(Order.status, func.count(Order.id)).filter(Order.branch == br).group_by(Order.status).all()
+            br_status_labels = [r[0] for r in br_status_rows] if br_status_rows else ['No Data']
+            br_status_data = [r[1] for r in br_status_rows] if br_status_rows else [0]
+        except OperationalError:
+            db.session.rollback()
+            br_status_labels = ['No Data']
+            br_status_data = [0]
 
         # Recent supplier payments per branch (last 5)
-        br_recent_payments = SupplierPayment.query.filter_by(branch=br).order_by(SupplierPayment.created_at.desc()).limit(5).all()
+        try:
+            br_recent_payments = SupplierPayment.query.filter_by(branch=br).order_by(SupplierPayment.created_at.desc()).limit(5).all()
+        except OperationalError:
+            db.session.rollback()
+            br_recent_payments = []
 
         branch_data[br] = {
             'gross_revenue': br_order_revenue,
@@ -655,22 +716,34 @@ def super_admin_overview():
         rev_labels.append((today - timedelta(days=i)).strftime('%b %d'))
 
     # ── CRITICAL ALERTS (Inventory & Kitchen) ──
-    low_ingredients_all = Ingredient.query.filter(Ingredient.stock_qty <= Ingredient.reorder_level).order_by(Ingredient.stock_qty.asc()).limit(20).all()
-    out_of_stock_menu_all = MenuItem.query.filter_by(is_available=False).limit(20).all()
-    
+    try:
+        low_ingredients_all = Ingredient.query.filter(Ingredient.stock_qty <= Ingredient.reorder_level).order_by(Ingredient.stock_qty.asc()).limit(20).all()
+    except OperationalError:
+        db.session.rollback()
+        low_ingredients_all = []
+    try:
+        out_of_stock_menu_all = MenuItem.query.filter_by(is_available=False).limit(20).all()
+    except OperationalError:
+        db.session.rollback()
+        out_of_stock_menu_all = []
+
     low_ingredients = {'Pagsanjan': [], 'Lucban': []}
     for item in low_ingredients_all:
         b = item.branch or 'Pagsanjan'
         if b in low_ingredients:
             low_ingredients[b].append(item)
-            
+
     out_of_stock_menu = {'Pagsanjan': [], 'Lucban': []}
     for item in out_of_stock_menu_all:
         b = item.branch or 'Pagsanjan'
         if b in out_of_stock_menu:
             out_of_stock_menu[b].append(item)
 
-    recent_expenses = SupplierPayment.query.order_by(SupplierPayment.created_at.desc()).limit(10).all()
+    try:
+        recent_expenses = SupplierPayment.query.order_by(SupplierPayment.created_at.desc()).limit(10).all()
+    except OperationalError:
+        db.session.rollback()
+        recent_expenses = []
 
     return render_template('admin/super_overview.html',
         total_customers=total_customers,
@@ -1430,6 +1503,7 @@ def approvals():
 @login_required
 @admin_required
 def approve_user(user_id):
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     user = User.query.get_or_404(user_id)
     user.status = 'ACTIVE'
     db.session.commit()
@@ -1490,6 +1564,8 @@ def approve_user(user_id):
     _create_web_notification(user.id, 'Account Approved! 🎉', 'Your account has been approved. You can now log in and enjoy all features!', 'SYSTEM')
     
     log_audit('UPDATE', 'User', user.id, f'Approved user registration for {user.username}')
+    if is_ajax:
+        return jsonify({'success': True, 'message': f'User {user.username} approved successfully.', 'user_id': user_id})
     flash(f"User {user.username} approved.", "success")
     return redirect(url_for('admin.approvals'))
 
@@ -1497,12 +1573,15 @@ def approve_user(user_id):
 @login_required
 @admin_required
 def reject_user(user_id):
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     user = User.query.get_or_404(user_id)
     user.status = 'REJECTED'
     db.session.commit()
     _create_web_notification(user.id, 'Account Update', 'Your account registration was not approved. Please contact us for more information.', 'SYSTEM')
     
     log_audit('UPDATE', 'User', user.id, f'Rejected user registration for {user.username}')
+    if is_ajax:
+        return jsonify({'success': True, 'message': f'User {user.username} rejected.', 'user_id': user_id})
     flash(f"User {user.username} rejected.", "warning")
     return redirect(url_for('admin.approvals'))
 
@@ -1939,14 +2018,20 @@ def walkin_order_submit():
                         return redirect(order.xendit_invoice_url)
                 except Exception as x: print(f"XENDIT ERROR: {str(x)}")
         
-        flash(f"Walk-in order submitted successfully! Table {table_number} is now occupied." if table_number else "Walk-in order submitted successfully!", "success")
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        success_msg = f"Walk-in order submitted successfully! Table {table_number} is now occupied." if table_number else "Walk-in order submitted successfully!"
+        if is_ajax:
+            return jsonify({'success': True, 'message': success_msg, 'order_id': order.id, 'redirect': url_for('cashier_portal.cashier_dashboard')})
+        flash(success_msg, "success")
         return redirect(url_for('cashier_portal.cashier_dashboard'))
     except Exception as e:
         db.session.rollback()
         print(f"WALKIN SUBMIT ERROR: {str(e)}")
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        if is_ajax:
+            return jsonify({'success': False, 'message': f'System Error: {str(e)}'}), 500
         flash(f"System Error: {str(e)}", "danger")
         return redirect(url_for('admin.walkin_order'))
-    return redirect(url_for('cashier_portal.cashier_dashboard'))
 
 @admin_bp.route('/walkin-order/table-status', methods=['GET'])
 @login_required

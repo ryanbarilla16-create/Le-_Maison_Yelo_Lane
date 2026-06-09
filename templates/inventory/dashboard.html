@@ -307,7 +307,7 @@
                 <h3><i class="fas fa-plus"></i> Add New Ingredient</h3>
                 <button class="close-modal" onclick="closeModal('addIngredientModal')">&times;</button>
             </div>
-            <form action="{{ url_for('inventory_portal.inventory_add_ingredient') }}" method="POST" class="modal-body-custom">
+            <form action="{{ url_for('inventory_portal.inventory_add_ingredient') }}" method="POST" class="modal-body-custom" onsubmit="submitAjaxForm(event, 'addIngredientModal')">
                 <div class="form-grid">
                     <div class="form-group">
                         <label>Ingredient Name *</label>
@@ -372,7 +372,7 @@
                 <h3><i class="fas fa-plus"></i> Restock</h3>
                 <button class="close-modal" onclick="closeModal('restockModal')">&times;</button>
             </div>
-            <form id="restockForm" method="POST" class="modal-body-custom">
+            <form id="restockForm" method="POST" class="modal-body-custom" onsubmit="submitAjaxForm(event, 'restockModal')">
                 <p>Add stock for <strong id="restockName"></strong></p>
                 <div class="form-group">
                     <label>Quantity to Add (<span id="restockUnit"></span>)</label>
@@ -393,7 +393,7 @@
                 <h3><i class="fas fa-trash-can"></i> Record Waste</h3>
                 <button class="close-modal" onclick="closeModal('wasteModal')">&times;</button>
             </div>
-            <form id="wasteForm" action="{{ url_for('inventory_portal.inventory_add_waste') }}" method="POST" class="modal-body-custom">
+            <form id="wasteForm" action="{{ url_for('inventory_portal.inventory_add_waste') }}" method="POST" class="modal-body-custom" onsubmit="submitAjaxForm(event, 'wasteModal')">
                 <input type="hidden" name="ingredient_id" id="wasteId">
                 <p>Recording waste for <strong id="wasteName"></strong></p>
                 <p style="font-size:0.8rem; color:var(--muted); margin-bottom:12px;">Current: <span id="wasteCurrent"></span> <span class="waste-unit"></span></p>
@@ -430,7 +430,7 @@
                 <h3><i class="fas fa-edit"></i> Edit Ingredient</h3>
                 <button class="close-modal" onclick="closeModal('editIngredientModal')">&times;</button>
             </div>
-            <form id="editIngredientForm" method="POST" class="modal-body-custom">
+            <form id="editIngredientForm" method="POST" class="modal-body-custom" onsubmit="submitAjaxForm(event, 'editIngredientModal')">
                 <div class="form-grid">
                     <div class="form-group full-width">
                         <label>Ingredient Name *</label>
@@ -542,11 +542,25 @@
 
     function executeDeleteIngredient() {
         if (!deleteIngredientId) return;
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/staff/inventory/ingredients/delete/${deleteIngredientId}`;
-        document.body.appendChild(form);
-        form.submit();
+        closeModal('deleteIngredientModal');
+        
+        fetch(`/staff/inventory/ingredients/delete/${deleteIngredientId}`, {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (window.showToast) window.showToast('success', data.message);
+                refreshDashboard();
+            } else {
+                if (window.showToast) window.showToast('danger', data.message || 'Failed to delete ingredient.');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            if (window.showToast) window.showToast('danger', 'Network error. Failed to delete ingredient.');
+        });
     }
 
 
@@ -811,6 +825,104 @@
         .catch(err => console.warn('Inventory sync failed:', err));
     }
 
-    
+    let _lastLowStockCount = {{ low_stock|default(0) }};
+
+    function pollLowStockAlerts() {
+        fetch('{{ url_for("inventory_portal.inventory_api_alerts") }}')
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) return;
+            let banner = document.getElementById('lowStockAlertBanner');
+            if (data.count > 0) {
+                if (!banner) {
+                    banner = document.createElement('div');
+                    banner.id = 'lowStockAlertBanner';
+                    banner.style.cssText = 'background:#fff3e0;border:1px solid #ffcc80;border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:0.85rem;color:#e65100;font-weight:600;';
+                    const container = document.getElementById('inventoryDashboardContainer');
+                    if (container) container.prepend(banner);
+                }
+                const names = data.alerts.slice(0, 3).map(a => a.name).join(', ');
+                const more = data.count > 3 ? ` (+${data.count - 3} more)` : '';
+                banner.innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i><strong>${data.count} low-stock item(s):</strong> ${names}${more}`;
+            } else if (banner) {
+                banner.remove();
+            }
+            if (_lastLowStockCount > 0 && data.count > _lastLowStockCount && window.showToast) {
+                showToast('warning', `${data.count - _lastLowStockCount} new low-stock alert(s)!`);
+            }
+            _lastLowStockCount = data.count;
+        })
+        .catch(() => {});
+    }
+
+    setInterval(pollInventoryDashboard, 30000);
+    setInterval(pollLowStockAlerts, 20000);
+    document.addEventListener('DOMContentLoaded', pollLowStockAlerts);
+
+    function refreshDashboard() {
+        return fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const ids = ['inventoryDashboardContainer', 'lastUpdateText', 'ingredientCountPill'];
+            ids.forEach(id => {
+                const oldEl = document.getElementById(id);
+                const newEl = doc.getElementById(id);
+                if (oldEl && newEl) {
+                    oldEl.innerHTML = newEl.innerHTML;
+                }
+            });
+            applyDashboardFilter();
+        })
+        .catch(err => console.error('Error refreshing dashboard:', err));
+    }
+
+    function submitAjaxForm(event, modalId) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+        const url = form.action || form.getAttribute('action');
+        const method = form.method || 'POST';
+        
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn ? submitBtn.innerHTML : 'Submit';
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        }
+        
+        fetch(url, {
+            method: method,
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(errData => { throw new Error(errData.message || 'Server error'); });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                closeModal(modalId);
+                form.reset();
+                if (window.showToast) window.showToast('success', data.message);
+                refreshDashboard();
+            } else {
+                if (window.showToast) window.showToast('danger', data.message || 'Operation failed.');
+            }
+        })
+        .catch(err => {
+            console.error('AJAX Error:', err);
+            if (window.showToast) window.showToast('danger', err.message || 'Network error. Please try again.');
+        })
+        .finally(() => {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+            }
+        });
+    }
 </script>
 {% endblock %}

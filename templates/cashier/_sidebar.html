@@ -26,6 +26,9 @@
     <a class="nav-item {% if request.endpoint == 'cashier_portal.cashier_walkin_order' %}active{% endif %}" href="{{ url_for('cashier_portal.cashier_walkin_order') }}">
         <i class="fas fa-walking"></i> Walk-In Order
     </a>
+    <a class="nav-item {% if request.endpoint == 'cashier_portal.cashier_table_management' %}active{% endif %}" href="{{ url_for('cashier_portal.cashier_table_management') }}">
+        <i class="fas fa-chair"></i> Table Management
+    </a>
     <a class="nav-item {% if request.endpoint == 'cashier_portal.cashier_chats' %}active{% endif %}" href="{{ url_for('cashier_portal.cashier_chats') }}">
         <i class="fas fa-comments"></i> Customer Chat
     </a>

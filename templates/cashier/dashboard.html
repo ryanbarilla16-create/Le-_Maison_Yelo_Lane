@@ -212,19 +212,19 @@
         <div class="stat-card">
             <div class="glow-line glow-brown"></div>
             <div class="icon-wrap brown"><i class="fas fa-fire-flame-curved"></i></div>
-            <div class="stat-value">{{ active_orders }}</div>
+            <div class="stat-value" id="statActiveOrders">{{ active_orders }}</div>
             <div class="stat-label">Active Orders</div>
         </div>
         <div class="stat-card">
             <div class="glow-line glow-green"></div>
             <div class="icon-wrap green"><i class="fas fa-check-circle"></i></div>
-            <div class="stat-value">{{ completed_today }}</div>
+            <div class="stat-value" id="statCompletedToday">{{ completed_today }}</div>
             <div class="stat-label">Completed Today</div>
         </div>
         <div class="stat-card">
             <div class="glow-line glow-orange"></div>
             <div class="icon-wrap orange"><i class="fas fa-money-bill-wave"></i></div>
-            <div class="stat-value">{{ unpaid_orders }}</div>
+            <div class="stat-value" id="statUnpaidOrders">{{ unpaid_orders }}</div>
             <div class="stat-label">Unpaid Billings</div>
         </div>
     </div>
@@ -232,7 +232,7 @@
     <div class="section-card">
         <div class="section-header">
             <h2><i class="fas fa-layer-group" style="opacity:0.5; margin-right:10px;"></i>Live Order Queue</h2>
-            <span class="pill" style="background:rgba(93,64,55,0.08); color:var(--primary); font-weight:700;">{{ orders|length }} Active</span>
+            <span class="pill" id="liveQueueCount" style="background:rgba(93,64,55,0.08); color:var(--primary); font-weight:700;">{{ orders|length }} Active</span>
         </div>
 
         {% if orders %}
@@ -251,7 +251,7 @@
             </thead>
             <tbody>
                 {% for order in orders %}
-                <tr>
+                <tr data-order-id="{{ order.id }}" data-status="{{ order.status }}">
                     <td><span class="order-id">{{ order.order_code or '#' + order.id|string }}</span></td>
                     <td style="font-weight:500; text-align:left;">
                         {% if order.user %}
@@ -373,6 +373,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
                     },
                     body: JSON.stringify({ table_number: newTableNumber })
                 })
@@ -383,14 +384,14 @@
                         cell.querySelector('.table-number-edit-form').style.display = 'none';
                         cell.querySelector('.table-number-display').style.display = 'inline';
                         cell.querySelector('.edit-table-btn').style.display = 'inline';
-                        showSuccess(`Table number updated to ${newTableNumber}`);
+                        if (window.showToast) showToast('success', `Table updated to #${newTableNumber}`);
                     } else {
-                        showError(data.message || 'Failed to update table number');
+                        if (window.showToast) showToast('danger', data.message || 'Failed to update table number');
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    showError('Server error occurred');
+                    if (window.showToast) showToast('danger', 'Network error updating table number.');
                 });
             });
         });
@@ -441,13 +442,13 @@
                 
                 selectElement.focus();
             } else {
-                showError('Failed to load available tables');
+                if (window.showToast) showToast('danger', data.message || 'Failed to load available tables');
                 selectElement.innerHTML = '<option value="">Error loading tables</option>';
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            showError('Failed to load available tables');
+            if (window.showToast) showToast('danger', 'Network error loading tables.');
             selectElement.innerHTML = '<option value="">Error loading tables</option>';
         });
     }
@@ -526,7 +527,7 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                showSuccess(data.message || `Table ${tableNumber} is now available`);
+                if (window.showToast) showToast('success', data.message || `Table ${tableNumber} is now available`);
                 
                 // Update UI: remove button and update display
                 const cell = btnElement.closest('.table-number-cell');
@@ -540,87 +541,155 @@
                 // Trigger dashboard refresh after short delay
                 setTimeout(pollCashierDashboard, 1000);
             } else {
-                showError(data.error || 'Failed to release table');
+                if (window.showToast) showToast('danger', data.error || 'Failed to release table');
                 btnElement.disabled = false;
                 btnElement.innerHTML = '<i class="fas fa-unlock"></i> Release';
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            showError('Server error occurred while releasing table');
+            if (window.showToast) showToast('danger', 'Network error while releasing table.');
             btnElement.disabled = false;
             btnElement.innerHTML = '<i class="fas fa-unlock"></i> Release';
         });
     }
 
-    // Helper functions for notifications
-    function showSuccess(message) {
-        const container = document.getElementById('notification-container') || createNotificationContainer();
-        const alert = document.createElement('div');
-        alert.className = 'alert alert-success';
-        alert.style.cssText = 'position:fixed; top:20px; right:20px; z-index:9999; padding:15px 20px; border-radius:8px; background:#d4edda; color:#155724; border:1px solid #c3e6cb; box-shadow:0 4px 12px rgba(0,0,0,0.15); animation:slideIn 0.3s ease;';
-        alert.innerHTML = `<i class="fas fa-check-circle" style="margin-right:8px;"></i>${message}`;
-        container.appendChild(alert);
-        setTimeout(() => {
-            alert.style.animation = 'slideOut 0.3s ease';
-            setTimeout(() => alert.remove(), 300);
-        }, 3000);
-    }
 
-    function showError(message) {
-        const container = document.getElementById('notification-container') || createNotificationContainer();
-        const alert = document.createElement('div');
-        alert.className = 'alert alert-danger';
-        alert.style.cssText = 'position:fixed; top:20px; right:20px; z-index:9999; padding:15px 20px; border-radius:8px; background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; box-shadow:0 4px 12px rgba(0,0,0,0.15); animation:slideIn 0.3s ease; cursor:pointer;';
-        alert.innerHTML = `<i class="fas fa-exclamation-circle" style="margin-right:8px;"></i>${message} <span style="float:right; margin-left:15px; opacity:0.7;">&times;</span>`;
-        alert.addEventListener('click', () => alert.remove());
-        container.appendChild(alert);
-    }
 
-    function createNotificationContainer() {
-        const container = document.createElement('div');
-        container.id = 'notification-container';
-        document.body.appendChild(container);
-        
-        // Add animation styles
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideIn {
-                from { transform: translateX(400px); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-            @keyframes slideOut {
-                from { transform: translateX(0); opacity: 1; }
-                to { transform: translateX(400px); opacity: 0; }
-            }
-        `;
-        document.head.appendChild(style);
-        
-        return container;
-    }
+    const _cashierOrderStatuses = {};
 
-    // ─── ORIGINAL POLLING FUNCTION ───────────────────────────────────
-    function pollCashierDashboard() {
-        if (document.querySelector('.modal.show')) return;
-
+    function refreshCashierDashboardHtml() {
         fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
         .then(response => response.text())
         .then(html => {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            
-            const ids = ['cashierDashboardContainer', 'lastUpdateText'];
-            ids.forEach(id => {
-                const oldEl = document.getElementById(id);
-                const newEl = doc.getElementById(id);
-                if (oldEl && newEl && oldEl.innerHTML !== newEl.innerHTML) {
-                    oldEl.innerHTML = newEl.innerHTML;
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            const oldEl = document.getElementById('cashierDashboardContainer');
+            const newEl = doc.getElementById('cashierDashboardContainer');
+            if (oldEl && newEl && oldEl.innerHTML !== newEl.innerHTML) {
+                oldEl.innerHTML = newEl.innerHTML;
+                attachDashboardListeners();
+            }
+        })
+        .catch(err => console.warn('Cashier HTML sync failed:', err));
+    }
+
+    function pollCashierDashboard() {
+        if (document.querySelector('.modal-overlay')) return;
+        if (document.querySelector('.table-number-edit-form[style*="block"]')) return;
+
+        fetch('{{ url_for("cashier_portal.cashier_api_dashboard") }}')
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) return;
+
+            const s = data.stats;
+            const elActive = document.getElementById('statActiveOrders');
+            const elDone = document.getElementById('statCompletedToday');
+            const elUnpaid = document.getElementById('statUnpaidOrders');
+            const elQueue = document.getElementById('liveQueueCount');
+            if (elActive) elActive.textContent = s.active_orders;
+            if (elDone) elDone.textContent = s.completed_today;
+            if (elUnpaid) elUnpaid.textContent = s.unpaid_orders;
+            if (elQueue) elQueue.textContent = `${data.orders.length} Active`;
+
+            let needsFullRefresh = false;
+            const tbody = document.querySelector('#cashierDashboardContainer table tbody');
+            const rowCount = tbody ? tbody.querySelectorAll('tr').length : 0;
+            if (rowCount !== data.orders.length) needsFullRefresh = true;
+
+            data.orders.forEach(o => {
+                const prev = _cashierOrderStatuses[o.id];
+                if (prev && prev !== 'READY' && o.status === 'READY') {
+                    if (window.showToast) showToast('success', `Order ${o.order_code} is READY from kitchen!`);
+                    needsFullRefresh = true;
+                }
+                if (prev && prev !== o.status) needsFullRefresh = true;
+                _cashierOrderStatuses[o.id] = o.status;
+
+                const row = document.querySelector(`tr[data-order-id="${o.id}"]`);
+                if (row) {
+                    row.dataset.status = o.status;
+                    const pill = row.querySelector('td:nth-child(5) .pill');
+                    if (pill) {
+                        const label = o.status.charAt(0) + o.status.slice(1).toLowerCase();
+                        pill.className = `pill ${o.status.toLowerCase()}`;
+                        pill.textContent = label;
+                    }
+                    const payPill = row.querySelector('td:nth-child(6) .pill');
+                    if (payPill && o.payment_status) {
+                        payPill.className = `pill ${o.payment_status.toLowerCase()}`;
+                        payPill.textContent = o.payment_status.charAt(0) + o.payment_status.slice(1).toLowerCase();
+                    }
                 }
             });
+
+            if (needsFullRefresh) refreshCashierDashboardHtml();
         })
         .catch(err => console.warn('Cashier sync failed:', err));
     }
 
-    
+    // Re-attach all event listeners after a poll-driven DOM update
+    function attachDashboardListeners() {
+        document.querySelectorAll('.edit-table-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const cell = this.closest('.table-number-cell');
+                const orderId = cell.dataset.orderId;
+                const select = cell.querySelector('.table-number-select');
+                cell.querySelector('.table-number-display').style.display = 'none';
+                cell.querySelector('.edit-table-btn').style.display = 'none';
+                cell.querySelector('.table-number-edit-form').style.display = 'block';
+                loadAvailableTables(orderId, select);
+            });
+        });
+        document.querySelectorAll('.cancel-table-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const cell = this.closest('.table-number-cell');
+                cell.querySelector('.table-number-edit-form').style.display = 'none';
+                cell.querySelector('.table-number-display').style.display = 'inline';
+                cell.querySelector('.edit-table-btn').style.display = 'inline';
+            });
+        });
+        document.querySelectorAll('.save-table-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const cell = this.closest('.table-number-cell');
+                const orderId = cell.dataset.orderId;
+                const select = cell.querySelector('.table-number-select');
+                const newTableNumber = parseInt(select.value);
+                if (!newTableNumber || newTableNumber < 1) {
+                    if (window.showToast) showToast('danger', 'Please select a table number');
+                    return;
+                }
+                fetch(`/admin/orders/${orderId}/update-table`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    body: JSON.stringify({ table_number: newTableNumber })
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        if (window.showToast) showToast('success', `Table updated to #${newTableNumber}`);
+                        setTimeout(pollCashierDashboard, 500);
+                    } else {
+                        if (window.showToast) showToast('danger', data.message || 'Failed to update table');
+                    }
+                })
+                .catch(() => { if (window.showToast) showToast('danger', 'Network error.'); });
+            });
+        });
+        document.querySelectorAll('.release-table-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                showReleaseTableModal(this.dataset.orderId, this.dataset.tableNumber, this);
+            });
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('tr[data-order-id]').forEach(row => {
+            _cashierOrderStatuses[row.dataset.orderId] = row.dataset.status;
+        });
+    });
+
+    setInterval(pollCashierDashboard, 5000);
+
 </script>
 {% endblock %}

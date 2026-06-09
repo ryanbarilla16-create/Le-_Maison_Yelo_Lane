@@ -42,7 +42,7 @@ class PermissionManager:
             with open(self.config_path, 'r', encoding='utf-8') as f:
                 self.config = json.load(f)
             
-            print(f"✅ Permission configuration loaded from {self.config_path}")
+            print(f"[OK] Permission configuration loaded from {self.config_path}")
         except json.JSONDecodeError as e:
             raise PermissionConfigError(f"Invalid JSON in configuration file: {e}")
         except Exception as e:
@@ -60,12 +60,12 @@ class PermissionManager:
             if current_mtime != self.config_mtime:
                 self._load_config()
                 self.validate_config()
-                print(f"🔄 Permission configuration reloaded")
+                print(f"[RELOAD] Permission configuration reloaded")
                 return True
             
             return False
         except Exception as e:
-            print(f"❌ Failed to reload configuration: {e}")
+            print(f"[ERROR] Failed to reload configuration: {e}")
             return False
     
     def validate_config(self):
@@ -112,7 +112,7 @@ class PermissionManager:
                         f"Role '{role_name}' references undefined permission '{perm}'"
                     )
         
-        print("✅ Permission configuration validated successfully")
+        print("[OK] Permission configuration validated successfully")
     
     def has_permission(self, user, permission_name):
         """

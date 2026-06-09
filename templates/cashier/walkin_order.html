@@ -509,10 +509,51 @@
     });
 
     document.getElementById('confirmPaymentBtn').addEventListener('click', function () {
-        document.getElementById('hiddenAmountTendered').value = document.getElementById('modalAmountTendered').value;
+        const amountInput = document.getElementById('modalAmountTendered');
+        document.getElementById('hiddenAmountTendered').value = amountInput.value;
         this.disabled = true;
         this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Processing...';
-        HTMLFormElement.prototype.submit.call(document.getElementById('orderForm'));
+        
+        const form = document.getElementById('orderForm');
+        const formData = new FormData(form);
+        
+        // Dismiss bootstrap modal first
+        const modalEl = document.getElementById('paymentModal');
+        const bsModal = bootstrap.Modal.getInstance(modalEl);
+        if (bsModal) bsModal.hide();
+        
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                if (window.showToast) showToast('success', data.message || 'Walk-in order submitted!');
+                // Reset POS - clear cart
+                Object.keys(orderItems).forEach(k => delete orderItems[k]);
+                renderOrder();
+                // Go back to categories grid
+                showCategoriesGrid();
+                // Reset form fields
+                form.querySelector('input[name="customer_name"]').value = 'Walk-in Customer';
+                document.getElementById('totalAmount').textContent = '₱0.00';
+                document.getElementById('submitBtn').disabled = true;
+                // Reset tender input
+                amountInput.value = '';
+            } else {
+                if (window.showToast) showToast('danger', data.message || 'Order submission failed.');
+            }
+        })
+        .catch(err => {
+            console.error('Walkin submit error:', err);
+            if (window.showToast) showToast('danger', 'Network error. Please try again.');
+        })
+        .finally(() => {
+            const btn = document.getElementById('confirmPaymentBtn');
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check-circle me-1"></i> Confirm Order'; }
+        });
     });
 
     // Quick quantity setter

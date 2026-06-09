@@ -188,6 +188,375 @@
     .payments-history-table td { padding: 12px 18px; border-bottom: 1px dashed rgba(93,64,55,0.08); vertical-align: top; color: var(--text); }
     .payments-history-table tbody tr:hover td { background: rgba(93,64,55,0.03); }
     .payments-history-table tbody tr:last-child td { border-bottom: none; }
+
+    /* Elegant ingredient selector */
+    .ingredient-select-wrapper {
+        position: relative;
+    }
+    .ingredient-select-wrapper select {
+        width: 100%;
+        padding: 12px 14px;
+        border: 2px solid var(--card-border);
+        border-radius: 12px;
+        font-size: 0.9rem;
+        transition: all 0.3s;
+        background: white;
+        cursor: pointer;
+    }
+    .ingredient-select-wrapper select:focus {
+        border-color: var(--primary);
+        outline: none;
+        box-shadow: 0 0 0 4px rgba(93,64,55,0.1);
+    }
+    .ingredient-select-wrapper select option {
+        padding: 10px;
+        border-radius: 6px;
+        margin: 2px 0;
+    }
+    .ingredient-select-wrapper select option:checked {
+        background: linear-gradient(135deg, var(--primary), #7d5a50);
+        color: white;
+        font-weight: 600;
+    }
+    
+    /* Enhanced ingredient select styling */
+    #add_ingredients_select,
+    #edit_ingredients_select {
+        background: linear-gradient(to bottom, #ffffff, #fafaf9);
+        border: 2px solid var(--card-border);
+        border-radius: 12px;
+        padding: 12px 14px;
+        font-size: 0.9rem;
+        width: 100%;
+        min-height: 140px;
+        transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+    }
+    
+    #add_ingredients_select:focus,
+    #edit_ingredients_select:focus {
+        border-color: var(--primary);
+        outline: none;
+        box-shadow: 0 0 0 4px rgba(93,64,55,0.1), inset 0 2px 4px rgba(0,0,0,0.02);
+        background: white;
+    }
+    
+    #add_ingredients_select option,
+    #edit_ingredients_select option {
+        padding: 10px 12px;
+        border-radius: 8px;
+        margin: 3px 0;
+        font-size: 0.88rem;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+    
+    #add_ingredients_select option:hover,
+    #edit_ingredients_select option:hover {
+        background: rgba(93,64,55,0.06);
+    }
+    
+    #add_ingredients_select option:checked,
+    #edit_ingredients_select option:checked {
+        background: linear-gradient(135deg, #5d4037, #7d5a50) !important;
+        color: white !important;
+        font-weight: 600;
+        box-shadow: 0 2px 8px rgba(93,64,55,0.25);
+    }
+    
+    /* Label with button */
+    .label-with-action {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+    
+    .label-with-action label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--muted);
+        text-transform: uppercase;
+        margin: 0;
+    }
+    
+    .add-ingredient-btn {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 5px 12px;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        transition: all 0.2s;
+        font-weight: 600;
+        box-shadow: 0 2px 6px rgba(93,64,55,0.2);
+    }
+    
+    .add-ingredient-btn:hover {
+        background: #7d5a50;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(93,64,55,0.3);
+    }
+    
+    .add-ingredient-btn:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 4px rgba(93,64,55,0.2);
+    }
+    
+    /* Helper text styling */
+    .helper-text {
+        font-size: 0.7rem;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin-top: 6px;
+        padding: 8px 12px;
+        background: rgba(93,64,55,0.04);
+        border-radius: 8px;
+        border-left: 3px solid var(--primary);
+    }
+    
+    .helper-text i {
+        color: var(--primary);
+        font-size: 0.8rem;
+    }
+    
+    /* Add ingredient modal styles */
+    .compact-form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+    .add-ing-success {
+        background: #e8f5e9;
+        border: 2px solid #4caf50;
+        border-radius: 12px;
+        padding: 16px;
+        text-align: center;
+        color: #2e7d32;
+        font-weight: 600;
+        margin-bottom: 16px;
+        animation: slideDown 0.3s ease;
+    }
+    @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Ingredient checkbox list */
+    .ingredient-checkbox-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px;
+        margin-bottom: 8px;
+        background: white;
+        border: 2px solid var(--card-border);
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .ingredient-checkbox-item:hover {
+        border-color: var(--primary);
+        background: rgba(93,64,55,0.02);
+    }
+    
+    .ingredient-checkbox-item input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+        accent-color: var(--primary);
+    }
+    
+    .ingredient-checkbox-item label {
+        flex: 1;
+        cursor: pointer;
+        margin: 0;
+        font-size: 0.9rem;
+    }
+    
+    .ingredient-checkbox-item input[type="checkbox"]:checked + label {
+        font-weight: 700;
+        color: var(--primary);
+    }
+    
+    /* Premium styling for Add Ingredient Modal */
+    #addIngredientModal .modal-content-custom {
+        border-radius: 24px;
+        border: none;
+        box-shadow: 0 30px 70px rgba(0,0,0,0.3);
+        background: #fafafa;
+    }
+    #addIngredientModal .modal-header-custom {
+        background: linear-gradient(135deg, #2e7d32, #1b5e20);
+        padding: 22px 28px;
+        border-bottom: 2px solid rgba(0,0,0,0.05);
+    }
+    #addIngredientModal .modal-header-custom h3 {
+        font-size: 1.25rem;
+        font-weight: 800;
+        letter-spacing: -0.2px;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    }
+    #addIngredientModal .close-modal {
+        background: rgba(255,255,255,0.12);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        font-size: 1.1rem;
+    }
+    #addIngredientModal .close-modal:hover {
+        background: rgba(255,255,255,0.25);
+        transform: rotate(90deg);
+    }
+    #addIngredientModal input, 
+    #addIngredientModal select {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid var(--card-border);
+        border-radius: 14px;
+        font-size: 0.92rem;
+        font-weight: 600;
+        color: var(--text);
+        background: white;
+        transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.01);
+    }
+    #addIngredientModal input:focus, 
+    #addIngredientModal select:focus {
+        border-color: #2e7d32;
+        outline: none;
+        background: white;
+        box-shadow: 0 0 0 4px rgba(46,125,50,0.15), inset 0 2px 4px rgba(0,0,0,0.01);
+    }
+    #addIngredientModal label {
+        font-size: 0.75rem;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        color: #5d4037;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+    }
+    #addIngredientModal .modal-footer-custom {
+        background: #fdfaf8;
+        border-top: 1px solid rgba(0,0,0,0.05);
+        padding: 20px 28px;
+    }
+    #addIngredientModal .btn-primary {
+        background: linear-gradient(135deg, #2e7d32, #1b5e20);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(46,125,50,0.25);
+        transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    #addIngredientModal .btn-primary:hover {
+        background: linear-gradient(135deg, #1b5e20, #0f3d12);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(46,125,50,0.35);
+    }
+    #addIngredientModal .btn-primary:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 6px rgba(46,125,50,0.2);
+    }
+    #addIngredientModal .btn-secondary {
+        background: #e0d6cf;
+        color: #5d4037;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    #addIngredientModal .btn-secondary:hover {
+        background: #d0c4bc;
+    }
+
+    /* ── Unassigned Ingredients Panel ── */
+    .unassigned-panel {
+        background: var(--card); border: 1.5px solid rgba(255,160,0,0.25);
+        border-radius: 22px; padding: 0; overflow: hidden; margin-top: 36px;
+        box-shadow: 0 4px 24px rgba(255,152,0,0.07);
+    }
+    .unassigned-panel-header {
+        padding: 18px 28px; display: flex; align-items: center; justify-content: space-between;
+        background: #faf7f5;
+        border-bottom: 1px solid rgba(93,64,55,0.12);
+    }
+    .unassigned-panel-header h3 {
+        margin: 0; font-size: 1rem; font-weight: 800; color: var(--primary);
+        display: flex; align-items: center; gap: 10px;
+    }
+    .unassigned-badge {
+        background: #8d6e63; color: white; font-size: 0.7rem; font-weight: 800;
+        padding: 2px 9px; border-radius: 50px;
+    }
+    .unassigned-list { padding: 16px 20px; }
+    .unassigned-item {
+        display: flex; align-items: center; gap: 14px;
+        padding: 14px 16px; margin-bottom: 10px;
+        background: white; border: 1.5px solid rgba(93,64,55,0.12);
+        border-radius: 14px; transition: all 0.25s;
+    }
+    .unassigned-item:hover { border-color: var(--primary); box-shadow: 0 4px 12px rgba(93,64,55,0.06); }
+    .unassigned-item-icon {
+        width: 38px; height: 38px; border-radius: 10px;
+        background: rgba(161,92,56,0.1); color: #a15c38;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1rem; flex-shrink: 0;
+    }
+    .unassigned-item-info { flex: 1; min-width: 0; }
+    .unassigned-item-name { font-weight: 700; font-size: 0.9rem; color: #3e2723; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .unassigned-item-meta { font-size: 0.72rem; color: #8d6e63; margin-top: 3px; display: flex; gap: 12px; }
+    .unassigned-item-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .unassigned-item-actions select {
+        padding: 7px 12px; border: 1.5px solid rgba(93,64,55,0.15); border-radius: 9px;
+        font-size: 0.8rem; font-weight: 600; color: #4e342e; background: white;
+        cursor: pointer; min-width: 160px; transition: border-color 0.2s;
+    }
+    .unassigned-item-actions select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(93,64,55,0.08); }
+    .btn-assign {
+        padding: 7px 16px; border: none; border-radius: 9px;
+        background: var(--primary);
+        color: white; font-weight: 700; font-size: 0.8rem;
+        cursor: pointer; transition: all 0.2s; white-space: nowrap;
+        box-shadow: 0 2px 8px rgba(93,64,55,0.18);
+    }
+    .btn-assign:hover { background: #4a3028; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(93,64,55,0.28); }
+    .btn-assign:active { transform: translateY(0); }
+    .btn-assign:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .unassigned-empty {
+        text-align: center; padding: 40px 20px; color: #8d6e63;
+    }
+    .unassigned-empty i { font-size: 2rem; color: #2e7d32; opacity: 0.4; margin-bottom: 10px; display: block; }
+    .unassigned-assigned-toast {
+        position: fixed; bottom: 28px; right: 28px; z-index: 9999;
+        background: #2e7d32; color: white;
+        padding: 14px 22px; border-radius: 14px; font-weight: 700; font-size: 0.88rem;
+        box-shadow: 0 8px 24px rgba(46,125,50,0.18);
+        display: none; align-items: center; gap: 10px;
+        animation: toastSlide 0.3s ease-out;
+    }
+    @keyframes toastSlide { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 {% endblock %}
 
 {% block content %}
@@ -249,6 +618,32 @@
     {% endfor %}
 </div>
 
+<!-- ═══════════ UNASSIGNED INGREDIENTS PANEL ═══════════ -->
+<div class="unassigned-panel" id="unassignedPanel">
+    <div class="unassigned-panel-header">
+        <h3>
+            <i class="fas fa-exclamation-triangle"></i>
+            Unassigned Ingredients
+            <span class="unassigned-badge" id="unassignedCount">0</span>
+        </h3>
+        <button onclick="loadUnassignedIngredients()" style="background: rgba(93,64,55,0.08); border: 1px solid rgba(93,64,55,0.2); color: var(--primary); padding: 6px 14px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;" onmouseover="this.style.background='rgba(93,64,55,0.15)'" onmouseout="this.style.background='rgba(93,64,55,0.08)'">
+            <i class="fas fa-sync-alt"></i> Refresh
+        </button>
+    </div>
+    <div class="unassigned-list" id="unassignedList">
+        <div class="unassigned-empty">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p style="font-weight: 600; margin: 0;">Loading...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Toast notification -->
+<div class="unassigned-assigned-toast" id="assignToast">
+    <i class="fas fa-check-circle"></i>
+    <span id="assignToastMsg">Assigned successfully!</span>
+</div>
+
 <!-- ═══════════ RECEIVE SUPPLY MODAL ═══════════ -->
 <div id="receiveModal" class="modal-overlay">
     <div class="modal-content-custom">
@@ -275,24 +670,26 @@
 <!-- ═══════════ DELETE SUPPLIER MODAL ═══════════ -->
 <div id="deleteSupplierModal" class="modal-overlay">
     <div class="modal-content-custom" style="max-width: 420px;">
-        <div class="modal-header-custom" style="background: #c62828;">
+        <div class="modal-header-custom" style="background: #8c1d1d;">
             <h3><i class="fas fa-trash-alt me-2"></i> Delete Supplier</h3>
             <button class="close-modal" onclick="closeModal('deleteSupplierModal')">&times;</button>
         </div>
         <div class="modal-body-custom" style="text-align:center; padding: 32px 24px;">
-            <div style="width:60px; height:60px; background:rgba(198,40,40,0.1); border-radius:50%; display:flex; align-items:center; justify-content:center; margin: 0 auto 16px;">
-                <i class="fas fa-exclamation-triangle" style="font-size:1.5rem; color:#c62828;"></i>
+            <div style="width:60px; height:60px; background:rgba(140,29,29,0.1); border-radius:50%; display:flex; align-items:center; justify-content:center; margin: 0 auto 16px;">
+                <i class="fas fa-exclamation-triangle" style="font-size:1.5rem; color:#8c1d1d;"></i>
             </div>
-            <h4 style="margin:0 0 10px; color: var(--text);">Are you sure?</h4>
-            <p style="color: var(--muted); font-size: 0.9rem; margin:0;">
-                You are about to delete <strong id="deleteSupName" style="color:#c62828;"></strong>.<br>
+            <h4 style="margin:0 0 10px; color: #3e2723; font-weight: 800;">Are you sure?</h4>
+            <p style="color: #8d6e63; font-size: 0.9rem; margin:0; line-height: 1.5;">
+                You are about to delete <strong id="deleteSupName" style="color:#8c1d1d;"></strong>.<br>
                 Linked ingredients will be unlinked but not deleted.
             </p>
         </div>
         <div class="modal-footer-custom" style="justify-content:center; gap:16px;">
-            <button type="button" class="btn-secondary" onclick="closeModal('deleteSupplierModal')">Cancel</button>
+            <button type="button" class="btn-secondary" onclick="closeModal('deleteSupplierModal')" style="background:#e0d6cf; color:#5d4037; border:none; padding:10px 24px; border-radius:10px; cursor:pointer; font-weight:600; transition:background 0.2s;" onmouseover="this.style.background='#d2c4bc'" onmouseout="this.style.background='#e0d6cf'">Cancel</button>
             <button type="button" onclick="executeDeleteSupplier()"
-                style="background:#c62828; color:white; border:none; padding:10px 24px; border-radius:10px; cursor:pointer; font-weight:600;">
+                style="background:#8c1d1d; color:white; border:none; padding:10px 24px; border-radius:10px; cursor:pointer; font-weight:600; transition:all 0.2s;"
+                onmouseover="this.style.background='#721717'; this.style.transform='scale(1.02)'"
+                onmouseout="this.style.background='#8c1d1d'; this.style.transform='scale(1)'">
                 <i class="fas fa-trash-alt me-1"></i> Delete
             </button>
         </div>
@@ -306,7 +703,7 @@
             <h3><i class="fas fa-pen me-2"></i> Edit Supplier</h3>
             <button class="close-modal" onclick="closeModal('editSupplierModal')">&times;</button>
         </div>
-        <form id="editSupplierForm" method="POST" class="modal-body-custom">
+        <form id="editSupplierForm" method="POST" class="modal-body-custom" onsubmit="submitAjaxForm(event, 'editSupplierModal')">
             <div class="form-group">
                 <label>Company Name *</label>
                 <input type="text" name="name" id="edit_name" required>
@@ -338,9 +735,24 @@
                 </select>
             </div>
             <div class="form-group">
-                <label>Ingredients Supplied</label>
-                <input type="text" name="new_ingredients" id="edit_ingredients" placeholder="e.g. Pork, Chicken, Beef">
-                <small style="font-size:0.7rem; color:var(--muted);">Separate items with commas. New items will be added as ingredients.</small>
+                <div class="label-with-action">
+                    <label>Ingredients Supplied</label>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" onclick="addMoreIngredientsToSupplier()" class="add-ingredient-btn" style="background: #1976d2;">
+                            <i class="fas fa-link"></i> Link Existing
+                        </button>
+                        <button type="button" onclick="openAddIngredientModal('edit')" class="add-ingredient-btn">
+                            <i class="fas fa-plus"></i> Add New
+                        </button>
+                    </div>
+                </div>
+                <select multiple id="edit_ingredients_select"></select>
+                <div class="helper-text">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Link Existing:</strong> Add ingredients from inventory. 
+                    <strong>Add New:</strong> Create new ingredient and link to this supplier.
+                </div>
+                <input type="hidden" name="new_ingredients" id="edit_ingredients_hidden">
             </div>
             <div class="modal-footer-custom">
                 <button type="button" class="btn-secondary" onclick="closeModal('editSupplierModal')">Cancel</button>
@@ -359,7 +771,7 @@
             <h3><i class="fas fa-plus"></i> Add New Supplier</h3>
             <button class="close-modal" onclick="closeModal('addSupplierModal')">&times;</button>
         </div>
-        <form action="{{ url_for('inventory_portal.inventory_add_supplier') }}" method="POST" class="modal-body-custom">
+        <form action="{{ url_for('inventory_portal.inventory_add_supplier') }}" method="POST" class="modal-body-custom" onsubmit="submitAjaxForm(event, 'addSupplierModal')">
             <div class="form-group">
                 <label>Company Name *</label>
                 <input type="text" name="name" required placeholder="e.g. Fresh Farm Produce">
@@ -381,25 +793,125 @@
                 <textarea name="address" rows="2" placeholder="Office address..."></textarea>
             </div>
             <div class="form-group">
-                <label>Menu Category *</label>
-                <select name="category" required style="padding: 10px 14px; border: 1px solid var(--card-border); border-radius: 10px; font-size: 0.9rem;">
-                    <option value="">-- Select Menu Category --</option>
-                    {% for cat in menu_categories %}
-                    <option value="{{ cat }}">{{ cat }}</option>
-                    {% endfor %}
-                    <option value="General">General</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Ingredients Supplied</label>
-                <input type="text" name="new_ingredients" placeholder="e.g. Pork, Chicken, Beef">
-                <small style="font-size:0.7rem; color:var(--muted);">Separate items with commas</small>
+                <div class="label-with-action" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <label style="font-size: 0.75rem; font-weight: 700; color: var(--muted); text-transform: uppercase;">Ingredients Supplied</label>
+                    <button type="button" onclick="openAddIngredientModal('add')" class="add-ingredient-btn" style="background: #2e7d32; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 5px; font-weight: 600;">
+                        <i class="fas fa-plus"></i> Add New
+                    </button>
+                </div>
+                <select multiple id="add_ingredients_select" style="min-height: 100px; padding: 10px; border: 2px solid var(--card-border); border-radius: 12px; font-size: 0.9rem; width: 100%; background: #fafafa;"></select>
+                <div class="helper-text" style="font-size: 0.75rem; color: var(--muted); margin-top: 6px; padding: 8px 12px; background: rgba(93,64,55,0.04); border-radius: 8px; border-left: 3px solid var(--primary); display: flex; align-items: center; gap: 5px;">
+                    <i class="fas fa-info-circle" style="color: var(--primary); font-size: 0.85rem;"></i>
+                    <span>New ingredients added will appear in the box above.</span>
+                </div>
+                <input type="hidden" name="new_ingredients" id="add_ingredients_hidden">
             </div>
             <div class="modal-footer-custom">
                 <button type="button" class="btn-secondary" onclick="closeModal('addSupplierModal')">Cancel</button>
                 <button type="submit" class="btn-primary">Add Supplier</button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- ═══════════ ADD NEW INGREDIENT MODAL ═══════════ -->
+<div id="addIngredientModal" class="modal-overlay">
+    <div class="modal-content-custom" style="max-width: 500px;">
+        <div class="modal-header-custom" style="background: #2e7d32;">
+            <h3><i class="fas fa-carrot me-2"></i> Add New Ingredient</h3>
+            <button class="close-modal" onclick="closeAddIngredientModal()">&times;</button>
+        </div>
+        <div class="modal-body-custom" id="addIngBody">
+            <div id="addIngSuccess" class="add-ing-success" style="display: none;">
+                <i class="fas fa-check-circle me-2"></i> Ingredient added successfully!
+            </div>
+            <div class="form-group">
+                <label>Ingredient Name *</label>
+                <input type="text" id="newIngName" placeholder="e.g. Fresh Pork" required style="padding: 10px 14px; border: 1px solid var(--card-border); border-radius: 10px; font-size: 0.9rem; width: 100%;">
+            </div>
+            <div class="compact-form-row">
+                <div class="form-group">
+                    <label>Unit *</label>
+                    <select id="newIngUnit" required style="padding: 10px 14px; border: 1px solid var(--card-border); border-radius: 10px; font-size: 0.9rem; width: 100%;">
+                        <option value="kg">Kilogram (kg)</option>
+                        <option value="g">Gram (g)</option>
+                        <option value="L">Liter (L)</option>
+                        <option value="mL">Milliliter (mL)</option>
+                        <option value="pcs">Pieces (pcs)</option>
+                        <option value="pack">Pack</option>
+                        <option value="bottle">Bottle</option>
+                        <option value="can">Can</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <select id="newIngCategory" style="padding: 10px 14px; border: 1px solid var(--card-border); border-radius: 10px; font-size: 0.9rem; width: 100%;">
+                        <option value="Unassigned">⚠️ Unassigned (New)</option>
+                        {% for cat in menu_categories %}
+                        <option value="{{ cat }}">{{ cat }}</option>
+                        {% endfor %}
+                        <option value="General">General</option>
+                    </select>
+                </div>
+            </div>
+            <div class="compact-form-row">
+                <div class="form-group">
+                    <label>Supplier Buying Price / Cost per Unit (₱)</label>
+                    <input type="number" id="newIngCost" step="0.01" min="0" value="0" placeholder="0.00" style="padding: 10px 14px; border: 1px solid var(--card-border); border-radius: 10px; font-size: 0.9rem; width: 100%;">
+                </div>
+                <div class="form-group">
+                    <label>Reorder Level</label>
+                    <input type="number" id="newIngReorder" step="0.01" min="0" value="10" placeholder="10" style="padding: 10px 14px; border: 1px solid var(--card-border); border-radius: 10px; font-size: 0.9rem; width: 100%;">
+                </div>
+            </div>
+            <div style="background: rgba(161,92,56,0.08); border-left: 3px solid #a15c38; padding: 12px; border-radius: 8px; margin-top: 12px;">
+                <div style="display: flex; align-items: start; gap: 10px;">
+                    <i class="fas fa-info-circle" style="color: #a15c38; margin-top: 3px;"></i>
+                    <div style="font-size: 0.8rem; color: #a15c38;">
+                        <strong>Note:</strong> New ingredients will appear in the sidebar under "Unassigned" category. 
+                        Assign them to menu items later to use in recipes.
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer-custom">
+            <button type="button" class="btn-secondary" onclick="closeAddIngredientModal()">Cancel</button>
+            <button type="button" class="btn-primary" onclick="submitNewIngredient()" style="background: #2e7d32;">
+                <i class="fas fa-plus-circle me-1"></i> Add Ingredient
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════ LINK EXISTING INGREDIENTS MODAL ═══════════ -->
+<div id="linkIngredientsModal" class="modal-overlay">
+    <div class="modal-content-custom" style="max-width: 600px;">
+        <div class="modal-header-custom" style="background: #1976d2;">
+            <h3><i class="fas fa-link me-2"></i> Link Existing Ingredients</h3>
+            <button class="close-modal" onclick="closeLinkIngredientsModal()">&times;</button>
+        </div>
+        <div class="modal-body-custom">
+            <div style="margin-bottom: 16px;">
+                <input type="text" id="searchIngredients" placeholder="🔍 Search ingredients..." 
+                    oninput="filterAvailableIngredients()"
+                    style="width: 100%; padding: 10px 14px; border: 2px solid var(--card-border); border-radius: 10px; font-size: 0.9rem;">
+            </div>
+            <div style="background: #f5f5f5; padding: 12px; border-radius: 10px; max-height: 300px; overflow-y: auto;" id="availableIngredientsList">
+                <!-- Populated by JS -->
+            </div>
+            <div style="margin-top: 12px; padding: 10px; background: rgba(25,118,210,0.08); border-radius: 8px;">
+                <div style="font-size: 0.8rem; color: #1565c0;">
+                    <i class="fas fa-check-circle me-1"></i>
+                    <strong id="selectedCount">0</strong> ingredient(s) selected to link
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer-custom">
+            <button type="button" class="btn-secondary" onclick="closeLinkIngredientsModal()">Cancel</button>
+            <button type="button" class="btn-primary" onclick="confirmLinkIngredients()" style="background: #1976d2;">
+                <i class="fas fa-link me-1"></i> Link Selected
+            </button>
+        </div>
     </div>
 </div>
 
@@ -410,6 +922,246 @@
     let currentSupId = null;
     const targetBranchName = '{{ target_branch }}';
     const branchAvailableFunds = parseFloat('{{ available_funds or 0 }}');
+    let allIngredients = [];
+    let currentModalType = null; // 'add' or 'edit'
+    let currentEditingSupplierId = null; // Track which supplier is being edited
+
+    // Load all ingredients on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        loadAllIngredients();
+        loadUnassignedIngredients();
+    });
+
+    function loadAllIngredients() {
+        fetch('/api/ingredients/all')
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    allIngredients = data.ingredients;
+                }
+            })
+            .catch(err => console.error('Failed to load ingredients:', err));
+    }
+
+    function populateIngredientsDropdown(selectId, ingredients) {
+        const select = document.getElementById(selectId);
+        if (!select) return;
+        
+        let html = '';
+        ingredients.forEach(ing => {
+            html += `<option value="${ing.name}">${ing.name} (${ing.category || 'General'})</option>`;
+        });
+        select.innerHTML = html;
+    }
+
+    function syncHiddenInput(selectId, hiddenId) {
+        const select = document.getElementById(selectId);
+        const hidden = document.getElementById(hiddenId);
+        const selected = Array.from(select.selectedOptions).map(opt => opt.value);
+        hidden.value = selected.join(', ');
+    }
+
+    // Listen for changes in selects
+    document.addEventListener('change', function(e) {
+        if (e.target.id === 'add_ingredients_select') {
+            syncHiddenInput('add_ingredients_select', 'add_ingredients_hidden');
+        } else if (e.target.id === 'edit_ingredients_select') {
+            syncHiddenInput('edit_ingredients_select', 'edit_ingredients_hidden');
+        }
+    });
+
+    // Add new ingredient modal
+    function openAddIngredientModal(type) {
+        currentModalType = type;
+        document.getElementById('newIngName').value = '';
+        document.getElementById('newIngUnit').value = 'kg';
+        document.getElementById('newIngCategory').value = 'Unassigned'; // Default to Unassigned
+        document.getElementById('newIngCost').value = '0';
+        document.getElementById('newIngReorder').value = '10';
+        document.getElementById('addIngSuccess').style.display = 'none';
+        openModal('addIngredientModal');
+    }
+
+    function closeAddIngredientModal() {
+        closeModal('addIngredientModal');
+    }
+
+    // Link existing ingredients modal
+    let selectedIngredientsToLink = [];
+
+    function addMoreIngredientsToSupplier() {
+        selectedIngredientsToLink = [];
+        openModal('linkIngredientsModal');
+        loadAvailableIngredients();
+    }
+
+    function closeLinkIngredientsModal() {
+        closeModal('linkIngredientsModal');
+    }
+
+    function loadAvailableIngredients() {
+        fetch('/api/ingredients/all')
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    // Get currently selected ingredients
+                    const currentSelect = document.getElementById('edit_ingredients_select');
+                    const currentNames = Array.from(currentSelect.options).map(opt => opt.value);
+                    
+                    // Filter out already linked ingredients
+                    const available = data.ingredients.filter(ing => !currentNames.includes(ing.name));
+                    
+                    renderAvailableIngredients(available);
+                }
+            })
+            .catch(err => console.error('Failed to load available ingredients:', err));
+    }
+
+    function renderAvailableIngredients(ingredients) {
+        const container = document.getElementById('availableIngredientsList');
+        
+        if (ingredients.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: var(--muted);">
+                    <i class="fas fa-check-circle" style="font-size: 2rem; color: var(--success); margin-bottom: 12px;"></i>
+                    <p style="font-weight: 600;">All ingredients are already linked to this supplier!</p>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '';
+        ingredients.forEach(ing => {
+            html += `
+                <div class="ingredient-checkbox-item" onclick="toggleIngredientSelection('${ing.name}', this)" data-name="${ing.name}" data-category="${ing.category || 'General'}">
+                    <input type="checkbox" class="ing-checkbox" id="ing_${ing.id}" onchange="event.stopPropagation(); updateSelectedCount();">
+                    <label for="ing_${ing.id}" onclick="event.stopPropagation();">
+                        <strong>${ing.name}</strong> 
+                        <span style="font-size: 0.8rem; color: var(--muted);">(${ing.category || 'General'})</span>
+                    </label>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    }
+
+    function filterAvailableIngredients() {
+        const search = document.getElementById('searchIngredients').value.toLowerCase();
+        const items = document.querySelectorAll('.ingredient-checkbox-item');
+        
+        items.forEach(item => {
+            const name = item.getAttribute('data-name').toLowerCase();
+            const category = item.getAttribute('data-category').toLowerCase();
+            
+            if (name.includes(search) || category.includes(search)) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+
+    function toggleIngredientSelection(name, element) {
+        const checkbox = element.querySelector('.ing-checkbox');
+        checkbox.checked = !checkbox.checked;
+        updateSelectedCount();
+    }
+
+    function updateSelectedCount() {
+        const checked = document.querySelectorAll('.ing-checkbox:checked');
+        selectedIngredientsToLink = Array.from(checked).map(cb => {
+            const item = cb.closest('.ingredient-checkbox-item');
+            return item.getAttribute('data-name');
+        });
+        document.getElementById('selectedCount').textContent = selectedIngredientsToLink.length;
+    }
+
+    function confirmLinkIngredients() {
+        if (selectedIngredientsToLink.length === 0) {
+            alert('Please select at least one ingredient to link.');
+            return;
+        }
+
+        // Add selected ingredients to the dropdown
+        const select = document.getElementById('edit_ingredients_select');
+        
+        selectedIngredientsToLink.forEach(name => {
+            const newOption = document.createElement('option');
+            newOption.value = name;
+            newOption.textContent = name;
+            newOption.selected = true;
+            select.appendChild(newOption);
+        });
+        
+        syncHiddenInput('edit_ingredients_select', 'edit_ingredients_hidden');
+        
+        // Show success message
+        alert(`✅ Linked ${selectedIngredientsToLink.length} ingredient(s) to this supplier!`);
+        
+        closeLinkIngredientsModal();
+    }
+
+    function submitNewIngredient() {
+        const name = document.getElementById('newIngName').value.trim();
+        const unit = document.getElementById('newIngUnit').value;
+        const category = document.getElementById('newIngCategory').value;
+        const cost = parseFloat(document.getElementById('newIngCost').value) || 0;
+        const reorder = parseFloat(document.getElementById('newIngReorder').value) || 10;
+
+        if (!name) {
+            alert('Please enter an ingredient name.');
+            return;
+        }
+
+        // Check if ingredient already exists
+        if (allIngredients.some(ing => ing.name.toLowerCase() === name.toLowerCase())) {
+            alert('This ingredient already exists in the system.');
+            return;
+        }
+
+        fetch('/api/ingredients/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, unit, category, cost_per_unit: cost, reorder_level: reorder })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                document.getElementById('addIngSuccess').style.display = 'block';
+                
+                // Add to local array
+                allIngredients.push(data.ingredient);
+                allIngredients.sort((a, b) => a.name.localeCompare(b.name));
+                
+                // Determine which dropdown to update
+                const selectId = currentModalType === 'add' ? 'add_ingredients_select' : 'edit_ingredients_select';
+                const hiddenId = currentModalType === 'add' ? 'add_ingredients_hidden' : 'edit_ingredients_hidden';
+                const select = document.getElementById(selectId);
+                
+                // Add new option to dropdown and select it
+                const newOption = document.createElement('option');
+                newOption.value = name;
+                newOption.textContent = `${name} (${category || 'General'})`;
+                newOption.selected = true;
+                select.appendChild(newOption);
+                
+                syncHiddenInput(selectId, hiddenId);
+                
+                // Close modal after a short delay
+                setTimeout(() => {
+                    closeAddIngredientModal();
+                }, 1200);
+            } else {
+                alert(data.message || 'Failed to add ingredient.');
+            }
+        })
+        .catch(err => {
+            alert('Network error. Please try again.');
+            console.error(err);
+        });
+    }
 
     function openModal(id) {
         document.getElementById(id).style.display = 'flex';
@@ -463,7 +1215,18 @@
                 }
 
                 // Build the receive checklist
-                let html = '<div style="max-height: 50vh; overflow-y: auto; border: 1px solid rgba(93,64,55,0.08); border-radius: 16px; padding: 12px; background: #fafaf9;">';
+                let html = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h4 style="margin: 0; font-size: 0.9rem; color: var(--primary);">
+                            <i class="fas fa-clipboard-list me-2"></i>Supply Items
+                        </h4>
+                        <button type="button" onclick="addNewSupplyItem()" 
+                            style="background: #2e7d32; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 5px; font-weight: 600;">
+                            <i class="fas fa-plus"></i> Add New Supply
+                        </button>
+                    </div>
+                    <div id="receiveItemsContainer" style="max-height: 50vh; overflow-y: auto; border: 1px solid rgba(93,64,55,0.08); border-radius: 16px; padding: 12px; background: #fafaf9;">
+                `;
                 
                 data.ingredients.forEach(ing => {
                     html += `
@@ -495,7 +1258,7 @@
                         </div>
                     `;
                 });
-                html += '</div>';
+                html += '</div>'; // Close receiveItemsContainer
 
                 // Add running total and funds warning banner
                 html += `
@@ -521,14 +1284,114 @@
             });
     }
 
+    let newSupplyCounter = 0; // Counter for unique IDs
+
+    function addNewSupplyItem() {
+        newSupplyCounter++;
+        const uniqueId = `new_${newSupplyCounter}`;
+        
+        const container = document.getElementById('receiveItemsContainer');
+        
+        const newItemHTML = `
+            <div class="receive-item new-supply-item" id="item_${uniqueId}" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border: 2px dashed #2e7d32; background: #e8f5e9; margin-bottom: 8px; border-radius: 8px;">
+                <div class="receive-item-info" style="flex: 1; text-align: left;">
+                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; align-items: center;">
+                        <input type="text" 
+                            class="new-supply-name" 
+                            id="name_${uniqueId}"
+                            placeholder="Ingredient name (e.g., Vanilla Extract)" 
+                            style="padding: 8px 10px; border: 2px solid #2e7d32; border-radius: 8px; font-size: 0.85rem; font-weight: 600; background: white;">
+                        <select class="new-supply-unit" id="unit_${uniqueId}" style="padding: 8px; border: 2px solid #2e7d32; border-radius: 8px; font-size: 0.8rem; font-weight: 600;">
+                            <option value="kg">kg</option>
+                            <option value="g">g</option>
+                            <option value="L">L</option>
+                            <option value="mL">mL</option>
+                            <option value="pcs" selected>pcs</option>
+                            <option value="pack">pack</option>
+                            <option value="bottle">bottle</option>
+                        </select>
+                        <input type="number" 
+                            class="new-supply-cost" 
+                            id="cost_${uniqueId}"
+                            placeholder="Cost" 
+                            step="0.01" 
+                            min="0" 
+                            value="0"
+                            style="padding: 8px 10px; border: 2px solid #ff6f00; border-radius: 8px; font-size: 0.85rem; font-weight: 600; text-align: right;">
+                    </div>
+                    <div style="font-size: 0.7rem; color: #2e7d32; margin-top: 4px; font-weight: 600;">
+                        <i class="fas fa-info-circle me-1"></i>New ingredient will be created and linked to this supplier
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div class="receive-qty-wrap" style="display: flex; align-items: center; gap: 6px;">
+                        <input type="number" 
+                            class="receive-qty-input new-supply-qty" 
+                            id="qty_${uniqueId}"
+                            data-ing-id="${uniqueId}" 
+                            data-cost-input="cost_${uniqueId}"
+                            data-is-new="true"
+                            step="0.01" 
+                            min="0" 
+                            value="" 
+                            placeholder="0"
+                            style="width: 80px; padding: 8px; border: 2px solid #2e7d32; border-radius: 8px; font-weight: 700; text-align: center; color: #2e7d32; background: #f1f8e9;"
+                            oninput="checkReceiveInputs()">
+                        <span class="receive-qty-unit new-supply-unit-display" id="unit_display_${uniqueId}" style="font-size: 0.8rem; font-weight: 700; color: #2e7d32;">pcs</span>
+                    </div>
+                    <div class="receive-subtotal" id="subtotal_${uniqueId}" style="font-size: 0.85rem; font-weight: 700; color: #c62828; min-width: 80px; text-align: right;">₱0.00</div>
+                    <button type="button" onclick="removeNewSupplyItem('${uniqueId}')" 
+                        style="background: #d32f2f; color: white; border: none; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        container.insertAdjacentHTML('beforeend', newItemHTML);
+        
+        // Update unit display when unit select changes
+        document.getElementById(`unit_${uniqueId}`).addEventListener('change', function() {
+            document.getElementById(`unit_display_${uniqueId}`).textContent = this.value;
+        });
+        
+        // Update cost data attribute when cost input changes
+        document.getElementById(`cost_${uniqueId}`).addEventListener('input', function() {
+            const qtyInput = document.getElementById(`qty_${uniqueId}`);
+            qtyInput.setAttribute('data-cost-per-unit', this.value || 0);
+            checkReceiveInputs();
+        });
+        
+        // Focus on name input
+        document.getElementById(`name_${uniqueId}`).focus();
+    }
+
+    function removeNewSupplyItem(uniqueId) {
+        const item = document.getElementById(`item_${uniqueId}`);
+        if (item) {
+            item.remove();
+            checkReceiveInputs();
+        }
+    }
+
     function checkReceiveInputs() {
         const inputs = document.querySelectorAll('.receive-qty-input');
         let runningTotal = 0;
         let hasValue = false;
 
         inputs.forEach(inp => {
+            let costPerUnit;
+            
+            // Check if this is a new supply item
+            if (inp.getAttribute('data-is-new') === 'true') {
+                const costInputId = inp.getAttribute('data-cost-input');
+                const costInput = document.getElementById(costInputId);
+                costPerUnit = parseFloat(costInput ? costInput.value : 0) || 0;
+            } else {
+                costPerUnit = parseFloat(inp.getAttribute('data-cost-per-unit')) || 0;
+            }
+            
             const qty = parseFloat(inp.value) || 0;
-            const costPerUnit = parseFloat(inp.getAttribute('data-cost-per-unit')) || 0;
             const itemCost = qty * costPerUnit;
             runningTotal += itemCost;
 
@@ -586,20 +1449,48 @@
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Processing...';
 
-        // Gather quantities
+        // Gather existing ingredients
         const inputs = document.querySelectorAll('.receive-qty-input');
-        const items = [];
+        const existingItems = [];
+        const newItems = [];
+        
         inputs.forEach(inp => {
             const qty = parseFloat(inp.value);
             if (qty > 0) {
-                items.push({
-                    ingredient_id: parseInt(inp.dataset.ingId),
-                    qty_received: qty
-                });
+                const isNew = inp.getAttribute('data-is-new') === 'true';
+                
+                if (isNew) {
+                    // New ingredient
+                    const ingId = inp.getAttribute('data-ing-id');
+                    const nameInput = document.getElementById(`name_${ingId}`);
+                    const unitSelect = document.getElementById(`unit_${ingId}`);
+                    const costInput = document.getElementById(`cost_${ingId}`);
+                    
+                    const name = nameInput ? nameInput.value.trim() : '';
+                    if (!name) {
+                        alert('Please enter a name for all new ingredients.');
+                        btn.disabled = false;
+                        btn.innerHTML = originalHTML;
+                        return;
+                    }
+                    
+                    newItems.push({
+                        name: name,
+                        unit: unitSelect ? unitSelect.value : 'pcs',
+                        cost_per_unit: parseFloat(costInput ? costInput.value : 0) || 0,
+                        qty_received: qty
+                    });
+                } else {
+                    // Existing ingredient
+                    existingItems.push({
+                        ingredient_id: parseInt(inp.dataset.ingId),
+                        qty_received: qty
+                    });
+                }
             }
         });
 
-        if (items.length === 0) {
+        if (existingItems.length === 0 && newItems.length === 0) {
             btn.disabled = false;
             btn.innerHTML = originalHTML;
             return;
@@ -608,7 +1499,10 @@
         fetch(`/staff/inventory/suppliers/${currentSupId}/receive`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ items: items })
+            body: JSON.stringify({ 
+                items: existingItems,
+                new_items: newItems 
+            })
         })
         .then(r => r.json())
         .then(data => {
@@ -689,23 +1583,71 @@
 
     function executeDeleteSupplier() {
         if (!deleteSupId) return;
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/staff/inventory/suppliers/delete/${deleteSupId}`;
-        document.body.appendChild(form);
-        form.submit();
+        closeModal('deleteSupplierModal');
+        
+        fetch(`/staff/inventory/suppliers/delete/${deleteSupId}`, {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (window.showToast) window.showToast('success', data.message);
+                refreshSuppliers();
+            } else {
+                if (window.showToast) window.showToast('danger', data.message || 'Failed to delete supplier.');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            if (window.showToast) window.showToast('danger', 'Network error. Failed to delete supplier.');
+        });
     }
 
-    // Edit Supplier
-    function openEditModal(supId, name, contact, phone, email, address, ingredients, category) {
+    // Edit Supplier - Load only THEIR ingredients
+    function openEditModal(supId, name, contact, phone, email, address, ingredientsStr, category) {
+        currentEditingSupplierId = supId; // Store the supplier ID
         document.getElementById('editSupplierForm').action = `/staff/inventory/suppliers/update/${supId}`;
         document.getElementById('edit_name').value = name;
         document.getElementById('edit_contact').value = contact;
         document.getElementById('edit_phone').value = phone;
         document.getElementById('edit_email').value = email;
         document.getElementById('edit_address').value = address;
-        document.getElementById('edit_ingredients').value = ingredients;
         document.getElementById('edit_category').value = category || 'General';
+        
+        // Load ONLY ingredients for this supplier
+        fetch(`/api/suppliers/${supId}/ingredients`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    const select = document.getElementById('edit_ingredients_select');
+                    const supplierIngredients = data.ingredients;
+                    
+                    // Populate dropdown with ONLY their ingredients
+                    let html = '';
+                    supplierIngredients.forEach(ing => {
+                        html += `<option value="${ing.name}" selected>${ing.name} (${ing.category || 'General'})</option>`;
+                    });
+                    select.innerHTML = html;
+                    
+                    // Sync hidden input
+                    syncHiddenInput('edit_ingredients_select', 'edit_ingredients_hidden');
+                }
+            })
+            .catch(err => {
+                console.error('Failed to load supplier ingredients:', err);
+                // Fallback: parse from ingredientsStr
+                const select = document.getElementById('edit_ingredients_select');
+                const ingredientNames = ingredientsStr ? ingredientsStr.split(',').map(s => s.trim()) : [];
+                
+                let html = '';
+                ingredientNames.forEach(name => {
+                    html += `<option value="${name}" selected>${name}</option>`;
+                });
+                select.innerHTML = html;
+                syncHiddenInput('edit_ingredients_select', 'edit_ingredients_hidden');
+            });
+        
         openModal('editSupplierModal');
     }
 
@@ -718,7 +1660,7 @@
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
             
-            ['supplierGrid', 'supplierCount', 'lastUpdateText'].forEach(id => {
+            ['supplierGridContainer', 'lastUpdateText'].forEach(id => {
                 const o = document.getElementById(id);
                 const n = doc.getElementById(id);
                 if (o && n && o.innerHTML !== n.innerHTML) o.innerHTML = n.innerHTML;
@@ -727,7 +1669,224 @@
         .catch(err => console.warn('Supplier sync failed:', err));
     }
 
-    
+    function refreshSuppliers() {
+        return fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const ids = ['supplierGridContainer', 'lastUpdateText'];
+            ids.forEach(id => {
+                const oldEl = document.getElementById(id);
+                const newEl = doc.getElementById(id);
+                if (oldEl && newEl) {
+                    oldEl.innerHTML = newEl.innerHTML;
+                }
+            });
+        })
+        .catch(err => console.error('Error refreshing suppliers:', err));
+    }
+
+    function submitAjaxForm(event, modalId) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+        const url = form.action || form.getAttribute('action');
+        const method = form.method || 'POST';
+        
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn ? submitBtn.innerHTML : 'Submit';
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        }
+        
+        fetch(url, {
+            method: method,
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(errData => { throw new Error(errData.message || 'Server error'); });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                closeModal(modalId);
+                form.reset();
+                if (window.showToast) window.showToast('success', data.message);
+                refreshSuppliers();
+            } else {
+                if (window.showToast) window.showToast('danger', data.message || 'Operation failed.');
+            }
+        })
+        .catch(err => {
+            console.error('AJAX Error:', err);
+            if (window.showToast) window.showToast('danger', err.message || 'Network error. Please try again.');
+        })
+        .finally(() => {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+            }
+        });
+    }
+
+
+    /* ═══════════════════════════════════════════
+       UNASSIGNED INGREDIENTS PANEL
+    ═══════════════════════════════════════════ */
+
+    // Build supplier options from page data
+    const allSuppliers = [
+        {% for sup in suppliers %}
+        { id: {{ sup.id }}, name: '{{ sup.name|e }}' }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    function loadUnassignedIngredients() {
+        const list = document.getElementById('unassignedList');
+        list.innerHTML = `
+            <div class="unassigned-empty">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p style="font-weight: 600; margin: 0;">Loading...</p>
+            </div>`;
+
+        fetch('/api/ingredients/unassigned')
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    renderUnassignedIngredients(data.ingredients);
+                    document.getElementById('unassignedCount').textContent = data.ingredients.length;
+
+                    // Hide panel entirely if nothing to show
+                    document.getElementById('unassignedPanel').style.display =
+                        data.ingredients.length === 0 ? 'none' : '';
+                }
+            })
+            .catch(err => {
+                list.innerHTML = `<div class="unassigned-empty"><i class="fas fa-exclamation-triangle" style="color:#c62828;"></i><p style="color:#c62828; font-weight:600; margin:0;">Failed to load. Try refreshing.</p></div>`;
+                console.error(err);
+            });
+    }
+
+    function renderUnassignedIngredients(ingredients) {
+        const list = document.getElementById('unassignedList');
+
+        if (ingredients.length === 0) {
+            list.innerHTML = `
+                <div class="unassigned-empty">
+                    <i class="fas fa-check-circle" style="color:#4caf50; opacity:0.7;"></i>
+                    <p style="font-weight: 700; margin: 0; color: #2e7d32;">All ingredients are assigned to suppliers!</p>
+                    <p style="font-size: 0.8rem; margin: 6px 0 0; color: var(--muted);">Nothing to assign right now.</p>
+                </div>`;
+            return;
+        }
+
+        const supOptions = allSuppliers.map(s =>
+            `<option value="${s.id}">${s.name}</option>`
+        ).join('');
+
+        let html = '';
+        ingredients.forEach(ing => {
+            const categoryBadge = ing.category && ing.category !== 'Unassigned'
+                ? `<span style="background: rgba(93,64,55,0.08); color: var(--primary); padding: 1px 7px; border-radius: 5px; font-weight: 600;">${ing.category}</span>`
+                : `<span style="background: rgba(255,152,0,0.12); color: #e65100; padding: 1px 7px; border-radius: 5px; font-weight: 700;">⚠ Unassigned</span>`;
+
+            html += `
+                <div class="unassigned-item" id="uitem_${ing.id}">
+                    <div class="unassigned-item-icon">
+                        <i class="fas fa-carrot"></i>
+                    </div>
+                    <div class="unassigned-item-info">
+                        <div class="unassigned-item-name">${ing.name}</div>
+                        <div class="unassigned-item-meta">
+                            <span><i class="fas fa-weight me-1"></i>${ing.unit}</span>
+                            <span><i class="fas fa-box me-1"></i>Stock: ${ing.stock_qty.toFixed(1)}</span>
+                            ${ing.cost_per_unit > 0 ? `<span><i class="fas fa-peso-sign me-1"></i>₱${ing.cost_per_unit.toFixed(2)}/unit</span>` : ''}
+                            ${categoryBadge}
+                        </div>
+                    </div>
+                    <div class="unassigned-item-actions">
+                        <select id="sup_select_${ing.id}" onchange="this.nextElementSibling.disabled = !this.value">
+                            <option value="">-- Select Supplier --</option>
+                            ${supOptions}
+                        </select>
+                        <button class="btn-assign" disabled
+                                onclick="assignIngredientToSupplier(${ing.id}, '${ing.name.replace(/'/g, "\\'")}')">
+                            <i class="fas fa-link me-1"></i> Assign
+                        </button>
+                    </div>
+                </div>`;
+        });
+
+        list.innerHTML = html;
+    }
+
+    function assignIngredientToSupplier(ingredientId, ingredientName) {
+        const select = document.getElementById(`sup_select_${ingredientId}`);
+        const supplierId = select ? select.value : null;
+
+        if (!supplierId) {
+            alert('Please select a supplier first.');
+            return;
+        }
+
+        const btn = select.nextElementSibling;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Assigning...';
+
+        fetch('/api/ingredients/assign-supplier', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ingredient_id: ingredientId, supplier_id: parseInt(supplierId) })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                // Animate removal of this item
+                const item = document.getElementById(`uitem_${ingredientId}`);
+                if (item) {
+                    item.style.transition = 'all 0.35s ease';
+                    item.style.opacity = '0';
+                    item.style.transform = 'translateX(20px)';
+                    setTimeout(() => item.remove(), 350);
+                }
+
+                // Update badge count
+                const badge = document.getElementById('unassignedCount');
+                const currentCount = parseInt(badge.textContent) - 1;
+                badge.textContent = currentCount;
+                if (currentCount === 0) {
+                    setTimeout(() => loadUnassignedIngredients(), 400);
+                }
+
+                // Show toast
+                const supName = allSuppliers.find(s => s.id == supplierId)?.name || 'supplier';
+                showAssignToast(`"${ingredientName}" assigned to ${supName}!`);
+            } else {
+                alert(data.message || 'Failed to assign ingredient.');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-link me-1"></i> Assign';
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Network error. Please try again.');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-link me-1"></i> Assign';
+        });
+    }
+
+    function showAssignToast(message) {
+        const toast = document.getElementById('assignToast');
+        document.getElementById('assignToastMsg').textContent = message;
+        toast.style.display = 'flex';
+        setTimeout(() => { toast.style.display = 'none'; }, 3500);
+    }
+
 </script>
 </div> <!-- end supplierGridContainer -->
 {% endblock %}

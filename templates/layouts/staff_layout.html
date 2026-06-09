@@ -359,12 +359,109 @@
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-thumb { background: rgba(93, 64, 55, 0.2); border-radius: 4px; }
 
+        /* --- Toast Notifications --- */
+        #toastContainer {
+            position: fixed;
+            bottom: 40px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+            justify-content: flex-end;
+        }
+
+        .toast-notif {
+            pointer-events: all;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            background: #fff;
+            border-radius: 14px;
+            padding: 14px 18px;
+            min-width: 300px;
+            max-width: 380px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.13), 0 2px 8px rgba(0, 0, 0, 0.07);
+            transform: translateX(120%);
+            opacity: 0;
+            transition: transform 0.4s cubic-bezier(.22, 1, .36, 1), opacity 0.35s ease;
+            border-left: 4px solid #8b634b;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .toast-notif.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .toast-notif.hide {
+            transform: translateX(120%);
+            opacity: 0;
+        }
+
+        .toast-notif .toast-icon {
+            font-size: 1.3rem;
+            margin-top: 1px;
+            flex-shrink: 0;
+        }
+
+        .toast-notif .toast-body {
+            flex: 1;
+        }
+
+        .toast-notif .toast-title {
+            font-weight: 700;
+            font-size: 0.85rem;
+            margin-bottom: 2px;
+        }
+
+        .toast-notif .toast-msg {
+            font-size: 0.82rem;
+            color: #555;
+            line-height: 1.4;
+        }
+
+        .toast-notif .toast-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #aaa;
+            font-size: 1rem;
+            padding: 0;
+            line-height: 1;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .toast-notif .toast-close:hover {
+            color: #333;
+        }
+
+        .toast-notif .toast-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            border-radius: 0 0 0 14px;
+            animation: toastProgress 4s linear forwards;
+        }
+
+        @keyframes toastProgress {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
+
         {% block extra_style %}{% endblock %}
     </style>
     {% block extra_head %}{% endblock %}
 </head>
 
 <body>
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" style="position: fixed; bottom: 40px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; justify-content: flex-end;"></div>
+
     <!-- GLOBAL LOADER OVERLAY (FAST & SNAPPY) -->
     <div id="global-loader" style="display: none; position: fixed; inset: 0; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); z-index: 99999; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.2s ease;">
         <div class="loader-inner text-center" style="transform: translateY(-20px);">
@@ -957,6 +1054,7 @@
         fetchStaffUnreadCount();
         setInterval(fetchStaffUnreadCount, 15000);
     </script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
     {% block extra_script %}{% endblock %}
 </body>
 

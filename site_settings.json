@@ -1,9 +1,28 @@
 {
+    "hero1": {
+        "title1": "Experience Premium",
+        "title2": "French Dining",
+        "description": "Indulge in our beautifully presented, gourmet French-inspired dishes crafted with culinary passion.",
+        "image_url": "https://i.postimg.cc/bNrFHwcT/Gemini-Generated-Image-xi7cklxi7cklxi7c.png"
+    },
     "hero2": {
-        "title1": "Premium French Dining",
-        "title2": "Drift into Joy",
-        "description": "Order your favorite organic blends and freshly baked pastries right to your table, or reserve a spot for your next coffee run.",
-        "image_url": "https://i.postimg.cc/cCRnWV9j/htdhtht.webp"
+        "title1": "Bold Sizzling",
+        "title2": "Rustic Steaks",
+        "description": "Savor the rich flavors of premium, flame-grilled cuts served hot on our signature wooden carving boards.",
+        "image_url": "https://i.postimg.cc/SQ3PyYvB/Gemini-Generated-Image-4gbhqw4gbhqw4gbh.png"
+    },
+    "hero3": {
+        "title1": "Crispy & Loaded",
+        "title2": "Comfort Bites",
+        "description": "Share the joy with our golden hand-cut fries, stacked nachos, and savory snack spreads made for great company.",
+        "image_url": "https://i.postimg.cc/0jXPQkhD/Gemini-Generated-Image-z1h1w5z1h1w5z1h1.png"
+    },
+    "welcome": {
+        "title": "Le Maison de Yelo Lane",
+        "subtitle": "Welcome to",
+        "description1": "From humble beginnings on Yelo Lane to becoming Pagsanjan's beloved dining destination, every dish we serve carries a story of passion, tradition, and French-inspired artistry.",
+        "description2": "Whether it's a romantic dinner, a family celebration, or a casual coffee date \u2014 we've prepared the perfect ambiance just for you.",
+        "image_url": "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=75&w=900&auto=format&fit=crop"
     },
     "card1": {
         "title": "Signature Yelo Latte",
@@ -14,5 +33,13 @@
         "title": "Fresh Bites in Bloom",
         "description": "Enjoy light, vibrant artisan pastries inspired by the sweetness of spring \u2014 made to brighten every moment. \ud83c\udf37",
         "image_url": "https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=800&auto=format&fit=crop"
+    },
+    "footer": {
+        "facebook_link": "https://facebook.com",
+        "instagram_link": "https://instagram.com",
+        "twitter_link": "https://twitter.com",
+        "youtube_link": "https://youtube.com",
+        "address_text": "Le maison yelo Lane",
+        "copyright_text": "\u00a9 2026 Le maison yelo Lane. All rights reserved."
     }
 }

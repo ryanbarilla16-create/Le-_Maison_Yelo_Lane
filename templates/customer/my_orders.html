@@ -530,6 +530,93 @@
     .time-received {
         float: left;
     }
+
+    .moStepper {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 1rem 0 1.2rem;
+        padding: 0.75rem 0.5rem;
+        background: rgba(139, 99, 75, 0.04);
+        border-radius: 16px;
+        gap: 4px;
+    }
+
+    .moStep {
+        flex: 1;
+        text-align: center;
+        position: relative;
+        font-size: 0.62rem;
+        font-weight: 700;
+        color: #BCAAA4;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .moStep::before {
+        content: '';
+        display: block;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #EFEBE9;
+        border: 2px solid #D7CCC8;
+        margin: 0 auto 6px;
+        transition: all 0.3s ease;
+    }
+
+    .moStep.done { color: #2E7D32; }
+    .moStep.done::before {
+        background: #E8F5E9;
+        border-color: #2E7D32;
+        content: '✓';
+        line-height: 18px;
+        font-size: 0.7rem;
+        color: #2E7D32;
+    }
+
+    .moStep.active { color: #8B634B; }
+    .moStep.active::before {
+        background: #8B634B;
+        border-color: #8B634B;
+        box-shadow: 0 0 0 4px rgba(139, 99, 75, 0.15);
+    }
+
+    .moStep:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        top: 11px;
+        left: calc(50% + 14px);
+        width: calc(100% - 28px);
+        height: 2px;
+        background: #D7CCC8;
+        z-index: 0;
+    }
+
+    .moStep.done:not(:last-child)::after { background: #A5D6A7; }
+
+    .moLiveTag {
+        font-size: 0.68rem;
+        color: #2E7D32;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 0.5rem;
+    }
+
+    .moLiveTag .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #2E7D32;
+        animation: pulse-live 2s infinite;
+    }
+
+    @keyframes pulse-live {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.35; }
+    }
 </style>
 
 <main class="moPage">
@@ -546,22 +633,23 @@
     </div>
 
     <div id="customerOrdersContainer">
+    <div class="moLiveTag"><span class="dot"></span> Live order tracking — auto-refreshes every 5 seconds</div>
     <!-- Stats -->
-    <div class="moStats">
+    <div class="moStats" id="moStatsBar">
         <div class="moStat">
-            <h4 style="color: #4E342E;">{{ all_orders|length }}</h4>
+            <h4 id="moStatTotal" style="color: #4E342E;">{{ all_orders|length }}</h4>
             <p>Total Orders</p>
         </div>
         <div class="moStat">
-            <h4 style="color: #E65100;">{{ pending_count }}</h4>
+            <h4 id="moStatPending" style="color: #E65100;">{{ pending_count }}</h4>
             <p>Pending</p>
         </div>
         <div class="moStat">
-            <h4 style="color: #1565C0;">{{ preparing_count }}</h4>
+            <h4 id="moStatPreparing" style="color: #1565C0;">{{ preparing_count }}</h4>
             <p>Cooking</p>
         </div>
         <div class="moStat">
-            <h4 style="color: #2E7D32;">{{ completed_count }}</h4>
+            <h4 id="moStatCompleted" style="color: #2E7D32;">{{ completed_count }}</h4>
             <p>Completed</p>
         </div>
     </div>
@@ -579,8 +667,17 @@
     {% if all_orders %}
     <div class="moCards" id="ordersContainer">
         {% for order in all_orders %}
-        <div class="order-card" data-status="{{ order.overall_status }}">
+        <div class="order-card" data-order-id="{{ order.id }}" data-status="{{ order.overall_status }}">
             <div class="moCard">
+                {% if order.overall_status not in ['CANCELLED'] %}
+                <div class="moStepper" data-stepper-for="{{ order.id }}">
+                    {% set step = 1 if order.overall_status == 'PENDING' else (2 if order.overall_status in ['PREPARING', 'WAITING', 'PICKED_UP', 'ON_THE_WAY'] else (3 if order.overall_status == 'READY' else 4)) %}
+                    <div class="moStep {% if step > 1 %}done{% elif step == 1 %}active{% endif %}">Pending</div>
+                    <div class="moStep {% if step > 2 %}done{% elif step == 2 %}active{% endif %}">Preparing</div>
+                    <div class="moStep {% if step > 3 %}done{% elif step == 3 %}active{% endif %}">Ready</div>
+                    <div class="moStep {% if step >= 4 %}done active{% endif %}">Completed</div>
+                </div>
+                {% endif %}
                 <div class="moCard-head">
                     <div>
                         <div class="moCard-id">{{ order.order_code or ('Order #' ~ order.id) }}</div>
@@ -588,6 +685,7 @@
                     </div>
                     <div class="text-end">
                         <div class="moCard-price">₱{{ "%.2f"|format(order.total_amount) }}</div>
+                        <span class="moStatusBadge" data-badge-for="{{ order.id }}">
                         {% if order.overall_status == 'COMPLETED' %}
                         <span class="moBadge moBadge-done"><i class="fas fa-check-circle me-1"></i>Completed</span>
                         {% elif order.overall_status == 'PENDING' %}
@@ -596,12 +694,14 @@
                         <span class="moBadge moBadge-otw"><i class="fas fa-motorcycle me-1"></i>On the Way</span>
                         {% elif order.overall_status == 'PREPARING' %}
                         <span class="moBadge moBadge-prep"><i class="fas fa-fire-burner me-1"></i>Cooking Now</span>
+                        {% elif order.overall_status == 'READY' %}
+                        <span class="moBadge moBadge-done"><i class="fas fa-bell me-1"></i>Ready for Pickup</span>
                         {% elif order.overall_status == 'CANCELLED' %}
                         <span class="moBadge moBadge-cancel"><i class="fas fa-times-circle me-1"></i>Cancelled</span>
                         {% else %}
-                        <span class="moBadge" style="background: rgba(139, 99, 75, 0.08); color: #8B634B;">{{
-                            order.overall_status }}</span>
+                        <span class="moBadge" style="background: rgba(139, 99, 75, 0.08); color: #8B634B;">{{ order.overall_status }}</span>
                         {% endif %}
+                        </span>
                     </div>
                 </div>
 
@@ -1015,29 +1115,106 @@
             }).then(() => loadOrderChats());
         }
 
+        const _customerOrderStatuses = {};
+
+        function trackingStep(overall) {
+            if (overall === 'PENDING') return 1;
+            if (['PREPARING', 'WAITING', 'PICKED_UP', 'ON_THE_WAY'].includes(overall)) return 2;
+            if (overall === 'READY') return 3;
+            if (['COMPLETED', 'DELIVERED'].includes(overall)) return 4;
+            return 1;
+        }
+
+        function statusBadgeHtml(overall) {
+            const map = {
+                COMPLETED: '<span class="moBadge moBadge-done"><i class="fas fa-check-circle me-1"></i>Completed</span>',
+                DELIVERED: '<span class="moBadge moBadge-done"><i class="fas fa-check-circle me-1"></i>Delivered</span>',
+                PENDING: '<span class="moBadge moBadge-pending"><i class="fas fa-clock me-1"></i>Pending</span>',
+                ON_THE_WAY: '<span class="moBadge moBadge-otw"><i class="fas fa-motorcycle me-1"></i>On the Way</span>',
+                PREPARING: '<span class="moBadge moBadge-prep"><i class="fas fa-fire-burner me-1"></i>Cooking Now</span>',
+                READY: '<span class="moBadge moBadge-done"><i class="fas fa-bell me-1"></i>Ready for Pickup</span>',
+                CANCELLED: '<span class="moBadge moBadge-cancel"><i class="fas fa-times-circle me-1"></i>Cancelled</span>',
+            };
+            return map[overall] || `<span class="moBadge" style="background:rgba(139,99,75,0.08);color:#8B634B;">${overall}</span>`;
+        }
+
+        function updateStepper(orderId, overall) {
+            const stepper = document.querySelector(`[data-stepper-for="${orderId}"]`);
+            if (!stepper) return;
+            const step = trackingStep(overall);
+            const steps = stepper.querySelectorAll('.moStep');
+            steps.forEach((el, i) => {
+                el.classList.remove('done', 'active');
+                const n = i + 1;
+                if (n < step) el.classList.add('done');
+                else if (n === step) el.classList.add('active');
+            });
+            if (step >= 4) steps[3]?.classList.add('done');
+        }
+
         function pollCustomerOrders() {
             if (document.querySelector('.modal.show')) return;
 
-            // ★ Save filter tab + scroll state
             const activeTab = document.querySelector('.moTab.active');
             const savedFilter = activeTab ? activeTab.textContent.trim() : 'All Orders';
             const savedScroll = window.scrollY;
 
-            fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-            .then(response => response.text())
-            .then(html => {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                
-                ['customerOrdersContainer'].forEach(id => {
-                    const oldEl = document.getElementById(id);
-                    const newEl = doc.getElementById(id);
-                    if (oldEl && newEl && oldEl.innerHTML !== newEl.innerHTML) {
-                        oldEl.innerHTML = newEl.innerHTML;
+            fetch('{{ url_for("main.api_my_orders_status") }}')
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success) return;
+
+                const st = data.stats;
+                const elTotal = document.getElementById('moStatTotal');
+                const elPending = document.getElementById('moStatPending');
+                const elPrep = document.getElementById('moStatPreparing');
+                const elDone = document.getElementById('moStatCompleted');
+                if (elTotal) elTotal.textContent = st.total;
+                if (elPending) elPending.textContent = st.pending;
+                if (elPrep) elPrep.textContent = st.preparing;
+                if (elDone) elDone.textContent = st.completed;
+
+                let needsFullRefresh = false;
+                data.orders.forEach(o => {
+                    const prev = _customerOrderStatuses[o.id];
+                    if (prev && prev !== o.overall_status) {
+                        if (o.overall_status === 'READY' && prev !== 'READY') {
+                            if (typeof showToast === 'function') showToast('success', `${o.order_code} is ready for pickup!`);
+                        }
+                        if (['COMPLETED', 'DELIVERED'].includes(o.overall_status) && !['COMPLETED', 'DELIVERED'].includes(prev)) {
+                            needsFullRefresh = true;
+                        }
                     }
+                    _customerOrderStatuses[o.id] = o.overall_status;
+
+                    const card = document.querySelector(`.order-card[data-order-id="${o.id}"]`);
+                    if (!card) { needsFullRefresh = true; return; }
+                    card.dataset.status = o.overall_status;
+                    const badgeWrap = card.querySelector(`[data-badge-for="${o.id}"]`);
+                    if (badgeWrap) badgeWrap.innerHTML = statusBadgeHtml(o.overall_status);
+                    updateStepper(o.id, o.overall_status);
                 });
 
-                // ★ Restore filter tab state
+                if (needsFullRefresh) {
+                    return fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(r => r.text())
+                    .then(html => {
+                        const doc = new DOMParser().parseFromString(html, 'text/html');
+                        const oldEl = document.getElementById('customerOrdersContainer');
+                        const newEl = doc.getElementById('customerOrdersContainer');
+                        if (oldEl && newEl) oldEl.innerHTML = newEl.innerHTML;
+                        if (savedFilter !== 'All Orders') {
+                            document.querySelectorAll('.moTab').forEach(btn => {
+                                if (btn.textContent.trim() === savedFilter) {
+                                    const status = btn.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
+                                    if (status) filterOrders(status, btn);
+                                }
+                            });
+                        }
+                        window.scrollTo(0, savedScroll);
+                    });
+                }
+
                 if (savedFilter !== 'All Orders') {
                     document.querySelectorAll('.moTab').forEach(btn => {
                         if (btn.textContent.trim() === savedFilter) {
@@ -1051,7 +1228,12 @@
             .catch(err => console.warn('Customer Orders sync failed:', err));
         }
 
-        
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.order-card[data-order-id]').forEach(card => {
+                _customerOrderStatuses[card.dataset.orderId] = card.dataset.status;
+            });
+            setInterval(pollCustomerOrders, 5000);
+        });
     </script>
 </main>
 {% endblock %}

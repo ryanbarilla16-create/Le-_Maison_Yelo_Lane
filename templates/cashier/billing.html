@@ -690,7 +690,12 @@
         .then(r => r.json())
         .then(data => {
             if (data.success) {
-                location.reload(); // Refresh to show updated status
+                closeModal('settleBillModal');
+                document.getElementById('settleBillForm').reset();
+                if (window.showToast) {
+                    window.showToast('success', data.message || 'Payment settled successfully.');
+                }
+                pollBilling(true);
             } else {
                 btn.disabled = false;
                 btn.innerHTML = originalContent;
@@ -703,7 +708,11 @@
         .catch(err => {
             btn.disabled = false;
             btn.innerHTML = originalContent;
-            alert('An error occurred. Please try again.');
+            if (window.showToast) {
+                window.showToast('danger', 'An error occurred. Please try again.');
+            } else {
+                alert('An error occurred. Please try again.');
+            }
         });
     });
 
@@ -768,8 +777,8 @@
     }
 
     // Real-time polling
-    function pollBilling() {
-        if (document.querySelector('.billing-overlay.show')) return;
+    function pollBilling(force = false) {
+        if (!force && document.querySelector('.billing-overlay.show')) return;
         if (document.activeElement && document.activeElement.id === 'orderSearch') return;
 
         const searchEl = document.getElementById('orderSearch');

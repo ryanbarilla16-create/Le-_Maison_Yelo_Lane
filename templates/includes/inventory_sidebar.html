@@ -13,6 +13,10 @@
     <a class="nav-item {% if request.endpoint == 'inventory_portal.inventory_suppliers' %}active{% endif %}" href="{{ url_for('inventory_portal.inventory_suppliers') }}">
         <i class="fas fa-truck"></i> Suppliers
     </a>
+    <a class="nav-item {% if request.endpoint == 'inventory_portal.inventory_ingredient_setup' %}active{% endif %}" href="{{ url_for('inventory_portal.inventory_ingredient_setup') }}" style="position: relative;">
+        <i class="fas fa-tags"></i> Ingredient Setup
+        <span id="sidebarSetupBadge" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); background:#a15c38; color:white; font-size:0.62rem; font-weight:800; padding:1px 7px; border-radius:50px; display:none;">!</span>
+    </a>
     <a class="nav-item {% if request.endpoint == 'inventory_portal.inventory_waste_records' %}active{% endif %}" href="{{ url_for('inventory_portal.inventory_waste_records') }}">
         <i class="fas fa-trash-can"></i> Waste Log
     </a>

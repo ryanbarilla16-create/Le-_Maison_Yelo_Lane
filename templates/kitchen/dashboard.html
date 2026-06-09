@@ -455,12 +455,13 @@
                 btn.innerHTML = newStatus === 'PREPARING' 
                     ? '<i class="fas fa-fire-flame-curved"></i> Start Processing'
                     : '<i class="fas fa-check-double"></i> Ready for Pickup';
-                alert(result.message || 'Failed to update');
+                if (window.showToast) showToast('danger', result.message || 'Failed to update order status');
             }
         } catch (err) {
             card.style.opacity = '1';
             card.style.transform = 'none';
             btn.disabled = false;
+            if (window.showToast) showToast('danger', 'Network error. Please try again.');
             console.error('Update error:', err);
         }
     }
@@ -617,15 +618,10 @@
             const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.onclick.toString().includes(activeTab));
             if (btn) switchTab(activeTab, btn);
         }
-        // Build initial hashes so first poll doesn't re-render unnecessarily
-        document.querySelectorAll('.board-col').forEach(col => {
-            const status = col.id.replace('col-', '');
-            const cards = col.querySelectorAll('.order-card');
-            // We'll let the first poll refresh set the hash
-        });
     });
 
-    // Fast JSON poll every 5s
-    
+    // Auto-poll every 5 seconds for a real-time kitchen board
+    setInterval(pollKitchenDashboard, 5000);
+
 </script>
 {% endblock %}
