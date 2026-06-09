@@ -259,6 +259,7 @@
                     </div>
                 {% endif %}
             </div>
+            </div>
         </div>
         {% else %}
         <div class="empty-state">
@@ -302,35 +303,25 @@
     function pollKitchenReservations() {
         if (document.querySelector('.reserve-updating')) return;
 
-        fetch('{{ url_for("kitchen_portal.kitchen_api_reservations") }}')
-        .then(r => r.json())
-        .then(data => {
-            if (!data.success) return;
-            const countEl = document.querySelector('#kitchenReserveContainer .section-header .pill');
-            if (countEl) countEl.textContent = `${data.count} Pre-Orders`;
-            const lu = document.getElementById('lastUpdateText');
-            if (lu) lu.textContent = `Updated ${data.time}`;
-
-            const hash = data.orders.map(o => `${o.id}:${o.status}`).join(',');
-            if (window._reserveHash === hash) return;
-            window._reserveHash = hash;
-
-            return fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-            .then(response => response.text())
-            .then(html => {
-                const doc = new DOMParser().parseFromString(html, 'text/html');
-                ['kitchenReserveContainer', 'lastUpdateText'].forEach(id => {
-                    const oldEl = document.getElementById(id);
-                    const newEl = doc.getElementById(id);
-                    if (oldEl && newEl && oldEl.innerHTML !== newEl.innerHTML) {
-                        oldEl.innerHTML = newEl.innerHTML;
-                    }
-                });
+        fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            const ids = ['kitchenReserveContainer', 'lastUpdateText'];
+            ids.forEach(id => {
+                const oldEl = document.getElementById(id);
+                const newEl = doc.getElementById(id);
+                if (oldEl && newEl && oldEl.innerHTML !== newEl.innerHTML) {
+                    oldEl.innerHTML = newEl.innerHTML;
+                }
             });
         })
         .catch(err => console.warn('Kitchen Reserve sync failed:', err));
     }
 
+    // Auto-refresh every 10 seconds
     setInterval(pollKitchenReservations, 10000);
 </script>
 {% endblock %}

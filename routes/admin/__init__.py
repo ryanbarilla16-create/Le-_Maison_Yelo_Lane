@@ -1702,8 +1702,43 @@ def api_user_details(user_id):
 @login_required
 @requires_permission('reservations.manage_branch')
 def reservations():
-    # Redirect to cashier portal reservations (staff layout)
-    return redirect(url_for('cashier_portal.cashier_reservations'))
+    """Admin reservations management page."""
+    from datetime import datetime
+    
+    # Get filter parameters
+    status_filter = request.args.get('status')
+    type_filter = request.args.get('type')
+    date_filter = request.args.get('date')
+    page = request.args.get('page', 1, type=int)
+    
+    # Base query
+    query = Reservation.query
+    
+    # Apply filters
+    if status_filter:
+        query = query.filter_by(status=status_filter.upper())
+    if type_filter:
+        query = query.filter_by(booking_type=type_filter.upper())
+    if date_filter:
+        try:
+            filter_date = datetime.strptime(date_filter, '%Y-%m-%d').date()
+            query = query.filter_by(date=filter_date)
+        except ValueError:
+            pass
+    
+    # Order by date and time, then paginate
+    reservations_paginated = query.order_by(
+        Reservation.date.desc(), 
+        Reservation.time.desc()
+    ).paginate(page=page, per_page=20, error_out=False)
+    
+    return render_template(
+        'admin/reservations.html',
+        reservations=reservations_paginated,
+        current_filter=status_filter,
+        type_filter=type_filter,
+        date_filter=date_filter
+    )
 
 @admin_bp.route('/reservations/update/<int:res_id>', methods=['POST'])
 @login_required
@@ -2060,7 +2095,7 @@ def get_table_status():
 @login_required
 @admin_required
 def release_table(order_id):
-    """Release table after customer leaves"""
+    """Release table after customer leaves — marks order COMPLETED so it exits the live queue."""
     try:
         order = Order.query.get_or_404(order_id)
         
@@ -2069,6 +2104,12 @@ def release_table(order_id):
         
         table_num = order.table_number
         order.table_status = 'AVAILABLE'
+        
+        # If order is READY and PAID, completing it is the correct business action:
+        # customer has eaten, paid, and left — the order lifecycle is done.
+        if order.status in ('READY', 'PREPARING', 'PENDING') and order.payment_status == 'PAID':
+            order.status = 'COMPLETED'
+        
         db.session.commit()
         
         return jsonify({
@@ -2079,6 +2120,7 @@ def release_table(order_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
+
 
 
 # ─── DELIVERIES ───────────────────────────────────────
@@ -2405,6 +2447,16 @@ def update_payment_status(order_id):
         order.payment_status = 'PAID'
         order.amount_tendered = amount_tendered
         order.change_amount = change_amount
+        
+        # Auto-complete order if it's READY and not occupying an active table,
+        # or if it's DINE_IN and the table is already released.
+        if order.status == 'READY':
+            if order.dining_option != 'DINE_IN' or order.table_status == 'AVAILABLE' or not order.table_number:
+                order.status = 'COMPLETED'
+        elif order.status in ('PENDING', 'PREPARING'):
+            if order.dining_option == 'DINE_IN' and (order.table_status == 'AVAILABLE' or not order.table_number):
+                order.status = 'COMPLETED'
+                
         db.session.commit()
 
         flash(f"Order #{order.id} marked as PAID. Change: ₱{change_amount:,.2f}", "success")
@@ -2492,7 +2544,7 @@ def update_order_table_number(order_id):
                 Order.id != order_id,
                 Order.table_number == new_table_number,
                 Order.table_status == 'OCCUPIED',
-                Order.status.in_(['PENDING', 'PREPARING'])
+                Order.status.in_(['PENDING', 'PREPARING', 'READY', 'COMPLETED'])
             ).first()
             
             if occupied_order:
@@ -2540,7 +2592,7 @@ def get_available_tables(order_id):
             Order.id != order_id,
             Order.table_status == 'OCCUPIED',
             Order.table_number.isnot(None),
-            Order.status.in_(['PENDING', 'PREPARING'])
+            Order.status.in_(['PENDING', 'PREPARING', 'READY', 'COMPLETED'])
         ).all()
         
         occupied_set = {t[0] for t in occupied_tables if t[0]}

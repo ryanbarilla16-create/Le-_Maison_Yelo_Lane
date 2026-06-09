@@ -290,7 +290,7 @@ def staff_reset_password():
 # ── Cashier Portal ────────────────────────────────────────────────
 # ══════════════════════════════════════════════════════════════════
 
-CASHIER_ROLES = ['CASHIER', 'STAFF', 'ADMIN']
+CASHIER_ROLES = ['CASHIER', 'STAFF']
 
 @cashier_bp.route('/cashier/login', methods=['GET', 'POST'])
 @cashier_bp.route('/staff/cashier/login', methods=['GET', 'POST'])
@@ -307,13 +307,32 @@ def cashier_dashboard():
     # active_orders (count), completed_today (count), unpaid_orders (count), orders (list)
     
     today = get_ph_time().date()
+    from models import Reservation
     
-    active_orders_count = Order.query.filter(Order.status.in_(['PENDING', 'PREPARING', 'READY'])).count()
+    active_orders_count = Order.query.outerjoin(Reservation).filter(
+        Order.status.in_(['PENDING', 'PREPARING', 'READY']),
+        db.or_(
+            Order.reservation_id.is_(None),
+            Reservation.date <= today
+        )
+    ).count()
     completed_today_count = Order.query.filter(Order.status == 'COMPLETED', db.func.date(Order.created_at) == today).count()
-    unpaid_orders_count = Order.query.filter_by(payment_status='UNPAID').count()
+    unpaid_orders_count = Order.query.outerjoin(Reservation).filter(
+        Order.payment_status == 'UNPAID',
+        db.or_(
+            Order.reservation_id.is_(None),
+            Reservation.date <= today
+        )
+    ).count()
     
-    # Recent active orders for the live queue
-    live_orders = Order.query.filter(Order.status.in_(['PENDING', 'PREPARING', 'READY'])).order_by(Order.created_at.desc()).limit(50).all()
+    # Recent active orders for the live queue (filter out future event pre-orders)
+    live_orders = Order.query.outerjoin(Reservation).filter(
+        Order.status.in_(['PENDING', 'PREPARING', 'READY']),
+        db.or_(
+            Order.reservation_id.is_(None),
+            Reservation.date <= today
+        )
+    ).order_by(Order.created_at.desc()).limit(50).all()
     
     return render_template('cashier/dashboard.html', 
                            portal_name=f"{current_user.first_name} {current_user.last_name}",
@@ -342,6 +361,7 @@ def _serialize_cashier_order(o):
         'status': o.status,
         'payment_status': o.payment_status,
         'table_number': o.table_number,
+        'table_status': o.table_status or 'AVAILABLE',
         'created_at': o.created_at.strftime('%I:%M %p') if o.created_at else '',
     }
 
@@ -353,8 +373,18 @@ def cashier_api_dashboard():
         return jsonify({'error': 'Unauthorized'}), 401
 
     today = get_ph_time().date()
+    from models import Reservation
+    
     live_orders = (
-        Order.query.filter(Order.is_archived.is_(False), Order.status.in_(['PENDING', 'PREPARING', 'READY']))
+        Order.query.outerjoin(Reservation)
+        .filter(
+            Order.is_archived.is_(False),
+            Order.status.in_(['PENDING', 'PREPARING', 'READY']),
+            db.or_(
+                Order.reservation_id.is_(None),
+                Reservation.date <= today
+            )
+        )
         .order_by(Order.created_at.desc())
         .limit(50)
         .all()
@@ -363,16 +393,27 @@ def cashier_api_dashboard():
         'success': True,
         'time': get_ph_time().strftime('%I:%M:%S %p'),
         'stats': {
-            'active_orders': Order.query.filter(
+            'active_orders': Order.query.outerjoin(Reservation).filter(
                 Order.is_archived.is_(False),
-                Order.status.in_(['PENDING', 'PREPARING', 'READY'])
+                Order.status.in_(['PENDING', 'PREPARING', 'READY']),
+                db.or_(
+                    Order.reservation_id.is_(None),
+                    Reservation.date <= today
+                )
             ).count(),
             'completed_today': Order.query.filter(
                 Order.is_archived.is_(False),
                 Order.status == 'COMPLETED',
                 db.func.date(Order.created_at) == today
             ).count(),
-            'unpaid_orders': Order.query.filter_by(payment_status='UNPAID', is_archived=False).count(),
+            'unpaid_orders': Order.query.outerjoin(Reservation).filter(
+                Order.payment_status == 'UNPAID',
+                Order.is_archived.is_(False),
+                db.or_(
+                    Order.reservation_id.is_(None),
+                    Reservation.date <= today
+                )
+            ).count(),
         },
         'orders': [_serialize_cashier_order(o) for o in live_orders],
     })
@@ -384,33 +425,218 @@ def cashier_api_tables():
     if not current_user.is_authenticated or current_user.role not in CASHIER_ROLES:
         return jsonify({'error': 'Unauthorized'}), 401
 
-    occupied_rows = db.session.query(Order.table_number, Order.id, Order.customer_name, Order.status).filter(
-        Order.table_status == 'OCCUPIED',
-        Order.table_number.isnot(None),
-        Order.is_archived.is_(False),
-    ).all()
+    from models import Reservation
+    import datetime as py_datetime
+    import re
+
+    # 1. Query occupied tables (only active order statuses should count)
+    from models import User as UserModel
+    occupied_rows = (
+        db.session.query(Order.table_number, Order.id, Order.customer_name, Order.status, UserModel.first_name, UserModel.last_name)
+        .outerjoin(UserModel, Order.user_id == UserModel.id)
+        .filter(
+            Order.table_status == 'OCCUPIED',
+            Order.table_number.isnot(None),
+            Order.is_archived.is_(False),
+            Order.status.in_(['PENDING', 'PREPARING', 'READY', 'COMPLETED'])
+        )
+        .all()
+    )
     occupied_map = {}
-    for table_num, order_id, customer_name, status in occupied_rows:
+    for table_num, order_id, customer_name, status, first_name, last_name in occupied_rows:
+        display_name = (
+            f"{first_name} {last_name}".strip() if first_name
+            else customer_name
+            or f'Order #{order_id}'
+        )
         occupied_map[int(table_num)] = {
             'order_id': order_id,
-            'customer': customer_name or f'Order #{order_id}',
-            'status': status,
+            'customer': display_name,
+            'order_status': status,
         }
 
+    # 2. Query today's active reservations
+    current_dt = get_ph_time()
+    today_date = current_dt.date()
+    today_reservations = Reservation.query.filter(
+        Reservation.date == today_date,
+        Reservation.status == 'CONFIRMED'
+    ).all()
+
+    reserved_tables = {}
+    for res in today_reservations:
+        if not res.table_number:
+            continue
+        start_dt = py_datetime.datetime.combine(res.date, res.time)
+        end_dt = start_dt + py_datetime.timedelta(hours=res.duration or 2)
+        if start_dt <= current_dt <= end_dt:
+            customer_name = f"{res.user.first_name} {res.user.last_name}" if res.user else "Guest"
+            # Check for exclusive booking
+            if "exclusive" in res.booking_type.lower() or "exclusive" in (res.table_number or '').lower():
+                for t_num in range(1, 18):
+                    reserved_tables[t_num] = {
+                        'reservation_id': res.id,
+                        'customer': customer_name,
+                        'time': res.time.strftime('%I:%M %p'),
+                        'duration': res.duration,
+                    }
+            else:
+                nums = [int(n) for n in re.findall(r'\d+', res.table_number)]
+                for num in nums:
+                    if 1 <= num <= 17:
+                        reserved_tables[num] = {
+                            'reservation_id': res.id,
+                            'customer': customer_name,
+                            'time': res.time.strftime('%I:%M %p'),
+                            'duration': res.duration,
+                        }
+
+    # 3. Construct 1-17 tables availability map
     tables = {}
+    occupied_count = 0
+    reserved_count = 0
+    available_count = 0
     for i in range(1, 18):
         if i in occupied_map:
             tables[i] = {'status': 'OCCUPIED', **occupied_map[i]}
+            occupied_count += 1
+        elif i in reserved_tables:
+            tables[i] = {'status': 'RESERVED', **reserved_tables[i]}
+            reserved_count += 1
         else:
             tables[i] = {'status': 'AVAILABLE'}
+            available_count += 1
 
     return jsonify({
         'success': True,
         'time': get_ph_time().strftime('%I:%M:%S %p'),
         'tables': tables,
-        'occupied_count': len(occupied_map),
-        'available_count': 17 - len(occupied_map),
+        'occupied_count': occupied_count,
+        'reserved_count': reserved_count,
+        'available_count': available_count,
     })
+
+
+@cashier_bp.route('/staff/cashier/tables/<int:table_num>/release', methods=['POST'])
+def cashier_release_table(table_num):
+    """Release occupied table by setting occupying order's table_status to AVAILABLE."""
+    if not current_user.is_authenticated or current_user.role not in CASHIER_ROLES:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+        
+    try:
+        # Fetch ALL orders occupying this table to release them all in one click
+        orders = Order.query.filter(
+            Order.table_number == table_num,
+            Order.table_status == 'OCCUPIED',
+            Order.is_archived.is_(False)
+        ).all()
+        
+        if not orders:
+            return jsonify({'success': False, 'message': f'Table {table_num} is not currently occupied.'}), 400
+            
+        for order in orders:
+            order.table_status = 'AVAILABLE'
+            if order.status in ('READY', 'PREPARING', 'PENDING') and order.payment_status == 'PAID':
+                order.status = 'COMPLETED'
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': f'Table {table_num} released successfully.'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@cashier_bp.route('/staff/cashier/tables/<int:table_num>/release-reservation', methods=['POST'])
+def cashier_release_reservation(table_num):
+    """Release reserved table by marking active reservation as COMPLETED."""
+    if not current_user.is_authenticated or current_user.role not in CASHIER_ROLES:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+        
+    try:
+        from models import Reservation
+        import datetime as py_datetime
+        current_dt = get_ph_time()
+        today_date = current_dt.date()
+        
+        reservations = Reservation.query.filter(
+            Reservation.date == today_date,
+            Reservation.status == 'CONFIRMED'
+        ).all()
+        
+        target_res = None
+        for res in reservations:
+            if not res.table_number:
+                continue
+            
+            # Check time overlap
+            start_dt = py_datetime.datetime.combine(res.date, res.time)
+            end_dt = start_dt + py_datetime.timedelta(hours=res.duration or 2)
+            if start_dt <= current_dt <= end_dt:
+                if "exclusive" in res.booking_type.lower() or "exclusive" in (res.table_number or '').lower():
+                    target_res = res
+                    break
+                else:
+                    import re
+                    nums = [int(n) for n in re.findall(r'\d+', res.table_number)]
+                    if table_num in nums:
+                        target_res = res
+                        break
+        
+        if not target_res:
+            return jsonify({'success': False, 'message': f'No active reservation found for Table {table_num} today.'}), 400
+            
+        target_res.status = 'COMPLETED'
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': f'Reservation for Table {table_num} marked as COMPLETED.'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@cashier_bp.route('/staff/cashier/orders/<int:order_id>/complete', methods=['POST'])
+def cashier_complete_order(order_id):
+    """Mark an order as COMPLETED from the cashier dashboard."""
+    if not current_user.is_authenticated or current_user.role not in CASHIER_ROLES:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+        
+    try:
+        order = Order.query.get_or_404(order_id)
+        
+        # We do NOT release the table automatically when serving/completing the order.
+        # The table remains occupied/unavailable until the cashier explicitly releases it.
+        order.status = 'COMPLETED'
+        
+        # Notify user
+        if order.user_id:
+            from utils import create_notification
+            create_notification(
+                order.user_id,
+                'Order Completed',
+                f'Your order #{order.id} has been served. Enjoy! ✨',
+                'ORDER',
+                link='/my-orders'
+            )
+            
+        # Notify via SocketIO if available
+        try:
+            from extensions import socketio
+            socketio.emit('order_status_update', {'id': order.id, 'status': 'COMPLETED'}, namespace='/')
+        except:
+            pass
+            
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': f'Order #{order.id} has been marked as COMPLETED.'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 
 @cashier_bp.route('/staff/cashier/tables')
@@ -422,6 +648,94 @@ def cashier_table_management():
         'cashier/table_management.html',
         portal_name=f"{current_user.first_name} {current_user.last_name}",
     )
+
+
+@cashier_bp.route('/staff/cashier/api/unassigned-orders')
+def cashier_api_unassigned_orders():
+    """Get all active orders (PENDING, PREPARING, READY) that do not currently occupy a table."""
+    if not current_user.is_authenticated or current_user.role not in CASHIER_ROLES:
+        return jsonify({'error': 'Unauthorized'}), 401
+        
+    # Get all active orders that do not occupy a table
+    orders = Order.query.filter(
+        Order.status.in_(['PENDING', 'PREPARING', 'READY']),
+        Order.is_archived.is_(False),
+        db.or_(
+            Order.table_number.is_(None),
+            Order.table_status != 'OCCUPIED'
+        )
+    ).order_by(Order.created_at.desc()).all()
+    
+    serialized = []
+    for o in orders:
+        if o.user:
+            customer = f"{o.user.first_name} {o.user.last_name}".strip()
+        elif o.customer_name:
+            customer = o.customer_name
+        else:
+            customer = 'Walk-in Guest'
+            
+        serialized.append({
+            'id': o.id,
+            'order_code': o.order_code or f'#{o.id}',
+            'customer': customer,
+            'dining_option': o.dining_option,
+            'status': o.status,
+            'total_amount': float(o.total_amount or 0),
+            'created_at': o.created_at.strftime('%I:%M %p') if o.created_at else '',
+        })
+        
+    return jsonify({
+        'success': True,
+        'orders': serialized
+    })
+
+
+@cashier_bp.route('/staff/cashier/orders/<int:order_id>/assign-table', methods=['POST'])
+def cashier_assign_table(order_id):
+    """Assign a table to an order from the cashier dashboard/table management."""
+    if not current_user.is_authenticated or current_user.role not in CASHIER_ROLES:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+        
+    try:
+        data = request.get_json() or {}
+        table_number = data.get('table_number')
+        if not table_number:
+            return jsonify({'success': False, 'message': 'Table number is required.'}), 400
+            
+        try:
+            table_number = int(table_number)
+            if table_number < 1 or table_number > 17:
+                return jsonify({'success': False, 'message': 'Invalid table number.'}), 400
+        except ValueError:
+            return jsonify({'success': False, 'message': 'Table number must be an integer.'}), 400
+            
+        # Check if table is occupied
+        occupied_order = Order.query.filter(
+            Order.table_number == table_number,
+            Order.table_status == 'OCCUPIED',
+            Order.is_archived.is_(False),
+            Order.status.in_(['PENDING', 'PREPARING', 'READY', 'COMPLETED'])
+        ).first()
+        
+        if occupied_order:
+            return jsonify({'success': False, 'message': f'Table {table_number} is already occupied by Order #{occupied_order.id}.'}), 400
+            
+        order = Order.query.get_or_404(order_id)
+        
+        # Assign table
+        order.table_number = table_number
+        order.table_status = 'OCCUPIED'
+        order.dining_option = 'DINE_IN' # Force to DINE_IN since they are assigned to a table
+        
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': f'Order {order.order_code or order.id} has been assigned to Table {table_number}.'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 
 @cashier_bp.route('/staff/cashier/api/history-summary')
@@ -723,7 +1037,7 @@ def cashier_reset_password():
 # ── Kitchen Portal ────────────────────────────────────────────────
 # ══════════════════════════════════════════════════════════════════
 
-KITCHEN_ROLES = ['KITCHEN', 'ADMIN', 'CASHIER']
+KITCHEN_ROLES = ['KITCHEN']
 
 @kitchen_bp.route('/kitchen/login', methods=['GET', 'POST'])
 @kitchen_bp.route('/staff/kitchen/login', methods=['GET', 'POST'])
@@ -1123,7 +1437,7 @@ def kitchen_reset_password():
 # ── Inventory Portal ──────────────────────────────────────────────
 # ══════════════════════════════════════════════════════════════════
 
-INVENTORY_ROLES = ['INVENTORY_STAFF', 'INVENTORY', 'ADMIN']
+INVENTORY_ROLES = ['INVENTORY_STAFF', 'INVENTORY']
 
 @inventory_bp.route('/inventory/login', methods=['GET', 'POST'])
 @inventory_bp.route('/staff/inventory/login', methods=['GET', 'POST'])
@@ -2621,7 +2935,7 @@ def cashier_profile():
 # ── Rider Portal ────────────────────────────────────────────────
 # ══════════════════════════════════════════════════════════════════
 
-RIDER_ROLES = ['RIDER', 'ADMIN', 'CASHIER', 'STAFF']
+RIDER_ROLES = ['RIDER']
 
 @rider_bp.route('/rider/login', methods=['GET', 'POST'])
 @rider_bp.route('/staff/rider/login', methods=['GET', 'POST'])

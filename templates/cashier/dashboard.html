@@ -245,13 +245,16 @@
                     <th>Service</th>
                     <th>Order Status</th>
                     <th>Payment</th>
-                    <th>Table #</th>
                     <th>Created</th>
+                    <th style="text-align:center;">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for order in orders %}
-                <tr data-order-id="{{ order.id }}" data-status="{{ order.status }}">
+                <tr data-order-id="{{ order.id }}" 
+                    data-status="{{ order.status }}" 
+                    data-payment-status="{{ order.payment_status }}" 
+                    data-table-status="{{ order.table_status or 'AVAILABLE' }}">
                     <td><span class="order-id">{{ order.order_code or '#' + order.id|string }}</span></td>
                     <td style="font-weight:500; text-align:left;">
                         {% if order.user %}
@@ -268,45 +271,29 @@
                     <td><span class="pill service">{{ order.dining_option.replace('_', ' ').title() }}</span></td>
                     <td><span class="pill {{ order.status.lower() }}">{{ order.status.title() }}</span></td>
                     <td><span class="pill {{ order.payment_status.lower() }}">{{ order.payment_status.title() }}</span></td>
-                    <td class="table-number-cell" data-order-id="{{ order.id }}" data-status="{{ order.status }}" data-payment-status="{{ order.payment_status }}" data-dining-option="{{ order.dining_option }}">
-                        {% if order.dining_option == 'DINE_IN' %}
-                            {% if order.status == 'PENDING' %}
-                                <span class="table-number-display" style="font-weight:600; color:var(--primary);">{{ order.table_number or 'Not Set' }}</span>
-                                <button class="btn-icon edit-table-btn" title="Edit table number" style="margin-left:6px; padding:4px 8px; font-size:0.75rem; background:rgba(139,99,75,0.08); border:none; border-radius:6px; cursor:pointer; color:#8b634b;">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <div class="table-number-edit-form" style="display:none; margin-top:8px;">
-                                    <select class="table-number-select" 
-                                            style="width:100px; padding:6px 8px; border:1px solid #ddd; border-radius:6px; font-size:0.85rem; margin-right:6px; background:white;">
-                                        <option value="">Loading...</option>
-                                    </select>
-                                    <button class="btn-icon save-table-btn" style="padding:6px 10px; font-size:0.75rem; background:#28a745; color:white; border:none; border-radius:6px; cursor:pointer; margin-right:4px;">
-                                        <i class="fas fa-check"></i>
-                                    </button>
-                                    <button class="btn-icon cancel-table-btn" style="padding:6px 10px; font-size:0.75rem; background:#6c757d; color:white; border:none; border-radius:6px; cursor:pointer;">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </div>
-                            {% elif order.status == 'READY' and order.payment_status == 'PAID' %}
-                                <span class="table-number-readonly" style="font-weight:600; color:#5d4037;">{{ order.table_number or 'Not Set' }}</span>
-                                {% if order.table_number %}
-                                <button class="btn-icon release-table-btn" 
-                                        title="Release table for new customers"
-                                        data-order-id="{{ order.id }}"
-                                        data-table-number="{{ order.table_number }}"
-                                        style="margin-left:8px; padding:6px 12px; font-size:0.8rem; background:#f5f5f5; border:1px solid #e0e0e0; border-radius:6px; cursor:pointer; color:#666; font-weight:500; transition:all 0.2s ease;">
-                                    <i class="fas fa-unlock" style="margin-right:4px; font-size:0.75rem;"></i>Release
-                                </button>
-                                {% endif %}
-                            {% else %}
-                                <span class="table-number-readonly" style="font-weight:500; color:var(--muted);">{{ order.table_number or 'Not Set' }}</span>
-                            {% endif %}
-                        {% else %}
-                            <span style="color:var(--muted); font-size:0.8rem;">N/A</span>
-                        {% endif %}
-                    </td>
                     <td style="color:var(--muted); font-size:0.8rem; font-weight:500;">
                         {{ order.created_at.strftime('%I:%M %p') if order.created_at else 'N/A' }}
+                    </td>
+                    <td style="text-align:center;">
+                        {% if order.status == 'READY' %}
+                            <button class="btn-icon complete-order-btn"
+                                    data-order-id="{{ order.id }}"
+                                    data-order-code="{{ order.order_code or '#' ~ order.id|string }}"
+                                    data-dining-option="{{ order.dining_option }}"
+                                    data-payment-status="{{ order.payment_status }}"
+                                    style="padding:6px 12px; font-size:0.8rem; background:#28a745; border:1px solid #28a745; border-radius:6px; cursor:pointer; color:white; font-weight:600; transition:all 0.2s ease; display:inline-flex; align-items:center; justify-content:center; gap:4px;">
+                                <i class="fas fa-check-double" style="font-size:0.75rem;"></i>
+                                {% if order.dining_option == 'TAKE_OUT' %}
+                                    Pick Up
+                                {% elif order.dining_option == 'DELIVERY' %}
+                                    Complete
+                                {% else %}
+                                    Serve
+                                {% endif %}
+                            </button>
+                        {% else %}
+                            <span style="color:var(--muted); font-size:0.75rem; font-style:italic;">Preparing...</span>
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}
@@ -324,237 +311,50 @@
 
 {% block extra_script %}
 <script>
-    // ─── TABLE NUMBER INLINE EDITING WITH DROPDOWN ───────────────────────────────────
     document.addEventListener('DOMContentLoaded', function() {
-        // Edit button click handler
-        document.querySelectorAll('.edit-table-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const cell = this.closest('.table-number-cell');
-                const orderId = cell.dataset.orderId;
-                const select = cell.querySelector('.table-number-select');
-                
-                // Hide display, show form
-                cell.querySelector('.table-number-display').style.display = 'none';
-                cell.querySelector('.edit-table-btn').style.display = 'none';
-                cell.querySelector('.table-number-edit-form').style.display = 'block';
-                
-                // Load available tables
-                loadAvailableTables(orderId, select);
-            });
-        });
-
-        // Cancel button handler
-        document.querySelectorAll('.cancel-table-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const cell = this.closest('.table-number-cell');
-                cell.querySelector('.table-number-edit-form').style.display = 'none';
-                cell.querySelector('.table-number-display').style.display = 'inline';
-                cell.querySelector('.edit-table-btn').style.display = 'inline';
-            });
-        });
-
-        // Save button handler
-        document.querySelectorAll('.save-table-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const cell = this.closest('.table-number-cell');
-                const orderId = cell.dataset.orderId;
-                const select = cell.querySelector('.table-number-select');
-                const newTableNumber = parseInt(select.value);
-
-                // Client-side validation
-                if (!newTableNumber || newTableNumber < 1) {
-                    showError('Please select a table number');
-                    select.focus();
-                    return;
-                }
-
-                // Submit via AJAX
-                fetch(`/admin/orders/${orderId}/update-table`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({ table_number: newTableNumber })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        cell.querySelector('.table-number-display').textContent = newTableNumber;
-                        cell.querySelector('.table-number-edit-form').style.display = 'none';
-                        cell.querySelector('.table-number-display').style.display = 'inline';
-                        cell.querySelector('.edit-table-btn').style.display = 'inline';
-                        if (window.showToast) showToast('success', `Table updated to #${newTableNumber}`);
-                    } else {
-                        if (window.showToast) showToast('danger', data.message || 'Failed to update table number');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    if (window.showToast) showToast('danger', 'Network error updating table number.');
-                });
-            });
-        });
-
-        // ─── RELEASE TABLE BUTTON HANDLER ───────────────────────────────────
-        document.querySelectorAll('.release-table-btn').forEach(btn => {
+        // ─── COMPLETE ORDER BUTTON HANDLER ───────────────────────────────────
+        document.querySelectorAll('.complete-order-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const orderId = this.dataset.orderId;
-                const tableNumber = this.dataset.tableNumber;
-                
-                showReleaseTableModal(orderId, tableNumber, this);
+                completeOrder(orderId, this);
             });
         });
     });
 
-    // Load available tables from server
-    function loadAvailableTables(orderId, selectElement) {
-        selectElement.innerHTML = '<option value="">Loading...</option>';
-        
-        fetch(`/admin/orders/${orderId}/available-tables`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                selectElement.innerHTML = '<option value="">-- Select Table --</option>';
-                
-                // Add available tables
-                data.available_tables.forEach(tableNum => {
-                    const option = document.createElement('option');
-                    option.value = tableNum;
-                    option.textContent = `Table ${tableNum}`;
-                    selectElement.appendChild(option);
-                });
-                
-                // Add occupied tables (disabled)
-                if (data.occupied_tables.length > 0) {
-                    const optgroup = document.createElement('optgroup');
-                    optgroup.label = '── Occupied ──';
-                    data.occupied_tables.forEach(tableNum => {
-                        const option = document.createElement('option');
-                        option.value = tableNum;
-                        option.textContent = `Table ${tableNum} (Occupied)`;
-                        option.disabled = true;
-                        option.style.color = '#999';
-                        optgroup.appendChild(option);
-                    });
-                    selectElement.appendChild(optgroup);
-                }
-                
-                selectElement.focus();
-            } else {
-                if (window.showToast) showToast('danger', data.message || 'Failed to load available tables');
-                selectElement.innerHTML = '<option value="">Error loading tables</option>';
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            if (window.showToast) showToast('danger', 'Network error loading tables.');
-            selectElement.innerHTML = '<option value="">Error loading tables</option>';
-        });
-    }
-
-    // ─── ELEGANT MODAL DIALOG FOR TABLE RELEASE ───────────────────────────────────
-    function showReleaseTableModal(orderId, tableNumber, btnElement) {
-        // Create modal overlay
-        const overlay = document.createElement('div');
-        overlay.className = 'modal-overlay';
-        
-        // Create modal dialog
-        const modal = document.createElement('div');
-        modal.className = 'modal-dialog';
-        
-        modal.innerHTML = `
-            <div class="modal-header">
-                <h3 class="modal-title">127.0.0.1:5000 says</h3>
-            </div>
-            <div class="modal-body">
-                Release Table ${tableNumber}? This will make it available for new customers.
-            </div>
-            <div class="modal-footer">
-                <button class="modal-btn modal-btn-primary" id="modal-ok-btn">OK</button>
-                <button class="modal-btn modal-btn-secondary" id="modal-cancel-btn">Cancel</button>
-            </div>
-        `;
-        
-        overlay.appendChild(modal);
-        document.body.appendChild(overlay);
-        
-        // Focus on OK button
-        setTimeout(() => {
-            document.getElementById('modal-ok-btn').focus();
-        }, 100);
-        
-        // OK button handler
-        document.getElementById('modal-ok-btn').addEventListener('click', function() {
-            overlay.remove();
-            releaseTable(orderId, tableNumber, btnElement);
-        });
-        
-        // Cancel button handler
-        document.getElementById('modal-cancel-btn').addEventListener('click', function() {
-            overlay.remove();
-        });
-        
-        // Click outside to close
-        overlay.addEventListener('click', function(e) {
-            if (e.target === overlay) {
-                overlay.remove();
-            }
-        });
-        
-        // ESC key to close
-        const escHandler = function(e) {
-            if (e.key === 'Escape') {
-                overlay.remove();
-                document.removeEventListener('keydown', escHandler);
-            }
-        };
-        document.addEventListener('keydown', escHandler);
-    }
-
-    // ─── RELEASE TABLE FUNCTIONALITY ───────────────────────────────────
-    function releaseTable(orderId, tableNumber, btnElement) {
+    // ─── COMPLETE ORDER FUNCTIONALITY ───────────────────────────────────
+    function completeOrder(orderId, btnElement) {
         // Disable button during request
         btnElement.disabled = true;
-        btnElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Releasing...';
+        const origHtml = btnElement.innerHTML;
+        btnElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
         
-        fetch(`/admin/orders/${orderId}/release-table`, {
+        fetch('/staff/cashier/orders/' + orderId + '/complete', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
             }
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                if (window.showToast) showToast('success', data.message || `Table ${tableNumber} is now available`);
-                
-                // Update UI: remove button and update display
-                const cell = btnElement.closest('.table-number-cell');
-                btnElement.remove();
-                const display = cell.querySelector('.table-number-readonly');
-                if (display) {
-                    display.style.color = 'var(--muted)';
-                    display.style.textDecoration = 'line-through';
-                }
+                if (window.showToast) showToast('success', data.message || 'Order completed successfully');
                 
                 // Trigger dashboard refresh after short delay
-                setTimeout(pollCashierDashboard, 1000);
+                setTimeout(pollCashierDashboard, 500);
             } else {
-                if (window.showToast) showToast('danger', data.error || 'Failed to release table');
+                if (window.showToast) showToast('danger', data.error || 'Failed to complete order');
                 btnElement.disabled = false;
-                btnElement.innerHTML = '<i class="fas fa-unlock"></i> Release';
+                btnElement.innerHTML = origHtml;
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            if (window.showToast) showToast('danger', 'Network error while releasing table.');
+            if (window.showToast) showToast('danger', 'Network error while completing order.');
             btnElement.disabled = false;
-            btnElement.innerHTML = '<i class="fas fa-unlock"></i> Release';
+            btnElement.innerHTML = origHtml;
         });
     }
-
-
 
     const _cashierOrderStatuses = {};
 
@@ -575,7 +375,6 @@
 
     function pollCashierDashboard() {
         if (document.querySelector('.modal-overlay')) return;
-        if (document.querySelector('.table-number-edit-form[style*="block"]')) return;
 
         fetch('{{ url_for("cashier_portal.cashier_api_dashboard") }}')
         .then(r => r.json())
@@ -598,17 +397,25 @@
             if (rowCount !== data.orders.length) needsFullRefresh = true;
 
             data.orders.forEach(o => {
-                const prev = _cashierOrderStatuses[o.id];
-                if (prev && prev !== 'READY' && o.status === 'READY') {
+                const prevKey = _cashierOrderStatuses[o.id];
+                const currentKey = `${o.status}|${o.table_status || 'AVAILABLE'}|${o.payment_status}`;
+                const prevStatus = prevKey ? prevKey.split('|')[0] : null;
+
+                if (prevStatus && prevStatus !== 'READY' && o.status === 'READY') {
                     if (window.showToast) showToast('success', `Order ${o.order_code} is READY from kitchen!`);
                     needsFullRefresh = true;
                 }
-                if (prev && prev !== o.status) needsFullRefresh = true;
-                _cashierOrderStatuses[o.id] = o.status;
+                if (prevKey && prevKey !== currentKey) {
+                    needsFullRefresh = true;
+                }
+                _cashierOrderStatuses[o.id] = currentKey;
 
                 const row = document.querySelector(`tr[data-order-id="${o.id}"]`);
                 if (row) {
                     row.dataset.status = o.status;
+                    row.dataset.paymentStatus = o.payment_status;
+                    row.dataset.tableStatus = o.table_status || 'AVAILABLE';
+
                     const pill = row.querySelector('td:nth-child(5) .pill');
                     if (pill) {
                         const label = o.status.charAt(0) + o.status.slice(1).toLowerCase();
@@ -630,62 +437,20 @@
 
     // Re-attach all event listeners after a poll-driven DOM update
     function attachDashboardListeners() {
-        document.querySelectorAll('.edit-table-btn').forEach(btn => {
+        document.querySelectorAll('.complete-order-btn').forEach(btn => {
             btn.addEventListener('click', function() {
-                const cell = this.closest('.table-number-cell');
-                const orderId = cell.dataset.orderId;
-                const select = cell.querySelector('.table-number-select');
-                cell.querySelector('.table-number-display').style.display = 'none';
-                cell.querySelector('.edit-table-btn').style.display = 'none';
-                cell.querySelector('.table-number-edit-form').style.display = 'block';
-                loadAvailableTables(orderId, select);
-            });
-        });
-        document.querySelectorAll('.cancel-table-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const cell = this.closest('.table-number-cell');
-                cell.querySelector('.table-number-edit-form').style.display = 'none';
-                cell.querySelector('.table-number-display').style.display = 'inline';
-                cell.querySelector('.edit-table-btn').style.display = 'inline';
-            });
-        });
-        document.querySelectorAll('.save-table-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const cell = this.closest('.table-number-cell');
-                const orderId = cell.dataset.orderId;
-                const select = cell.querySelector('.table-number-select');
-                const newTableNumber = parseInt(select.value);
-                if (!newTableNumber || newTableNumber < 1) {
-                    if (window.showToast) showToast('danger', 'Please select a table number');
-                    return;
-                }
-                fetch(`/admin/orders/${orderId}/update-table`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                    body: JSON.stringify({ table_number: newTableNumber })
-                })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        if (window.showToast) showToast('success', `Table updated to #${newTableNumber}`);
-                        setTimeout(pollCashierDashboard, 500);
-                    } else {
-                        if (window.showToast) showToast('danger', data.message || 'Failed to update table');
-                    }
-                })
-                .catch(() => { if (window.showToast) showToast('danger', 'Network error.'); });
-            });
-        });
-        document.querySelectorAll('.release-table-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                showReleaseTableModal(this.dataset.orderId, this.dataset.tableNumber, this);
+                const orderId = this.dataset.orderId;
+                completeOrder(orderId, this);
             });
         });
     }
 
     document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('tr[data-order-id]').forEach(row => {
-            _cashierOrderStatuses[row.dataset.orderId] = row.dataset.status;
+            const status = row.dataset.status;
+            const tableStatus = row.dataset.tableStatus || 'AVAILABLE';
+            const paymentStatus = row.dataset.paymentStatus || 'UNPAID';
+            _cashierOrderStatuses[row.dataset.orderId] = `${status}|${tableStatus}|${paymentStatus}`;
         });
     });
 
