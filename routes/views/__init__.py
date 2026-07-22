@@ -1,4 +1,4 @@
-from flask import render_template, jsonify
+from flask import render_template, jsonify, current_app
 from flask_login import current_user, login_required
 from .. import main_bp
 from models import db, MenuItem, Reservation
@@ -9,15 +9,38 @@ from sqlalchemy.orm import load_only
 import time
 import random
 
+_MENU_CACHE_KEY = 'public_menu_items'
+_MENU_CACHE_TTL = 120  # seconds
+
 def _get_menu_items_for_menu_page():
-    return (
+    """Fetch menu items with a 2-minute in-memory cache to avoid repeated DB hits."""
+    try:
+        store = current_app._simple_cache
+        entry = store.get(_MENU_CACHE_KEY)
+        if entry and (time.time() - entry['ts']) < _MENU_CACHE_TTL:
+            return entry['data']
+    except Exception:
+        store = None
+
+    items = (
         MenuItem.query.options(
-            load_only(MenuItem.id, MenuItem.name, MenuItem.price, MenuItem.category, MenuItem.image_url, MenuItem.is_available, MenuItem.description)
+            load_only(MenuItem.id, MenuItem.name, MenuItem.price,
+                      MenuItem.category, MenuItem.image_url,
+                      MenuItem.is_available, MenuItem.description,
+                      MenuItem.is_bestseller)
         )
         .filter(MenuItem.is_deleted == False)
         .order_by(MenuItem.category, MenuItem.name)
         .all()
     )
+
+    try:
+        if store is not None:
+            store[_MENU_CACHE_KEY] = {'data': items, 'ts': time.time()}
+    except Exception:
+        pass
+
+    return items
 
 def _get_featured_items_cached():
     total_available = MenuItem.query.filter_by(is_available=True, is_deleted=False).count()
@@ -37,6 +60,44 @@ def _get_featured_items_cached():
         .all()
     )
     return items
+
+@main_bp.route('/api/public/branches')
+def public_branches():
+    """Public endpoint — returns all branches for the Bienvenue modal."""
+    try:
+        from models import Branch as BranchModel
+        branches = BranchModel.query.order_by(BranchModel.is_main.desc(), BranchModel.name.asc()).all()
+        data = []
+        for b in branches:
+            label = (b.city or b.name)
+            if b.province:
+                label += ', ' + b.province
+            if not b.is_active:
+                label += ' (Coming Soon)'
+            if b.is_main:
+                label += ' (Main Branch)'
+            data.append({
+                'name': b.name,
+                'label': label,
+                'city': b.city or b.name,
+                'province': b.province or '',
+                'address': b.address or '',
+                'phone': b.phone or '',
+                'is_active': b.is_active,
+                'is_main': b.is_main,
+            })
+        return jsonify({'success': True, 'branches': data})
+    except Exception:
+        # Fallback if Branch table doesn't exist yet
+        return jsonify({'success': True, 'branches': [
+            {'name': 'Lucban', 'label': 'Lucban, Quezon (Main Branch)', 'city': 'Lucban', 'province': 'Quezon',
+             'address': 'Fidel Rada St, Lucban', 'phone': '+63 (998) 886-3566', 'is_active': True, 'is_main': True},
+            {'name': 'Pagsanjan', 'label': 'Pagsanjan, Laguna', 'city': 'Pagsanjan', 'province': 'Laguna',
+             'address': 'National Highway Brgy, Pagsanjan, Laguna', 'phone': '+63 (998) 886-3566', 'is_active': True, 'is_main': False},
+            {'name': 'Lucena', 'label': 'Lucena City, Quezon (Coming Soon)', 'city': 'Lucena City', 'province': 'Quezon',
+             'address': 'Lucena City', 'phone': '', 'is_active': False, 'is_main': False},
+        ]})
+
 
 @main_bp.route('/')
 def index():
@@ -71,7 +132,7 @@ def index():
 
         # Efficient Menu Fetching
         featured = _get_featured_items_cached()
-        bestsellers = MenuItem.query.filter_by(category='Best Sellers', is_available=True, is_deleted=False).limit(6).all()
+        bestsellers = MenuItem.query.filter_by(is_bestseller=True, is_available=True, is_deleted=False).limit(6).all()
 
         from models import Order, Review
         recent_orders = Order.query.filter_by(user_id=current_user.id).order_by(Order.created_at.desc()).limit(5).all()
@@ -90,7 +151,7 @@ def index():
 
     from models import Review
     approved_reviews = Review.query.filter_by(status='APPROVED').order_by(Review.rating.desc(), Review.created_at.desc()).limit(30).all()
-    bestsellers = MenuItem.query.filter_by(category='Best Sellers', is_available=True, is_deleted=False).limit(6).all()
+    bestsellers = MenuItem.query.filter_by(is_bestseller=True, is_available=True, is_deleted=False).limit(6).all()
     
     # Fetch featured gallery photos (8 photos for 4x2 grid)
     gallery_photos = Review.query.filter_by(
@@ -100,13 +161,18 @@ def index():
         Review.photo_url.isnot(None)
     ).order_by(Review.created_at.desc()).limit(8).all()
 
+    # Fetch active branches for branch selector
+    from models import Branch as BranchModel
+    active_branches = BranchModel.query.filter_by(is_active=True).order_by(BranchModel.is_main.desc(), BranchModel.name.asc()).all()
+
     return render_template('public/index.html', 
         menu_items=menu_items, 
         site=site, 
         categories=categories, 
         approved_reviews=approved_reviews, 
         bestsellers=bestsellers,
-        gallery_photos=gallery_photos
+        gallery_photos=gallery_photos,
+        active_branches=active_branches
     )
 
 @main_bp.route('/my-orders')
@@ -257,7 +323,7 @@ def reviews_page():
     if not reviews_without_photos and approved_reviews:
         reviews_without_photos = approved_reviews
 
-    bestsellers = MenuItem.query.filter_by(category='Best Sellers', is_available=True, is_deleted=False).limit(8).all()
+    bestsellers = MenuItem.query.filter_by(is_bestseller=True, is_available=True, is_deleted=False).limit(8).all()
     return render_template(
         'public/reviews_page.html', 
         site=site, 
@@ -473,3 +539,24 @@ def contact_page():
         return redirect(url_for('main.contact_page'))
 
     return render_template('public/contact_page.html', site=site)
+
+
+@main_bp.route('/home-sections/hero')
+def home_section_hero():
+    return render_template('home_sections/hero.html')
+
+
+@main_bp.route('/home-sections/about')
+def home_section_about():
+    return render_template('home_sections/about.html')
+
+
+@main_bp.route('/home-sections/menu')
+def home_section_menu():
+    menu_items = MenuItem.query.filter_by(is_deleted=False, is_available=True).all()
+    return render_template('home_sections/menu.html', menu_items=menu_items)
+
+
+@main_bp.route('/home-sections/reviews')
+def home_section_reviews():
+    return render_template('home_sections/reviews.html')

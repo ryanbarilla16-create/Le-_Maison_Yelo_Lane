@@ -214,6 +214,29 @@
             </div>
 
             <div class="approval-detail">
+                <div class="approval-icon-box"><i class="fas fa-user-tag"></i></div>
+                <div class="approval-info">
+                    <span class="approval-info-label">Role</span>
+                    <span class="approval-info-value" style="font-weight: 700; color: #5D4037;">
+                        {% if user.role == 'INVENTORY_STAFF' %}Inventory Staff
+                        {% elif user.role == 'CASHIER' %}Cashier
+                        {% elif user.role == 'KITCHEN' %}Kitchen
+                        {% elif user.role == 'RIDER' %}Rider
+                        {% elif user.role == 'ADMIN' %}Admin
+                        {% else %}{{ user.role|title }}{% endif %}
+                    </span>
+                </div>
+            </div>
+
+            <div class="approval-detail">
+                <div class="approval-icon-box"><i class="fas fa-store"></i></div>
+                <div class="approval-info">
+                    <span class="approval-info-label">Branch</span>
+                    <span class="approval-info-value" style="font-weight: 700; color: #5D4037;">{{ user.branch or 'Pagsanjan' }}</span>
+                </div>
+            </div>
+
+            <div class="approval-detail">
                 <div class="approval-icon-box" style="color: #577551; background: #f0f4ef; border-color: #dce5d9;"><i class="fas fa-shield-alt"></i></div>
                 <div class="approval-info">
                     <span class="approval-info-label">Status</span>
@@ -253,8 +276,8 @@
 function handleApproval(btn, userId, action) {
     const card = btn.closest('.approval-card');
     const url = action === 'approve' 
-        ? `/approve/${userId}` 
-        : `/reject/${userId}`;
+        ? `/admin/approve/${userId}` 
+        : `/admin/reject/${userId}`;
     
     // Disable both buttons to prevent double-click
     card.querySelectorAll('.btn-approval-action').forEach(b => b.disabled = true);

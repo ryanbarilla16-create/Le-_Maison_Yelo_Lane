@@ -208,18 +208,23 @@ def system_db_indexes():
 @admin_bp.route('/login', methods=['GET', 'POST'])
 def admin_login():
     allowed_roles = ['ADMIN', 'SUPER_ADMIN', 'CASHIER', 'INVENTORY_STAFF', 'INVENTORY', 'KITCHEN', 'STAFF', 'RIDER']
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     
     if current_user.is_authenticated and current_user.role and current_user.role.upper() in allowed_roles:
         role_upper = current_user.role.upper()
         if role_upper == 'CASHIER':
-            return redirect(url_for('cashier_portal.cashier_dashboard'))
+            redirect_url = url_for('cashier_portal.cashier_dashboard')
         elif role_upper in ['INVENTORY_STAFF', 'INVENTORY']:
-            return redirect(url_for('inventory_portal.inventory_dashboard'))
+            redirect_url = url_for('inventory_portal.inventory_dashboard')
         elif role_upper == 'KITCHEN':
-            return redirect(url_for('admin.kitchen_view'))
+            redirect_url = url_for('admin.kitchen_view')
         elif role_upper == 'RIDER':
-            return redirect(url_for('admin.deliveries'))
-        return redirect(url_for('admin.overview'))
+            redirect_url = url_for('admin.deliveries')
+        else:
+            redirect_url = url_for('admin.overview')
+        if is_ajax:
+            return jsonify({'success': True, 'redirect': redirect_url})
+        return redirect(redirect_url)
         
     if request.method == 'POST':
         email = request.form.get('email')
@@ -230,15 +235,21 @@ def admin_login():
             login_user(user)
             role_upper = user.role.upper()
             if role_upper == 'CASHIER':
-                return redirect(url_for('cashier_portal.cashier_dashboard'))
+                redirect_url = url_for('cashier_portal.cashier_dashboard')
             elif role_upper in ['INVENTORY_STAFF', 'INVENTORY']:
-                return redirect(url_for('inventory_portal.inventory_dashboard'))
+                redirect_url = url_for('inventory_portal.inventory_dashboard')
             elif role_upper == 'KITCHEN':
-                return redirect(url_for('admin.kitchen_view'))
+                redirect_url = url_for('admin.kitchen_view')
             elif role_upper == 'RIDER':
-                return redirect(url_for('admin.deliveries'))
-            return redirect(url_for('admin.overview'))
+                redirect_url = url_for('admin.deliveries')
+            else:
+                redirect_url = url_for('admin.overview')
+            if is_ajax:
+                return jsonify({'success': True, 'redirect': redirect_url})
+            return redirect(redirect_url)
             
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'Invalid staff credentials or access denied.'}), 401
         flash("Invalid staff credentials or access denied.", "danger")
     return render_template('admin/login.html')
 
@@ -264,6 +275,7 @@ def admin_logout():
 @admin_bp.route('/forgot-password', methods=['GET', 'POST'])
 def admin_forgot_password():
     from flask import session
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if request.method == 'POST':
         email = (request.form.get('email') or '').strip()
         user = User.query.filter_by(email=email).first()
@@ -271,13 +283,19 @@ def admin_forgot_password():
         # Security: Only allow staff roles to use this flow
         allowed_roles = ['ADMIN', 'CASHIER', 'INVENTORY_STAFF', 'INVENTORY', 'KITCHEN', 'STAFF', 'RIDER']
         if not user or not user.role or user.role.upper() not in allowed_roles:
-            flash(f"If an account exists for {email}, a reset code has been sent.", "info")
+            msg = f"If an account exists for {email}, a reset code has been sent."
+            if is_ajax:
+                return jsonify({'success': True, 'redirect': url_for('admin.admin_login'), 'message': msg})
+            flash(msg, "info")
             return redirect(url_for('admin.admin_login'))
             
         if user.otp_created_at:
             elapsed = safe_elapsed(user.otp_created_at)
             if elapsed < 60:
-                flash(f"Please wait {int(60 - elapsed)}s before requesting a new code.", "warning")
+                msg = f"Please wait {int(60 - elapsed)}s before requesting a new code."
+                if is_ajax:
+                    return jsonify({'success': False, 'message': msg})
+                flash(msg, "warning")
                 return redirect(url_for('admin.admin_verify_reset_otp', user_id=user.id))
         
         otp = f"{random.randint(100000, 999999)}"
@@ -314,6 +332,8 @@ def admin_forgot_password():
         ).start()
         
         session['admin_reset_user_id'] = user.id
+        if is_ajax:
+            return jsonify({'success': True, 'redirect': url_for('admin.admin_verify_reset_otp', user_id=user.id)})
         return redirect(url_for('admin.admin_verify_reset_otp', user_id=user.id))
         
     return render_template('admin/forgot_password.html')
@@ -321,7 +341,10 @@ def admin_forgot_password():
 @admin_bp.route('/verify-reset-otp/<int:user_id>', methods=['GET', 'POST'])
 def admin_verify_reset_otp(user_id):
     from flask import session
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if session.get('admin_reset_user_id') != user_id:
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'Invalid session.'}), 400
         flash("Invalid session.", "danger")
         return redirect(url_for('admin.admin_forgot_password'))
         
@@ -329,14 +352,20 @@ def admin_verify_reset_otp(user_id):
     if request.method == 'POST':
         otp_input = request.form.get('otp', '').strip()
         if user.otp_created_at and safe_elapsed(user.otp_created_at) > 300:
+            if is_ajax:
+                return jsonify({'success': False, 'message': 'Code expired. Please request a new one.'}), 400
             flash("Code expired. Please request a new one.", "danger")
             return redirect(url_for('admin.admin_forgot_password'))
                 
         if user.otp_code == otp_input:
             session['admin_reset_verified_id'] = user.id
+            if is_ajax:
+                return jsonify({'success': True, 'redirect': url_for('admin.admin_reset_password')})
             flash("Code verified. Set your new password.", "success")
             return redirect(url_for('admin.admin_reset_password'))
         else:
+            if is_ajax:
+                return jsonify({'success': False, 'message': 'Invalid code.'}), 400
             flash("Invalid code.", "danger")
             
     cooldown = 0
@@ -348,11 +377,16 @@ def admin_verify_reset_otp(user_id):
 @admin_bp.route('/resend-reset-otp/<int:user_id>', methods=['POST'])
 def admin_resend_reset_otp(user_id):
     from flask import session
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if session.get('admin_reset_user_id') != user_id:
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'Invalid session.'}), 400
         return redirect(url_for('admin.admin_forgot_password'))
     
     user = User.query.get_or_404(user_id)
     if user.otp_created_at and safe_elapsed(user.otp_created_at) < 60:
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'Please wait before resending.'}), 400
         return redirect(url_for('admin.admin_verify_reset_otp', user_id=user.id))
         
     otp = f"{random.randint(100000, 999999)}"
@@ -368,14 +402,19 @@ def admin_resend_reset_otp(user_id):
         daemon=True,
     ).start()
     
+    if is_ajax:
+        return jsonify({'success': True, 'message': 'New code sent.', 'cooldown_remaining': 60})
     flash("New code sent.", "success")
     return redirect(url_for('admin.admin_verify_reset_otp', user_id=user.id))
 
 @admin_bp.route('/reset-password', methods=['GET', 'POST'])
 def admin_reset_password():
     from flask import session
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     user_id = session.get('admin_reset_verified_id')
     if not user_id:
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'Session expired.'}), 400
         return redirect(url_for('admin.admin_forgot_password'))
         
     user = User.query.get_or_404(user_id)
@@ -385,6 +424,8 @@ def admin_reset_password():
         
         err = validate_password(new_password, confirm_password)
         if err:
+            if is_ajax:
+                return jsonify({'success': False, 'message': err}), 400
             flash(err, "danger")
             return render_template('admin/reset_password.html')
             
@@ -396,6 +437,8 @@ def admin_reset_password():
         session.pop('admin_reset_user_id', None)
         session.pop('admin_reset_verified_id', None)
         
+        if is_ajax:
+            return jsonify({'success': True, 'redirect': url_for('admin.admin_login')})
         flash("Password updated successfully. Please log in.", "success")
         return redirect(url_for('admin.admin_login'))
         
@@ -1025,11 +1068,95 @@ def analytics():
     today = get_ph_time().date()
     total_customers = User.query.filter_by(role='USER').count()
 
+    date_filter = request.args.get('date_filter', 'ALL').upper()
+    if date_filter not in ['TODAY', 'WEEK', 'MONTH', 'ALL']:
+        date_filter = 'ALL'
+
+    start_date = None
+    end_date = None
+    start_dt = None
+    end_dt = None
+
+    if date_filter == 'TODAY':
+        start_date = today
+        end_date = today
+    elif date_filter == 'WEEK':
+        start_date = today - timedelta(days=today.weekday())
+        end_date = start_date + timedelta(days=6)
+    elif date_filter == 'MONTH':
+        start_date = today.replace(day=1)
+        next_month = today.month + 1
+        year = today.year
+        if next_month > 12:
+            next_month = 1
+            year += 1
+        end_date = date(year, next_month, 1) - timedelta(days=1)
+
+    if start_date and end_date:
+        start_dt = datetime.combine(start_date, datetime.min.time())
+        end_dt = datetime.combine(end_date, datetime.max.time())
+
+    # Previous period boundaries calculation for comparisons
+    prev_start_date = None
+    prev_end_date = None
+    prev_start_dt = None
+    prev_end_dt = None
+
+    if date_filter == 'TODAY':
+        prev_start_date = today - timedelta(days=1)
+        prev_end_date = today - timedelta(days=1)
+    elif date_filter == 'WEEK':
+        current_week_start = today - timedelta(days=today.weekday())
+        prev_start_date = current_week_start - timedelta(days=7)
+        prev_end_date = current_week_start - timedelta(days=1)
+    elif date_filter == 'MONTH':
+        first_of_this_month = today.replace(day=1)
+        prev_end_date = first_of_this_month - timedelta(days=1)
+        prev_start_date = prev_end_date.replace(day=1)
+
+    if prev_start_date and prev_end_date:
+        prev_start_dt = datetime.combine(prev_start_date, datetime.min.time())
+        prev_end_dt = datetime.combine(prev_end_date, datetime.max.time())
+
+    def get_prev_period_stats(br):
+        if not prev_start_date or not prev_end_date:
+            return None
+            
+        # Prev Revenue
+        prev_rev_q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0))
+        if br != 'ALL':
+            prev_rev_q = prev_rev_q.filter(Order.branch == br)
+        prev_rev_q = prev_rev_q.filter(Order.created_at >= prev_start_dt, Order.created_at <= prev_end_dt)
+        prev_rev = float(prev_rev_q.scalar())
+        
+        # Prev COGS
+        prev_cogs_q = db.session.query(
+            func.sum(OrderItem.quantity * MenuItemIngredient.quantity_needed * Ingredient.cost_per_unit)
+        ).select_from(OrderItem)\
+         .join(Order, Order.id == OrderItem.order_id)\
+         .join(MenuItem, MenuItem.id == OrderItem.menu_item_id)\
+         .join(MenuItemIngredient, MenuItemIngredient.menu_item_id == MenuItem.id)\
+         .join(Ingredient, Ingredient.id == MenuItemIngredient.ingredient_id)\
+         .filter(Order.status == 'COMPLETED')
+        if br != 'ALL':
+            prev_cogs_q = prev_cogs_q.filter(Order.branch == br)
+        prev_cogs_q = prev_cogs_q.filter(Order.created_at >= prev_start_dt, Order.created_at <= prev_end_dt)
+        prev_cogs = float(prev_cogs_q.scalar() or 0.0)
+        
+        prev_profit = prev_rev - prev_cogs
+        return {
+            'revenue': prev_rev,
+            'cogs': prev_cogs,
+            'profit': prev_profit
+        }
+
     def get_branch_data(br):
         # Reservation counts by type
         res_q = Reservation.query
         if br != 'ALL':
             res_q = res_q.filter_by(branch=br)
+        if start_date and end_date:
+            res_q = res_q.filter(Reservation.date >= start_date, Reservation.date <= end_date)
         exclusive_count = res_q.filter_by(booking_type='EXCLUSIVE').count()
         regular_count = res_q.filter_by(booking_type='REGULAR').count()
         total_reservations = res_q.count()
@@ -1043,36 +1170,109 @@ def analytics():
         # 1) Revenue Trend
         revenue_trend_labels = []
         revenue_trend_data = []
-        for i in range(6, -1, -1):
-            d = today - timedelta(days=i)
-            revenue_trend_labels.append(d.strftime('%b %d'))
-            rev_q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0))\
-                .filter(func.date(Order.created_at) == d)
-            if br != 'ALL':
-                rev_q = rev_q.filter(Order.branch == br)
-            day_rev = rev_q.scalar()
-            revenue_trend_data.append(float(day_rev))
+        
+        if date_filter == 'TODAY':
+            revenue_trend_labels = [f'{h:02d}:00' for h in range(9, 23)]
+            for h in range(9, 23):
+                rev_q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0))\
+                    .filter(
+                        func.date(Order.created_at) == today,
+                        func.extract('hour', Order.created_at) == h
+                    )
+                if br != 'ALL':
+                    rev_q = rev_q.filter(Order.branch == br)
+                revenue_trend_data.append(float(rev_q.scalar() or 0))
+        elif date_filter == 'WEEK':
+            week_start = today - timedelta(days=today.weekday())
+            for i in range(7):
+                d = week_start + timedelta(days=i)
+                revenue_trend_labels.append(d.strftime('%a (%b %d)'))
+                rev_q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0))\
+                    .filter(func.date(Order.created_at) == d)
+                if br != 'ALL':
+                    rev_q = rev_q.filter(Order.branch == br)
+                revenue_trend_data.append(float(rev_q.scalar() or 0))
+        elif date_filter == 'MONTH':
+            month_start = today.replace(day=1)
+            next_month = month_start.month + 1
+            year = month_start.year
+            if next_month > 12:
+                next_month = 1
+                year += 1
+            days_in_month = (date(year, next_month, 1) - month_start).days
+            for i in range(days_in_month):
+                d = month_start + timedelta(days=i)
+                revenue_trend_labels.append(d.strftime('%d'))
+                rev_q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0))\
+                    .filter(func.date(Order.created_at) == d)
+                if br != 'ALL':
+                    rev_q = rev_q.filter(Order.branch == br)
+                revenue_trend_data.append(float(rev_q.scalar() or 0))
+        else:
+            for i in range(6, -1, -1):
+                d = today - timedelta(days=i)
+                revenue_trend_labels.append(d.strftime('%b %d'))
+                rev_q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0))\
+                    .filter(func.date(Order.created_at) == d)
+                if br != 'ALL':
+                    rev_q = rev_q.filter(Order.branch == br)
+                revenue_trend_data.append(float(rev_q.scalar() or 0))
 
         # 2) Order Status
         status_q = db.session.query(Order.status, func.count(Order.id))
         if br != 'ALL':
             status_q = status_q.filter(Order.branch == br)
+        if start_date and end_date:
+            status_q = status_q.filter(Order.created_at >= start_dt, Order.created_at <= end_dt)
         order_status_rows = status_q.group_by(Order.status).all()
         order_status_labels = [r[0] for r in order_status_rows] if order_status_rows else ['No Data']
         order_status_data = [r[1] for r in order_status_rows] if order_status_rows else [1]
 
         # 3) Daily Orders
-        daily_orders_labels = []
+        daily_orders_labels = list(revenue_trend_labels)
         daily_orders_data = []
-        for i in range(6, -1, -1):
-            d = today - timedelta(days=i)
-            daily_orders_labels.append(d.strftime('%b %d'))
-            cnt_q = db.session.query(func.count(Order.id))\
-                .filter(func.date(Order.created_at) == d)
-            if br != 'ALL':
-                cnt_q = cnt_q.filter(Order.branch == br)
-            cnt = cnt_q.scalar()
-            daily_orders_data.append(int(cnt or 0))
+        if date_filter == 'TODAY':
+            for h in range(9, 23):
+                cnt_q = db.session.query(func.count(Order.id))\
+                    .filter(
+                        func.date(Order.created_at) == today,
+                        func.extract('hour', Order.created_at) == h
+                    )
+                if br != 'ALL':
+                    cnt_q = cnt_q.filter(Order.branch == br)
+                daily_orders_data.append(int(cnt_q.scalar() or 0))
+        elif date_filter == 'WEEK':
+            week_start = today - timedelta(days=today.weekday())
+            for i in range(7):
+                d = week_start + timedelta(days=i)
+                cnt_q = db.session.query(func.count(Order.id))\
+                    .filter(func.date(Order.created_at) == d)
+                if br != 'ALL':
+                    cnt_q = cnt_q.filter(Order.branch == br)
+                daily_orders_data.append(int(cnt_q.scalar() or 0))
+        elif date_filter == 'MONTH':
+            month_start = today.replace(day=1)
+            next_month = month_start.month + 1
+            year = month_start.year
+            if next_month > 12:
+                next_month = 1
+                year += 1
+            days_in_month = (date(year, next_month, 1) - month_start).days
+            for i in range(days_in_month):
+                d = month_start + timedelta(days=i)
+                cnt_q = db.session.query(func.count(Order.id))\
+                    .filter(func.date(Order.created_at) == d)
+                if br != 'ALL':
+                    cnt_q = cnt_q.filter(Order.branch == br)
+                daily_orders_data.append(int(cnt_q.scalar() or 0))
+        else:
+            for i in range(6, -1, -1):
+                d = today - timedelta(days=i)
+                cnt_q = db.session.query(func.count(Order.id))\
+                    .filter(func.date(Order.created_at) == d)
+                if br != 'ALL':
+                    cnt_q = cnt_q.filter(Order.branch == br)
+                daily_orders_data.append(int(cnt_q.scalar() or 0))
 
         # 4) Busy Times
         busy_q = db.session.query(
@@ -1081,6 +1281,8 @@ def analytics():
         )
         if br != 'ALL':
             busy_q = busy_q.filter(Order.branch == br)
+        if start_date and end_date:
+            busy_q = busy_q.filter(Order.created_at >= start_dt, Order.created_at <= end_dt)
         busy_hours_raw = busy_q.group_by('hr').order_by('hr').all()
         busy_map = {int(h): c for h, c in busy_hours_raw}
         busy_times_labels = [f'{h:02d}:00' for h in range(24)]
@@ -1094,6 +1296,8 @@ def analytics():
          .join(Order, Order.id == OrderItem.order_id)
         if br != 'ALL':
             top_dishes_q = top_dishes_q.filter(Order.branch == br)
+        if start_date and end_date:
+            top_dishes_q = top_dishes_q.filter(Order.created_at >= start_dt, Order.created_at <= end_dt)
         top_dishes_raw = top_dishes_q.group_by(MenuItem.name)\
          .order_by(func.sum(OrderItem.quantity).desc())\
          .limit(5).all()
@@ -1131,6 +1335,8 @@ def analytics():
         )
         if br != 'ALL':
             order_counts_sub_q = order_counts_sub_q.filter(Order.branch == br)
+        if start_date and end_date:
+            order_counts_sub_q = order_counts_sub_q.filter(Order.created_at >= start_dt, Order.created_at <= end_dt)
         order_counts_sub = order_counts_sub_q.group_by(Order.user_id).subquery()
         repeat_customers = db.session.query(func.count()).filter(order_counts_sub.c.order_count > 1).scalar() or 0
         onetime_customers = db.session.query(func.count()).filter(order_counts_sub.c.order_count == 1).scalar() or 0
@@ -1144,6 +1350,8 @@ def analytics():
         trev_q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0))
         if br != 'ALL':
             trev_q = trev_q.filter(Order.branch == br)
+        if start_date and end_date:
+            trev_q = trev_q.filter(Order.created_at >= start_dt, Order.created_at <= end_dt)
         total_revenue_val = float(trev_q.scalar())
 
         # 8) Advanced P&L COGS
@@ -1157,26 +1365,247 @@ def analytics():
          .filter(Order.status == 'COMPLETED')
         if br != 'ALL':
             cogs_query = cogs_query.filter(Order.branch == br)
+        if start_date and end_date:
+            cogs_query = cogs_query.filter(Order.created_at >= start_dt, Order.created_at <= end_dt)
         total_cogs = float(cogs_query.scalar() or 0.0)
         net_profit = total_revenue_val - total_cogs
 
-        # 9) Sales Forecast
-        last_14_days_rev = []
-        for i in range(13, -1, -1):
+        # 9) Sales Forecast — Linear Regression on last 30 days
+        daily_rev = []
+        for i in range(29, -1, -1):
             d = today - timedelta(days=i)
             fc_q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0))\
-                .filter(func.date(Order.created_at) == d)
+                .filter(
+                    func.date(Order.created_at) == d,
+                    Order.status == 'COMPLETED'
+                )
             if br != 'ALL':
                 fc_q = fc_q.filter(Order.branch == br)
-            rev = fc_q.scalar()
-            last_14_days_rev.append(float(rev))
-        avg_daily_rev = sum(last_14_days_rev) / 14 if last_14_days_rev else 0
+            daily_rev.append(float(fc_q.scalar() or 0))
+
+        n = len(daily_rev)  # 30
+        x_mean = (n - 1) / 2.0
+        y_mean = sum(daily_rev) / n if n else 0
+        numerator   = sum((i - x_mean) * (daily_rev[i] - y_mean) for i in range(n))
+        denominator = sum((i - x_mean) ** 2 for i in range(n))
+        slope     = numerator / denominator if denominator != 0 else 0
+        intercept = y_mean - slope * x_mean
+
+        last_7 = daily_rev[-7:] if len(daily_rev) >= 7 else daily_rev
+        sma_7   = sum(last_7) / len(last_7) if last_7 else 0
+        avg_dev = sum(abs(v - sma_7) for v in last_7) / len(last_7) if last_7 else 0
+
         forecast_labels = []
-        forecast_data = []
+        forecast_data   = []
         for i in range(1, 8):
-            future_date = today + timedelta(days=i)
+            future_date  = today + timedelta(days=i)
+            trend_val    = intercept + slope * (n - 1 + i)
+            day_offset   = avg_dev * 0.3 * ((-1) ** i)
+            projected    = max(0, round(trend_val + day_offset, 2))
             forecast_labels.append(future_date.strftime('%b %d'))
-            forecast_data.append(round(avg_daily_rev, 2))
+            forecast_data.append(projected)
+
+        # 10) Booking Type Distribution
+        bookings_dist_labels = ['Standard Bookings', 'Exclusive Bookings']
+        bookings_dist_data = [regular_count, exclusive_count]
+
+        # 11) Dining Options (Order Types)
+        dining_q = db.session.query(Order.dining_option, func.count(Order.id))
+        if br != 'ALL':
+            dining_q = dining_q.filter(Order.branch == br)
+        if start_date and end_date:
+            dining_q = dining_q.filter(Order.created_at >= start_dt, Order.created_at <= end_dt)
+        dining_rows = dining_q.group_by(Order.dining_option).all()
+        dining_labels = [r[0].replace('_', ' ').title() for r in dining_rows] if dining_rows else ['No Data']
+        dining_data = [r[1] for r in dining_rows] if dining_rows else [0]
+
+        # 12) Payment Methods
+        pay_q = db.session.query(Order.payment_method, func.count(Order.id))
+        if br != 'ALL':
+            pay_q = pay_q.filter(Order.branch == br)
+        if start_date and end_date:
+            pay_q = pay_q.filter(Order.created_at >= start_dt, Order.created_at <= end_dt)
+        pay_rows = pay_q.group_by(Order.payment_method).all()
+        pay_labels = [r[0].title() for r in pay_rows] if pay_rows else ['No Data']
+        pay_data = [r[1] for r in pay_rows] if pay_rows else [0]
+
+        # 13) Top Categories
+        cat_q_main = db.session.query(MenuItem.category, func.sum(OrderItem.quantity))\
+            .join(OrderItem, MenuItem.id == OrderItem.menu_item_id)\
+            .join(Order, Order.id == OrderItem.order_id)\
+            .filter(Order.status == 'COMPLETED')
+        if br != 'ALL':
+            cat_q_main = cat_q_main.filter(Order.branch == br)
+        if start_date and end_date:
+            cat_q_main = cat_q_main.filter(Order.created_at >= start_dt, Order.created_at <= end_dt)
+        cat_rows_main = cat_q_main.group_by(MenuItem.category).order_by(func.sum(OrderItem.quantity).desc()).limit(5).all()
+        top_categories_labels = [r[0].title() for r in cat_rows_main] if cat_rows_main else ['No Data']
+        top_categories_data = [float(r[1]) for r in cat_rows_main] if cat_rows_main else [0]
+
+        if date_filter == 'ALL':
+            curr_30_start_dt = datetime.combine(today - timedelta(days=29), datetime.min.time())
+            curr_30_end_dt = datetime.combine(today, datetime.max.time())
+            prev_30_start_dt = datetime.combine(today - timedelta(days=59), datetime.min.time())
+            prev_30_end_dt = datetime.combine(today - timedelta(days=30), datetime.max.time())
+            
+            def get_30_day_stats(br, start, end):
+                rev_q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0))
+                if br != 'ALL':
+                    rev_q = rev_q.filter(Order.branch == br)
+                rev_q = rev_q.filter(Order.created_at >= start, Order.created_at <= end)
+                rev = float(rev_q.scalar())
+                
+                cogs_q = db.session.query(
+                    func.sum(OrderItem.quantity * MenuItemIngredient.quantity_needed * Ingredient.cost_per_unit)
+                ).select_from(OrderItem)\
+                 .join(Order, Order.id == OrderItem.order_id)\
+                 .join(MenuItem, MenuItem.id == OrderItem.menu_item_id)\
+                 .join(MenuItemIngredient, MenuItemIngredient.menu_item_id == MenuItem.id)\
+                 .join(Ingredient, Ingredient.id == MenuItemIngredient.ingredient_id)\
+                 .filter(Order.status == 'COMPLETED')
+                if br != 'ALL':
+                    cogs_q = cogs_q.filter(Order.branch == br)
+                cogs_q = cogs_q.filter(Order.created_at >= start, Order.created_at <= end)
+                cogs = float(cogs_q.scalar() or 0.0)
+                
+                profit = rev - cogs
+                return {'revenue': rev, 'cogs': cogs, 'profit': profit}
+                
+            curr_30 = get_30_day_stats(br, curr_30_start_dt, curr_30_end_dt)
+            prev_30 = get_30_day_stats(br, prev_30_start_dt, prev_30_end_dt)
+            
+            trends = {}
+            for key in ['revenue', 'cogs', 'profit']:
+                cur_val = curr_30[key]
+                prev_val = prev_30[key]
+                if prev_val > 0:
+                    pct = ((cur_val - prev_val) / prev_val) * 100
+                elif cur_val > 0:
+                    pct = 100.0
+                else:
+                    pct = 0.0
+                trends[key] = round(pct, 2)
+            has_prev = True
+        else:
+            prev_stats = get_prev_period_stats(br)
+            trends = {}
+            if prev_stats:
+                for key, cur_val in [('revenue', total_revenue_val), ('cogs', total_cogs), ('profit', net_profit)]:
+                    prev_val = prev_stats[key]
+                    if prev_val > 0:
+                        pct = ((cur_val - prev_val) / prev_val) * 100
+                    elif cur_val > 0:
+                        pct = 100.0
+                    else:
+                        pct = 0.0
+                    trends[key] = round(pct, 2)
+                has_prev = True
+            else:
+                trends = {'revenue': 0.0, 'cogs': 0.0, 'profit': 0.0}
+                has_prev = False
+
+        # Precompute multi-timeframe data for interactive charts
+        multi_timeframe_charts = {
+            'bookings_dist': {},
+            'dining_options': {},
+            'payment_methods': {},
+            'revenue_trend': {},
+            'top_categories': {}
+        }
+        
+        tf_bounds = {
+            'TODAY': (datetime.combine(today, datetime.min.time()), datetime.combine(today, datetime.max.time())),
+            'WEEK': (datetime.combine(today - timedelta(days=today.weekday()), datetime.min.time()), datetime.combine(today - timedelta(days=today.weekday()) + timedelta(days=6), datetime.max.time())),
+            'MONTH': (datetime.combine(today.replace(day=1), datetime.min.time()), datetime.combine(today, datetime.max.time())),
+            'ALL': (None, None)
+        }
+        
+        for tf_key, (st_dt, en_dt) in tf_bounds.items():
+            reg_q = db.session.query(func.count(Reservation.id)).filter(Reservation.booking_type == 'REGULAR', Reservation.status != 'REJECTED')
+            exc_q = db.session.query(func.count(Reservation.id)).filter(Reservation.booking_type == 'EXCLUSIVE', Reservation.status != 'REJECTED')
+            din_q = db.session.query(Order.dining_option, func.count(Order.id))
+            pay_q = db.session.query(Order.payment_method, func.count(Order.id))
+            cat_q = db.session.query(MenuItem.category, func.sum(OrderItem.quantity)).join(OrderItem, MenuItem.id == OrderItem.menu_item_id).join(Order, Order.id == OrderItem.order_id).filter(Order.status == 'COMPLETED')
+            
+            if br != 'ALL':
+                reg_q = reg_q.filter(Reservation.branch == br)
+                exc_q = exc_q.filter(Reservation.branch == br)
+                din_q = din_q.filter(Order.branch == br)
+                pay_q = pay_q.filter(Order.branch == br)
+                cat_q = cat_q.filter(Order.branch == br)
+                
+            if st_dt and en_dt:
+                reg_q = reg_q.filter(Reservation.date >= st_dt.date(), Reservation.date <= en_dt.date())
+                exc_q = exc_q.filter(Reservation.date >= st_dt.date(), Reservation.date <= en_dt.date())
+                din_q = din_q.filter(Order.created_at >= st_dt, Order.created_at <= en_dt)
+                pay_q = pay_q.filter(Order.created_at >= st_dt, Order.created_at <= en_dt)
+                cat_q = cat_q.filter(Order.created_at >= st_dt, Order.created_at <= en_dt)
+                
+            multi_timeframe_charts['bookings_dist'][tf_key] = {
+                'labels': ['Standard Bookings', 'Exclusive Bookings'],
+                'data': [reg_q.scalar() or 0, exc_q.scalar() or 0]
+            }
+            
+            din_rows = din_q.group_by(Order.dining_option).all()
+            multi_timeframe_charts['dining_options'][tf_key] = {
+                'labels': [r[0].replace('_', ' ').title() for r in din_rows] if din_rows else ['No Data'],
+                'data': [r[1] for r in din_rows] if din_rows else [0]
+            }
+            
+            pay_rows = pay_q.group_by(Order.payment_method).all()
+            multi_timeframe_charts['payment_methods'][tf_key] = {
+                'labels': [r[0].title() for r in pay_rows] if pay_rows else ['No Data'],
+                'data': [r[1] for r in pay_rows] if pay_rows else [0]
+            }
+            
+            cat_rows = cat_q.group_by(MenuItem.category).order_by(func.sum(OrderItem.quantity).desc()).limit(5).all()
+            multi_timeframe_charts['top_categories'][tf_key] = {
+                'labels': [r[0].title() for r in cat_rows] if cat_rows else ['No Data'],
+                'data': [float(r[1]) for r in cat_rows] if cat_rows else [0]
+            }
+            
+            tf_rev_labels = []
+            tf_rev_data = []
+            if tf_key == 'TODAY':
+                tf_rev_labels = [f'{h:02d}:00' for h in range(9, 23)]
+                for h in range(9, 23):
+                    q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0)).filter(func.date(Order.created_at) == today, func.extract('hour', Order.created_at) == h)
+                    if br != 'ALL': q = q.filter(Order.branch == br)
+                    tf_rev_data.append(float(q.scalar() or 0))
+            elif tf_key == 'WEEK':
+                ws = today - timedelta(days=today.weekday())
+                for i in range(7):
+                    d = ws + timedelta(days=i)
+                    tf_rev_labels.append(d.strftime('%a (%b %d)'))
+                    q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0)).filter(func.date(Order.created_at) == d)
+                    if br != 'ALL': q = q.filter(Order.branch == br)
+                    tf_rev_data.append(float(q.scalar() or 0))
+            elif tf_key == 'MONTH':
+                ms = today.replace(day=1)
+                nm = ms.month + 1
+                yr = ms.year
+                if nm > 12:
+                    nm = 1
+                    yr += 1
+                dim = (date(yr, nm, 1) - ms).days
+                for i in range(dim):
+                    d = ms + timedelta(days=i)
+                    tf_rev_labels.append(d.strftime('%d'))
+                    q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0)).filter(func.date(Order.created_at) == d)
+                    if br != 'ALL': q = q.filter(Order.branch == br)
+                    tf_rev_data.append(float(q.scalar() or 0))
+            elif tf_key == 'ALL':
+                for i in range(6, -1, -1):
+                    d = today - timedelta(days=i)
+                    tf_rev_labels.append(d.strftime('%b %d'))
+                    q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0)).filter(func.date(Order.created_at) == d)
+                    if br != 'ALL': q = q.filter(Order.branch == br)
+                    tf_rev_data.append(float(q.scalar() or 0))
+                    
+            multi_timeframe_charts['revenue_trend'][tf_key] = {
+                'labels': tf_rev_labels,
+                'data': tf_rev_data
+            }
 
         return {
             'stats': {
@@ -1187,6 +1616,8 @@ def analytics():
                 'total_revenue': total_revenue_val,
                 'total_cogs': total_cogs,
                 'net_profit': net_profit,
+                'trends': trends,
+                'has_prev_period': has_prev
             },
             'charts': {
                 'forecast': {'labels': forecast_labels, 'data': forecast_data},
@@ -1197,7 +1628,12 @@ def analytics():
                 'top_dishes': {'labels': top_dishes_labels, 'data': top_dishes_data},
                 'monthly_rev': {'labels': monthly_rev_labels, 'data': monthly_rev_data},
                 'loyalty': {'labels': loyalty_labels, 'data': loyalty_data},
-            }
+                'bookings_dist': {'labels': bookings_dist_labels, 'data': bookings_dist_data},
+                'dining_options': {'labels': dining_labels, 'data': dining_data},
+                'payment_methods': {'labels': pay_labels, 'data': pay_data},
+                'top_categories': {'labels': top_categories_labels, 'data': top_categories_data},
+            },
+            'multi_timeframe_charts': multi_timeframe_charts
         }
 
     user_role = current_user.role.upper()
@@ -1242,14 +1678,90 @@ def analytics():
         monthly_rev_data=_json.dumps(current_data['charts']['monthly_rev']['data']),
         loyalty_labels=_json.dumps(current_data['charts']['loyalty']['labels']),
         loyalty_data=_json.dumps(current_data['charts']['loyalty']['data']),
+        bookings_dist_labels=_json.dumps(current_data['charts']['bookings_dist']['labels']),
+        bookings_dist_data=_json.dumps(current_data['charts']['bookings_dist']['data']),
+        dining_options_labels=_json.dumps(current_data['charts']['dining_options']['labels']),
+        dining_options_data=_json.dumps(current_data['charts']['dining_options']['data']),
+        payment_methods_labels=_json.dumps(current_data['charts']['payment_methods']['labels']),
+        payment_methods_data=_json.dumps(current_data['charts']['payment_methods']['data']),
+        top_categories_labels=_json.dumps(current_data['charts']['top_categories']['labels']),
+        top_categories_data=_json.dumps(current_data['charts']['top_categories']['data']),
         get_ph_time=get_ph_time,
         selected_branch=selected_branch,
-        all_branches_data_json=_json.dumps(branches_data)
+        all_branches_data_json=_json.dumps(branches_data),
+        selected_date_filter=date_filter
     )
+
+@admin_bp.route('/analytics/export')
+@login_required
+@admin_required
+def analytics_export():
+    if current_user.role.upper() not in ('ADMIN', 'SUPER_ADMIN'):
+        return "Access Denied", 403
+
+    import csv
+    from io import StringIO
+    from flask import make_response
+
+    branch = request.args.get('branch', 'ALL')
+    date_filter = request.args.get('date_filter', 'ALL').upper()
+
+    today = get_ph_time().date()
+    start_date = None
+    end_date = None
+    start_dt = None
+    end_dt = None
+
+    if date_filter == 'TODAY':
+        start_date = today
+        end_date = today
+    elif date_filter == 'WEEK':
+        start_date = today - timedelta(days=today.weekday())
+        end_date = start_date + timedelta(days=6)
+    elif date_filter == 'MONTH':
+        start_date = today.replace(day=1)
+        next_month = today.month + 1
+        year = today.year
+        if next_month > 12:
+            next_month = 1
+            year += 1
+        end_date = date(year, next_month, 1) - timedelta(days=1)
+
+    if start_date and end_date:
+        start_dt = datetime.combine(start_date, datetime.min.time())
+        end_dt = datetime.combine(end_date, datetime.max.time())
+
+    orders_q = Order.query
+    if branch != 'ALL':
+        orders_q = orders_q.filter(Order.branch == branch)
+    if start_date and end_date:
+        orders_q = orders_q.filter(Order.created_at >= start_dt, Order.created_at <= end_dt)
+    
+    orders = orders_q.order_by(Order.created_at.desc()).all()
+
+    si = StringIO()
+    cw = csv.writer(si)
+    cw.writerow(['Order ID', 'Order Code', 'Branch', 'Customer Name', 'Date', 'Dining Option', 'Payment Method', 'Status', 'Total Amount'])
+    for o in orders:
+        cw.writerow([
+            o.id,
+            o.order_code or 'N/A',
+            o.branch or 'N/A',
+            o.customer_name or 'N/A',
+            o.created_at.strftime('%Y-%m-%d %H:%M:%S') if o.created_at else 'N/A',
+            o.dining_option or 'N/A',
+            o.payment_method or 'N/A',
+            o.status or 'N/A',
+            float(o.total_amount)
+        ])
+
+    output = make_response(si.getvalue())
+    output.headers["Content-Disposition"] = f"attachment; filename=Le_Maison_Analytics_Report_{branch}_{date_filter}.csv"
+    output.headers["Content-type"] = "text/csv"
+    return output
 
 MENU_CATEGORIES = [
     "All Day Breakfast",
-    "Best Sellers",
     "Cakes & Pastries",
     "Cocktails",
     "Desserts",
@@ -1312,6 +1824,7 @@ def menu_item_json(item_id):
         'category': item.category,
         'image_url': item.image_url or '',
         'is_available': bool(item.is_available),
+        'is_bestseller': bool(item.is_bestseller),
     })
 
 @admin_bp.route('/menu/items', methods=['GET'])
@@ -1340,6 +1853,7 @@ def menu_items_json():
                 MenuItem.category,
                 MenuItem.image_url,
                 MenuItem.is_available,
+                MenuItem.is_bestseller,
             )
         )
         .filter(MenuItem.category == category, MenuItem.is_deleted == False)
@@ -1367,6 +1881,7 @@ def menu_items_json():
             'category': i.category,
             'image_url': i.image_url or '',
             'is_available': bool(i.is_available),
+            'is_bestseller': bool(i.is_bestseller),
         } for i in items],
     })
 
@@ -1378,6 +1893,7 @@ def menu_add():
     description = request.form.get('description', '')[:255]
     image_url = (request.form.get('image_url') or '')[:255]
     category = request.form.get('category', '')
+    is_bestseller = 'is_bestseller' in request.form
 
     try:
         price = float(request.form.get('price', 0))
@@ -1402,7 +1918,8 @@ def menu_add():
             price=price,
             category=category,
             image_url=image_url,
-            is_available=False  # Automatically false until ingredients are assigned
+            is_available=False,  # Automatically false until ingredients are assigned
+            is_bestseller=is_bestseller
         )
         db.session.add(item)
         db.session.commit()
@@ -1424,6 +1941,7 @@ def menu_edit(item_id):
     description = request.form.get('description', '')[:255]
     image_url = (request.form.get('image_url') or '')[:255]
     category = request.form.get('category', '')
+    is_bestseller = 'is_bestseller' in request.form
 
     try:
         price = float(request.form.get('price', 0))
@@ -1442,6 +1960,7 @@ def menu_edit(item_id):
         item.price = price
         item.category = category
         item.image_url = image_url
+        item.is_bestseller = is_bestseller
         # is_available is handled automatically by recipe sync logic now
         db.session.commit()
         log_audit('UPDATE', 'MenuItem', item.id, f'Updated menu item: {item.name}')
@@ -1485,6 +2004,9 @@ def menu_restore(item_id):
     item.is_deleted = False
     db.session.commit()
     log_audit('RESTORE', 'MenuItem', item_id, f'Restored menu item: {item.name}')
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    if is_ajax:
+        return jsonify({'success': True, 'message': f"Restored '{item.name}' successfully."})
     flash(f"Restored '{item.name}' successfully.", "success")
     return redirect(url_for('admin.menu_trash'))
 
@@ -1496,8 +2018,37 @@ def approvals():
     if current_user.role.upper() not in ['ADMIN', 'SUPER_ADMIN']:
         flash("Access denied.", "danger")
         return redirect(url_for('admin.overview'))
-    pending = User.query.filter_by(status='PENDING', role='USER', is_verified=True).limit(300).all()
+
+    user_branch = getattr(current_user, 'branch', None)
+    if current_user.role.upper() == 'ADMIN':
+        if user_branch and user_branch != 'ALL':
+            pending = User.query.filter_by(status='PENDING', role='USER', is_verified=True)\
+                                .filter(User.branch == user_branch)\
+                                .limit(300).all()
+        else:
+            pending = User.query.filter_by(status='PENDING', role='USER', is_verified=True).limit(300).all()
+    else:
+        pending = User.query.filter_by(status='PENDING', role='USER', is_verified=True).limit(300).all()
+
     return render_template('admin/approvals.html', pending=pending)
+
+@admin_bp.route('/staff-approvals')
+@login_required
+@admin_required
+def staff_approvals():
+    if current_user.role.upper() not in ['ADMIN', 'SUPER_ADMIN']:
+        flash("Access denied.", "danger")
+        return redirect(url_for('admin.overview'))
+
+    user_branch = getattr(current_user, 'branch', None)
+    query = User.query.filter_by(status='PENDING', is_verified=True).filter(User.role != 'USER')
+    
+    if current_user.role.upper() == 'ADMIN':
+        if user_branch and user_branch != 'ALL':
+            query = query.filter(User.branch == user_branch)
+            
+    pending = query.limit(300).all()
+    return render_template('admin/staff_approvals.html', pending=pending)
 
 @admin_bp.route('/approve/<int:user_id>', methods=['POST'])
 @login_required
@@ -1505,6 +2056,16 @@ def approvals():
 def approve_user(user_id):
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     user = User.query.get_or_404(user_id)
+
+    # Branch admin validation
+    if current_user.role.upper() == 'ADMIN':
+        user_branch = getattr(current_user, 'branch', None)
+        if user_branch and user_branch != 'ALL' and user.branch != user_branch:
+            msg = "You are not authorized to approve accounts from other branches."
+            if is_ajax: return jsonify({'success': False, 'message': msg})
+            flash(msg, "danger")
+            return redirect(url_for('admin.approvals'))
+
     user.status = 'ACTIVE'
     db.session.commit()
     
@@ -1567,7 +2128,7 @@ def approve_user(user_id):
     if is_ajax:
         return jsonify({'success': True, 'message': f'User {user.username} approved successfully.', 'user_id': user_id})
     flash(f"User {user.username} approved.", "success")
-    return redirect(url_for('admin.approvals'))
+    return redirect(url_for('admin.staff_approvals'))
 
 @admin_bp.route('/reject/<int:user_id>', methods=['POST'])
 @login_required
@@ -1575,6 +2136,16 @@ def approve_user(user_id):
 def reject_user(user_id):
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     user = User.query.get_or_404(user_id)
+
+    # Branch admin validation
+    if current_user.role.upper() == 'ADMIN':
+        user_branch = getattr(current_user, 'branch', None)
+        if user_branch and user_branch != 'ALL' and user.branch != user_branch:
+            msg = "You are not authorized to reject accounts from other branches."
+            if is_ajax: return jsonify({'success': False, 'message': msg})
+            flash(msg, "danger")
+            return redirect(url_for('admin.staff_approvals'))
+
     user.status = 'REJECTED'
     db.session.commit()
     _create_web_notification(user.id, 'Account Update', 'Your account registration was not approved. Please contact us for more information.', 'SYSTEM')
@@ -1583,7 +2154,90 @@ def reject_user(user_id):
     if is_ajax:
         return jsonify({'success': True, 'message': f'User {user.username} rejected.', 'user_id': user_id})
     flash(f"User {user.username} rejected.", "warning")
-    return redirect(url_for('admin.approvals'))
+    return redirect(url_for('admin.staff_approvals'))
+
+# ─── MANAGEMENT: STAFF MANAGEMENT ────────────────────
+@admin_bp.route('/staff')
+@login_required
+@admin_required
+def staff_management():
+    page = request.args.get('page', 1, type=int)
+    role_filter = request.args.get('role', 'ALL')
+    
+    # Show active staff only
+    query = User.query.filter(User.role != 'USER', User.status == 'ACTIVE')
+    user_branch = getattr(current_user, 'branch', None)
+    if user_branch and user_branch != 'ALL':
+        query = query.filter(User.branch == user_branch)
+        
+    if role_filter != 'ALL':
+        query = query.filter(User.role == role_filter)
+        
+    pagination = query.order_by(User.id.desc()).paginate(page=page, per_page=100, error_out=False)
+    return render_template('admin/staff.html', users=pagination, role_filter=role_filter)
+
+@admin_bp.route('/staff/<int:user_id>/update-role', methods=['POST'])
+@login_required
+@admin_required
+def update_staff_role(user_id):
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    user = User.query.get_or_404(user_id)
+    
+    if user.role == 'USER':
+        msg = "Cannot change role for regular customers."
+        if is_ajax: return jsonify({'success': False, 'message': msg})
+        flash(msg, 'danger')
+        return redirect(url_for('admin.staff_management'))
+
+    new_role = request.form.get('role')
+    valid_roles = ['ADMIN', 'SUPER_ADMIN', 'CASHIER', 'INVENTORY_STAFF', 'KITCHEN', 'RIDER']
+    if not new_role or new_role not in valid_roles:
+        msg = "Invalid role selected."
+        if is_ajax: return jsonify({'success': False, 'message': msg})
+        flash(msg, 'danger')
+        return redirect(url_for('admin.staff_management'))
+        
+    old_role = user.role
+    user.role = new_role
+    db.session.commit()
+    
+    log_audit('UPDATE', 'User', user.id, f"Changed role of {user.username} from {old_role} to {new_role}")
+    
+    msg = f"Role updated for {user.username} to {new_role}."
+    if is_ajax: return jsonify({'success': True, 'message': msg, 'new_role': new_role})
+    flash(msg, "success")
+    return redirect(url_for('admin.staff_management'))
+
+@admin_bp.route('/staff/<int:user_id>/update-branch', methods=['POST'])
+@login_required
+@admin_required
+def update_staff_branch(user_id):
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    user = User.query.get_or_404(user_id)
+    
+    if user.role == 'USER':
+        msg = "Cannot change branch for regular customers."
+        if is_ajax: return jsonify({'success': False, 'message': msg})
+        flash(msg, 'danger')
+        return redirect(url_for('admin.staff_management'))
+
+    new_branch = request.form.get('branch')
+    if not new_branch or new_branch not in ['Pagsanjan', 'Lucban']:
+        msg = "Invalid branch selected."
+        if is_ajax: return jsonify({'success': False, 'message': msg})
+        flash(msg, 'danger')
+        return redirect(url_for('admin.staff_management'))
+        
+    old_branch = user.branch
+    user.branch = new_branch
+    db.session.commit()
+    
+    log_audit('UPDATE', 'User', user.id, f"Changed branch of {user.username} from {old_branch} to {new_branch}")
+    
+    msg = f"Branch updated for {user.username} to {new_branch}."
+    if is_ajax: return jsonify({'success': True, 'message': msg, 'new_branch': new_branch})
+    flash(msg, "success")
+    return redirect(url_for('admin.staff_management'))
 
 # ─── MANAGEMENT: USER MANAGEMENT ────────────────────
 @admin_bp.route('/users')
@@ -1945,9 +2599,10 @@ def walkin_order_submit():
 
         # Check if table is already occupied
         if dining_option == 'DINE_IN' and table_number:
-            occupied_order = Order.query.filter_by(
-                table_number=int(table_number),
-                table_status='OCCUPIED'
+            occupied_order = Order.query.filter(
+                Order.table_number == int(table_number),
+                Order.table_status == 'OCCUPIED',
+                Order.is_archived.is_(False)
             ).first()
             if occupied_order:
                 flash(f"Table {table_number} is already occupied. Please select another table.", "danger")
@@ -2072,21 +2727,50 @@ def walkin_order_submit():
 @login_required
 @admin_required
 def get_table_status():
-    """Get status of all tables (1-17)"""
+    """Get status of all tables matching table management state."""
     try:
-        # Get all occupied tables
+        from models import Reservation
+        import datetime as py_datetime
+        import re
+        from routes.portals import TABLE_CONFIGS
+
+        # Get active occupied tables (any non-archived occupied order)
         occupied_tables = db.session.query(Order.table_number).filter(
             Order.table_status == 'OCCUPIED',
-            Order.table_number.isnot(None)
+            Order.table_number.isnot(None),
+            Order.is_archived.is_(False)
         ).all()
-        
-        occupied_list = [t[0] for t in occupied_tables]
-        
-        # Create status for all 17 tables
+        occupied_set = {int(t[0]) for t in occupied_tables if t[0] is not None}
+
+        # Check today's active reservations
+        current_dt = get_ph_time()
+        today_reservations = Reservation.query.filter(
+            Reservation.date == current_dt.date(),
+            Reservation.status == 'CONFIRMED'
+        ).all()
+
+        reserved_set = set()
+        for res in today_reservations:
+            if not res.table_number:
+                continue
+            start_dt = py_datetime.datetime.combine(res.date, res.time)
+            end_dt = start_dt + py_datetime.timedelta(hours=res.duration or 2)
+            if start_dt <= current_dt <= end_dt:
+                if "exclusive" in res.booking_type.lower() or "exclusive" in (res.table_number or '').lower():
+                    reserved_set.update(TABLE_CONFIGS.keys())
+                else:
+                    nums = [int(n) for n in re.findall(r'\d+', res.table_number)]
+                    reserved_set.update(nums)
+
         table_status = {}
-        for i in range(1, 18):
-            table_status[i] = 'OCCUPIED' if i in occupied_list else 'AVAILABLE'
-        
+        for i in sorted(TABLE_CONFIGS.keys()):
+            if i in occupied_set:
+                table_status[i] = 'OCCUPIED'
+            elif i in reserved_set:
+                table_status[i] = 'RESERVED'
+            else:
+                table_status[i] = 'AVAILABLE'
+
         return jsonify({'success': True, 'tables': table_status})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -2544,7 +3228,7 @@ def update_order_table_number(order_id):
                 Order.id != order_id,
                 Order.table_number == new_table_number,
                 Order.table_status == 'OCCUPIED',
-                Order.status.in_(['PENDING', 'PREPARING', 'READY', 'COMPLETED'])
+                Order.is_archived.is_(False)
             ).first()
             
             if occupied_order:
@@ -2592,7 +3276,7 @@ def get_available_tables(order_id):
             Order.id != order_id,
             Order.table_status == 'OCCUPIED',
             Order.table_number.isnot(None),
-            Order.status.in_(['PENDING', 'PREPARING', 'READY', 'COMPLETED'])
+            Order.is_archived.is_(False)
         ).all()
         
         occupied_set = {t[0] for t in occupied_tables if t[0]}
@@ -2695,6 +3379,9 @@ def split_order(order_id):
 @login_required
 @admin_required
 def reviews():
+    if current_user.role.upper() != 'SUPER_ADMIN':
+        flash("Unauthorized access. Super Admin role required.", "danger")
+        return redirect(url_for('admin.overview'))
     limit = request.args.get('limit', 250, type=int)
     limit = max(1, min(limit, 500))
     
@@ -2702,7 +3389,8 @@ def reviews():
     user_branch = getattr(current_user, 'branch', None)
     if user_branch and user_branch != 'ALL':
         rev_q = rev_q.join(Order, Review.order_id == Order.id).filter(Order.branch == user_branch)
-    all_reviews = rev_q.order_by(Review.created_at.desc()).limit(limit).all()
+    all_reviews_for_stats = rev_q.order_by(Review.created_at.desc()).all()
+    all_reviews = all_reviews_for_stats[:limit]
         
     # AI Sentiment Analysis (Dynamic Calculation to avoid DB Migrations)
     positive_words = ['good', 'great', 'excellent', 'amazing', 'best', 'delicious', 'love', 'perfect', 'nice', 'awesome', 'sarap', 'mabilis', 'ayos', 'sulit', 'outstanding', 'fantastic', 'superb', 'yummy', 'tasty']
@@ -2712,7 +3400,6 @@ def reviews():
     if len(_REVIEW_SENTIMENT_CACHE) > 2500:
         _REVIEW_SENTIMENT_CACHE.clear()
 
-    # Speed optimization: compute sentiment for missing reviews in background thread.
     now_mono = time.monotonic()
 
     def _compute_sentiment(text: str, rating: int):
@@ -2731,12 +3418,8 @@ def reviews():
         if rating <= 2: return ("NEGATIVE", "😠", "danger")
         return ("NEUTRAL", "😐", "secondary")
 
-    import threading as _threading
-    if not hasattr(reviews, "_sentiment_lock"):
-        reviews._sentiment_lock = _threading.Lock()
-
-    jobs = []
-    for review in all_reviews:
+    # Pre-calculate sentiment synchronously for all loaded reviews for stats grouping
+    for review in all_reviews_for_stats:
         comment_text = str(review.comment or '')
         if not comment_text.strip():
             review.ai_sentiment = "NEUTRAL"
@@ -2753,53 +3436,115 @@ def reviews():
             review.ai_sentiment_icon = icon
             review.ai_sentiment_color = color
         else:
-            review.ai_sentiment = "NEUTRAL"
-            review.ai_sentiment_icon = "😐"
-            review.ai_sentiment_color = "secondary"
-            jobs.append((cache_key, comment_text, review.rating))
+            sentiment, icon, color = _compute_sentiment(comment_text, review.rating)
+            review.ai_sentiment = sentiment
+            review.ai_sentiment_icon = icon
+            review.ai_sentiment_color = color
+            _REVIEW_SENTIMENT_CACHE[cache_key] = (now_mono, (sentiment, icon, color))
 
-    if jobs:
-        jobs_copy = list(jobs)
-        def _worker(jobs_local):
-            mono = time.monotonic()
-            try:
-                for cache_key, comment_text, rating in jobs_local:
-                    sentiment, icon, color = _compute_sentiment(comment_text, rating)
-                    with reviews._sentiment_lock:
-                        _REVIEW_SENTIMENT_CACHE[cache_key] = (mono, (sentiment, icon, color))
-            except Exception as e:
-                print(f"Sentiment background worker failed: {e}")
-        threading.Thread(target=_worker, args=(jobs_copy,), daemon=True).start()
-
-    # Calculate stats
-    total_reviews = len(all_reviews)
-    avg_rating = sum(r.rating for r in all_reviews) / total_reviews if total_reviews else 0.0
-    featured_count = sum(1 for r in all_reviews if r.is_featured_in_gallery and r.photo_url)
+    # Timeframe calculation
+    now_ph = get_ph_time()
+    today_date = now_ph.date()
     
-    # Rating distribution
-    rating_dist = {i: sum(1 for r in all_reviews if r.rating == i) for i in range(1, 6)}
+    from datetime import datetime, time as py_time, timedelta
+    today_start = datetime.combine(today_date, py_time.min)
+    weekly_start = today_start - timedelta(days=7)
+    monthly_start = today_start - timedelta(days=30)
     
-    # Sentiment distribution
-    sentiment_dist = {
-        'positive': sum(1 for r in all_reviews if getattr(r, 'ai_sentiment', 'NEUTRAL') == 'POSITIVE'),
-        'neutral': sum(1 for r in all_reviews if getattr(r, 'ai_sentiment', 'NEUTRAL') == 'NEUTRAL'),
-        'negative': sum(1 for r in all_reviews if getattr(r, 'ai_sentiment', 'NEUTRAL') == 'NEGATIVE')
+    def calc_stats(revs):
+        total = len(revs)
+        avg = sum(r.rating for r in revs) / total if total else 0.0
+        featured = sum(1 for r in revs if r.is_featured_in_gallery and r.photo_url)
+        pos_count = sum(1 for r in revs if getattr(r, 'ai_sentiment', 'NEUTRAL') == 'POSITIVE')
+        pos_pct = round(pos_count / total * 100) if total else 100
+        rating_dist = {i: sum(1 for r in revs if r.rating == i) for i in range(1, 6)}
+        return {
+            'total_reviews': total,
+            'avg_rating': round(avg, 1),
+            'featured_count': featured,
+            'pos_pct': pos_pct,
+            'rating_dist': rating_dist
+        }
+        
+    daily_revs = []
+    weekly_revs = []
+    monthly_revs = []
+    
+    for r in all_reviews_for_stats:
+        r_dt = r.created_at
+        if r_dt and hasattr(r_dt, 'tzinfo') and r_dt.tzinfo is not None:
+            r_dt = r_dt.replace(tzinfo=None)
+        if r_dt >= today_start:
+            daily_revs.append(r)
+        if r_dt >= weekly_start:
+            weekly_revs.append(r)
+        if r_dt >= monthly_start:
+            monthly_revs.append(r)
+            
+    timeframe_stats = {
+        'daily': calc_stats(daily_revs),
+        'weekly': calc_stats(weekly_revs),
+        'monthly': calc_stats(monthly_revs),
+        'all': calc_stats(all_reviews_for_stats)
     }
+
+    # Group reviews by month for the last 6 months (grouped bar chart data)
+    month_keys = []
+    current = now_ph
+    for _ in range(6):
+        month_keys.append((current.year, current.month))
+        # Move back one month
+        first_of_this_month = current.replace(day=1)
+        prev_month_end = first_of_this_month - timedelta(days=1)
+        current = prev_month_end
+        
+    month_keys.reverse() # Chronological order
+    
+    chart_months = []
+    chart_positive = []
+    chart_negative = []
+    
+    for y, m in month_keys:
+        month_name = datetime(y, m, 1).strftime('%B')
+        chart_months.append(month_name)
+        
+        pos_count = 0
+        neg_count = 0
+        for r in all_reviews_for_stats:
+            r_dt = r.created_at
+            if r_dt and hasattr(r_dt, 'tzinfo') and r_dt.tzinfo is not None:
+                r_dt = r_dt.replace(tzinfo=None)
+            if r_dt.year == y and r_dt.month == m:
+                if r.rating >= 4:
+                    pos_count += 1
+                elif r.rating <= 2:
+                    neg_count += 1
+        chart_positive.append(pos_count)
+        chart_negative.append(neg_count)
 
     return render_template(
         'admin/reviews.html', 
         reviews=all_reviews,
-        total_reviews=total_reviews,
-        avg_rating=round(avg_rating, 1),
-        featured_count=featured_count,
-        rating_dist=rating_dist,
-        sentiment_dist=sentiment_dist
+        timeframe_stats=timeframe_stats,
+        total_reviews=timeframe_stats['all']['total_reviews'],
+        avg_rating=timeframe_stats['all']['avg_rating'],
+        featured_count=timeframe_stats['all']['featured_count'],
+        pos_pct=timeframe_stats['all']['pos_pct'],
+        rating_dist=timeframe_stats['all']['rating_dist'],
+        chart_months=chart_months,
+        chart_positive=chart_positive,
+        chart_negative=chart_negative
     )
 
 @admin_bp.route('/reviews/update/<int:review_id>', methods=['POST'])
 @login_required
 @admin_required
 def update_review(review_id):
+    if current_user.role.upper() != 'SUPER_ADMIN':
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': False, 'message': 'Super Admin role required.'}), 403
+        flash("Unauthorized access. Super Admin role required.", "danger")
+        return redirect(url_for('admin.overview'))
     review = Review.query.get_or_404(review_id)
     new_status = request.form.get('status')
     
@@ -2828,6 +3573,8 @@ def update_review(review_id):
 @login_required
 @admin_required
 def edit_review_photo(review_id):
+    if current_user.role.upper() != 'SUPER_ADMIN':
+        return jsonify({'success': False, 'message': 'Super Admin role required.'}), 403
     """Replace/upload a new photo for a review (e.g. for homepage gallery)"""
     review = Review.query.get_or_404(review_id)
     
@@ -2853,10 +3600,10 @@ def edit_review_photo(review_id):
             upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'reviews')
             os.makedirs(upload_folder, exist_ok=True)
             
-            # Use review.id to keep it unique
+            from utils import save_optimized_image
             filename = secure_filename(f"review_{review.id}_edited_{int(get_ph_time().timestamp())}.{ext}")
             filepath = os.path.join(upload_folder, filename)
-            file.save(filepath)
+            save_optimized_image(file, filepath, max_dim=(1000, 1000), quality=80)
             
             # Delete old file if it exists and was uploaded locally
             old_photo_url = review.photo_url
@@ -2889,6 +3636,8 @@ def edit_review_photo(review_id):
 @login_required
 @admin_required
 def toggle_review_gallery(review_id):
+    if current_user.role.upper() != 'SUPER_ADMIN':
+        return jsonify({'success': False, 'message': 'Super Admin role required.'}), 403
     """Toggle whether a review photo is featured in homepage gallery"""
     review = Review.query.get_or_404(review_id)
     
@@ -2905,6 +3654,167 @@ def toggle_review_gallery(review_id):
         'message': f'Photo {status} gallery',
         'is_featured': review.is_featured_in_gallery
     })
+
+
+# ─── SYSTEM: BRANCH MANAGEMENT ────────────────────────────────────
+@admin_bp.route('/branches', methods=['GET'])
+@login_required
+def branches():
+    if current_user.role.upper() != 'SUPER_ADMIN':
+        flash("Access denied. Super Admin only.", "danger")
+        return redirect(url_for('admin.overview'))
+    from models import Branch, User, Order
+
+    # Auto-seed hardcoded branches if missing
+    _default_branches = [
+        {
+            'name': 'Pagsanjan',
+            'address': 'Yelo Lane, General Taino Street',
+            'city': 'Pagsanjan',
+            'province': 'Laguna',
+            'phone': '09988863566',
+            'email': 'lemaisonyelolane9@gmail.com',
+            'is_main': True,
+            'is_active': True,
+        },
+        {
+            'name': 'Lucban',
+            'address': 'Fidel Rada St, Lucban',
+            'city': 'Lucban',
+            'province': 'Quezon',
+            'phone': '09988863566',
+            'email': '',
+            'is_main': False,
+            'is_active': True,
+        },
+        {
+            'name': 'Lucena',
+            'address': 'Lucena City',
+            'city': 'Lucena City',
+            'province': 'Quezon',
+            'phone': '',
+            'email': '',
+            'is_main': False,
+            'is_active': False,   # Coming Soon — inactive
+        },
+    ]
+    # Always check each branch individually — add if missing
+    seeded = False
+    for b in _default_branches:
+        if not Branch.query.filter_by(name=b['name']).first():
+            db.session.add(Branch(**b))
+            seeded = True
+    if seeded:
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+    all_branches = Branch.query.order_by(Branch.is_main.desc(), Branch.created_at.asc()).all()
+
+    # Build stats per branch
+    branch_stats = {}
+    for br in all_branches:
+        staff_count = User.query.filter(
+            User.branch == br.name,
+            User.role.in_(['ADMIN', 'CASHIER', 'STAFF', 'KITCHEN', 'INVENTORY_STAFF', 'INVENTORY', 'RIDER'])
+        ).count()
+        total_orders = Order.query.filter_by(branch=br.name).count()
+        pending_orders = Order.query.filter_by(branch=br.name, status='PENDING').count()
+        branch_stats[br.id] = {
+            'staff': staff_count,
+            'orders': total_orders,
+            'pending': pending_orders,
+        }
+
+    return render_template('admin/branches.html', branches=all_branches, branch_stats=branch_stats)
+
+@admin_bp.route('/branches/add', methods=['POST'])
+@login_required
+def branch_add():
+    if current_user.role.upper() != 'SUPER_ADMIN':
+        return jsonify({'success': False, 'message': 'Access denied.'}), 403
+    from models import Branch
+    name     = (request.form.get('name') or '').strip()
+    address  = (request.form.get('address') or '').strip()
+    city     = (request.form.get('city') or '').strip()
+    province = (request.form.get('province') or '').strip()
+    phone    = (request.form.get('phone') or '').strip()
+    email    = (request.form.get('email') or '').strip()
+    is_main  = request.form.get('is_main') == '1'
+
+    if not name:
+        flash("Branch name is required.", "danger")
+        return redirect(url_for('admin.branches'))
+
+    if Branch.query.filter_by(name=name).first():
+        flash(f"Branch '{name}' already exists.", "danger")
+        return redirect(url_for('admin.branches'))
+
+    # Only one main branch allowed
+    if is_main:
+        Branch.query.filter_by(is_main=True).update({'is_main': False})
+
+    branch = Branch(
+        name=name, address=address, city=city,
+        province=province, phone=phone, email=email,
+        is_main=is_main, is_active=True
+    )
+    db.session.add(branch)
+    db.session.commit()
+    flash(f"Branch '{name}' added successfully.", "success")
+    return redirect(url_for('admin.branches', msg='added', branch_name=name))
+
+
+@admin_bp.route('/branches/<int:branch_id>/edit', methods=['POST'])
+@login_required
+def branch_edit(branch_id):
+    if current_user.role.upper() != 'SUPER_ADMIN':
+        return jsonify({'success': False, 'message': 'Access denied.'}), 403
+    from models import Branch
+    branch = Branch.query.get_or_404(branch_id)
+    branch.name     = (request.form.get('name') or branch.name).strip()
+    branch.address  = (request.form.get('address') or '').strip()
+    branch.city     = (request.form.get('city') or '').strip()
+    branch.province = (request.form.get('province') or '').strip()
+    branch.phone    = (request.form.get('phone') or '').strip()
+    branch.email    = (request.form.get('email') or '').strip()
+    branch.is_active = request.form.get('is_active') == '1'
+    is_main = request.form.get('is_main') == '1'
+    if is_main and not branch.is_main:
+        Branch.query.filter_by(is_main=True).update({'is_main': False})
+        branch.is_main = True
+    elif not is_main:
+        branch.is_main = False
+    db.session.commit()
+    flash(f"Branch '{branch.name}' updated.", "success")
+    return redirect(url_for('admin.branches', msg='updated', branch_name=branch.name))
+
+
+@admin_bp.route('/branches/<int:branch_id>/delete', methods=['POST'])
+@login_required
+def branch_delete(branch_id):
+    if current_user.role.upper() != 'SUPER_ADMIN':
+        return jsonify({'success': False, 'message': 'Access denied.'}), 403
+    from models import Branch
+    branch = Branch.query.get_or_404(branch_id)
+    name = branch.name
+    db.session.delete(branch)
+    db.session.commit()
+    flash(f"Branch '{name}' deleted.", "success")
+    return redirect(url_for('admin.branches', msg='deleted', branch_name=name))
+
+
+@admin_bp.route('/branches/<int:branch_id>/toggle', methods=['POST'])
+@login_required
+def branch_toggle(branch_id):
+    if current_user.role.upper() != 'SUPER_ADMIN':
+        return jsonify({'success': False}), 403
+    from models import Branch
+    branch = Branch.query.get_or_404(branch_id)
+    branch.is_active = not branch.is_active
+    db.session.commit()
+    return jsonify({'success': True, 'is_active': branch.is_active})
 
 
 # ─── SYSTEM: SETTINGS ────────────────────────────────
@@ -2963,9 +3873,14 @@ def settings():
         site_settings['footer']['address_text'] = request.form.get('footer_address', site_settings['footer']['address_text'])
         site_settings['footer']['copyright_text'] = request.form.get('footer_copyright', site_settings['footer']['copyright_text'])
 
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
         if save_site_settings(site_settings):
+            if is_ajax:
+                return jsonify({'success': True, 'message': 'Homepage content updated successfully.'})
             flash("Homepage content updated successfully.", "success")
         else:
+            if is_ajax:
+                return jsonify({'success': False, 'message': 'Failed to save settings.'}), 500
             flash("Failed to save settings.", "danger")
         return redirect(url_for('admin.settings'))
 
@@ -3126,7 +4041,11 @@ def admin_unread_count():
         extras['pending_orders'] = Order.query.filter_by(status='PENDING').count()
         extras['preparing_orders'] = Order.query.filter_by(status='PREPARING').count()
     elif current_user.role and current_user.role.upper() == 'RIDER':
-        extras['waiting_deliveries'] = Order.query.filter_by(dining_option='DELIVERY', delivery_status='WAITING').count()
+        user_branch = getattr(current_user, 'branch', None)
+        q = Order.query.filter_by(dining_option='DELIVERY', delivery_status='WAITING')
+        if user_branch and user_branch != 'ALL':
+            q = q.filter_by(branch=user_branch)
+        extras['waiting_deliveries'] = q.count()
     
     return jsonify({'count': count, **extras})
 
@@ -3646,6 +4565,9 @@ def add_waste_record():
     db.session.add(record)
     log_inventory_change(ing_id, 'SPOILED', qty, prev_qty, f'Waste: {reason} - {notes}')
     db.session.commit()
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    if is_ajax:
+        return jsonify({'success': True, 'message': f'Waste record added. ₱{cost_lost:,.2f} lost. Stock deducted.'})
     flash(f'Waste record added. ₱{cost_lost:,.2f} lost. Stock deducted.', 'warning')
     return redirect(url_for('admin.waste_records'))
 
@@ -3714,6 +4636,9 @@ def add_ingredient_batch():
     db.session.add(batch)
     log_inventory_change(ing_id, 'ADD', qty, prev_qty, f'Batch received on {purchase_date}')
     db.session.commit()
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    if is_ajax:
+        return jsonify({'success': True, 'message': f'Batch of {qty} {ing.unit} added for {ing.name}.'})
     flash(f'Batch of {qty} {ing.unit} added for {ing.name}.', 'success')
     return redirect(url_for('admin.ingredient_batches'))
 
@@ -4586,12 +5511,17 @@ def archive_order_detail(original_id):
 @login_required
 @admin_required
 def archive_order_restore(order_id):
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if current_user.role.upper() != 'SUPER_ADMIN':
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'Access denied. Super Admin only.'}), 403
         flash("Access denied. Super Admin only.", "danger")
         return redirect(url_for('admin.overview'))
 
     order = Order.query.get_or_404(order_id)
     if not order.is_archived:
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'Order is not archived.'}), 400
         flash("Order is not archived.", "warning")
         return redirect(url_for('admin.orders'))
 
@@ -4599,8 +5529,12 @@ def archive_order_restore(order_id):
     order.archived_at = None
     db.session.commit()
     log_audit('RESTORE', 'Order', order.id, f'Unarchived order #{order.id}')
+    if is_ajax:
+        return jsonify({'success': True, 'message': 'Order restored successfully.', 'redirect': url_for('admin.orders')})
     flash("Order restored successfully.", "success")
     return redirect(url_for('admin.orders'))
+
+
 
 
 @admin_bp.route('/api/archive/orders', methods=['GET'])

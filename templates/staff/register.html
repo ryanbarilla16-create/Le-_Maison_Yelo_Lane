@@ -1,0 +1,635 @@
+<!doctype html>
+<html class="h-100" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>Staff Registration | Le Maison</title>
+    <meta content='width=device-width, initial-scale=1.0, shrink-to-fit=no' name='viewport' />
+    <link rel="icon" href="{{ url_for('static', filename='images/logo.jpg') }}" type="image/jpeg"/>
+
+    <!-- Fonts and icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            min-height: 100vh;
+            background: #faf8f5;
+        }
+
+        .login-container {
+            display: flex;
+            min-height: 100vh;
+            width: 100%;
+        }
+
+        /* LEFT PANEL — Branding */
+        .login-brand-panel {
+            flex: 1;
+            background: linear-gradient(135deg, #3E2723 0%, #5D4037 40%, #795548 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            padding: 3rem;
+        }
+
+        .login-brand-panel::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 60%);
+            animation: rotateBg 30s linear infinite;
+        }
+
+        @keyframes rotateBg {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .brand-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            color: white;
+        }
+
+        .brand-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .brand-subtitle {
+            font-size: 1rem;
+            font-weight: 300;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            opacity: 0.7;
+            margin-bottom: 2rem;
+        }
+
+        .brand-tagline {
+            font-size: 0.85rem;
+            opacity: 0.5;
+            max-width: 300px;
+            line-height: 1.6;
+            margin: 0 auto;
+        }
+
+        /* RIGHT PANEL — Registration Form */
+        .login-form-panel {
+            flex: 1.2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem 2rem;
+            background: #faf8f5;
+            overflow-y: auto;
+            max-height: 100vh;
+        }
+
+        .login-form-card {
+            width: 100%;
+            max-width: 580px;
+        }
+
+        .form-welcome {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #3E2723;
+            margin-bottom: 0.3rem;
+        }
+
+        .form-welcome span {
+            color: #5D4037;
+        }
+
+        .form-desc {
+            font-size: 0.88rem;
+            color: #999;
+            margin-bottom: 2rem;
+            font-weight: 400;
+        }
+
+        .form-field-wrapper {
+            margin-bottom: 1.1rem;
+        }
+
+        .login-input-group {
+            position: relative;
+        }
+
+        .login-input-icon {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #8b634b;
+            font-size: 0.9rem;
+            z-index: 10;
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 14px 18px 14px 50px;
+            border: 1.5px solid rgba(93,64,55,0.12);
+            border-radius: 12px;
+            font-size: 0.92rem;
+            font-family: 'Poppins', sans-serif;
+            color: #3E2723;
+            background: #fff;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .login-input:focus {
+            border-color: #5D4037;
+            box-shadow: 0 0 0 4px rgba(93,64,55,0.08);
+        }
+
+        .login-input::placeholder {
+            color: #bbb;
+            font-weight: 400;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #8b634b;
+            font-size: 0.9rem;
+            z-index: 10;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+
+        .password-toggle:hover {
+            opacity: 1;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #5D4037, #795548);
+            color: white;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 1rem;
+        }
+
+        .login-btn:hover {
+            background: linear-gradient(135deg, #3E2723, #5D4037);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(93,64,55,0.35);
+        }
+
+        .return-link {
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+
+        .return-link a {
+            color: #bbb;
+            text-decoration: none;
+            font-size: 0.82rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .return-link a:hover {
+            color: #5D4037;
+        }
+
+        .flash-msg {
+            background: #ffebee;
+            color: #c62828;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+            font-size: 0.82rem;
+            border: 1px solid #ffcdd2;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .flash-msg.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+
+        /* Password strength indicator */
+        .password-strength {
+            height: 3px;
+            background: rgba(93, 64, 55, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        .strength-bar {
+            height: 100%;
+            width: 0%;
+            transition: 0.3s ease;
+        }
+        .strength-text {
+            font-size: 0.72rem;
+            color: #8b634b;
+            text-align: right;
+            margin-top: 2px;
+            font-weight: 500;
+        }
+
+        /* Responsiveness */
+        @media (max-width: 768px) {
+            .login-container { flex-direction: column; }
+            .login-brand-panel { padding: 4rem 2rem; }
+            .login-form-panel { padding: 3rem 1.5rem; max-height: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-container">
+        <!-- LEFT PANEL (Branding) -->
+        <div class="login-brand-panel">
+            <div class="brand-content">
+                <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Logo" 
+                     style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid rgba(255,255,255,0.2); margin-bottom: 1.5rem; box-shadow: 0 8px 25px rgba(0,0,0,0.2);">
+                <h1 class="brand-title">Le Maison</h1>
+                <div class="brand-subtitle">Staff Portal</div>
+                <div style="width: 60px; height: 2px; background: rgba(255,255,255,0.2); margin: 1.5rem auto 2rem;"></div>
+                <p class="brand-tagline">Register a staff account to join our team. Your request will go to the branch admin for verification.</p>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL (Registration Form) -->
+        <div class="login-form-panel">
+            <div class="login-form-card">
+                <h2 class="form-welcome">Register as <span>Staff</span></h2>
+                <p class="form-desc">Fill out all fields below to request access.</p>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                    <div class="flash-msg {{ 'success' if category == 'success' else '' }}">
+                        <i class="fas {{ 'fa-check-circle' if category == 'success' else 'fa-exclamation-circle' }}"></i>
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                {% endif %}
+                {% endwith %}
+
+                <form method="POST" action="{{ url_for('cashier_portal.staff_register') }}" onsubmit="return validateForm()">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+
+                    <div class="row">
+                        <div class="col-md-6 form-field-wrapper">
+                            <div class="login-input-group">
+                                <i class="fas fa-user login-input-icon"></i>
+                                <input type="text" id="first_name" name="first_name" class="login-input" placeholder="First Name" required value="{{ request.form.get('first_name', '') }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6 form-field-wrapper">
+                            <div class="login-input-group">
+                                <i class="fas fa-user-edit login-input-icon"></i>
+                                <input type="text" id="middle_name" name="middle_name" class="login-input" placeholder="Middle Name (Opt)" value="{{ request.form.get('middle_name', '') }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 form-field-wrapper">
+                            <div class="login-input-group">
+                                <i class="fas fa-user login-input-icon"></i>
+                                <input type="text" id="last_name" name="last_name" class="login-input" placeholder="Last Name" required value="{{ request.form.get('last_name', '') }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6 form-field-wrapper">
+                            <div class="login-input-group">
+                                <i class="fas fa-at login-input-icon"></i>
+                                <input type="text" id="username" name="username" class="login-input" placeholder="Username" minlength="5" maxlength="20" required value="{{ request.form.get('username', '') }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 form-field-wrapper">
+                            <div class="login-input-group">
+                                <i class="fas fa-envelope login-input-icon"></i>
+                                <input type="email" id="email" name="email" class="login-input" placeholder="Email Address" required value="{{ request.form.get('email', '') }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6 form-field-wrapper">
+                            <div class="login-input-group">
+                                <i class="fas fa-phone login-input-icon"></i>
+                                <input type="text" id="phone_number" name="phone_number" class="login-input" placeholder="Phone (09xxxxxxxxx)" required maxlength="11" value="{{ request.form.get('phone_number', '') }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 form-field-wrapper">
+                            <div class="login-input-group">
+                                <i class="fas fa-venus-mars login-input-icon"></i>
+                                <select name="gender" id="gender" class="login-input" required style="appearance: none; -webkit-appearance: none;">
+                                    <option value="" disabled {% if not request.form.get('gender') %}selected{% endif %}>Select Gender</option>
+                                    <option value="Male" {% if request.form.get('gender') == 'Male' %}selected{% endif %}>Male</option>
+                                    <option value="Female" {% if request.form.get('gender') == 'Female' %}selected{% endif %}>Female</option>
+                                    <option value="Other" {% if request.form.get('gender') == 'Other' %}selected{% endif %}>Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6 form-field-wrapper">
+                            <div class="login-input-group">
+                                <i class="fas fa-birthday-cake login-input-icon"></i>
+                                {% set today = get_ph_time().date() %}
+                                {% set min_date = (today.year - 80) ~ "-01-01" %}
+                                {% set max_date = today.strftime('%Y-%m-%d') %}
+                                <input type="date" id="birthday" name="birthday" class="login-input" required min="{{ min_date }}" max="{{ max_date }}" value="{{ request.form.get('birthday', '') }}" title="Birthday" onchange="calculateAndSetAge()">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 form-field-wrapper">
+                            <div class="login-input-group">
+                                <i class="fas fa-calendar-alt login-input-icon"></i>
+                                <input type="number" id="age" name="age" class="login-input" placeholder="Age" readonly value="{{ request.form.get('age', '') }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6 form-field-wrapper">
+                            <div class="login-input-group">
+                                <i class="fas fa-store login-input-icon"></i>
+                                <select name="branch" id="branch" class="login-input" required style="appearance: none; -webkit-appearance: none;">
+                                    <option value="" disabled {% if not request.form.get('branch') %}selected{% endif %}>Select Branch</option>
+                                    <option value="Pagsanjan" {% if request.form.get('branch') == 'Pagsanjan' %}selected{% endif %}>Pagsanjan</option>
+                                    <option value="Lucban" {% if request.form.get('branch') == 'Lucban' %}selected{% endif %}>Lucban</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12 form-field-wrapper">
+                            <div class="login-input-group">
+                                <i class="fas fa-shield-alt login-input-icon"></i>
+                                <select name="role" id="role" class="login-input" required style="appearance: none; -webkit-appearance: none;">
+                                    <option value="" disabled {% if not request.form.get('role') %}selected{% endif %}>Select Staff Role</option>
+                                    <option value="INVENTORY_STAFF" {% if request.form.get('role') == 'INVENTORY_STAFF' %}selected{% endif %}>Inventory Staff</option>
+                                    <option value="CASHIER" {% if request.form.get('role') == 'CASHIER' %}selected{% endif %}>Cashier</option>
+                                    <option value="KITCHEN" {% if request.form.get('role') == 'KITCHEN' %}selected{% endif %}>Kitchen</option>
+                                    <option value="RIDER" {% if request.form.get('role') == 'RIDER' %}selected{% endif %}>Rider</option>
+                                    <option value="ADMIN" {% if request.form.get('role') == 'ADMIN' %}selected{% endif %}>Admin</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 form-field-wrapper">
+                            <div class="login-input-group">
+                                <i class="fas fa-lock login-input-icon"></i>
+                                <input type="password" id="password" name="password" class="login-input" placeholder="Password" minlength="6" required oninput="checkStrength()">
+                                <span class="password-toggle" onclick="togglePasswordVisibility('password', this)">
+                                    <i class="fas fa-eye"></i>
+                                </span>
+                            </div>
+                            <div class="password-strength">
+                                <div id="strength-bar" class="strength-bar"></div>
+                            </div>
+                            <div id="strength-text" class="strength-text" style="display: none;">Password Strength</div>
+                        </div>
+                        <div class="col-md-6 form-field-wrapper">
+                            <div class="login-input-group">
+                                <i class="fas fa-lock login-input-icon"></i>
+                                <input type="password" id="confirm_password" name="confirm_password" class="login-input" placeholder="Confirm Password" required>
+                                <span class="password-toggle" onclick="togglePasswordVisibility('confirm_password', this)">
+                                    <i class="fas fa-eye"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-check d-flex align-items-center mb-3">
+                        <input type="checkbox" id="terms" name="terms" required style="width: 18px; height: 18px; margin: 0; margin-right: 10px; cursor: pointer; flex-shrink: 0; accent-color: #5D4037;">
+                        <label class="form-check-label text-muted m-0" for="terms" style="font-size: 0.8rem; line-height: 1.4;">
+                            I agree to the <a href="#" style="color:#5D4037; font-weight:600; text-decoration:none;">Terms of Service</a> & <a href="#" style="color:#5D4037; font-weight:600; text-decoration:none;">Privacy Policy</a>.
+                        </label>
+                    </div>
+
+                    <button type="submit" class="login-btn">
+                        <i class="fas fa-user-plus"></i> REGISTER STAFF
+                    </button>
+
+                    <div class="return-link">
+                        <p class="text-muted mb-0" style="font-size:0.85rem;">
+                            Already have a staff account?
+                            <a href="{{ url_for('cashier_portal.staff_login') }}" style="color:#5D4037; font-weight:700;">Login Here</a>
+                        </p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function togglePasswordVisibility(fieldId, iconContainer) {
+            const input = document.getElementById(fieldId);
+            const icon = iconContainer.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fas fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fas fa-eye';
+            }
+        }
+
+        function calculateAndSetAge() {
+            const bdayStr = document.getElementById('birthday').value;
+            if (!bdayStr) return;
+            const bday = new Date(bdayStr);
+            const today = new Date();
+            let age = today.getFullYear() - bday.getFullYear();
+            const m = today.getMonth() - bday.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < bday.getDate())) {
+                age--;
+            }
+            document.getElementById('age').value = age >= 0 ? age : 0;
+        }
+
+        function showFieldError(fieldId, msg) {
+            const input = document.getElementById(fieldId);
+            if (!input) return;
+            
+            let container = input.closest('.form-field-wrapper');
+            if (!container) container = input.parentElement;
+
+            let errorDiv = document.getElementById(fieldId + '-error');
+            if (!errorDiv) {
+                errorDiv = document.createElement('div');
+                errorDiv.id = fieldId + '-error';
+                errorDiv.className = 'text-danger small mt-1';
+                errorDiv.style.paddingLeft = '5px';
+                errorDiv.style.fontSize = '0.75rem';
+                container.appendChild(errorDiv);
+            }
+            errorDiv.textContent = msg;
+            errorDiv.style.display = 'block';
+            input.classList.add('is-invalid');
+        }
+
+        // Auto-run calculateAndSetAge on page load to prefill age if birthday is provided
+        window.addEventListener('DOMContentLoaded', calculateAndSetAge);
+
+        function clearErrors() {
+            document.querySelectorAll('.text-danger.small.mt-1').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        }
+
+        function checkStrength() {
+            const pwd = document.getElementById('password').value;
+            const bar = document.getElementById('strength-bar');
+            const txt = document.getElementById('strength-text');
+
+            if (pwd.length === 0) {
+                txt.style.display = 'none';
+                bar.style.width = '0%';
+                return;
+            }
+
+            txt.style.display = 'block';
+
+            let strength = 0;
+            if (pwd.length >= 6) strength += 25;
+            if (/[A-Z]/.test(pwd)) strength += 25;
+            if (/[0-9]/.test(pwd)) strength += 25;
+            if (/[^A-Za-z0-9]/.test(pwd)) strength += 25;
+
+            bar.style.width = strength + '%';
+            if (strength <= 25) { bar.style.background = '#ef4444'; txt.textContent = 'Weak'; }
+            else if (strength <= 50) { bar.style.background = '#f59e0b'; txt.textContent = 'Fair'; }
+            else if (strength <= 75) { bar.style.background = '#3b82f6'; txt.textContent = 'Good'; }
+            else { bar.style.background = '#22c55e'; txt.textContent = 'Strong'; }
+        }
+
+        function validateForm() {
+            clearErrors();
+            let isValid = true;
+
+            const phoneInput = document.getElementById('phone_number');
+            const phone = phoneInput.value;
+
+            const phRegex = /^09\d{9}$/;
+            if (!phRegex.test(phone)) {
+                showFieldError('phone_number', "Needs to be 11 digits starting with 09.");
+                isValid = false;
+            } else {
+                const digitsOnly = phone.substring(2);
+                if (/^([0-9])\1{8}$/.test(digitsOnly)) {
+                    showFieldError('phone_number', "Invalid sequence (repeating digit).");
+                    isValid = false;
+                }
+            }
+
+            const nameRegex = /^[A-Za-z\s\-]+$/;
+            ['first_name', 'last_name'].forEach(id => {
+                const val = document.getElementById(id).value;
+                if (!nameRegex.test(val)) {
+                    showFieldError(id, "Names can only contain letters, spaces, and dashes.");
+                    isValid = false;
+                }
+            });
+
+            const middlename = document.getElementById('middle_name').value;
+            if (middlename && !nameRegex.test(middlename)) {
+                showFieldError('middle_name', "Names can only contain letters, spaces, and dashes.");
+                isValid = false;
+            }
+
+            const email = document.getElementById('email').value;
+            const emailRegex = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
+            if (!emailRegex.test(email)) {
+                showFieldError('email', "Please enter a valid email address.");
+                isValid = false;
+            }
+
+            const username = document.getElementById('username').value;
+            if (username.length < 5 || username.length > 20) {
+                showFieldError('username', "Username must be 5-20 characters.");
+                isValid = false;
+            } else if (!/^[A-Za-z0-9_]+$/.test(username)) {
+                showFieldError('username', "Username can only contain letters, numbers, and underscores.");
+                isValid = false;
+            }
+
+            const birthdayStr = document.getElementById('birthday').value;
+            if (birthdayStr) {
+                const bday = new Date(birthdayStr);
+                const today = new Date();
+                let age = today.getFullYear() - bday.getFullYear();
+                if (today.getMonth() < bday.getMonth() || (today.getMonth() === bday.getMonth() && today.getDate() < bday.getDate())) {
+                    age--;
+                }
+                if (age < 18) {
+                    showFieldError('birthday', "You must be at least 18 years old to register.");
+                    isValid = false;
+                } else if (age > 70) {
+                    showFieldError('birthday', "Maximum age limit is 70 years old.");
+                    isValid = false;
+                }
+            } else {
+                showFieldError('birthday', "Birthday is required.");
+                isValid = false;
+            }
+
+            const pwd = document.getElementById('password').value;
+            const confirmResult = document.getElementById('confirm_password').value;
+
+            if (pwd.startsWith(' ') || pwd.endsWith(' ')) {
+                showFieldError('password', "Password cannot start or end with spaces.");
+                isValid = false;
+            } else if (pwd.includes('   ')) {
+                showFieldError('password', "Password cannot contain too many consecutive spaces.");
+                isValid = false;
+            } else if (pwd.length < 6) {
+                showFieldError('password', "Password must be at least 6 characters.");
+                isValid = false;
+            }
+
+            if (pwd && confirmResult && pwd !== confirmResult) {
+                showFieldError('confirm_password', "Passwords do not match.");
+                isValid = false;
+            }
+
+            return isValid;
+        }
+    </script>
+</body>
+</html>

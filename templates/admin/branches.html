@@ -1,0 +1,322 @@
+{% extends "admin/base.html" %}
+{% block title %}Branch Management — Le Maison{% endblock %}
+
+{% block content %}
+<div class="section-header">
+    <div>
+        <h2 style="font-size:1.4rem; font-weight:700; color:var(--text); margin:0;">
+            <i class="fas fa-code-branch me-2" style="color:var(--primary);"></i>Branch Management
+        </h2>
+        <p style="color:var(--muted); font-size:0.85rem; margin:0.2rem 0 0;">
+            Manage restaurant branches. Branch names are used across orders, staff, and inventory.
+        </p>
+    </div>
+    <button class="btn-staff" onclick="openAddModal()">
+        <i class="fas fa-plus me-1"></i> Add Branch
+    </button>
+</div>
+
+<!-- Flash Messages (from Flask flash OR from URL query params) -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+    <div style="padding:12px 20px; border-radius:10px; margin-bottom:16px;
+        background: {% if category=='success' %}#e8f5e9; color:#2e7d32;{% else %}#ffebee; color:#c62828;{% endif %};
+        font-size:0.9rem; font-weight:500;">
+        <i class="fas {% if category=='success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %} me-2"></i>
+        {{ message }}
+    </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<!-- URL param based toast (survives SPA navigation) -->
+<div id="branchToast" style="display:none; padding:12px 20px; border-radius:10px; margin-bottom:16px;
+    font-size:0.9rem; font-weight:500;"></div>
+
+<script>
+(function() {
+    var params = new URLSearchParams(window.location.search);
+    var msg = params.get('msg');
+    var name = params.get('branch_name') || '';
+    var toast = document.getElementById('branchToast');
+    if (msg && toast) {
+        var text = '';
+        var isSuccess = true;
+        if (msg === 'added')   text = '✔ Branch \'' + name + '\' added successfully.';
+        if (msg === 'updated') text = '✔ Branch \'' + name + '\' updated successfully.';
+        if (msg === 'deleted') text = '✔ Branch \'' + name + '\' deleted.';
+        if (text) {
+            toast.textContent = text;
+            toast.style.background = '#e8f5e9';
+            toast.style.color = '#2e7d32';
+            toast.style.display = 'block';
+            setTimeout(function() { toast.style.display = 'none'; }, 4000);
+        }
+        // Clean URL without reload
+        history.replaceState({}, '', window.location.pathname);
+    }
+})();
+</script>
+
+<!-- Branch Cards — equal height grid -->
+<div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap:1.5rem; margin-top:1rem; align-items:stretch;">
+    {% for branch in branches %}
+    {% set stats = branch_stats.get(branch.id, {}) %}
+    <div class="card border-0 shadow-sm" style="border-radius:16px; overflow:hidden; display:flex; flex-direction:column; transition: transform 0.2s, box-shadow 0.2s;"
+        onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 30px rgba(0,0,0,0.1)'"
+        onmouseout="this.style.transform='translateY(0)';this.style.boxShadow=''">
+
+        <!-- Card Header — same color for all -->
+        <div style="background: linear-gradient(135deg,#5D4037,#8b634b); padding:18px 20px;">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h5 style="color:#fff; margin:0; font-size:1.05rem; font-weight:700;">
+                        <i class="fas fa-store me-2" style="opacity:0.8;"></i>{{ branch.name }}
+                    </h5>
+                    {% if branch.city or branch.province %}
+                    <p style="color:rgba(255,255,255,0.7); margin:4px 0 0; font-size:0.8rem;">
+                        {{ [branch.city, branch.province] | select | join(', ') }}
+                    </p>
+                    {% endif %}
+                </div>
+                <div class="d-flex gap-2 align-items-center flex-wrap justify-content-end">
+                    {% if branch.is_main %}
+                    <span style="background:rgba(255,255,255,0.2); color:#fff; font-size:0.7rem; font-weight:700;
+                        padding:3px 10px; border-radius:20px; border:1px solid rgba(255,255,255,0.3);">
+                        <i class="fas fa-crown me-1"></i>MAIN
+                    </span>
+                    {% endif %}
+                    <span style="background:{% if branch.is_active %}rgba(76,175,80,0.3); color:#a5d6a7;{% else %}rgba(244,67,54,0.3); color:#ef9a9a;{% endif %};
+                        font-size:0.7rem; font-weight:700; padding:3px 10px; border-radius:20px;">
+                        {% if branch.is_active %}● ACTIVE{% else %}🔜 COMING SOON{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card Body — flex-grow so all cards stretch to same height -->
+        <div style="padding:16px 20px; background:#fff; flex-grow:1; display:flex; flex-direction:column;">
+
+            <!-- Info Grid -->
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;">
+                <div>
+                    <div style="font-size:0.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:3px;">Address</div>
+                    <div style="font-size:0.85rem; color:var(--text); font-weight:500;">{{ branch.address or '—' }}</div>
+                </div>
+                <div>
+                    <div style="font-size:0.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:3px;">Phone</div>
+                    <div style="font-size:0.85rem; color:var(--text); font-weight:500;">{{ branch.phone or '—' }}</div>
+                </div>
+                <div>
+                    <div style="font-size:0.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:3px;">Email</div>
+                    <div style="font-size:0.85rem; color:var(--text); font-weight:500; word-break:break-all;">{{ branch.email or '—' }}</div>
+                </div>
+                <div>
+                    <div style="font-size:0.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:3px;">Added</div>
+                    <div style="font-size:0.85rem; color:var(--text); font-weight:500;">
+                        {{ branch.created_at.strftime('%b %d, %Y') if branch.created_at else '—' }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Staff Stat Only -->
+            <div style="margin-bottom:14px;">
+                <div style="background:rgba(139,99,75,0.06); border-radius:12px; padding:14px; text-align:center; border:1px solid rgba(139,99,75,0.1);">
+                    <div style="font-size:1.8rem; font-weight:800; color:var(--primary); line-height:1;">{{ stats.get('staff', 0) }}</div>
+                    <div style="font-size:0.75rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-top:4px;">
+                        <i class="fas fa-users me-1"></i>Staff Members
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons — pushed to bottom -->
+            <div class="d-flex gap-2 mt-auto">
+                <button class="btn btn-sm rounded-pill"
+                    style="flex:1; background:rgba(93,64,55,0.08); color:var(--primary); border:1px solid rgba(93,64,55,0.2); font-weight:600; font-size:0.8rem;"
+                    onclick="openEditModal({{ branch.id }}, '{{ branch.name|e }}', '{{ branch.address|e }}', '{{ branch.city|e }}', '{{ branch.province|e }}', '{{ branch.phone|e }}', '{{ branch.email|e }}', {{ 1 if branch.is_main else 0 }}, {{ 1 if branch.is_active else 0 }})">
+                    <i class="fas fa-edit me-1"></i>Edit
+                </button>
+                <form method="POST" action="{{ url_for('admin.branch_delete', branch_id=branch.id) }}"
+                    onsubmit="return confirm('Delete branch \'{{ branch.name }}\'? This cannot be undone.')">
+                    <button type="submit" class="btn btn-sm rounded-pill"
+                        style="background:rgba(211,47,47,0.08); color:#c62828; border:1px solid rgba(211,47,47,0.2); font-weight:600; font-size:0.8rem; padding:5px 14px;">
+                        <i class="fas fa-trash me-1"></i>Delete
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div style="grid-column:1/-1; text-align:center; padding:60px 20px; color:var(--muted);">
+        <i class="fas fa-code-branch fa-3x mb-3" style="opacity:0.2;"></i>
+        <p style="font-size:1rem; font-weight:500;">No branches found. Add your first branch.</p>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- ═══ ADD MODAL ═══ -->
+<div id="addBranchModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5);
+    z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:20px; width:100%; max-width:520px; margin:20px;
+        box-shadow:0 20px 60px rgba(0,0,0,0.2); overflow:hidden; animation: slideUp 0.3s ease;">
+        <div style="background:linear-gradient(135deg,#5D4037,#8b634b); padding:24px 28px; display:flex; justify-content:space-between; align-items:center;">
+            <h5 style="color:#fff; margin:0; font-weight:700; font-size:1.05rem;">
+                <i class="fas fa-plus-circle me-2"></i>Add New Branch
+            </h5>
+            <button onclick="closeAddModal()" style="background:rgba(255,255,255,0.15); border:none; color:#fff;
+                width:30px; height:30px; border-radius:50%; cursor:pointer; font-size:1rem;">✕</button>
+        </div>
+        <form method="POST" action="{{ url_for('admin.branch_add') }}" style="padding:24px 28px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div style="grid-column:1/-1;">
+                    <label class="form-label fw-semibold" style="font-size:0.82rem; color:var(--text);">Branch Name <span style="color:red;">*</span></label>
+                    <input type="text" name="name" class="form-control" placeholder="e.g. Santa Cruz" required
+                        style="border-radius:10px; border:1px solid rgba(93,64,55,0.2);">
+                </div>
+                <div style="grid-column:1/-1;">
+                    <label class="form-label fw-semibold" style="font-size:0.82rem; color:var(--text);">Address</label>
+                    <input type="text" name="address" class="form-control" placeholder="Street address"
+                        style="border-radius:10px; border:1px solid rgba(93,64,55,0.2);">
+                </div>
+                <div>
+                    <label class="form-label fw-semibold" style="font-size:0.82rem; color:var(--text);">City / Municipality</label>
+                    <input type="text" name="city" class="form-control" placeholder="e.g. Pagsanjan"
+                        style="border-radius:10px; border:1px solid rgba(93,64,55,0.2);">
+                </div>
+                <div>
+                    <label class="form-label fw-semibold" style="font-size:0.82rem; color:var(--text);">Province</label>
+                    <input type="text" name="province" class="form-control" placeholder="e.g. Laguna"
+                        style="border-radius:10px; border:1px solid rgba(93,64,55,0.2);">
+                </div>
+                <div>
+                    <label class="form-label fw-semibold" style="font-size:0.82rem; color:var(--text);">Phone</label>
+                    <input type="text" name="phone" class="form-control" placeholder="09XX-XXX-XXXX"
+                        style="border-radius:10px; border:1px solid rgba(93,64,55,0.2);">
+                </div>
+                <div>
+                    <label class="form-label fw-semibold" style="font-size:0.82rem; color:var(--text);">Email</label>
+                    <input type="email" name="email" class="form-control" placeholder="branch@email.com"
+                        style="border-radius:10px; border:1px solid rgba(93,64,55,0.2);">
+                </div>
+            </div>
+            <div class="d-flex gap-3 mt-4">
+                <button type="button" onclick="closeAddModal()" class="btn rounded-pill"
+                    style="flex:1; border:1px solid rgba(93,64,55,0.2); color:var(--muted); font-weight:600;">Cancel</button>
+                <button type="submit" class="btn rounded-pill"
+                    style="flex:2; background:linear-gradient(135deg,#5D4037,#8b634b); color:#fff; font-weight:700; border:none;">
+                    <i class="fas fa-plus me-1"></i> Add Branch
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ═══ EDIT MODAL ═══ -->
+<div id="editBranchModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5);
+    z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:20px; width:100%; max-width:520px; margin:20px;
+        box-shadow:0 20px 60px rgba(0,0,0,0.2); overflow:hidden;">
+        <div style="background:linear-gradient(135deg,#5D4037,#8b634b); padding:24px 28px; display:flex; justify-content:space-between; align-items:center;">
+            <h5 style="color:#fff; margin:0; font-weight:700; font-size:1.05rem;">
+                <i class="fas fa-edit me-2"></i>Edit Branch
+            </h5>
+            <button onclick="closeEditModal()" style="background:rgba(255,255,255,0.15); border:none; color:#fff;
+                width:30px; height:30px; border-radius:50%; cursor:pointer; font-size:1rem;">✕</button>
+        </div>
+        <form id="editForm" method="POST" style="padding:24px 28px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div style="grid-column:1/-1;">
+                    <label class="form-label fw-semibold" style="font-size:0.82rem; color:var(--text);">Branch Name <span style="color:red;">*</span></label>
+                    <input type="text" id="editName" name="name" class="form-control" required
+                        style="border-radius:10px; border:1px solid rgba(93,64,55,0.2);">
+                </div>
+                <div style="grid-column:1/-1;">
+                    <label class="form-label fw-semibold" style="font-size:0.82rem; color:var(--text);">Address</label>
+                    <input type="text" id="editAddress" name="address" class="form-control"
+                        style="border-radius:10px; border:1px solid rgba(93,64,55,0.2);">
+                </div>
+                <div>
+                    <label class="form-label fw-semibold" style="font-size:0.82rem; color:var(--text);">City / Municipality</label>
+                    <input type="text" id="editCity" name="city" class="form-control"
+                        style="border-radius:10px; border:1px solid rgba(93,64,55,0.2);">
+                </div>
+                <div>
+                    <label class="form-label fw-semibold" style="font-size:0.82rem; color:var(--text);">Province</label>
+                    <input type="text" id="editProvince" name="province" class="form-control"
+                        style="border-radius:10px; border:1px solid rgba(93,64,55,0.2);">
+                </div>
+                <div>
+                    <label class="form-label fw-semibold" style="font-size:0.82rem; color:var(--text);">Phone</label>
+                    <input type="text" id="editPhone" name="phone" class="form-control"
+                        style="border-radius:10px; border:1px solid rgba(93,64,55,0.2);">
+                </div>
+                <div>
+                    <label class="form-label fw-semibold" style="font-size:0.82rem; color:var(--text);">Email</label>
+                    <input type="email" id="editEmail" name="email" class="form-control"
+                        style="border-radius:10px; border:1px solid rgba(93,64,55,0.2);">
+                </div>
+                <div style="grid-column:1/-1;" class="d-flex gap-4">
+                    <label class="d-flex align-items-center gap-2" style="cursor:pointer; font-size:0.88rem; font-weight:600; color:var(--text);">
+                        <input type="checkbox" id="editIsMain" name="is_main" value="1" style="width:16px; height:16px; accent-color:var(--primary);">
+                        Main Branch
+                    </label>
+                    <div style="flex:1;">
+                        <label class="form-label fw-semibold" style="font-size:0.82rem; color:var(--text); margin-bottom:4px;">Status</label>
+                        <select id="editStatus" name="is_active" class="form-select form-select-sm"
+                            style="border-radius:10px; border:1px solid rgba(93,64,55,0.2); font-weight:600;">
+                            <option value="1">✅ Active</option>
+                            <option value="0">🔜 Coming Soon</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex gap-3 mt-4">
+                <button type="button" onclick="closeEditModal()" class="btn rounded-pill"
+                    style="flex:1; border:1px solid rgba(93,64,55,0.2); color:var(--muted); font-weight:600;">Cancel</button>
+                <button type="submit" class="btn rounded-pill"
+                    style="flex:2; background:linear-gradient(135deg,#5D4037,#8b634b); color:#fff; font-weight:700; border:none;">
+                    <i class="fas fa-save me-1"></i> Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+@keyframes slideUp {
+    from { opacity:0; transform:translateY(30px); }
+    to   { opacity:1; transform:translateY(0); }
+}
+</style>
+
+<script>
+function openAddModal() {
+    document.getElementById('addBranchModal').style.display = 'flex';
+}
+function closeAddModal() {
+    document.getElementById('addBranchModal').style.display = 'none';
+}
+function openEditModal(id, name, address, city, province, phone, email, isMain, isActive) {
+    document.getElementById('editForm').action = `/admin/branches/${id}/edit`;
+    document.getElementById('editName').value     = name;
+    document.getElementById('editAddress').value  = address;
+    document.getElementById('editCity').value     = city;
+    document.getElementById('editProvince').value = province;
+    document.getElementById('editPhone').value    = phone;
+    document.getElementById('editEmail').value    = email;
+    document.getElementById('editIsMain').checked = isMain === 1;
+    document.getElementById('editStatus').value   = isActive === 1 ? '1' : '0';
+    document.getElementById('editBranchModal').style.display = 'flex';
+}
+function closeEditModal() {
+    document.getElementById('editBranchModal').style.display = 'none';
+}
+document.getElementById('addBranchModal').addEventListener('click', function(e) {
+    if (e.target === this) closeAddModal();
+});
+document.getElementById('editBranchModal').addEventListener('click', function(e) {
+    if (e.target === this) closeEditModal();
+});
+</script>
+{% endblock %}

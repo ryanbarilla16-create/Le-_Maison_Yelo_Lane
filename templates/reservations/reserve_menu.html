@@ -169,7 +169,11 @@
             </div>
         </div>
 
-        <form method="POST" action="{{ url_for('main.reserve_menu') }}">
+        <!-- Menu AJAX Alert -->
+        <div id="ajaxAlert" style="display: none; border-radius: 12px; padding: 12px; margin: 0 2rem 1.5rem; font-size: 0.85rem;" class="alert alert-danger"></div>
+
+        <form method="POST" action="{{ url_for('main.reserve_menu') }}" id="menuForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
             <div class="menu-section">
                 <!-- Summary / Requirement Banner -->
                 <div style="background: rgba(139, 99, 75, 0.05); border: 1px solid rgba(139, 99, 75, 0.2); border-radius: 12px; padding: 1rem; margin-bottom: 2rem; color: #5D4037; font-size: 0.9rem;">
@@ -401,6 +405,46 @@
             }
         });
         calculateTotal();
+
+        // AJAX Menu Form Submission
+        document.getElementById('menuForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const form = this;
+            const btn = document.getElementById('btnContinue');
+            const alertBox = document.getElementById('ajaxAlert');
+
+            btn.disabled = true;
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Saving selection...';
+            alertBox.style.display = 'none';
+
+            fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(r => r.json().then(data => ({ status: r.status, data })))
+            .then(({ status, data }) => {
+                if (status >= 200 && status < 300 && data.success && data.redirect) {
+                    btn.innerHTML = '<i class="fas fa-check-circle me-2"></i> Redirecting...';
+                    btn.style.background = '#27ae60';
+                    setTimeout(() => {
+                        window.location.href = data.redirect;
+                    }, 500);
+                } else {
+                    alertBox.textContent = data.message || 'Error saving menu selection.';
+                    alertBox.style.display = 'block';
+                    btn.disabled = false;
+                    btn.innerHTML = originalHTML;
+                }
+            })
+            .catch(() => {
+                alertBox.textContent = 'Network error. Please try again.';
+                alertBox.style.display = 'block';
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+            });
+        });
     });
 </script>
 {% endblock %}

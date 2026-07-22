@@ -79,11 +79,7 @@
         <h1 class="brand">Le Maison</h1>
         <p class="subtitle">Secure login for dispatch and delivery tracking</p>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% for category, message in messages %}
-            <div class="flash-msg"><i class="fas fa-exclamation-circle"></i> {{ message }}</div>
-            {% endfor %}
-        {% endwith %}
+        <div id="ajaxAlertBox" style="display: none;" class="flash-msg"><i class="fas fa-exclamation-circle"></i> <span></span></div>
 
         <form method="POST" action="{{ url_for('rider_portal.rider_login') }}" id="loginForm">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
@@ -120,10 +116,44 @@
             p.type = p.type === 'password' ? 'text' : 'password';
             i.className = p.type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
         }
-        document.getElementById('loginForm').addEventListener('submit', function() {
+
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const form = this;
             const btn = document.getElementById('loginBtn');
+            const alertBox = document.getElementById('ajaxAlertBox');
+            const alertSpan = alertBox.querySelector('span');
+
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Initializing...';
             btn.disabled = true;
+            alertBox.style.display = 'none';
+
+            fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && data.redirect) {
+                    btn.innerHTML = '<i class="fas fa-check-circle"></i> Success';
+                    btn.style.backgroundColor = '#2e7d32';
+                    setTimeout(() => {
+                        window.location.href = data.redirect;
+                    }, 500);
+                } else {
+                    alertSpan.textContent = data.message || 'Login failed.';
+                    alertBox.style.display = 'flex';
+                    btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
+                    btn.disabled = false;
+                }
+            })
+            .catch(() => {
+                alertSpan.textContent = 'Network error. Please try again.';
+                alertBox.style.display = 'flex';
+                btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
+                btn.disabled = false;
+            });
         });
     </script>
 </body>

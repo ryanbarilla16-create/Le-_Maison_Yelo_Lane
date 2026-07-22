@@ -4,6 +4,9 @@
 
 {% block content %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/homepage.css') }}?v=2.5">
+<!-- Prefetch Menu page so clicking Menu feels instant -->
+<link rel="prefetch" href="/menu" as="document">
+<link rel="preload" href="https://images.unsplash.com/photo-1559925393-8be0ec4767c8?q=80&w=2071&auto=format&fit=crop" as="image" crossorigin>
 <main>
 
     <!-- ═══ HERO SLIDER (Owl Carousel) ═══ -->
@@ -60,6 +63,31 @@
         </div>
     </section>
 
+
+    <!-- ═══ BRANCH SELECTOR ═══ -->
+    {% if active_branches and active_branches|length > 1 %}
+    <section style="background:#fff; padding:1.5rem 0; border-bottom:1px solid rgba(139,99,75,0.1);">
+        <div class="container-fluid px-3">
+            <div class="d-flex align-items-center justify-content-center flex-wrap gap-3">
+                <span style="font-size:0.85rem; font-weight:700; color:#8b634b; text-transform:uppercase; letter-spacing:1px;">
+                    <i class="fas fa-map-marker-alt me-2"></i>Choose a Branch:
+                </span>
+                {% for br in active_branches %}
+                <a href="javascript:void(0)"
+                    onclick="selectBranch('{{ br.name }}', '{{ br.city or br.name }}', '{{ br.address or '' }}')"
+                    class="branch-pill {% if loop.first %}branch-pill-active{% endif %}"
+                    data-branch="{{ br.name }}">
+                    {% if br.is_main %}<i class="fas fa-crown me-1" style="font-size:0.7rem;"></i>{% endif %}
+                    {{ br.city or br.name }}{% if br.province %}, {{ br.province }}{% endif %}
+                </a>
+                {% endfor %}
+            </div>
+            <p id="branchSelectedMsg" style="text-align:center; font-size:0.8rem; color:#8b634b; margin:0.5rem 0 0; font-weight:500; display:none;">
+                <i class="fas fa-check-circle me-1"></i><span id="branchSelectedText"></span>
+            </p>
+        </div>
+    </section>
+    {% endif %}
 
     <!-- ═══ WELCOME / ABOUT SECTION ═══ -->
     <section class="lm-section lm-welcome light" style="background: #fff;">
@@ -293,7 +321,7 @@
                                     <div class="col-md-4">
                                         <div class="lm-tab-item">
                                             {% if item.image_url %}
-                                            <img src="{{ item.image_url }}" alt="{{ item.name }}" class="img-circle">
+                                            <img loading="lazy" decoding="async" src="{{ item.image_url }}" alt="{{ item.name }}" class="img-circle">
                                             {% else %}
                                             <div class="img-circle" style="background:#3E2723; display:flex; align-items:center; justify-content:center;">
                                                 <i class="fas fa-utensils" style="color:#c9a96e; font-size: 2rem;"></i>
@@ -494,10 +522,76 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
 <style>
-    @keyframes slideDown {
-        from { opacity: 0; transform: translateY(-20px); }
-        to { opacity: 1; transform: translateY(0); }
+    /* Branch Selector Pills */
+    .branch-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 7px 18px;
+        border-radius: 50px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-decoration: none;
+        border: 1px solid rgba(139,99,75,0.25);
+        color: #8b634b;
+        background: rgba(139,99,75,0.05);
+        transition: all 0.25s ease;
+        cursor: pointer;
+    }
+    .branch-pill:hover {
+        background: rgba(139,99,75,0.12);
+        border-color: rgba(139,99,75,0.4);
+        color: #5D4037;
+        transform: translateY(-2px);
+    }
+    .branch-pill-active {
+        background: linear-gradient(135deg, #8b634b, #5D4037) !important;
+        color: #fff !important;
+        border-color: transparent !important;
+        box-shadow: 0 4px 15px rgba(139,99,75,0.3);
     }
 </style>
+
+<script>
+function selectBranch(branchName, displayName, address) {
+    // Save to sessionStorage
+    sessionStorage.setItem('selectedBranch', branchName);
+
+    // Update active pill
+    document.querySelectorAll('.branch-pill').forEach(function(pill) {
+        pill.classList.remove('branch-pill-active');
+        if (pill.getAttribute('data-branch') === branchName) {
+            pill.classList.add('branch-pill-active');
+        }
+    });
+
+    // Show confirmation message
+    var msg = document.getElementById('branchSelectedMsg');
+    var txt = document.getElementById('branchSelectedText');
+    if (msg && txt) {
+        txt.textContent = 'You are now viewing ' + displayName + (address ? ' — ' + address : '');
+        msg.style.display = 'block';
+        setTimeout(function() { msg.style.display = 'none'; }, 4000);
+    }
+
+    // Update map and address in Contact section if they exist
+    var branchAddress = document.getElementById('branchAddress');
+    if (branchAddress && address) branchAddress.textContent = address;
+}
+
+// On page load, restore selected branch from session
+document.addEventListener('DOMContentLoaded', function() {
+    var saved = sessionStorage.getItem('selectedBranch');
+    if (saved) {
+        var pill = document.querySelector('.branch-pill[data-branch="' + saved + '"]');
+        if (pill) {
+            document.querySelectorAll('.branch-pill').forEach(function(p) {
+                p.classList.remove('branch-pill-active');
+            });
+            pill.classList.add('branch-pill-active');
+        }
+    }
+});
+</script>
 {% endblock %}

@@ -32,6 +32,11 @@ Compress(app)
 app.config['COMPRESS_REGISTER'] = True
 app.config['COMPRESS_ALGORITHM'] = ['gzip', 'br', 'deflate']
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 31536000 # Cache static resources for 1 year
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024 # Max 16MB upload limit
+
+# Simple built-in dict cache (no external package needed)
+# Used to cache the public menu query for 2 minutes
+app._simple_cache = {}
 
 socketio.init_app(app, cors_allowed_origins="*")
 # Tell Flask it is behind a proxy (like LocalTunnel) so redirects use the correct url

@@ -17,8 +17,7 @@
     
 {% endblock %}
 
-{% block extra_style %}
-    .stats-row {
+{% block extra_style %}    .stats-row {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: 20px;
@@ -55,10 +54,12 @@
     .order-id { font-weight: 700; color: var(--primary); font-family: 'Courier New', monospace; letter-spacing: 1px; }
     .order-amount { font-weight: 700; color: var(--primary); }
 
+    .pill { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 50px; font-size: 0.7rem; font-weight: 700; }
     .pill.pending { background: rgba(230,81,0,0.08); color: #e65100; }
     .pill.preparing { background: rgba(25,118,210,0.08); color: #1976d2; }
     .pill.ready { background: rgba(46,125,50,0.08); color: #2e7d32; }
     .pill.completed { background: rgba(139,99,75,0.08); color: #8b634b; }
+    .pill.cancelled { background: rgba(198,40,40,0.08); color: #dc3545; }
     .pill.unpaid { background: rgba(198,40,40,0.08); color: #dc3545; }
     .pill.paid { background: rgba(46,125,50,0.08); color: #28a745; }
     .pill.service { background: rgba(93,64,55,0.04); color: var(--muted); font-size: 0.68rem; }
@@ -72,131 +73,339 @@
     }
 
     /* ─── ELEGANT MODAL DIALOG ─────────────────────────────────────── */
-    .modal-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.4);
-        z-index: 10000;
+    .billing-overlay { 
+        position:fixed; top:0; left:0; width:100%; height:100%; 
+        background:rgba(62, 39, 35, 0.4); 
+        backdrop-filter:blur(8px); 
+        display:flex; align-items:center; justify-content:center; 
+        z-index:10000; 
+        opacity:0; visibility:hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .billing-overlay.show { opacity:1; visibility:visible; }
+    
+    .billing-modal { 
+        background:white; 
+        border-radius:24px; 
+        width:90%;
+        max-width:420px;
+        box-shadow:0 30px 70px rgba(0,0,0,0.3); 
+        overflow:hidden; 
+        transform: scale(0.9) translateY(20px);
+        transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .billing-overlay.show .billing-modal { transform: scale(1) translateY(0); }
+    
+    .modal-head { 
+        background:linear-gradient(135deg,#5D4037,#3E2723); 
+        padding:20px 24px; 
+        color:white; 
+        display:flex; 
+        align-items:center; 
+        justify-content:space-between; 
+    }
+    .modal-head h3 { margin:0; font-size:1.1rem; font-weight:800; letter-spacing:0.3px; }
+    .modal-close { background:rgba(255,255,255,0.1); border:none; color:white; width:32px; height:32px; border-radius:50%; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s; }
+    .modal-close:hover { background:rgba(255,255,255,0.2); transform:rotate(90deg); }
+    
+    .modal-body-inner { padding:24px; }
+    .modal-foot { padding:18px 24px; background:#FDFBF9; border-top:1px solid rgba(139, 99, 75, 0.08); display:flex; justify-content:flex-end; gap:14px; }
+
+    .modal-input { 
+        width:100%; 
+        padding:12px 16px; 
+        border:2px solid rgba(139, 99, 75, 0.12); 
+        border-radius:14px; 
+        font-size:1.1rem; 
+        font-weight:800; 
+        outline:none; 
+        transition:all 0.2s; 
+        background: #FDFBF9;
+        color: #3E2723;
+    }
+    .modal-input:focus { border-color:#8B634B; background:white; box-shadow:0 0 0 4px rgba(139, 99, 75, 0.1); }
+    .modal-input.error { border-color:#c62828; background:#fff8f8; }
+    .modal-input.readonly { background:rgba(139, 99, 75, 0.05); color:#8B634B; border-color:transparent; }
+    
+    .input-error { display:none; color:#c62828; font-size:0.8rem; font-weight:700; margin-top:8px; display:flex; align-items:center; gap:6px; }
+    .input-label { font-size:0.72rem; font-weight:800; color:#8B634B; display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px; }
+    
+    .denom-btn {
+        flex: 1 1 calc(33.33% - 8px);
+        padding: 8px 6px;
+        border: 2px solid rgba(139, 99, 75, 0.1);
+        border-radius: 12px;
+        background: white;
+        color: #5D4037;
+        font-weight: 800;
+        font-size: 0.82rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .denom-btn:hover { border-color: #8B634B; background: #FAF3EF; transform: translateY(-2px); }
+    .denom-btn.active { background: #8B634B; color: white; border-color: #8B634B; }
+
+    .confirm-icon-circle {
+        width: 56px; height: 56px; border-radius: 50%;
+        background: #FFF9C4; color: #FBC02D;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.6rem; margin: 0 auto 16px;
+    }
+    .confirm-title { font-weight: 800; font-size: 1.15rem; color: #3E2723; margin-bottom: 8px; text-align: center; }
+    .confirm-text { color: #6D4C41; font-size: 0.88rem; line-height: 1.5; text-align: center; margin-bottom: 0; }
+    
+    .btn-modal-primary { 
+        background: #8B634B; color: white; border: none; border-radius: 50px; 
+        padding: 12px 24px; font-weight: 800; cursor: pointer; transition: all 0.2s;
+        display: flex; align-items: center; gap: 8px; font-size: 0.85rem;
+    }
+    .btn-modal-primary:hover { transform: translateY(-1px); background: #5D4037; }
+    
+    .btn-modal-secondary {
+        background: transparent; color: #8B634B; border: 2px solid rgba(139, 99, 75, 0.2); 
+        border-radius: 50px; padding: 10px 24px; font-weight: 800; cursor: pointer; transition: all 0.2s;
+        font-size: 0.85rem;
+    }
+    .pos-card-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 24px;
+        margin-top: 16px;
+    }
+    
+    .pos-card {
+        background: var(--card);
+        border: 1px solid var(--card-border);
+        border-radius: 20px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s;
+        min-height: 400px;
+        box-shadow: 0 4px 16px rgba(62,39,35,0.04);
+        position: relative;
+    }
+    
+    /* Top border status color indicator strip */
+    .pos-card.pending { border-top: 4px solid #e65100; }
+    .pos-card.preparing { border-top: 4px solid #1976d2; }
+    .pos-card.ready { border-top: 4px solid #2e7d32; }
+    .pos-card.completed { border-top: 4px solid #8b634b; }
+    .pos-card.cancelled { border-top: 4px solid #dc3545; }
+    
+    .pos-card:hover {
+        transform: translateY(-4px) scale(1.01);
+        box-shadow: 0 12px 30px rgba(62,39,35,0.08);
+        border-color: rgba(139,99,75,0.25);
+    }
+    
+    .pos-card-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid rgba(139,99,75,0.08);
+        background: rgba(139,99,75,0.015);
+    }
+    
+    .pos-card-header-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+    }
+    
+    .pos-card-time {
+        font-size: 0.72rem;
+        color: var(--muted);
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    .pos-card-customer {
+        font-size: 0.95rem;
+        font-weight: 800;
+        color: #3e2723;
         display: flex;
         align-items: center;
-        justify-content: center;
-        animation: fadeIn 0.15s ease;
+        gap: 6px;
     }
     
-    .modal-dialog {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-        max-width: 520px;
-        width: 92%;
-        overflow: hidden;
-        animation: modalSlide 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-    
-    .modal-header {
-        background: linear-gradient(to bottom, #fafafa, #f5f5f5);
-        padding: 22px 28px;
-        border-bottom: 1px solid #e0e0e0;
-    }
-    
-    .modal-title {
-        font-size: 1rem;
-        font-weight: 600;
-        color: #2c2c2c;
-        margin: 0;
-        letter-spacing: -0.2px;
-    }
-    
-    .modal-body {
-        padding: 40px 28px;
-        color: #555;
-        font-size: 1rem;
-        line-height: 1.7;
-        text-align: left;
-    }
-    
-    .modal-footer {
-        padding: 20px 28px;
-        background: white;
-        border-top: 1px solid #e8e8e8;
+    .pos-card-body {
+        padding: 18px 20px;
+        flex-grow: 1;
         display: flex;
-        gap: 14px;
-        justify-content: flex-end;
+        flex-direction: column;
+        gap: 12px;
+        max-height: 220px;
+        overflow-y: auto;
+        background: rgba(139,99,75,0.018);
+        border-bottom: 1px solid rgba(139,99,75,0.05);
     }
     
-    .modal-btn {
-        padding: 11px 32px;
-        border: none;
-        border-radius: 7px;
-        font-size: 0.95rem;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        min-width: 100px;
-        letter-spacing: 0.2px;
+    .pos-item-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px dashed rgba(139,99,75,0.08);
+    }
+    .pos-item-row:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
     }
     
-    .modal-btn-primary {
-        background: #007aff;
-        color: white;
-        box-shadow: 0 2px 8px rgba(0, 122, 255, 0.25);
+    .pos-item-thumb {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        object-fit: cover;
+        background: #f5f5f5;
+        border: 1px solid rgba(139,99,75,0.08);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.04);
     }
     
-    .modal-btn-primary:hover {
-        background: #0051d5;
-        box-shadow: 0 4px 12px rgba(0, 122, 255, 0.35);
-        transform: translateY(-1px);
+    .pos-item-details {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
     }
     
-    .modal-btn-primary:active {
-        transform: translateY(0);
-        box-shadow: 0 1px 4px rgba(0, 122, 255, 0.3);
+    .pos-item-name {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--text);
+        line-height: 1.3;
     }
     
-    .modal-btn-secondary {
+    .pos-item-qty {
+        font-size: 0.72rem;
+        color: var(--muted);
+        font-weight: 600;
+        margin-top: 2px;
+    }
+    
+    .pos-item-price {
+        font-size: 0.85rem;
+        font-weight: 750;
+        color: var(--primary);
+    }
+    
+    .pos-card-footer {
+        padding: 16px 20px;
         background: white;
-        color: #555;
-        border: 1.5px solid #d0d0d0;
+        margin-top: auto;
     }
     
-    .modal-btn-secondary:hover {
-        background: #f8f8f8;
-        border-color: #b0b0b0;
+    .pos-card-total-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
     }
     
-    .modal-btn-secondary:active {
-        background: #f0f0f0;
+    .pos-total-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--muted);
+        letter-spacing: 0.8px;
     }
     
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
+    .pos-total-val {
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: #2e7d32;
     }
     
-    @keyframes modalSlide {
-        from { 
-            opacity: 0;
-            transform: translateY(-30px) scale(0.96);
-        }
-        to { 
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
+    .pos-card-actions {
+        display: flex;
+        gap: 10px;
     }
     
-    /* Release button hover effect */
-    .release-table-btn:hover {
-        background: #e8e8e8 !important;
-        border-color: #d0d0d0 !important;
-        color: #333 !important;
-        transform: translateY(-1px);
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    .pos-btn {
+        flex: 1;
+        padding: 10px 14px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
     
-    .release-table-btn:active {
+    .pos-btn-secondary {
+        background: transparent;
+        color: #8B634B;
+        border: 2px solid rgba(139,99,75,0.22);
+    }
+    .pos-btn-secondary:hover {
+        background: rgba(139,99,75,0.05);
+    }
+    
+    .pos-btn-primary {
+        background: #8B634B;
+        color: white;
+        box-shadow: 0 4px 12px rgba(139,99,75,0.15);
+    }
+    .pos-btn-primary:hover {
+        background: #5D4037;
+        transform: translateY(-1.5px);
+        box-shadow: 0 6px 16px rgba(139,99,75,0.22);
+    }
+    
+    .pos-btn-success {
+        background: #2e7d32;
+        color: white;
+        box-shadow: 0 4px 12px rgba(46,125,50,0.15);
+    }
+    .pos-btn-success:hover {
+        background: #1b5e20;
+        transform: translateY(-1.5px);
+        box-shadow: 0 6px 16px rgba(46,125,50,0.22);
+    }
+    
+    /* Filter Tabs */
+    .filter-tabs-container {
+        display: flex;
+        gap: 6px;
+        background: rgba(139,99,75,0.03);
+        padding: 4px;
+        border-radius: 12px;
+        border: 1px solid var(--card-border);
+        width: fit-content;
+    }
+    
+    .filter-btn {
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 0.78rem;
+        font-weight: 750;
+        border: none;
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .filter-btn.active {
+        background: var(--primary);
+        color: white;
+        box-shadow: 0 2px 6px rgba(139,99,75,0.15);
+    }
+    
+    .filter-btn:hover:not(.active) {
+        background: rgba(139,99,75,0.04);
+        color: var(--primary);
+    }
+    
+    @media (max-width: 768px) {
+        .pos-card-grid { grid-template-columns: 1fr; }
+    }
+    .table-btn:active {
         transform: translateY(0);
         box-shadow: none;
     }
@@ -229,60 +438,94 @@
         </div>
     </div>
 
-    <div class="section-card">
-        <div class="section-header">
-            <h2><i class="fas fa-layer-group" style="opacity:0.5; margin-right:10px;"></i>Live Order Queue</h2>
-            <span class="pill" id="liveQueueCount" style="background:rgba(93,64,55,0.08); color:var(--primary); font-weight:700;">{{ orders|length }} Active</span>
+    <div class="section-card" style="padding: 24px; border-radius: 20px; box-shadow: 0 10px 30px rgba(62,39,35,0.03);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid rgba(139,99,75,0.08); padding-bottom: 16px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <h2 class="mb-0" style="font-size: 1.3rem; font-weight: 800; color: #3e2723; display: flex; align-items: center; gap: 8px; margin: 0;">
+                    <i class="fas fa-layer-group" style="color: var(--primary); opacity: 0.85;"></i> Live Order Queue
+                </h2>
+                <span class="pill" id="liveQueueCount" style="background: rgba(139,99,75,0.08); color: var(--primary); font-weight: 750; font-size: 0.72rem; padding: 4px 12px; border-radius: 8px;">{{ orders|length }} Total Today</span>
+            </div>
+            
+            <!-- Search input right-aligned -->
+            <div style="position:relative; width: 260px;">
+                <i class="fas fa-search" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:0.8rem;"></i>
+                <input type="text" id="orderSearch" class="form-control" style="padding: 8px 12px 8px 34px; border-radius: 10px; font-size: 0.8rem; width: 100%; border: 1px solid rgba(139,99,75,0.15); background: #FAF8F5;" placeholder="Search Customer Name or ID..." onkeyup="filterCards()">
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+            <!-- Filter Tabs -->
+            <div class="filter-tabs-container" style="margin-bottom: 0;">
+                <button type="button" class="filter-btn active" data-tab="ALL" onclick="applyTabFilter('ALL')">All</button>
+                <button type="button" class="filter-btn" data-tab="PROCESS" onclick="applyTabFilter('PROCESS')">On Process</button>
+                <button type="button" class="filter-btn" data-tab="COMPLETED" onclick="applyTabFilter('COMPLETED')">Completed</button>
+                <button type="button" class="filter-btn" data-tab="CANCELLED" onclick="applyTabFilter('CANCELLED')">Cancelled</button>
+            </div>
         </div>
 
         {% if orders %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Ref ID</th>
-                    <th style="text-align:left;">Customer Name</th>
-                    <th>Order Total</th>
-                    <th>Service</th>
-                    <th>Order Status</th>
-                    <th>Payment</th>
-                    <th>Created</th>
-                    <th style="text-align:center;">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for order in orders %}
-                <tr data-order-id="{{ order.id }}" 
-                    data-status="{{ order.status }}" 
-                    data-payment-status="{{ order.payment_status }}" 
-                    data-table-status="{{ order.table_status or 'AVAILABLE' }}">
-                    <td><span class="order-id">{{ order.order_code or '#' + order.id|string }}</span></td>
-                    <td style="font-weight:500; text-align:left;">
-                        {% if order.user %}
-                        <i class="fas fa-user-circle" style="opacity:0.3; margin-right:6px;"></i>
-                        {{ order.user.first_name }} {{ order.user.last_name }}
-                        {% elif order.customer_name %}
-                        <i class="fas fa-user-tag" style="opacity:0.3; margin-right:6px;"></i>
-                        {{ order.customer_name }}
-                        {% else %}
-                        <i class="fas fa-walking" style="opacity:0.3; margin-right:6px;"></i> Walk-in Guest
-                        {% endif %}
-                    </td>
-                    <td class="order-amount">₱{{ "%.2f"|format(order.total_amount|float) }}</td>
-                    <td><span class="pill service">{{ order.dining_option.replace('_', ' ').title() }}</span></td>
-                    <td><span class="pill {{ order.status.lower() }}">{{ order.status.title() }}</span></td>
-                    <td><span class="pill {{ order.payment_status.lower() }}">{{ order.payment_status.title() }}</span></td>
-                    <td style="color:var(--muted); font-size:0.8rem; font-weight:500;">
-                        {{ order.created_at.strftime('%I:%M %p') if order.created_at else 'N/A' }}
-                    </td>
-                    <td style="text-align:center;">
-                        {% if order.status == 'READY' %}
-                            <button class="btn-icon complete-order-btn"
-                                    data-order-id="{{ order.id }}"
-                                    data-order-code="{{ order.order_code or '#' ~ order.id|string }}"
-                                    data-dining-option="{{ order.dining_option }}"
-                                    data-payment-status="{{ order.payment_status }}"
-                                    style="padding:6px 12px; font-size:0.8rem; background:#28a745; border:1px solid #28a745; border-radius:6px; cursor:pointer; color:white; font-weight:600; transition:all 0.2s ease; display:inline-flex; align-items:center; justify-content:center; gap:4px;">
-                                <i class="fas fa-check-double" style="font-size:0.75rem;"></i>
+        <div class="pos-card-grid" id="posCardGrid">
+            {% for order in orders %}
+            <div class="pos-card {{ order.status.lower() }}" data-order-id="{{ order.id }}" data-status="{{ order.status }}" data-payment-status="{{ order.payment_status }}" data-customer="{% if order.user %}{{ order.user.first_name }} {{ order.user.last_name }}{% elif order.customer_name %}{{ order.customer_name }}{% else %}Walk-in{% endif %}" data-code="{{ order.order_code or '#' + order.id|string }}">
+                <div class="pos-card-header">
+                    <div class="pos-card-header-top">
+                        <span class="order-id">{{ order.order_code or '#' + order.id|string }}</span>
+                        <span class="pos-card-time"><i class="far fa-clock me-1"></i>{{ order.created_at.strftime('%I:%M %p') if order.created_at else 'N/A' }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <span class="pos-card-customer">
+                            {% if order.user %}
+                                <i class="fas fa-user-circle" style="opacity:0.3;"></i> {{ order.user.first_name }} {{ order.user.last_name }}
+                            {% elif order.customer_name %}
+                                <i class="fas fa-user-tag" style="opacity:0.3;"></i> {{ order.customer_name }}
+                            {% else %}
+                                <i class="fas fa-walking" style="opacity:0.3;"></i> Walk-in Guest
+                            {% endif %}
+                        </span>
+                        <span class="pill service">{{ order.dining_option.replace('_', ' ').title() }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <span class="pill {{ order.status.lower() }}">{{ order.status.title() }}</span>
+                        <span class="pill {{ order.payment_status.lower() }}">{{ order.payment_status.title() }}</span>
+                    </div>
+                </div>
+                <div class="pos-card-body">
+                    {% for item in order.items %}
+                    <div class="pos-item-row">
+                        <img src="{{ item.menu_item.image_url or url_for('static', filename='img/default-food.png') }}" class="pos-item-thumb" onerror="this.src='/static/img/default-food.png';">
+                        <div class="pos-item-details">
+                            <span class="pos-item-name">{{ item.menu_item.name }}</span>
+                            <span class="pos-item-qty">Qty: {{ item.quantity }}</span>
+                        </div>
+                        <span class="pos-item-price">₱{{ "%.2f"|format(item.price_at_time|float) }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="pos-card-footer">
+                    <div class="pos-card-total-row">
+                        <span class="pos-total-label">Total Amount</span>
+                        <span class="pos-total-val">₱{{ "%.2f"|format(order.total_amount|float) }}</span>
+                    </div>
+                    <div class="pos-card-actions">
+                        <button type="button" class="pos-btn pos-btn-secondary" onclick="openDetailsModal({{ order.id }})">
+                            <i class="fas fa-info-circle"></i> Details
+                        </button>
+                        {% if order.status == 'COMPLETED' %}
+                            <button type="button" class="pos-btn pos-btn-secondary" disabled style="opacity:0.6; cursor:not-allowed; background:rgba(0,0,0,0.03);">
+                                <i class="fas fa-check-double"></i> Served
+                            </button>
+                        {% elif order.status == 'CANCELLED' %}
+                            <button type="button" class="pos-btn pos-btn-secondary" disabled style="opacity:0.6; cursor:not-allowed; background:rgba(0,0,0,0.03);">
+                                <i class="fas fa-ban"></i> Cancelled
+                            </button>
+                        {% elif order.payment_status == 'UNPAID' %}
+                            <button type="button" class="pos-btn pos-btn-primary" onclick="openSettleModal({{ order.id }}, {{ order.total_amount }})">
+                                <i class="fas fa-cash-register"></i> Pay Bills
+                            </button>
+                        {% elif order.status == 'READY' %}
+                            <button type="button" class="pos-btn pos-btn-success complete-order-btn" data-order-id="{{ order.id }}">
+                                <i class="fas fa-check-double"></i>
                                 {% if order.dining_option == 'TAKE_OUT' %}
                                     Pick Up
                                 {% elif order.dining_option == 'DELIVERY' %}
@@ -291,14 +534,20 @@
                                     Serve
                                 {% endif %}
                             </button>
+                        {% elif order.status == 'PENDING' %}
+                            <button type="button" class="pos-btn pos-btn-secondary" disabled style="opacity:0.6; cursor:not-allowed; background:rgba(0,0,0,0.03);">
+                                <i class="fas fa-hourglass-half"></i> Waiting
+                            </button>
                         {% else %}
-                            <span style="color:var(--muted); font-size:0.75rem; font-style:italic;">Preparing...</span>
+                            <button type="button" class="pos-btn pos-btn-secondary" disabled style="opacity:0.6; cursor:not-allowed; background:rgba(0,0,0,0.03);">
+                                <i class="fas fa-spinner fa-spin"></i> Preparing
+                            </button>
                         {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
         {% else %}
         <div class="empty-state">
             <i class="fas fa-cloud"></i>
@@ -306,27 +555,546 @@
         </div>
         {% endif %}
     </div>
-</div> <!-- end cashierDashboardContainer -->
+
+    <!-- SETTLE BILL MODAL -->
+    <div id="settleBillModal" class="billing-overlay">
+        <div class="billing-modal">
+            <div class="modal-head">
+                <h3><i class="fas fa-money-bill-wave me-2"></i>Settle Bill #<span id="settleOrderId"></span></h3>
+                <button class="modal-close" onclick="closeModal('settleBillModal')">&times;</button>
+            </div>
+            <form id="settleBillForm" method="POST" action="">
+                <div class="modal-body-inner" style="padding: 20px;">
+                    <input type="hidden" name="payment_status" value="PAID">
+                    <input type="hidden" id="amountDueHidden" value="0">
+                    
+                    <!-- Breakdown Table (Sub Total, Cash, Change, Grand Total) -->
+                    <div class="mb-3 rounded-3 overflow-hidden" style="border: 1px solid rgba(139,99,75,0.12); font-family: 'Outfit', sans-serif;">
+                        <!-- Sub Total -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: #faf8f6; border-bottom: 1px solid rgba(139,99,75,0.08);">
+                            <span style="font-weight: 600; color: #888; font-size: 0.88rem;">Sub Total</span>
+                            <span style="font-weight: 700; color: var(--text); font-size: 0.95rem;" id="settleSubTotal">₱0.00</span>
+                        </div>
+                        <!-- Cash Input -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: #faf8f6; border-bottom: 1px solid rgba(139,99,75,0.08);">
+                            <span style="font-weight: 600; color: #888; font-size: 0.88rem;">Cash</span>
+                            <input type="number" step="0.01" id="amountTenderedInput" name="amount_tendered" required placeholder="0.00"
+                                   style="width: 130px; font-weight: 700; border-radius: 8px; border: 1px solid rgba(139,99,75,0.2); font-size: 0.95rem; color: var(--text); text-align: right; padding: 4px 8px;">
+                        </div>
+                        <!-- Change -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: #faf8f6; border-bottom: 1px solid rgba(139,99,75,0.08);">
+                            <span style="font-weight: 600; color: #888; font-size: 0.88rem;">Change</span>
+                            <span style="font-weight: 700; color: var(--primary); font-size: 0.95rem;" id="changeAmountDisplay">₱0.00</span>
+                        </div>
+                        <!-- Grand Total -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: linear-gradient(135deg, rgba(139,99,75,0.06), rgba(139,99,75,0.02));">
+                            <span style="font-weight: 700; color: var(--text); font-size: 1rem;">Grand Total</span>
+                            <span style="font-weight: 800; color: #2e7d32; font-size: 1.2rem;" id="settleGrandTotal">₱0.00</span>
+                        </div>
+                    </div>
+
+                    <div class="input-error" id="amountError" style="justify-content:center; margin-bottom:12px; font-family: 'Outfit', sans-serif;">Amount must be equal or greater than the bill.</div>
+
+                    <!-- Quick Denom Buttons with Exact Button -->
+                    <div style="margin-bottom:16px; text-align:center;">
+                        <label class="input-label" style="font-size:0.75rem; font-family: 'Outfit', sans-serif; display:block; margin-bottom:8px;">Select Payment Amount</label>
+                        <div id="denomBtns" style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center;">
+                            <button type="button" class="denom-btn" style="padding: 6px 12px; font-size: 0.78rem;" onclick="setTendered('exact')">Exact</button>
+                            <button type="button" class="denom-btn" style="padding: 6px 12px; font-size: 0.78rem;" onclick="setTendered(50)">₱50</button>
+                            <button type="button" class="denom-btn" style="padding: 6px 12px; font-size: 0.78rem;" onclick="setTendered(100)">₱100</button>
+                            <button type="button" class="denom-btn" style="padding: 6px 12px; font-size: 0.78rem;" onclick="setTendered(200)">₱200</button>
+                            <button type="button" class="denom-btn" style="padding: 6px 12px; font-size: 0.78rem;" onclick="setTendered(500)">₱500</button>
+                            <button type="button" class="denom-btn" style="padding: 6px 12px; font-size: 0.78rem;" onclick="setTendered(1000)">₱1,000</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-foot">
+                    <button type="submit" id="confirmSettleBtn" disabled class="btn-modal-primary" style="width:100%; justify-content:center; padding:14px; border-radius:50px;">
+                        <i class="fas fa-check-circle"></i> Confirm Payment
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- CUSTOM CONFIRM MODAL (Fat-finger Check) -->
+    <div id="confirmGuardModal" class="billing-overlay">
+        <div class="billing-modal" style="max-width:380px;">
+            <div class="modal-body-inner" style="padding:32px 24px 24px;">
+                <div class="confirm-icon-circle">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h4 class="confirm-title">Large Amount Warning</h4>
+                <p class="confirm-text" id="confirmGuardMessage">Are you sure this amount is correct?</p>
+            </div>
+            <div class="modal-foot" style="justify-content:center; padding-bottom:24px; background:white; border:none;">
+                <button class="btn-modal-secondary" id="confirmGuardCancelBtn">Check Again</button>
+                <button class="btn-modal-primary" id="confirmGuardProceedBtn">Yes, Correct</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ORDER DETAILS MODAL -->
+    <div id="orderDetailsModal" class="billing-overlay">
+        <div class="billing-modal" style="max-width: 480px;">
+            <div class="modal-head">
+                <h3><i class="fas fa-file-invoice me-2"></i>Order <span id="detailOrderCode"></span></h3>
+                <button class="modal-close" onclick="closeModal('orderDetailsModal')">&times;</button>
+            </div>
+            <div class="modal-body-inner" style="max-height: 420px; overflow-y: auto; padding: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(139,99,75,0.06); padding-bottom: 8px;">
+                    <span style="font-weight:700; color:var(--muted); font-size:0.8rem; text-transform:uppercase;">Customer</span>
+                    <span id="detailCustomerName" style="font-weight:600; color: #3E2723;"></span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(139,99,75,0.06); padding-bottom: 8px;">
+                    <span style="font-weight:700; color:var(--muted); font-size:0.8rem; text-transform:uppercase;">Dining Option</span>
+                    <span id="detailDiningOption" style="font-weight:600; color: var(--primary);"></span>
+                </div>
+                <div id="detailTableNumberRow" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(139,99,75,0.06); padding-bottom: 8px;">
+                    <span style="font-weight:700; color:var(--muted); font-size:0.8rem; text-transform:uppercase;">Table Number</span>
+                    <span id="detailTableNumber" style="font-weight:600; color: #3E2723;"></span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(139,99,75,0.06); padding-bottom: 8px;">
+                    <span style="font-weight:700; color:var(--muted); font-size:0.8rem; text-transform:uppercase;">Created At</span>
+                    <span id="detailCreatedAt" style="font-weight:500; color: #3E2723;"></span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(139,99,75,0.06); padding-bottom: 8px;">
+                    <span style="font-weight:700; color:var(--muted); font-size:0.8rem; text-transform:uppercase;">Payment Status</span>
+                    <span id="detailPaymentStatus" class="pill"></span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(139,99,75,0.06); padding-bottom: 8px;">
+                    <span style="font-weight:700; color:var(--muted); font-size:0.8rem; text-transform:uppercase;">Payment Method</span>
+                    <span id="detailPaymentMethod" style="font-weight:600; color: #3E2723;"></span>
+                </div>
+                
+                <hr style="border:none; border-top:1px dashed rgba(139,99,75,0.15); margin:18px 0 14px;">
+                
+                <div style="font-weight:700; color:#8B634B; font-size:0.75rem; text-transform:uppercase; margin-bottom:8px;">Special Instructions / Notes</div>
+                <p id="detailNotes" style="font-size:0.8rem; color:#5D4037; font-style:italic; margin-bottom:0; background:rgba(139,99,75,0.03); padding:10px 12px; border-radius:8px; border:1px solid rgba(139,99,75,0.06); line-height: 1.4;"></p>
+                
+                <hr style="border:none; border-top:1px dashed rgba(139,99,75,0.15); margin:18px 0 14px;">
+                
+                <div style="font-weight:700; color:#8B634B; font-size:0.75rem; text-transform:uppercase; margin-bottom:8px;">Itemized Breakdown:</div>
+                <table class="table table-sm" style="font-size:0.8rem; width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr style="border-bottom:1px solid rgba(139,99,75,0.1); color:var(--muted); font-size: 0.72rem;">
+                            <th style="text-align:left; padding:4px 0;">Item Name</th>
+                            <th style="text-align:center; padding:4px 0; width:50px;">Qty</th>
+                            <th style="text-align:right; padding:4px 0; width:90px;">Price</th>
+                        </tr>
+                    </thead>
+                    <tbody id="detailItemsBody">
+                    </tbody>
+                </table>
+                
+                <hr style="border:none; border-top:1px solid rgba(139,99,75,0.12); margin:14px 0;">
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    <span style="font-weight:800; font-size:1rem; color:#3E2723;">Total Amount:</span>
+                    <span id="detailTotalAmount" style="font-weight:800; font-size:1.2rem; color:#2e7d32;"></span>
+                </div>
+            </div>
+            <div class="modal-foot">
+                <button class="btn-modal-secondary" onclick="closeModal('orderDetailsModal')">Close</button>
+                <a href="" id="detailPrintReceiptBtn" target="_blank" class="btn-modal-primary"><i class="fas fa-print"></i> Print Receipt</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.ordersData = {
+        {% for o in orders %}
+            "{{ o.id }}": {
+                "id": "{{ o.id }}",
+                "code": "{{ o.order_code or '#' + o.id|string }}",
+                "customer": "{% if o.user %}{{ o.user.first_name }} {{ o.user.last_name }}{% elif o.customer_name %}{{ o.customer_name }}{% else %}Walk-in Guest{% endif %}",
+                "email": "{{ o.user.email if o.user else 'N/A' }}",
+                "notes": "{{ o.notes or 'No special instructions' }}",
+                "dining_option": "{{ o.dining_option.replace('_', ' ').title() }}",
+                "payment_method": "{{ o.payment_method }}",
+                "payment_status": "{{ o.payment_status }}",
+                "status": "{{ o.status }}",
+                "table_number": "{{ o.table_number or 'N/A' }}",
+                "created_at": "{{ o.created_at.strftime('%Y-%m-%d %I:%M %p') if o.created_at else 'N/A' }}",
+                "total": "{{ '%.2f'|format(o.total_amount|float) }}",
+                "items": [
+                    {% for item in o.items %}
+                        {
+                            "name": "{{ item.menu_item.name }}",
+                            "qty": {{ item.quantity }},
+                            "price": "{{ '%.2f'|format(item.price_at_time|float) }}"
+                        }{% if not loop.last %},{% endif %}
+                    {% endfor %}
+                ]
+            }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    };
+</script>
 {% endblock %}
 
 {% block extra_script %}
 <script>
+    let currentFilterTab = 'ALL';
+
     document.addEventListener('DOMContentLoaded', function() {
-        // ─── COMPLETE ORDER BUTTON HANDLER ───────────────────────────────────
-        document.querySelectorAll('.complete-order-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const orderId = this.dataset.orderId;
-                completeOrder(orderId, this);
-            });
+        attachDashboardListeners();
+        // Restore previous filter if saved
+        applyTabFilter(currentFilterTab);
+    });
+
+    // ─── FILTER TABS & SEARCH FUNCTIONALITY ────────────────────────────
+    function applyTabFilter(tab) {
+        currentFilterTab = tab;
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            if (btn.getAttribute('data-tab') === tab) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+        filterCards();
+    }
+
+    function filterCards() {
+        const query = document.getElementById('orderSearch') ? document.getElementById('orderSearch').value.toLowerCase() : '';
+        document.querySelectorAll('.pos-card').forEach(card => {
+            const status = card.dataset.status;
+            const customer = card.dataset.customer.toLowerCase();
+            const code = card.dataset.code.toLowerCase();
+            const id = card.dataset.orderId.toLowerCase();
+
+            // Match tab filter
+            let matchTab = false;
+            if (currentFilterTab === 'ALL') {
+                matchTab = true;
+            } else if (currentFilterTab === 'PROCESS') {
+                matchTab = ['PENDING', 'PREPARING', 'READY'].includes(status);
+            } else if (currentFilterTab === 'COMPLETED') {
+                matchTab = status === 'COMPLETED';
+            } else if (currentFilterTab === 'CANCELLED') {
+                matchTab = status === 'CANCELLED';
+            }
+
+            // Match search query
+            const matchSearch = customer.includes(query) || code.includes(query) || id.includes(query);
+
+            if (matchTab && matchSearch) {
+                card.style.display = 'flex';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+
+    // ─── SEE DETAILS MODAL HANDLER ──────────────────────────────────────
+    function openDetailsModal(orderId) {
+        const order = window.ordersData[orderId];
+        if (!order) return;
+
+        document.getElementById('detailOrderCode').textContent = order.code;
+        document.getElementById('detailCustomerName').textContent = order.customer;
+        document.getElementById('detailDiningOption').textContent = order.dining_option;
+        
+        const tableRow = document.getElementById('detailTableNumberRow');
+        if (order.dining_option.toLowerCase().includes('dine')) {
+            tableRow.style.display = 'flex';
+            document.getElementById('detailTableNumber').textContent = order.table_number;
+        } else {
+            tableRow.style.display = 'none';
+        }
+
+        document.getElementById('detailCreatedAt').textContent = order.created_at;
+        
+        const payStatus = document.getElementById('detailPaymentStatus');
+        payStatus.className = `pill ${order.payment_status.toLowerCase()}`;
+        payStatus.textContent = order.payment_status;
+
+        document.getElementById('detailPaymentMethod').textContent = order.payment_method;
+        document.getElementById('detailNotes').textContent = order.notes;
+        document.getElementById('detailTotalAmount').textContent = '₱' + parseFloat(order.total).toLocaleString(undefined, {minimumFractionDigits: 2});
+
+        // Items body
+        const itemsBody = document.getElementById('detailItemsBody');
+        itemsBody.innerHTML = '';
+        order.items.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="padding: 6px 0; font-weight:600;">${item.name}</td>
+                <td style="text-align:center; padding: 6px 0;">x${item.qty}</td>
+                <td style="text-align:right; padding: 6px 0; font-weight:700;">₱${parseFloat(item.price).toFixed(2)}</td>
+            `;
+            itemsBody.appendChild(tr);
+        });
+
+        // Set print receipt URL
+        document.getElementById('detailPrintReceiptBtn').href = '/admin/orders/print_receipt/' + orderId;
+
+        openModal('orderDetailsModal');
+    }
+
+    // ─── BILL PAYMENT SETTLEMENT MODAL ──────────────────────────────────
+    function openSettleModal(orderId, amountDue) {
+        document.getElementById('settleOrderId').innerText = orderId;
+        const fmtAmount = '₱' + parseFloat(amountDue).toLocaleString(undefined, {minimumFractionDigits: 2});
+        document.getElementById('settleSubTotal').innerText = fmtAmount;
+        document.getElementById('settleGrandTotal').innerText = fmtAmount;
+        document.getElementById('amountDueHidden').value = amountDue;
+
+        const form = document.getElementById('settleBillForm');
+        form.action = '/admin/orders/update_payment/' + orderId;
+
+        const tenderedInput = document.getElementById('amountTenderedInput');
+        tenderedInput.value = '';
+        tenderedInput.style.borderColor = '';
+        tenderedInput.style.background = '';
+        
+        document.getElementById('changeAmountDisplay').textContent = '₱0.00';
+        document.getElementById('confirmSettleBtn').disabled = true;
+        document.getElementById('amountError').style.display = 'none';
+
+        // Reset denom button highlights
+        document.querySelectorAll('.denom-btn').forEach(b => b.classList.remove('active'));
+
+        openModal('settleBillModal');
+        setTimeout(() => tenderedInput.focus(), 400);
+    }
+
+    function setTendered(value) {
+        const input = document.getElementById('amountTenderedInput');
+        if (value === 'exact') {
+            const due = parseFloat(document.getElementById('amountDueHidden').value) || 0;
+            input.value = due.toFixed(2);
+        } else {
+            input.value = parseFloat(value).toFixed(2);
+        }
+
+        // Highlight active button
+        document.querySelectorAll('.denom-btn').forEach(b => b.classList.remove('active'));
+        if (event && event.target) {
+            event.target.classList.add('active');
+        }
+
+        // Trigger change calculation
+        input.dispatchEvent(new Event('input'));
+    }
+
+    document.getElementById('amountTenderedInput').addEventListener('input', function() {
+        const raw = this.value;
+        const due = parseFloat(document.getElementById('amountDueHidden').value) || 0;
+        const btn = document.getElementById('confirmSettleBtn');
+        const error = document.getElementById('amountError');
+        const changeDisplay = document.getElementById('changeAmountDisplay');
+
+        // Block notation
+        if (/[eE+\-]/.test(raw) && raw !== '') {
+            this.value = raw.replace(/[eE+\-]/g, '');
+            return;
+        }
+
+        const tendered = parseFloat(raw) || 0;
+
+        // Sync denom button active state
+        document.querySelectorAll('.denom-btn').forEach(b => {
+            const bVal = b.textContent.trim();
+            if (bVal === 'Exact') {
+                if (Math.abs(tendered - due) < 0.01) { b.classList.add('active'); }
+                else { b.classList.remove('active'); }
+                return;
+            }
+            const bNum = parseFloat(bVal.replace(/[₱,]/g, ''));
+            if (!isNaN(bNum) && bNum === tendered) { b.classList.add('active'); return; }
+            b.classList.remove('active');
+        });
+
+        if (raw === '') {
+            btn.disabled = true;
+            changeDisplay.textContent = '₱0.00';
+            error.style.display = 'none';
+            this.style.borderColor = '';
+            this.style.background = '';
+            return;
+        }
+
+        if (tendered <= 0) {
+            btn.disabled = true;
+            changeDisplay.textContent = '₱0.00';
+            error.textContent = 'Amount must be greater than zero.';
+            error.style.display = 'block';
+            this.style.borderColor = 'rgba(198,40,40,0.5)';
+            this.style.background = '#fff8f8';
+            return;
+        }
+
+        if (tendered < due) {
+            btn.disabled = true;
+            changeDisplay.textContent = '₱0.00';
+            error.textContent = 'Amount must be equal or greater than the bill.';
+            error.style.display = 'block';
+            this.style.borderColor = 'rgba(198,40,40,0.5)';
+            this.style.background = '#fff8f8';
+            return;
+        }
+
+        // Fat finger check
+        if (tendered > due * 10) {
+            if (window._isConfirmingGuard) return;
+            window._isConfirmingGuard = true;
+            
+            const msg = `Amount Tendered (₱${tendered.toLocaleString(undefined,{minimumFractionDigits:2})}) is significantly higher than the Bill Amount (₱${due.toLocaleString(undefined,{minimumFractionDigits:2})}). Is this correct?`;
+            document.getElementById('confirmGuardMessage').textContent = msg;
+            
+            openModal('confirmGuardModal');
+            
+            const proceedBtn = document.getElementById('confirmGuardProceedBtn');
+            const cancelBtn = document.getElementById('confirmGuardCancelBtn');
+            
+            const handleProceed = () => {
+                window._isConfirmingGuard = false;
+                closeModal('confirmGuardModal');
+                calculateAndEnable();
+                cleanup();
+            };
+            
+            const handleCancel = () => {
+                window._isConfirmingGuard = false;
+                closeModal('confirmGuardModal');
+                this.value = '';
+                btn.disabled = true;
+                changeDisplay.textContent = '₱0.00';
+                this.style.borderColor = '';
+                this.style.background = '';
+                cleanup();
+            };
+            
+            this.style.borderColor = '';
+            this.style.background = '';
+            btn.disabled = false;
+            const change = tendered - due;
+            changeDisplay.textContent = '₱' + change.toLocaleString(undefined, {minimumFractionDigits: 2});
+            
+            function cleanup() {
+                proceedBtn.removeEventListener('click', handleProceed);
+                cancelBtn.removeEventListener('click', handleCancel);
+            }
+            
+            proceedBtn.addEventListener('click', handleProceed);
+            cancelBtn.addEventListener('click', handleCancel);
+            return;
+        }
+
+        calculateAndEnable();
+
+        function calculateAndEnable() {
+            error.style.display = 'none';
+            document.getElementById('amountTenderedInput').style.borderColor = '';
+            document.getElementById('amountTenderedInput').style.background = '';
+            btn.disabled = false;
+            const change = tendered - due;
+            changeDisplay.textContent = '₱' + change.toLocaleString(undefined, {minimumFractionDigits: 2});
+        }
+    });
+
+    document.getElementById('amountTenderedInput').addEventListener('keydown', function(e) {
+        if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
+    });
+
+    // Handle settle payment form submission
+    document.getElementById('settleBillForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('confirmSettleBtn');
+        const originalContent = btn.innerHTML;
+        
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        
+        const formData = new FormData(this);
+        const orderId = document.getElementById('settleOrderId').innerText;
+
+        fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                closeModal('settleBillModal');
+                document.getElementById('settleBillForm').reset();
+                if (window.showToast) {
+                    window.showToast('success', data.message || 'Payment settled successfully.');
+                }
+
+                // INSTANT CLIENT-SIDE UI UPDATE:
+                const card = document.querySelector(`.pos-card[data-order-id="${orderId}"]`);
+                if (card) {
+                    card.dataset.paymentStatus = 'PAID';
+                    
+                    // Update header payment status pill
+                    const paymentBadge = card.querySelector('.pos-card-header .pill.unpaid');
+                    if (paymentBadge) {
+                        paymentBadge.textContent = 'Paid';
+                        paymentBadge.className = 'pill paid';
+                    }
+
+                    // Re-render button depending on current preparation status
+                    const status = card.dataset.status;
+                    const diningOption = card.querySelector('.pill.service') ? card.querySelector('.pill.service').textContent.trim().toLowerCase() : 'dine in';
+                    const actionsDiv = card.querySelector('.pos-card-actions');
+                    
+                    if (actionsDiv) {
+                        let btnLabel = 'Serve';
+                        if (diningOption.includes('take')) btnLabel = 'Pick Up';
+                        else if (diningOption.includes('deliver')) btnLabel = 'Complete';
+
+                        if (status === 'READY') {
+                            actionsDiv.innerHTML = `
+                                <button type="button" class="pos-btn pos-btn-secondary" onclick="openDetailsModal(${orderId})">
+                                    <i class="fas fa-info-circle"></i> Details
+                                </button>
+                                <button type="button" class="pos-btn pos-btn-success complete-order-btn" data-order-id="${orderId}">
+                                    <i class="fas fa-check-double"></i> ${btnLabel}
+                                </button>
+                            `;
+                            attachDashboardListeners();
+                        } else {
+                            actionsDiv.innerHTML = `
+                                <button type="button" class="pos-btn pos-btn-secondary" onclick="openDetailsModal(${orderId})">
+                                    <i class="fas fa-info-circle"></i> Details
+                                </button>
+                                <button type="button" class="pos-btn pos-btn-secondary" disabled style="opacity:0.6; cursor:not-allowed; background:rgba(0,0,0,0.03);">
+                                    <i class="fas fa-spinner fa-spin"></i> Preparing
+                                </button>
+                            `;
+                        }
+                    }
+                }
+
+                pollCashierDashboard(true);
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+                const error = document.getElementById('amountError');
+                error.textContent = data.message || 'Payment failed.';
+                error.style.display = 'block';
+                document.getElementById('amountTenderedInput').style.borderColor = 'rgba(198,40,40,0.5)';
+                document.getElementById('amountTenderedInput').style.background = '#fff8f8';
+            }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
+            if (window.showToast) {
+                window.showToast('danger', 'An error occurred. Please try again.');
+            }
         });
     });
 
-    // ─── COMPLETE ORDER FUNCTIONALITY ───────────────────────────────────
+    // ─── COMPLETE/SERVE ORDER FUNCTIONALITY ────────────────────────────
     function completeOrder(orderId, btnElement) {
-        // Disable button during request
         btnElement.disabled = true;
         const origHtml = btnElement.innerHTML;
-        btnElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+        btnElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
         
         fetch('/staff/cashier/orders/' + orderId + '/complete', {
             method: 'POST',
@@ -338,45 +1106,103 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                if (window.showToast) showToast('success', data.message || 'Order completed successfully');
+                if (window.showToast) showToast('success', data.message || 'Order served successfully');
                 
-                // Trigger dashboard refresh after short delay
-                setTimeout(pollCashierDashboard, 500);
+                // INSTANT CLIENT-SIDE UI UPDATE:
+                const card = document.querySelector(`.pos-card[data-order-id="${orderId}"]`);
+                if (card) {
+                    card.dataset.status = 'COMPLETED';
+                    card.classList.remove('ready', 'pending', 'preparing');
+                    card.classList.add('completed');
+                    
+                    const statusBadge = card.querySelector('.pos-card-header .pill:not(.service):not(.paid):not(.unpaid)');
+                    if (statusBadge) {
+                        statusBadge.textContent = 'Completed';
+                        statusBadge.className = 'pill completed';
+                    }
+                    
+                    // Hide completed orders if current tab is PROCESS or ALL (if tab doesn't match complete state)
+                    if (typeof filterCards === 'function') filterCards();
+                }
+
+                pollCashierDashboard(true);
             } else {
-                if (window.showToast) showToast('danger', data.error || 'Failed to complete order');
+                if (window.showToast) showToast('danger', data.error || 'Failed to serve order');
                 btnElement.disabled = false;
                 btnElement.innerHTML = origHtml;
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            if (window.showToast) showToast('danger', 'Network error while completing order.');
+            if (window.showToast) showToast('danger', 'Network error while serving order.');
             btnElement.disabled = false;
             btnElement.innerHTML = origHtml;
         });
     }
 
+    // ─── UTILITIES & SYNC POLLING ──────────────────────────────────────
+    function openModal(id) {
+        const el = document.getElementById(id);
+        el.style.display = 'flex';
+        setTimeout(() => el.classList.add('show'), 10);
+    }
+    function closeModal(id) {
+        const el = document.getElementById(id);
+        el.classList.remove('show');
+        setTimeout(() => el.style.display = 'none', 300);
+    }
+
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('billing-overlay')) {
+            closeModal(e.target.id);
+        }
+    });
+
     const _cashierOrderStatuses = {};
 
     function refreshCashierDashboardHtml() {
-        fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        const url = window.location.pathname + '?_t=' + Date.now();
+        fetch(url, { 
+            headers: { 
+                'X-Requested-With': 'XMLHttpRequest',
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache'
+            } 
+        })
         .then(response => response.text())
         .then(html => {
             const doc = new DOMParser().parseFromString(html, 'text/html');
             const oldEl = document.getElementById('cashierDashboardContainer');
             const newEl = doc.getElementById('cashierDashboardContainer');
             if (oldEl && newEl && oldEl.innerHTML !== newEl.innerHTML) {
+                // Keep track of search value
+                const searchVal = document.getElementById('orderSearch') ? document.getElementById('orderSearch').value : '';
+
                 oldEl.innerHTML = newEl.innerHTML;
+
+                // Restore search
+                const newSearch = document.getElementById('orderSearch');
+                if (newSearch) newSearch.value = searchVal;
+
                 attachDashboardListeners();
+                applyTabFilter(currentFilterTab);
             }
         })
         .catch(err => console.warn('Cashier HTML sync failed:', err));
     }
 
-    function pollCashierDashboard() {
-        if (document.querySelector('.modal-overlay')) return;
+    function pollCashierDashboard(force = false) {
+        // Prevent sync while overlay/modals are open unless forced
+        if (!force && document.querySelector('.billing-overlay.show')) return;
+        if (document.activeElement && document.activeElement.id === 'orderSearch') return;
 
-        fetch('{{ url_for("cashier_portal.cashier_api_dashboard") }}')
+        const url = '{{ url_for("cashier_portal.cashier_api_dashboard") }}' + '?_t=' + Date.now();
+        fetch(url, {
+            headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache'
+            }
+        })
         .then(r => r.json())
         .then(data => {
             if (!data.success) return;
@@ -389,12 +1215,12 @@
             if (elActive) elActive.textContent = s.active_orders;
             if (elDone) elDone.textContent = s.completed_today;
             if (elUnpaid) elUnpaid.textContent = s.unpaid_orders;
-            if (elQueue) elQueue.textContent = `${data.orders.length} Active`;
+            if (elQueue) elQueue.textContent = `${data.orders.length} Total Today`;
 
             let needsFullRefresh = false;
-            const tbody = document.querySelector('#cashierDashboardContainer table tbody');
-            const rowCount = tbody ? tbody.querySelectorAll('tr').length : 0;
-            if (rowCount !== data.orders.length) needsFullRefresh = true;
+            const cardGrid = document.getElementById('posCardGrid');
+            const cardCount = cardGrid ? cardGrid.querySelectorAll('.pos-card').length : 0;
+            if (cardCount !== data.orders.length) needsFullRefresh = true;
 
             data.orders.forEach(o => {
                 const prevKey = _cashierOrderStatuses[o.id];
@@ -409,25 +1235,6 @@
                     needsFullRefresh = true;
                 }
                 _cashierOrderStatuses[o.id] = currentKey;
-
-                const row = document.querySelector(`tr[data-order-id="${o.id}"]`);
-                if (row) {
-                    row.dataset.status = o.status;
-                    row.dataset.paymentStatus = o.payment_status;
-                    row.dataset.tableStatus = o.table_status || 'AVAILABLE';
-
-                    const pill = row.querySelector('td:nth-child(5) .pill');
-                    if (pill) {
-                        const label = o.status.charAt(0) + o.status.slice(1).toLowerCase();
-                        pill.className = `pill ${o.status.toLowerCase()}`;
-                        pill.textContent = label;
-                    }
-                    const payPill = row.querySelector('td:nth-child(6) .pill');
-                    if (payPill && o.payment_status) {
-                        payPill.className = `pill ${o.payment_status.toLowerCase()}`;
-                        payPill.textContent = o.payment_status.charAt(0) + o.payment_status.slice(1).toLowerCase();
-                    }
-                }
             });
 
             if (needsFullRefresh) refreshCashierDashboardHtml();
@@ -435,7 +1242,6 @@
         .catch(err => console.warn('Cashier sync failed:', err));
     }
 
-    // Re-attach all event listeners after a poll-driven DOM update
     function attachDashboardListeners() {
         document.querySelectorAll('.complete-order-btn').forEach(btn => {
             btn.addEventListener('click', function() {
@@ -445,16 +1251,6 @@
         });
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-        document.querySelectorAll('tr[data-order-id]').forEach(row => {
-            const status = row.dataset.status;
-            const tableStatus = row.dataset.tableStatus || 'AVAILABLE';
-            const paymentStatus = row.dataset.paymentStatus || 'UNPAID';
-            _cashierOrderStatuses[row.dataset.orderId] = `${status}|${tableStatus}|${paymentStatus}`;
-        });
-    });
-
     setInterval(pollCashierDashboard, 5000);
-
 </script>
 {% endblock %}

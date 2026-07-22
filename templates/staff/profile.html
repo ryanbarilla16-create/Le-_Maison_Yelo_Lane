@@ -215,7 +215,11 @@
                 <div class="role-pill">{{ current_user.role }}</div>
             </div>
 
-            <form method="POST" action="{{ profile_action }}">
+            <!-- Profile Alert Box -->
+            <div id="profileAlert" style="display: none; border-radius: 12px; padding: 12px; margin-bottom: 16px; font-size: 0.85rem;" class="alert"></div>
+
+            <form method="POST" action="{{ profile_action }}" id="profileForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                 <input type="hidden" name="form_type" value="profile">
 
                 <div class="form-group">
@@ -241,7 +245,7 @@
                     </small>
                 </div>
 
-                <button type="submit" class="btn-save">
+                <button type="submit" class="btn-save" id="profileSaveBtn">
                     <i class="fas fa-save"></i> Save Changes
                 </button>
             </form>
@@ -259,7 +263,11 @@
                 <h3>Change Password</h3>
             </div>
             <div class="card-body-inner">
-                <form method="POST" action="{{ profile_action }}">
+                <!-- Password Alert Box -->
+                <div id="passwordAlert" style="display: none; border-radius: 12px; padding: 12px; margin-bottom: 16px; font-size: 0.85rem;" class="alert"></div>
+
+                <form method="POST" action="{{ profile_action }}" id="passwordForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                     <input type="hidden" name="form_type" value="password">
 
                     <div class="form-group">
@@ -296,7 +304,7 @@
                         </div>
                     </div>
 
-                    <button type="submit" class="btn-save btn-save-password">
+                    <button type="submit" class="btn-save btn-save-password" id="passwordSaveBtn">
                         <i class="fas fa-key"></i> Update Password
                     </button>
                 </form>
@@ -376,5 +384,86 @@
         text.textContent = level.label;
         text.style.color = level.color;
     }
+
+    // AJAX for Profile Form
+    document.getElementById('profileForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const form = this;
+        const btn = document.getElementById('profileSaveBtn');
+        const alertBox = document.getElementById('profileAlert');
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        alertBox.style.display = 'none';
+
+        fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form),
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(r => r.json().then(data => ({ status: r.status, data })))
+        .then(({ status, data }) => {
+            if (status >= 200 && status < 300 && data.success) {
+                alertBox.className = 'alert alert-success';
+                alertBox.textContent = data.message || 'Profile updated successfully!';
+                alertBox.style.display = 'block';
+            } else {
+                alertBox.className = 'alert alert-danger';
+                alertBox.textContent = data.message || 'Failed to update profile.';
+                alertBox.style.display = 'block';
+            }
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+        })
+        .catch(() => {
+            alertBox.className = 'alert alert-danger';
+            alertBox.textContent = 'Network error. Please try again.';
+            alertBox.style.display = 'block';
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+        });
+    });
+
+    // AJAX for Password Form
+    document.getElementById('passwordForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const form = this;
+        const btn = document.getElementById('passwordSaveBtn');
+        const alertBox = document.getElementById('passwordAlert');
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+        alertBox.style.display = 'none';
+
+        fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form),
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(r => r.json().then(data => ({ status: r.status, data })))
+        .then(({ status, data }) => {
+            if (status >= 200 && status < 300 && data.success) {
+                alertBox.className = 'alert alert-success';
+                alertBox.textContent = data.message || 'Password changed successfully!';
+                alertBox.style.display = 'block';
+                form.reset();
+                document.getElementById('strengthFill').style.width = '0%';
+                document.getElementById('strengthText').textContent = '';
+            } else {
+                alertBox.className = 'alert alert-danger';
+                alertBox.textContent = data.message || 'Failed to update password.';
+                alertBox.style.display = 'block';
+            }
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-key"></i> Update Password';
+        })
+        .catch(() => {
+            alertBox.className = 'alert alert-danger';
+            alertBox.textContent = 'Network error. Please try again.';
+            alertBox.style.display = 'block';
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-key"></i> Update Password';
+        });
+    });
 </script>
 {% endblock %}

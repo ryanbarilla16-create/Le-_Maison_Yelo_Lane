@@ -12,13 +12,7 @@
     </a>
 </div>
 
-{% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    {% for category, message in messages %}
-      <div class="alert alert-{{ category }}">{{ message }}</div>
-    {% endfor %}
-  {% endif %}
-{% endwith %}
+<div id="trashAlertBox" class="alert" style="display:none;"></div>
 
 <div class="card shadow-sm border-0" style="border-radius: 15px;">
     <div class="card-body p-0">
@@ -52,11 +46,11 @@
                         <td>{{ item.category }}</td>
                         <td>&#8369;{{ "%.2f"|format(item.price) }}</td>
                         <td class="text-end pe-4">
-                            <form action="{{ url_for('admin.menu_restore', item_id=item.id) }}" method="POST" class="d-inline">
-                                <button type="submit" class="btn btn-sm btn-success rounded-pill px-3">
-                                    <i class="fas fa-undo me-1"></i> Restore
-                                </button>
-                            </form>
+                            <button type="button" class="btn btn-sm btn-success rounded-pill px-3 restore-btn"
+                                data-url="{{ url_for('admin.menu_restore', item_id=item.id) }}"
+                                data-name="{{ item.name }}">
+                                <i class="fas fa-undo me-1"></i> Restore
+                            </button>
                         </td>
                     </tr>
                     {% else %}
@@ -72,4 +66,46 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.restore-btn');
+    if (!btn) return;
+    const alertBox = document.getElementById('trashAlertBox');
+    const row = btn.closest('tr');
+    const name = btn.dataset.name || 'item';
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Restoring...';
+    alertBox.style.display = 'none';
+
+    fetch(btn.dataset.url, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: ''
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            alertBox.className = 'alert alert-success';
+            alertBox.textContent = data.message || `Restored '${name}' successfully.`;
+            alertBox.style.display = 'block';
+            if (row) row.style.transition = 'opacity 0.4s'; row && (row.style.opacity = '0');
+            setTimeout(() => { if (row) row.remove(); }, 400);
+        } else {
+            alertBox.className = 'alert alert-danger';
+            alertBox.textContent = data.message || 'Restore failed.';
+            alertBox.style.display = 'block';
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-undo me-1"></i> Restore';
+        }
+    })
+    .catch(() => {
+        alertBox.className = 'alert alert-danger';
+        alertBox.textContent = 'Network error.';
+        alertBox.style.display = 'block';
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-undo me-1"></i> Restore';
+    });
+});
+</script>
 {% endblock %}

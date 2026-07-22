@@ -536,14 +536,14 @@ def send_email(to_email, subject, html_content):
                 )
                 response = sg.send(msg)
                 if response.status_code in (200, 201, 202):
-                    print(f"✅ Email sent via SendGrid to {to_email}")
+                    print(f"[SUCCESS] Email sent via SendGrid to {to_email}")
                     return True
                 else:
-                    print(f"❌ SendGrid error {response.status_code}: {response.body}")
+                    print(f"[ERROR] SendGrid error {response.status_code}: {response.body}")
             except Exception as e:
-                print(f"❌ SendGrid exception: {str(e)}")
+                print(f"[ERROR] SendGrid exception: {str(e)}")
                 if hasattr(e, 'body'):
-                    print(f"❌ SendGrid error body: {e.body}")
+                    print(f"[ERROR] SendGrid error body: {e.body}")
         
         # Fallback to Flask-Mail (e.g. Gmail SMTP)
         try:
@@ -557,15 +557,15 @@ def send_email(to_email, subject, html_content):
                 )
                 msg.html = html_content
                 mail.send(msg)
-                print(f"✅ Email sent via Flask-Mail fallback to {to_email}")
+                print(f"[SUCCESS] Email sent via Flask-Mail fallback to {to_email}")
                 return True
             else:
-                print("❌ Flask-Mail extension not found.")
+                print("[ERROR] Flask-Mail extension not found.")
         except Exception as e:
-            print(f"❌ Flask-Mail error: {str(e)}")
+            print(f"[ERROR] Flask-Mail error: {str(e)}")
             
     except Exception as e:
-        print(f"❌ Critical error in send_email: {str(e)}")
+        print(f"[ERROR] Critical error in send_email: {str(e)}")
         
     return False
 
@@ -649,3 +649,70 @@ def validate_password(password, confirm):
     if not re.search(r'[^A-Za-z0-9\s]', password): return "Password must contain a special character."
     if password != confirm: return "Passwords do not match."
     return None
+
+def save_optimized_image(file_source, target_filepath, max_dim=(800, 800), quality=80):
+    """
+    Optimizes and saves an uploaded image file.
+    Resizes image to fit within max_dim while preserving aspect ratio,
+    handles EXIF rotation, and saves with JPEG/WebP/PNG compression.
+
+    Args:
+        file_source: FileStorage object (from request.files), file path, or bytes
+        target_filepath: Absolute file path where the optimized image should be saved
+        max_dim: tuple of (max_width, max_height)
+        quality: int (1-100) compression quality
+    """
+    try:
+        from PIL import Image, ImageOps
+        import io
+
+        if hasattr(file_source, 'read'):
+            data = file_source.read()
+            if not data:
+                return False
+            img = Image.open(io.BytesIO(data))
+        elif isinstance(file_source, str):
+            img = Image.open(file_source)
+        elif isinstance(file_source, bytes):
+            img = Image.open(io.BytesIO(file_source))
+        else:
+            img = Image.open(file_source)
+
+        # Correct orientation from EXIF tags
+        img = ImageOps.exif_transpose(img)
+
+        target_ext = os.path.splitext(target_filepath)[1].lower()
+
+        # Resize keeping aspect ratio
+        img.thumbnail(max_dim, Image.Resampling.LANCZOS)
+
+        os.makedirs(os.path.dirname(target_filepath), exist_ok=True)
+
+        if target_ext in ['.jpg', '.jpeg']:
+            if img.mode in ('RGBA', 'P', 'LA'):
+                img = img.convert('RGB')
+            img.save(target_filepath, 'JPEG', quality=quality, optimize=True)
+        elif target_ext == '.webp':
+            if img.mode == 'P':
+                img = img.convert('RGBA')
+            img.save(target_filepath, 'WEBP', quality=quality, optimize=True)
+        elif target_ext == '.png':
+            img.save(target_filepath, 'PNG', optimize=True)
+        else:
+            if img.mode in ('RGBA', 'P', 'LA'):
+                img = img.convert('RGB')
+            img.save(target_filepath, quality=quality, optimize=True)
+
+        return True
+    except Exception as e:
+        print(f"Error optimizing image: {e}")
+        try:
+            if hasattr(file_source, 'seek'):
+                file_source.seek(0)
+            if hasattr(file_source, 'save'):
+                file_source.save(target_filepath)
+                return True
+        except Exception as fallback_err:
+            print(f"Fallback save failed: {fallback_err}")
+        return False
+

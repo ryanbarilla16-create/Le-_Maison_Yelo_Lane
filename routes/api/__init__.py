@@ -228,7 +228,7 @@ def get_bestsellers():
     try:
         def loader():
             items = (
-                MenuItem.query.filter_by(category='Best Sellers')
+                MenuItem.query.filter_by(is_bestseller=True, is_deleted=False)
                 .order_by(MenuItem.name.asc())
                 .limit(12)
                 .all()
@@ -948,6 +948,8 @@ def api_checkout():
     from utils import generate_order_code
     order_code = generate_order_code()
     
+    branch = data.get('branch') or request.cookies.get('selected_branch', 'Pagsanjan')
+
     new_order = Order(
         order_code=order_code,
         user_id=user_id,
@@ -955,7 +957,8 @@ def api_checkout():
         status=status_override or 'PENDING',
         dining_option=dining_option,
         payment_method=payment_method,
-        notes=notes
+        notes=notes,
+        branch=branch
     )
     if dining_option == 'DELIVERY':
         new_order.delivery_address = data.get('delivery_address', '')
@@ -1879,11 +1882,10 @@ def api_upload_profile_picture(user_id):
             if os.path.exists(old_path):
                 os.remove(old_path)
         
-        # Save new file
+        from utils import save_optimized_image
         filename = f"profile_{user_id}_{uuid.uuid4().hex[:8]}.jpg"
         filepath = os.path.join(upload_dir, filename)
-        with open(filepath, 'wb') as f:
-            f.write(img_bytes)
+        save_optimized_image(img_bytes, filepath, max_dim=(600, 600), quality=82)
         
         # Update user record with relative URL
         user.profile_picture_url = f"/static/uploads/profiles/{filename}"
@@ -1909,16 +1911,22 @@ def rider_get_deliveries():
     """Get all DELIVERY orders for rider dashboard"""
     rider_id = request.args.get('rider_id', type=int)
     
+    rider = User.query.get(rider_id) if rider_id else None
+    rider_branch = rider.branch if rider else None
+
     # Available = DELIVERY dining + no rider assigned yet (or WAITING)
-    # Show PENDING, PREPARING, and COMPLETED orders so rider sees them immediately
-    available = Order.query.options(
+    # Show PENDING, PREPARING, READY, and COMPLETED orders so rider sees them immediately
+    query = Order.query.options(
         selectinload(Order.items).selectinload(OrderItem.menu_item),
         selectinload(Order.user),
     ).filter(
         Order.dining_option == 'DELIVERY',
-        Order.status.in_(['PENDING', 'PREPARING', 'COMPLETED']),
+        Order.status.in_(['PENDING', 'PREPARING', 'READY', 'COMPLETED']),
         (Order.rider_id == None) | (Order.delivery_status == 'WAITING')
-    ).order_by(Order.created_at.desc()).limit(50).all()
+    )
+    if rider_branch and rider_branch != 'ALL':
+        query = query.filter(Order.branch == rider_branch)
+    available = query.order_by(Order.created_at.desc()).limit(50).all()
     
     # My active deliveries
     my_active = []
@@ -1994,7 +2002,7 @@ def rider_accept_delivery(order_id):
         return jsonify({'success': False, 'message': 'Rider ID required.'}), 400
     
     order = Order.query.get_or_404(order_id)
-    if order.status != 'COMPLETED':
+    if order.status not in ['READY', 'COMPLETED']:
         return jsonify({'success': False, 'message': 'Cannot accept yet! Kitchen is still preparing this order.'}), 400
         
     if order.rider_id and order.delivery_status not in [None, 'WAITING']:
@@ -2021,9 +2029,9 @@ def rider_update_delivery(order_id):
         return jsonify({'success': False, 'message': 'This order is not assigned to you.'}), 403
     
     # === STRICT WORKFLOW ENFORCEMENT ===
-    # PICKED_UP: Only allowed if Kitchen has marked order as COMPLETED
+    # PICKED_UP: Only allowed if Kitchen has marked order as READY or COMPLETED
     if new_status == 'PICKED_UP':
-        if order.status != 'COMPLETED':
+        if order.status not in ['READY', 'COMPLETED']:
             return jsonify({
                 'success': False, 
                 'message': 'Cannot pick up yet! Kitchen is still preparing this order. Please wait for kitchen to finish.'

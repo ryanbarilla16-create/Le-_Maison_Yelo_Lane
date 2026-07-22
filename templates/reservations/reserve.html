@@ -284,7 +284,11 @@
             </div>
         </div>
 
-        <form method="POST" action="{{ url_for('main.reserve') }}" class="resForm">
+        <!-- Enhanced Reservation AJAX Alert -->
+        <div id="ajaxAlert" style="display: none; border-radius: 12px; padding: 12px; margin: 0 2rem 1.5rem; font-size: 0.85rem;" class="alert alert-danger"></div>
+
+        <form method="POST" action="{{ url_for('main.reserve') }}" class="resForm" id="resForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
             <div class="resRow">
                 <div class="resField">
                     <label for="booking_type">Booking Type</label>
@@ -567,6 +571,46 @@
                     sessionStorage.setItem('res_' + f, e.target.value);
                 });
             }
+        });
+
+        // AJAX Reservation Form Submission
+        document.getElementById('resForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const form = this;
+            const btn = document.querySelector('.resSubmit');
+            const alertBox = document.getElementById('ajaxAlert');
+
+            btn.disabled = true;
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Checking slot...';
+            alertBox.style.display = 'none';
+
+            fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(r => r.json().then(data => ({ status: r.status, data })))
+            .then(({ status, data }) => {
+                if (status >= 200 && status < 300 && data.success && data.redirect) {
+                    btn.innerHTML = '<i class="fas fa-check-circle me-2"></i> Redirecting...';
+                    btn.style.background = 'linear-gradient(135deg, #2e7d32, #43a047)';
+                    setTimeout(() => {
+                        window.location.href = data.redirect;
+                    }, 500);
+                } else {
+                    alertBox.textContent = data.message || 'Slot unavailable or invalid input.';
+                    alertBox.style.display = 'block';
+                    btn.disabled = false;
+                    btn.innerHTML = originalHTML;
+                }
+            })
+            .catch(() => {
+                alertBox.textContent = 'Network error. Please try again.';
+                alertBox.style.display = 'block';
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+            });
         });
     });
 </script>

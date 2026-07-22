@@ -21,9 +21,10 @@ class User(db.Model, UserMixin):
     gender = db.Column(db.String(20), nullable=True)
     
     # Status and Roles
-    status = db.Column(db.String(20), default='PENDING') # PENDING, ACTIVE, REJECTED
+    # Status and Roles
+    status = db.Column(db.String(20), default='PENDING', index=True) # PENDING, ACTIVE, REJECTED
     role = db.Column(db.String(20), default='USER', index=True) # USER, ADMIN, SUPER_ADMIN, CASHIER, INVENTORY_STAFF, RIDER
-    branch = db.Column(db.String(50), nullable=True, default=None) # Pagsanjan, Lucban, ALL (for SUPER_ADMIN), None (for regular users)
+    branch = db.Column(db.String(50), nullable=True, default=None, index=True) # Pagsanjan, Lucban, ALL (for SUPER_ADMIN), None (for regular users)
     
     # Email Verification
     is_verified = db.Column(db.Boolean, default=False)
@@ -40,9 +41,9 @@ class User(db.Model, UserMixin):
 class Reservation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     reservation_code = db.Column(db.String(50), unique=True, nullable=True, index=True)  # Unique code like 20240526-001
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    branch = db.Column(db.String(50), nullable=True, default='Pagsanjan') # Which branch this reservation belongs to
-    date = db.Column(db.Date, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    branch = db.Column(db.String(50), nullable=True, default='Pagsanjan', index=True) # Which branch this reservation belongs to
+    date = db.Column(db.Date, nullable=False, index=True)
     time = db.Column(db.Time, nullable=False)
     guest_count = db.Column(db.Integer, nullable=False)
     occasion = db.Column(db.String(50), nullable=True)
@@ -60,13 +61,14 @@ class MenuItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     item_code = db.Column(db.String(50), unique=True, nullable=True, index=True)  # Unique code like PASTA-001
     name = db.Column(db.String(100), nullable=False)
-    branch = db.Column(db.String(50), nullable=True, default='Pagsanjan')
+    branch = db.Column(db.String(50), nullable=True, default='Pagsanjan', index=True)
     description = db.Column(db.Text, nullable=True)
     price = db.Column(db.Numeric(10, 2), nullable=False)
     category = db.Column(db.String(50), nullable=False, index=True)
     image_url = db.Column(db.String(255), nullable=True)
     is_available = db.Column(db.Boolean, default=True, index=True)
     is_deleted = db.Column(db.Boolean, default=False, index=True) # Soft delete
+    is_bestseller = db.Column(db.Boolean, default=False, index=True)
     created_at = db.Column(db.DateTime, default=get_ph_time)
     
     @property
@@ -85,12 +87,12 @@ class MenuItem(db.Model):
 class Order(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     order_code = db.Column(db.String(50), unique=True, nullable=True, index=True)  # Unique code like ORD-20240526-001
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True, index=True)
     customer_name = db.Column(db.String(100), nullable=True)  # For walk-in customers
-    branch = db.Column(db.String(50), nullable=True, default='Pagsanjan') # Which branch this order belongs to
+    branch = db.Column(db.String(50), nullable=True, default='Pagsanjan', index=True) # Which branch this order belongs to
     total_amount = db.Column(db.Numeric(10, 2), nullable=False)
     status = db.Column(db.String(20), default='PENDING', index=True) # PENDING, PREPARING, COMPLETED, CANCELLED
-    payment_status = db.Column(db.String(20), default='UNPAID') # UNPAID, PAID
+    payment_status = db.Column(db.String(20), default='UNPAID', index=True) # UNPAID, PAID
     dining_option = db.Column(db.String(20), default='DINE_IN', index=True) # DINE_IN, TAKE_OUT, DELIVERY
     payment_method = db.Column(db.String(20), default='COUNTER') # COUNTER, ONLINE
     amount_tendered = db.Column(db.Numeric(10, 2), nullable=True)
@@ -133,8 +135,8 @@ class OrderItem(db.Model):
 
 class Review(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    order_id = db.Column(db.Integer, db.ForeignKey('order.id'), nullable=True) # Reference to the specific order being reviewed
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    order_id = db.Column(db.Integer, db.ForeignKey('order.id'), nullable=True, index=True) # Reference to the specific order being reviewed
     rating = db.Column(db.Integer, nullable=False) # 1 to 5
     comment = db.Column(db.Text, nullable=True)
     photo_url = db.Column(db.String(500), nullable=True) # Customer uploaded photo
@@ -146,7 +148,7 @@ class Review(db.Model):
 
 class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
     title = db.Column(db.String(200), nullable=False)
     message = db.Column(db.Text, nullable=False)
     type = db.Column(db.String(30), default='SYSTEM')  # ORDER, RESERVATION, DELIVERY, SYSTEM
@@ -173,13 +175,13 @@ class Ingredient(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     ingredient_code = db.Column(db.String(50), unique=True, nullable=True, index=True)
     name = db.Column(db.String(150), nullable=False)
-    branch = db.Column(db.String(50), nullable=True, default='Pagsanjan')
+    branch = db.Column(db.String(50), nullable=True, default='Pagsanjan', index=True)
     unit = db.Column(db.String(30), nullable=False)  # e.g. grams, pieces, liters, kg
     stock_qty = db.Column(db.Numeric(10, 2), default=0) # Main Warehouse/Bodega
     kitchen_qty = db.Column(db.Numeric(10, 2), default=0) # On-hand at Kitchen
     reorder_level = db.Column(db.Numeric(10, 2), default=10)  # low-stock threshold
     cost_per_unit = db.Column(db.Numeric(10, 2), default=0)
-    category = db.Column(db.String(50), nullable=True, default='General') # e.g. Protein, Dairy, Pantry
+    category = db.Column(db.String(50), nullable=True, default='General', index=True) # e.g. Protein, Dairy, Pantry
     expiration_date = db.Column(db.Date, nullable=True)
     supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=get_ph_time)
@@ -217,13 +219,13 @@ class OrderChat(db.Model):
 
 class AuditLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True, index=True)
     action = db.Column(db.String(50), nullable=False)       # CREATE, UPDATE, DELETE, LOGIN, LOGOUT
-    target_type = db.Column(db.String(50), nullable=False)   # e.g. MenuItem, Order, User, Reservation
+    target_type = db.Column(db.String(50), nullable=False, index=True)   # e.g. MenuItem, Order, User, Reservation
     target_id = db.Column(db.Integer, nullable=True)
     description = db.Column(db.Text, nullable=False)
     ip_address = db.Column(db.String(45), nullable=True)
-    created_at = db.Column(db.DateTime, default=get_ph_time)
+    created_at = db.Column(db.DateTime, default=get_ph_time, index=True)
 
     user = db.relationship('User', backref=db.backref('audit_logs', lazy=True))
 
@@ -415,3 +417,44 @@ class PermissionAuditLog(db.Model):
     
     user = db.relationship('User', backref=db.backref('permission_audit_logs', lazy=True))
 
+
+# ── BRANCHES ──────────────────────────────────────────────────────────────────
+class Branch(db.Model):
+    """
+    Stores branch locations for the restaurant system.
+    Branch names here are used as string references across User, Order,
+    MenuItem, Ingredient, and other models via their .branch column.
+    """
+    __tablename__ = 'branch'
+
+    id            = db.Column(db.Integer, primary_key=True)
+    name          = db.Column(db.String(100), unique=True, nullable=False)   # e.g. 'Pagsanjan'
+    address       = db.Column(db.String(255), nullable=True)
+    city          = db.Column(db.String(100), nullable=True)
+    province      = db.Column(db.String(100), nullable=True)
+    phone         = db.Column(db.String(30), nullable=True)
+    email         = db.Column(db.String(120), nullable=True)
+    is_main       = db.Column(db.Boolean, default=False)                     # main branch flag
+    is_active     = db.Column(db.Boolean, default=True)
+    created_at    = db.Column(db.DateTime, default=get_ph_time)
+    updated_at    = db.Column(db.DateTime, default=get_ph_time, onupdate=get_ph_time)
+
+    def __repr__(self):
+        return f'<Branch {self.name}>'
+
+# ─── Cache-busting: clear public menu cache whenever MenuItem changes ──────────
+from sqlalchemy import event as _sa_event
+
+def _bust_menu_cache(mapper, connection, target):
+    """Clear the public menu cache after any MenuItem insert/update/delete."""
+    try:
+        from flask import current_app
+        store = getattr(current_app, '_simple_cache', None)
+        if store is not None:
+            store.pop('public_menu_items', None)
+    except Exception:
+        pass  # Outside app context (e.g. tests) — silently skip
+
+_sa_event.listen(MenuItem, 'after_insert',  _bust_menu_cache)
+_sa_event.listen(MenuItem, 'after_update',  _bust_menu_cache)
+_sa_event.listen(MenuItem, 'after_delete',  _bust_menu_cache)

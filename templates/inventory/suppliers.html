@@ -13,13 +13,16 @@
 
 {% block page_title %}Supplier Directory{% endblock %}
 {% block page_subtitle %}
-    <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
-        <span>Manage and contact verified ingredient providers
-            
-        </span>
-        <button class="btn-primary" onclick="openModal('addSupplierModal')" style="padding: 8px 16px; font-size: 0.85rem;">
-            <i class="fas fa-plus me-1"></i> Add Supplier
-        </button>
+    <div style="display:flex; justify-content:space-between; align-items:center; width:100%; gap: 24px; flex-wrap: wrap;">
+        <span style="font-size:0.85rem; color:var(--muted);">Manage and contact verified ingredient providers</span>
+        <div style="display: flex; gap: 12px; align-items: center; flex-shrink: 0;">
+            <button class="btn-header-action btn-scan" onclick="openOcrModal()">
+                <i class="fas fa-file-image"></i> Scan Receipt
+            </button>
+            <button class="btn-header-action btn-add" onclick="openModal('addSupplierModal')">
+                <i class="fas fa-plus"></i> Add Supplier
+            </button>
+        </div>
     </div>
 {% endblock %}
 
@@ -542,6 +545,153 @@
         box-shadow: 0 2px 8px rgba(93,64,55,0.18);
     }
     .btn-assign:hover { background: #4a3028; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(93,64,55,0.28); }
+    .btn-header-action {
+        padding: 8px 16px;
+        font-size: 0.85rem;
+        color: #fff !important;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        text-decoration: none;
+        box-shadow: 0 4px 12px rgba(93, 64, 55, 0.2);
+    }
+    .btn-header-action.btn-scan {
+        background: linear-gradient(135deg, #795548, #5D4037);
+    }
+    .btn-header-action.btn-add {
+        background: linear-gradient(135deg, #5D4037, #3E2723);
+    }
+    .btn-header-action:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(93, 64, 55, 0.35) !important;
+        filter: brightness(1.1);
+    }
+    .btn-header-action:active {
+        transform: translateY(0);
+    }
+    
+    /* OCR SCAN MODAL STYLING */
+    .ocr-modal-card {
+        background: #fff;
+        border-radius: 20px;
+        width: 100%;
+        max-width: 680px;
+        margin: 20px;
+        box-shadow: 0 25px 60px rgba(0,0,0,0.18);
+        overflow: hidden;
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        border: 1px solid rgba(93, 64, 55, 0.12);
+        animation: ocrModalFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes ocrModalFadeIn {
+        from { opacity: 0; transform: scale(0.96) translateY(10px); }
+        to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .ocr-upload-zone {
+        border: 2px dashed rgba(93, 64, 55, 0.25);
+        border-radius: 16px;
+        padding: 40px 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        background: rgba(93, 64, 55, 0.02);
+    }
+    .ocr-upload-zone:hover {
+        border-color: #5D4037;
+        background: rgba(93, 64, 55, 0.05);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(93, 64, 55, 0.1);
+    }
+    .ocr-upload-zone i {
+        transition: transform 0.3s ease, color 0.3s ease;
+    }
+    .ocr-upload-zone:hover i {
+        transform: translateY(-4px) scale(1.05);
+        color: #5D4037 !important;
+    }
+    .btn-analyze {
+        width: 100%;
+        margin-top: 16px;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #795548, #5D4037);
+        color: #fff;
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        box-shadow: 0 4px 14px rgba(93, 64, 55, 0.25);
+        transition: all 0.25s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+    .btn-analyze:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(93, 64, 55, 0.35);
+        filter: brightness(1.08);
+    }
+    .btn-analyze:disabled {
+        background: #e0d6cf;
+        color: #a1887f;
+        box-shadow: none;
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+    .ocr-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+    }
+    .ocr-table th {
+        background: rgba(93, 64, 55, 0.04);
+        padding: 12px 14px;
+        text-align: left;
+        color: #5D4037;
+        font-weight: 700;
+        border-bottom: 2px solid rgba(93, 64, 55, 0.1);
+        text-transform: uppercase;
+        font-size: 0.72rem;
+        letter-spacing: 0.5px;
+    }
+    .ocr-table td {
+        padding: 12px 14px;
+        border-bottom: 1px solid #faf7f5;
+        color: #3e2723;
+    }
+    .ocr-table tr:hover td {
+        background: rgba(93, 64, 55, 0.02);
+    }
+    .ocr-table tr:last-child td {
+        border-bottom: none;
+    }
+    .ocr-badge-matched {
+        background: #ecfdf5;
+        color: #047857;
+        border-radius: 20px;
+        padding: 3px 10px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        border: 1px solid rgba(4, 120, 87, 0.15);
+    }
+    .ocr-badge-new {
+        background: #fffbeb;
+        color: #b45309;
+        border-radius: 20px;
+        padding: 3px 10px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        border: 1px solid rgba(180, 83, 9, 0.15);
+    }
+    
     .btn-assign:active { transform: translateY(0); }
     .btn-assign:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
     .unassigned-empty {
@@ -1888,5 +2038,504 @@
     }
 
 </script>
+
+<!-- ═══ OCR RECEIPT SCAN MODAL ═══ -->
+<div id="ocrScanModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55);
+    backdrop-filter:blur(5px); z-index:3000; align-items:center; justify-content:center; padding:16px;">
+    <div class="ocr-modal-card">
+
+        <!-- Header -->
+        <div style="background:linear-gradient(160deg, #3E2723 0%, #5D4037 60%, #6D4C41 100%); padding:24px;
+            display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
+            <div>
+                <h3 style="color:#fff; margin:0; font-size:1.15rem; font-weight:700; display:flex; align-items:center; gap:8px;">
+                    <i class="fas fa-file-invoice"></i> Scan Delivery Receipt
+                </h3>
+                <p style="color:rgba(255,255,255,0.75); margin:4px 0 0; font-size:0.8rem;">
+                    Upload a receipt image or PDF — OCR will extract items automatically
+                </p>
+            </div>
+            <button onclick="closeOcrModal()" style="background:rgba(255,255,255,0.12); border:none;
+                color:#fff; width:34px; height:34px; border-radius:50%; cursor:pointer; font-size:0.9rem;
+                display:flex; align-items:center; justify-content:center; transition: all 0.2s;"
+                onmouseover="this.style.background='rgba(255,255,255,0.22)'"
+                onmouseout="this.style.background='rgba(255,255,255,0.12)'">✕</button>
+        </div>
+
+        <!-- Body -->
+        <div style="padding:24px; overflow-y:auto; flex-grow:1;">
+
+            <!-- Upload zone -->
+            <div id="ocrUploadZone" class="ocr-upload-zone"
+                onclick="document.getElementById('ocrFileInput').click()"
+                ondragover="event.preventDefault(); this.style.borderColor='#5D4037'; this.style.background='rgba(93, 64, 55, 0.05)'"
+                ondragleave="this.style.borderColor='rgba(93, 64, 55, 0.25)'; this.style.background='rgba(93, 64, 55, 0.02)'"
+                ondrop="handleOcrDrop(event)">
+                <i class="fas fa-cloud-upload-alt fa-3x mb-3" style="color:#795548; opacity:0.8; margin-bottom:12px; display:block;"></i>
+                <p style="color:#5D4037; font-weight:700; margin:0 0 6px; font-size:0.95rem;">Click to upload or drag & drop</p>
+                <p style="color:#8d6e63; font-size:0.78rem; margin:0; font-weight:500;">Supports: JPG, PNG, BMP, TIFF, PDF, WEBP</p>
+                <input type="file" id="ocrFileInput" accept=".jpg,.jpeg,.png,.bmp,.tiff,.tif,.pdf,.webp"
+                    style="display:none" onchange="handleOcrFile(this.files[0])">
+            </div>
+
+            <!-- Preview image -->
+            <div id="ocrPreviewWrap" style="display:none; margin-top:20px; text-align:center; padding:12px; background:#fbf9f7; border-radius:14px; border:1px solid rgba(93,64,55,0.1);">
+                <img id="ocrPreviewImg" style="max-height:180px; border-radius:10px; border:1px solid rgba(93, 64, 55, 0.15); object-fit:contain; box-shadow:0 4px 12px rgba(0,0,0,0.05);">
+                <p id="ocrFileName" style="font-size:0.8rem; color:#5D4037; margin:8px 0 0; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></p>
+            </div>
+
+            <!-- Scan button -->
+            <button id="ocrScanBtn" class="btn-analyze" onclick="runOcrScan()" disabled>
+                <i class="fas fa-magic"></i> Analyze Receipt
+            </button>
+
+            <!-- Loading state -->
+            <div id="ocrLoading" style="display:none; text-align:center; padding:32px 0;">
+                <div class="spinner-border" style="color:#5D4037; width:2.5rem; height:2.5rem; border-width: 0.25em; display:inline-block; border: 0.25em solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spinner-border .75s linear infinite;"></div>
+                <style>
+                    @keyframes spinner-border {
+                        to { transform: rotate(360deg); }
+                    }
+                </style>
+                <p style="color:#5D4037; font-weight:700; margin:16px 0 0; font-size:0.92rem; letter-spacing:0.2px;">
+                    Analyzing receipt with OCR...
+                </p>
+            </div>
+
+            <!-- Results -->
+            <div id="ocrResults" style="display:none; margin-top:24px;">
+                <div style="background:rgba(93, 64, 55, 0.03); border:1px solid rgba(93, 64, 55, 0.12);
+                    border-radius:14px; padding:16px; margin-bottom:20px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <span style="font-size:0.75rem; font-weight:700; color:#5D4037; text-transform:uppercase; letter-spacing:0.8px; display:flex; align-items:center; gap:4px;">
+                            <i class="fas fa-building"></i> Detected Supplier
+                        </span>
+                    </div>
+                    <input type="text" id="ocrSupplierName"
+                        readonly
+                        style="width:100%; border:1px solid rgba(93, 64, 55, 0.15); border-radius:10px;
+                        padding:10px 14px; font-weight:600; color:#3e2723; font-size:0.95rem;
+                        background:#fdfaf8; cursor:default; outline:none;"
+                        placeholder="Supplier name...">
+                </div>
+
+                <div style="font-size:0.78rem; font-weight:700; color:#5d4037; text-transform:uppercase;
+                    letter-spacing:0.8px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between;">
+                    <span><i class="fas fa-boxes me-1"></i> Extracted Items</span>
+                    <span id="ocrItemCount" style="background:#5D4037; color:#fff; border-radius:20px;
+                        padding:2px 8px; font-size:0.7rem; font-weight:700;"></span>
+                </div>
+
+                <div id="ocrItemsTable" class="ocr-table-container" style="border:1px solid rgba(93, 64, 55, 0.12); border-radius:14px; overflow:hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.02);">
+                    <!-- Filled by JS -->
+                </div>
+
+                <div id="ocrRawTextWrap" style="margin-top:16px;">
+                    <button onclick="toggleOcrRaw()" style="background:none; border:none; color:#8d6e63;
+                        font-size:0.78rem; cursor:pointer; padding:0; font-weight:600; display:flex; align-items:center; gap:4px;">
+                        <i class="fas fa-code"></i> Show raw extracted text
+                    </button>
+                    <pre id="ocrRawText" style="display:none; font-size:0.7rem; color:#795548;
+                        background:#faf8f6; border-radius:10px; padding:12px; margin-top:8px;
+                        max-height:120px; overflow-y:auto; white-space:pre-wrap; border:1px solid rgba(93,64,55,0.08); font-family: monospace;"></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Banner -->
+        <div id="ocrSuccessBanner" style="display:none; margin:0 24px 20px; padding:20px 24px;
+            background:linear-gradient(135deg,#efebe9,#d7ccc8); border:1.5px solid #a1887f;
+            border-radius:16px; align-items:center; gap:16px;">
+            <div style="width:44px; height:44px; border-radius:50%; background:linear-gradient(135deg,#795548,#5D4037);
+                display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 4px 10px rgba(93, 64, 55, 0.25);">
+                <i class="fas fa-check" style="color:#fff; font-size:1.1rem;"></i>
+            </div>
+            <div style="flex:1;">
+                <div style="font-weight:800; color:#3E2723; font-size:0.95rem; margin-bottom:2px;">
+                    Successfully Added to Inventory!
+                </div>
+                <div id="ocrSuccessMsg" style="font-size:0.82rem; color:#5D4037; font-weight:500;"></div>
+                <div style="font-size:0.75rem; color:#a1887f; margin-top:4px;">
+                    <i class="fas fa-spinner fa-spin me-1"></i> Refreshing page...
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Banner -->
+        <div id="ocrErrorBanner" style="display:none; margin:0 24px 20px; padding:16px 20px;
+            background:#fef2f2; border:1.5px solid #fca5a5; border-radius:14px;
+            align-items:center; gap:12px;">
+            <i class="fas fa-exclamation-circle" style="color:#ef4444; font-size:1.3rem; flex-shrink:0;"></i>
+            <div id="ocrErrorMsg" style="font-size:0.85rem; color:#b91c1c; font-weight:600;"></div>
+        </div>
+
+        <!-- Footer -->
+        <div id="ocrFooter" style="display:none; padding:16px 24px; border-top:1px solid rgba(93,64,55,0.08);
+            background:#fdfaf8; flex-shrink:0; text-align:right; display:flex; justify-content:flex-end; gap:12px;">
+            <button onclick="closeOcrModal()" style="padding:10px 20px; border:1px solid rgba(93,64,55,0.2);
+                border-radius:10px; background:#fff; color:#5D4037; font-weight:600; cursor:pointer; font-size:0.88rem; transition: all 0.2s;"
+                onmouseover="this.style.background='#faf7f4'"
+                onmouseout="this.style.background='#fff'">
+                Cancel
+            </button>
+            <button id="ocrConfirmBtn" onclick="confirmOcrItems()" style="padding:10px 24px; border:none;
+                border-radius:10px; background:linear-gradient(135deg,#795548,#5D4037);
+                color:#fff; font-weight:700; cursor:pointer; font-size:0.88rem; display:flex; align-items:center; gap:6px; transition:all 0.2s; box-shadow:0 4px 10px rgba(93, 64, 55, 0.2);">
+                <i class="fas fa-check"></i> Add to Inventory
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ── OCR Modal ──────────────────────────────────────────────────
+let ocrSelectedFile = null;
+let ocrExtractedItems = [];
+
+function openOcrModal() {
+    document.getElementById('ocrScanModal').style.display = 'flex';
+}
+function closeOcrModal() {
+    document.getElementById('ocrScanModal').style.display = 'none';
+    resetOcrModal();
+}
+function resetOcrModal() {
+    ocrSelectedFile = null;
+    ocrExtractedItems = [];
+    document.getElementById('ocrFileInput').value = '';
+    document.getElementById('ocrPreviewWrap').style.display = 'none';
+    document.getElementById('ocrResults').style.display = 'none';
+    document.getElementById('ocrFooter').style.display = 'none';
+    document.getElementById('ocrLoading').style.display = 'none';
+    document.getElementById('ocrScanBtn').disabled = true;
+    document.getElementById('ocrScanBtn').style.opacity = '0.5';
+    // Reset banners
+    var sb = document.getElementById('ocrSuccessBanner');
+    var eb = document.getElementById('ocrErrorBanner');
+    if (sb) sb.style.display = 'none';
+    if (eb) eb.style.display = 'none';
+    // Reset items table
+    var tbl = document.getElementById('ocrItemsTable');
+    if (tbl) tbl.innerHTML = '';
+}
+
+function handleOcrDrop(e) {
+    e.preventDefault();
+    document.getElementById('ocrUploadZone').style.borderColor = 'rgba(139, 92, 246, 0.25)';
+    document.getElementById('ocrUploadZone').style.background = 'rgba(124, 58, 237, 0.02)';
+    const file = e.dataTransfer.files[0];
+    if (file) handleOcrFile(file);
+}
+
+function handleOcrFile(file) {
+    if (!file) return;
+    ocrSelectedFile = file;
+
+    // Show preview
+    const wrap = document.getElementById('ocrPreviewWrap');
+    const img  = document.getElementById('ocrPreviewImg');
+    const name = document.getElementById('ocrFileName');
+
+    name.textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+    if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = e => { img.src = e.target.result; };
+        reader.readAsDataURL(file);
+        img.style.display = 'block';
+    } else {
+        img.style.display = 'none';
+    }
+    wrap.style.display = 'block';
+
+    // Enable scan button
+    document.getElementById('ocrScanBtn').disabled = false;
+
+    // Hide previous results
+    document.getElementById('ocrResults').style.display = 'none';
+    document.getElementById('ocrFooter').style.display = 'none';
+}
+
+function runOcrScan() {
+    if (!ocrSelectedFile) return;
+    document.getElementById('ocrLoading').style.display = 'block';
+    document.getElementById('ocrResults').style.display = 'none';
+    document.getElementById('ocrFooter').style.display = 'none';
+    document.getElementById('ocrScanBtn').disabled = true;
+
+    const formData = new FormData();
+    formData.append('receipt_file', ocrSelectedFile);
+
+    fetch('/staff/inventory/suppliers/ocr-scan', {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById('ocrLoading').style.display = 'none';
+        document.getElementById('ocrScanBtn').disabled = false;
+
+        if (!data.success) {
+            alert('❌ ' + data.message);
+            return;
+        }
+
+        // Populate results
+        ocrExtractedItems = data.items || [];
+        document.getElementById('ocrSupplierName').value = data.supplier_name || '';
+        document.getElementById('ocrItemCount').textContent = data.item_count + ' items';
+        document.getElementById('ocrRawText').textContent = data.raw_text || '';
+
+        // Store supplier_id and receipt_date from validated response
+        var tbl = document.getElementById('ocrItemsTable');
+        tbl.setAttribute('data-supplier-id', data.supplier_id || '');
+        tbl.setAttribute('data-receipt-date', data.receipt_date || '');
+
+        // Build items table
+        const tbl = document.getElementById('ocrItemsTable');
+        if (ocrExtractedItems.length === 0) {
+            tbl.innerHTML = '<div style="padding:20px; text-align:center; color:#aaa; font-size:0.85rem;">' +
+                '<i class="fas fa-exclamation-circle me-2"></i>No items extracted. Try a clearer image.</div>';
+        } else {
+            let html = '<table class="ocr-table">';
+            html += '<thead><tr>' +
+                '<th>Item Name</th>' +
+                '<th style="text-align:center;">Qty</th>' +
+                '<th style="text-align:center;">Unit</th>' +
+                '<th style="text-align:right;">Unit Price</th>' +
+                '<th style="text-align:right;">Total</th>' +
+                '<th>Match</th>' +
+                '</tr></thead><tbody>';
+
+            let grandTotal = 0;
+
+            ocrExtractedItems.forEach(function(item, i) {
+                // Status badge based on validation result
+                var matchBadge;
+                if (item.status === 'matched') {
+                    matchBadge = '<span class="ocr-badge-matched">✓ ' + item.status_label + '</span>';
+                } else if (item.status === 'new') {
+                    matchBadge = '<span class="ocr-badge-new"><i class="fas fa-plus-circle me-1"></i>NEW — will be added</span>';
+                } else if (item.status === 'warning') {
+                    matchBadge = '<span class="ocr-badge-warning"><i class="fas fa-exclamation-triangle me-1"></i>Other Supplier</span>';
+                } else {
+                    matchBadge = '<span class="ocr-badge-new">New</span>';
+                }
+
+                const lineTotal = item.line_total || 0;
+                grandTotal += lineTotal;
+
+                html += '<tr ' +
+                    'data-name="' + item.name.replace(/"/g, '&quot;') + '" ' +
+                    'data-qty="' + item.qty + '" ' +
+                    'data-unit="' + item.unit + '" ' +
+                    'data-price="' + (item.price || 0) + '" ' +
+                    'data-ingredient-id="' + (item.ingredient_id || '') + '">' +
+                    '<td style="font-weight:700; color:#3e2723;">' + item.name + '</td>' +
+                    '<td style="text-align:center; font-weight:800; color:#7c3aed; font-size:0.95rem;">' + item.qty + '</td>' +
+                    '<td style="text-align:center; color:#5d4037; font-weight:600;">' + item.unit + '</td>' +
+                    '<td style="text-align:right; color:#5d4037; font-weight:600;">₱' + (item.price || 0).toLocaleString('en-PH', {minimumFractionDigits:2}) + '</td>' +
+                    '<td style="text-align:right; font-weight:700; color:#c62828;">₱' + lineTotal.toLocaleString('en-PH', {minimumFractionDigits:2}) + '</td>' +
+                    '<td>' + matchBadge + '</td>' +
+                    '</tr>';
+            });
+            html += '</tbody></table>';
+            tbl.innerHTML = html;
+
+            // Running Total + Available Funds banner
+            const availFunds = parseFloat(branchAvailableFunds) || 0;
+            const isInsufficient = grandTotal > availFunds && grandTotal > 0;
+            const bannerBg  = isInsufficient ? 'linear-gradient(135deg, #fff5f5, #fed7d7)' : 'linear-gradient(135deg, #f5f3ff, #ede9fe)';
+            const bannerBorder = isInsufficient ? '1px solid rgba(220,38,38,0.3)' : '1px solid rgba(124, 58, 237, 0.2)';
+            const bannerMsg    = isInsufficient
+                ? '<span style="color:#b91c1c;"><i class="fas fa-exclamation-triangle me-1"></i> Insufficient funds! Branch only has <b>₱' + availFunds.toLocaleString('en-PH', {minimumFractionDigits:2}) + '</b></span>'
+                : '<span style="color:#6d28d9;"><i class="fas fa-wallet me-1"></i> Will be paid using <b>' + targetBranchName + ' Branch</b> &nbsp;|&nbsp; Available: <b>₱' + availFunds.toLocaleString('en-PH', {minimumFractionDigits:2}) + '</b></span>';
+
+            let summaryHtml = '<div style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; margin-top:16px; background:' + bannerBg + '; border:' + bannerBorder + '; border-radius:14px; box-shadow:0 4px 12px rgba(124, 58, 237, 0.04);">' +
+                '<span style="font-size:0.9rem; font-weight:700; color:#5d4037;">Running Total:</span>' +
+                '<span style="font-size:1.35rem; font-weight:900; color:#c62828; letter-spacing:-0.5px;">₱' + grandTotal.toLocaleString('en-PH', {minimumFractionDigits:2}) + '</span>' +
+                '</div>' +
+                '<div style="padding:12px 16px; margin-top:8px; background:' + (isInsufficient ? 'rgba(239,68,68,0.06)' : 'rgba(124,58,237,0.04)') + '; border: 1px solid ' + (isInsufficient ? 'rgba(239,68,68,0.1)' : 'rgba(124,58,237,0.08)') + '; border-radius:12px; font-size:0.8rem; font-weight:500;">' + bannerMsg + '</div>';
+
+            // Insert after table
+            tbl.insertAdjacentHTML('afterend', summaryHtml);
+
+            // Disable confirm button if insufficient funds
+            const confirmBtn2 = document.getElementById('ocrConfirmBtn');
+            if (confirmBtn2) {
+                if (isInsufficient) {
+                    confirmBtn2.disabled = true;
+                    confirmBtn2.style.opacity = '0.5';
+                    confirmBtn2.title = 'Insufficient branch funds';
+                } else {
+                    confirmBtn2.disabled = false;
+                    confirmBtn2.style.opacity = '1';
+                }
+            }
+        }
+
+        document.getElementById('ocrResults').style.display = 'block';
+        if (ocrExtractedItems.length > 0) {
+            document.getElementById('ocrFooter').style.display = 'flex';
+        }
+    })
+    .catch(err => {
+        document.getElementById('ocrLoading').style.display = 'none';
+        document.getElementById('ocrScanBtn').disabled = false;
+        document.getElementById('ocrScanBtn').style.opacity = '1';
+        alert('Network error: ' + err.message);
+    });
+}
+
+function toggleOcrRaw() {
+    const el = document.getElementById('ocrRawText');
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function confirmOcrItems() {
+    // Read values from data attributes on each row
+    const rows = document.querySelectorAll('#ocrItemsTable tbody tr[data-name]');
+    const items = [];
+
+    rows.forEach(function(row) {
+        const name  = row.getAttribute('data-name') || '';
+        const qty   = parseFloat(row.getAttribute('data-qty')) || 0;
+        const unit  = row.getAttribute('data-unit') || 'pcs';
+        const ingId = row.getAttribute('data-ingredient-id') || null;
+        const orig  = ocrExtractedItems.find(function(i) { return i.name === name; }) || {};
+
+        if (name && qty > 0) {
+            items.push({
+                name: name,
+                qty_received: qty,
+                unit: unit,
+                cost_per_unit: parseFloat(row.getAttribute('data-price')) || orig.price || 0,
+                ingredient_id: ingId ? parseInt(ingId) : null,
+            });
+        }
+    });
+
+    if (items.length === 0) {
+        alert('No valid items to add.');
+        return;
+    }
+
+    // Split into matched (existing) and new ingredients
+    const existingItems = items
+        .filter(function(i) { return i.ingredient_id; })
+        .map(function(i) { return { ingredient_id: i.ingredient_id, qty_received: i.qty_received }; });
+    const newItems = items.filter(function(i) { return !i.ingredient_id; });
+
+    // ── Find supplier ID ─────────────────────────────────────────
+    // 1. Use supplier_id stored during OCR scan (most reliable)
+    var storedSupId = document.getElementById('ocrItemsTable').getAttribute('data-supplier-id');
+    var sup_id = storedSupId || null;
+
+    // 2. Fallback — match by detected supplier name against supplier cards
+    if (!sup_id) {
+        var detectedName = (document.getElementById('ocrSupplierName').value || '').trim().toLowerCase();
+        document.querySelectorAll('.supplier-card[data-id]').forEach(function(card) {
+            var cardName = (card.getAttribute('data-name') || '').toLowerCase();
+            var firstWord = detectedName.split(/\s+/)[0];
+            if (firstWord && cardName.includes(firstWord)) {
+                sup_id = card.getAttribute('data-id');
+            }
+        });
+    }
+
+    // 3. Fallback — use currentSupId (last opened receive modal)
+    if (!sup_id && typeof currentSupId !== 'undefined' && currentSupId) {
+        sup_id = String(currentSupId);
+    }
+
+    // 4. Last resort — first supplier card on the page
+    if (!sup_id) {
+        var firstCard = document.querySelector('.supplier-card[data-id]');
+        if (firstCard) sup_id = firstCard.getAttribute('data-id');
+    }
+
+    if (!sup_id) {
+        alert('Cannot find matching supplier. Please scan the receipt first.');
+        return;
+    }
+    // ─────────────────────────────────────────────────────────────
+
+    const payload = {
+        items: existingItems,
+        new_items: newItems,
+        supplier_name: document.getElementById('ocrSupplierName').value.trim()
+    };
+
+    const confirmBtn = document.querySelector('#ocrFooter button:last-child');
+    if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Saving...';
+    }
+
+    fetch('/staff/inventory/suppliers/' + sup_id + '/receive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        body: JSON.stringify(payload)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) {
+            // Show elegant in-modal success banner instead of browser alert
+            var successBanner = document.getElementById('ocrSuccessBanner');
+            var successMsg    = document.getElementById('ocrSuccessMsg');
+            if (successBanner && successMsg) {
+                successMsg.textContent = data.message;
+                successBanner.style.display = 'flex';
+                // Hide footer & results
+                document.getElementById('ocrFooter').style.display = 'none';
+                document.getElementById('ocrResults').style.display = 'none';
+                // Auto close and reload after 2.2s
+                setTimeout(function() {
+                    closeOcrModal();
+                    location.reload();
+                }, 2200);
+            } else {
+                closeOcrModal();
+                location.reload();
+            }
+        } else {
+            // Show inline error
+            var errBanner = document.getElementById('ocrErrorBanner');
+            var errMsg    = document.getElementById('ocrErrorMsg');
+            if (errBanner && errMsg) {
+                errMsg.textContent = data.message;
+                errBanner.style.display = 'flex';
+                setTimeout(function() { errBanner.style.display = 'none'; }, 5000);
+            } else {
+                alert('❌ ' + data.message);
+            }
+            if (confirmBtn) {
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = '<i class="fas fa-check me-1"></i> Add to Inventory';
+            }
+        }
+    })
+    .catch(function(err) {
+        var errBanner = document.getElementById('ocrErrorBanner');
+        var errMsg    = document.getElementById('ocrErrorMsg');
+        if (errBanner && errMsg) {
+            errMsg.textContent = 'Network error: ' + err.message;
+            errBanner.style.display = 'flex';
+        } else {
+            alert('Network error: ' + err.message);
+        }
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = '<i class="fas fa-check me-1"></i> Add to Inventory';
+        }
+    });
+}
+
+// Close on backdrop click
+document.getElementById('ocrScanModal').addEventListener('click', function(e) {
+    if (e.target === this) closeOcrModal();
+});
+</script>
+
 </div> <!-- end supplierGridContainer -->
 {% endblock %}

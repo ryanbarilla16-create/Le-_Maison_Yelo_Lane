@@ -72,7 +72,8 @@
             <h4 class="m-0" style="color: #6d4c41; font-weight: 700; letter-spacing: 0.5px;"><i class="fas fa-recycle me-2"></i>Record New Waste</h4>
             <span onclick="document.getElementById('addWasteModal').style.display='none'" style="font-size: 1.8rem; cursor: pointer; color: #bcaaa4; line-height: 1; transition: 0.2s;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#bcaaa4'">&times;</span>
         </div>
-        <form method="POST" action="{{ url_for('admin.add_waste_record') }}">
+        <div id="wasteAlertBox" class="alert mt-2" style="display:none;"></div>
+        <form method="POST" action="{{ url_for('admin.add_waste_record') }}" id="wasteForm">
             <div class="row g-3 align-items-end mb-2">
                 <div class="col-md-3">
                     <label class="form-label fw-bold" style="color: #6d4c41; font-size: 0.85rem;">Select Ingredient</label>
@@ -116,6 +117,44 @@
         to { opacity: 1; transform: translateY(0); }
     }
 </style>
+
+<script>
+document.getElementById('wasteForm') && document.getElementById('wasteForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const form = this;
+    const btn = form.querySelector('button[type="submit"]');
+    const alertBox = document.getElementById('wasteAlertBox');
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Recording...';
+    alertBox.style.display = 'none';
+
+    fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form),
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        alertBox.className = 'alert ' + (data.success ? 'alert-warning' : 'alert-danger');
+        alertBox.textContent = data.message || (data.success ? 'Waste recorded!' : 'Error.');
+        alertBox.style.display = 'block';
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-plus me-1"></i> Add';
+        if (data.success) {
+            form.reset();
+            setTimeout(() => location.reload(), 1500);
+        }
+    })
+    .catch(() => {
+        alertBox.className = 'alert alert-danger';
+        alertBox.textContent = 'Network error. Please try again.';
+        alertBox.style.display = 'block';
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-plus me-1"></i> Add';
+    });
+});
+</script>
 {% endblock %}
 
 

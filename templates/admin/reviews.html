@@ -707,6 +707,22 @@
         <h1 style="font-family: 'Playfair Display', serif; font-weight: 800; color: #3E2723;">Review Management</h1>
         <p style="color: #8B634B; opacity: 0.8; font-weight: 500;">Monitor customer feedback and curate homepage gallery photos</p>
     </div>
+    
+    <!-- Timeframe Selector Dropdown Button -->
+    <div class="d-flex align-items-center gap-2">
+        <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Timeframe:</span>
+        <div class="dropdown">
+            <button class="btn btn-outline-primary dropdown-toggle premium-dropdown-btn" type="button" id="timeframeDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="border-color: rgba(139, 99, 75, 0.25); color: #8B634B; border-radius: 12px; font-weight: 700; padding: 0.6rem 1.2rem; background: #fff; box-shadow: 0 2px 8px rgba(139, 99, 75, 0.05); font-family: 'Outfit', sans-serif;">
+                <i class="far fa-calendar-alt me-2"></i>All Time
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end premium-dropdown-menu" aria-labelledby="timeframeDropdown" style="border-radius: 12px; border: 1px solid rgba(139, 99, 75, 0.12); box-shadow: 0 10px 30px rgba(139, 99, 75, 0.08); padding: 0.5rem; min-width: 160px;">
+                <li><button class="dropdown-item" type="button" onclick="switchTimeframe('daily', 'Daily', this)" style="border-radius: 8px; font-weight: 600; padding: 0.5rem 1rem; color: #3E2723; border: none; background: transparent; width: 100%; text-align: left;"><i class="fas fa-clock me-2" style="opacity: 0.5;"></i>Daily</button></li>
+                <li><button class="dropdown-item" type="button" onclick="switchTimeframe('weekly', 'Weekly', this)" style="border-radius: 8px; font-weight: 600; padding: 0.5rem 1rem; color: #3E2723; border: none; background: transparent; width: 100%; text-align: left;"><i class="fas fa-calendar-week me-2" style="opacity: 0.5;"></i>Weekly</button></li>
+                <li><button class="dropdown-item" type="button" onclick="switchTimeframe('monthly', 'Monthly', this)" style="border-radius: 8px; font-weight: 600; padding: 0.5rem 1rem; color: #3E2723; border: none; background: transparent; width: 100%; text-align: left;"><i class="fas fa-calendar-alt me-2" style="opacity: 0.5;"></i>Monthly</button></li>
+                <li><button class="dropdown-item active" type="button" onclick="switchTimeframe('all', 'All Time', this)" style="border-radius: 8px; font-weight: 600; padding: 0.5rem 1rem; background: #8B634B; color: #fff; border: none; width: 100%; text-align: left;"><i class="fas fa-infinity me-2" style="opacity: 0.8;"></i>All Time</button></li>
+            </ul>
+        </div>
+    </div>
 </div>
 
 <!-- ═══ ANALYTICS STATS SECTION ═══ -->
@@ -747,7 +763,6 @@
         </div>
 
         <!-- Sentiment -->
-        {% set pos_pct = (sentiment_dist.positive / total_reviews * 100)|round|int if total_reviews else 100 %}
         <div class="stat-card">
             <div class="stat-icon-wrapper primary">
                 <i class="fas fa-smile"></i>
@@ -790,6 +805,18 @@
             </div>
             {% endfor %}
         </div>
+</div>
+
+<!-- ═══ REVIEW TREND CHART SECTION ═══ -->
+<div class="card premium-card mb-4" style="border-radius: 20px; border: 1px solid var(--border-color); box-shadow: 0 4px 15px rgba(139, 99, 75, 0.02); overflow: hidden; background: #ffffff; font-family: 'Outfit', sans-serif;">
+    <div class="card-header d-flex justify-content-between align-items-center" style="background: #faf8f6; border-bottom: 1px solid var(--border-color); padding: 1rem 1.5rem;">
+        <h5 style="font-family: 'Playfair Display', serif; font-weight: 800; color: var(--text-dark); margin: 0;"><i class="fas fa-chart-bar me-2" style="color: var(--accent);"></i>Monthly Review Trend</h5>
+        <span style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Last 6 Months</span>
+    </div>
+    <div class="card-body" style="padding: 1.5rem; min-height: 320px;">
+        <div style="width: 100%; height: 280px; position: relative;">
+            <canvas id="reviewTrendChart"></canvas>
+        </div>
     </div>
 </div>
 
@@ -818,7 +845,8 @@
          data-id="{{ review.id }}"
          data-status="{{ review.status }}" 
          data-featured="{% if review.is_featured_in_gallery %}true{% else %}false{% endif %}"
-         data-has-photo="{% if review.photo_url %}true{% else %}false{% endif %}">
+         data-has-photo="{% if review.photo_url %}true{% else %}false{% endif %}"
+         data-created-at="{{ review.created_at.isoformat() if review.created_at else '' }}">
         
         <div class="review-header">
             <div class="review-user-info">
@@ -1025,6 +1053,97 @@
         }
     }
 
+    let currentTimeframe = 'all';
+
+    // Timeframe selector
+    function switchTimeframe(key, label, btnEl) {
+        currentTimeframe = key;
+        
+        // Update dropdown button text
+        const btn = document.getElementById('timeframeDropdown');
+        if (btn) {
+            btn.innerHTML = `<i class="far fa-calendar-alt me-2"></i>${label}`;
+        }
+        
+        // Manage active class in dropdown menu
+        document.querySelectorAll('.premium-dropdown-menu .dropdown-item').forEach(item => {
+            item.classList.remove('active');
+            item.style.background = 'transparent';
+            item.style.color = '#3E2723';
+        });
+        if (btnEl) {
+            btnEl.classList.add('active');
+            btnEl.style.background = '#8B634B';
+            btnEl.style.color = '#fff';
+        }
+        
+        updateStatsAndBadges();
+        applyFilters();
+    }
+
+    // Apply combined filters (tab filter + timeframe filter)
+    function applyFilters() {
+        const cards = document.querySelectorAll('.review-card');
+        let visibleCount = 0;
+        
+        // Define timeframe limits
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        const startOfSevenDaysAgo = startOfToday - (7 * 24 * 60 * 60 * 1000);
+        const startOfThirtyDaysAgo = startOfToday - (30 * 24 * 60 * 60 * 1000);
+        
+        cards.forEach(card => {
+            const status = card.getAttribute('data-status');
+            const isFeatured = card.getAttribute('data-featured') === 'true';
+            const hasPhoto = card.getAttribute('data-has-photo') === 'true';
+            const createdAtStr = card.getAttribute('data-created-at');
+            const createdAtTime = createdAtStr ? new Date(createdAtStr).getTime() : 0;
+            
+            // Timeframe check
+            let matchesTimeframe = true;
+            if (currentTimeframe === 'daily') {
+                matchesTimeframe = createdAtTime >= startOfToday;
+            } else if (currentTimeframe === 'weekly') {
+                matchesTimeframe = createdAtTime >= startOfSevenDaysAgo;
+            } else if (currentTimeframe === 'monthly') {
+                matchesTimeframe = createdAtTime >= startOfThirtyDaysAgo;
+            }
+            
+            // Tab filter check
+            let matchesTab = false;
+            if (activeFilter === 'all') {
+                matchesTab = true;
+            } else if (activeFilter === 'pending' && status === 'PENDING') {
+                matchesTab = true;
+            } else if (activeFilter === 'approved' && status === 'APPROVED') {
+                matchesTab = true;
+            } else if (activeFilter === 'rejected' && status === 'REJECTED') {
+                matchesTab = true;
+            } else if (activeFilter === 'featured' && isFeatured) {
+                matchesTab = true;
+            } else if (activeFilter === 'photos' && hasPhoto) {
+                matchesTab = true;
+            }
+            
+            if (matchesTimeframe && matchesTab) {
+                card.classList.remove('filtered-out');
+                visibleCount++;
+            } else {
+                card.classList.add('filtered-out');
+            }
+        });
+        
+        // Toggle empty state visibility
+        const emptyState = document.querySelector('.empty-reviews-state');
+        if (emptyState) {
+            if (visibleCount === 0) {
+                emptyState.style.display = 'block';
+            } else {
+                emptyState.style.display = 'none';
+            }
+        }
+    }
+
     // Client-side filtering mechanism
     function filterReviews(filterType, buttonEl) {
         activeFilter = filterType;
@@ -1035,47 +1154,7 @@
             buttonEl.classList.add('active');
         }
         
-        const cards = document.querySelectorAll('.review-card');
-        let visibleCount = 0;
-        
-        cards.forEach(card => {
-            const status = card.getAttribute('data-status');
-            const isFeatured = card.getAttribute('data-featured') === 'true';
-            const hasPhoto = card.getAttribute('data-has-photo') === 'true';
-            
-            let show = false;
-            
-            if (filterType === 'all') {
-                show = true;
-            } else if (filterType === 'pending' && status === 'PENDING') {
-                show = true;
-            } else if (filterType === 'approved' && status === 'APPROVED') {
-                show = true;
-            } else if (filterType === 'rejected' && status === 'REJECTED') {
-                show = true;
-            } else if (filterType === 'featured' && isFeatured) {
-                show = true;
-            } else if (filterType === 'photos' && hasPhoto) {
-                show = true;
-            }
-            
-            if (show) {
-                card.classList.remove('filtered-out');
-                visibleCount++;
-            } else {
-                card.classList.add('filtered-out');
-            }
-        });
-
-        // Toggle empty state visibility
-        const emptyState = document.querySelector('.empty-reviews-state');
-        if (emptyState) {
-            if (visibleCount === 0) {
-                emptyState.style.display = 'block';
-            } else {
-                emptyState.style.display = 'none';
-            }
-        }
+        applyFilters();
     }
 
     // Toggle Review Gallery featuring
@@ -1304,7 +1383,13 @@
     function updateStatsAndBadges() {
         const cards = document.querySelectorAll('.review-card');
         
-        let total = cards.length;
+        // Define timeframe limits
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        const startOfSevenDaysAgo = startOfToday - (7 * 24 * 60 * 60 * 1000);
+        const startOfThirtyDaysAgo = startOfToday - (30 * 24 * 60 * 60 * 1000);
+        
+        let total = 0;
         let pending = 0;
         let approved = 0;
         let rejected = 0;
@@ -1319,23 +1404,38 @@
             const status = card.getAttribute('data-status');
             const isFeatured = card.getAttribute('data-featured') === 'true';
             const hasPhotoAttr = card.getAttribute('data-has-photo') === 'true';
+            const createdAtStr = card.getAttribute('data-created-at');
+            const createdAtTime = createdAtStr ? new Date(createdAtStr).getTime() : 0;
             
-            // Extract values from card structure
-            const starsFilled = card.querySelectorAll('.review-stars .fas.fa-star').length;
-            const sentimentBadge = card.querySelector('.sentiment-badge-custom');
-            const isPositive = sentimentBadge && sentimentBadge.classList.contains('positive');
-            
-            if (status === 'PENDING') pending++;
-            if (status === 'APPROVED') approved++;
-            if (status === 'REJECTED') rejected++;
-            if (isFeatured) featured++;
-            if (hasPhotoAttr) hasPhoto++;
-            
-            ratingsSum += starsFilled;
-            if (ratingDistribution[starsFilled] !== undefined) {
-                ratingDistribution[starsFilled]++;
+            // Timeframe check
+            let matchesTimeframe = true;
+            if (currentTimeframe === 'daily') {
+                matchesTimeframe = createdAtTime >= startOfToday;
+            } else if (currentTimeframe === 'weekly') {
+                matchesTimeframe = createdAtTime >= startOfSevenDaysAgo;
+            } else if (currentTimeframe === 'monthly') {
+                matchesTimeframe = createdAtTime >= startOfThirtyDaysAgo;
             }
-            if (isPositive) positiveSentimentCount++;
+            
+            if (matchesTimeframe) {
+                total++;
+                if (status === 'PENDING') pending++;
+                if (status === 'APPROVED') approved++;
+                if (status === 'REJECTED') rejected++;
+                if (isFeatured) featured++;
+                if (hasPhotoAttr) hasPhoto++;
+                
+                // Extract values from card structure
+                const starsFilled = card.querySelectorAll('.review-stars .fas.fa-star').length;
+                const sentimentBadge = card.querySelector('.sentiment-badge-custom');
+                const isPositive = sentimentBadge && (sentimentBadge.classList.contains('positive') || sentimentBadge.classList.contains('bg-success') || sentimentBadge.textContent.includes('😊') || sentimentBadge.textContent.includes('POSITIVE'));
+                
+                ratingsSum += starsFilled;
+                if (ratingDistribution[starsFilled] !== undefined) {
+                    ratingDistribution[starsFilled]++;
+                }
+                if (isPositive) positiveSentimentCount++;
+            }
         });
         
         // Calculate average
@@ -1350,16 +1450,23 @@
         document.getElementById('breakdownLargeAvg').innerText = avg;
         
         // Update tabs counts badges
-        document.getElementById('badge-all').innerText = total;
-        document.getElementById('badge-pending').innerText = pending;
-        document.getElementById('badge-approved').innerText = approved;
-        document.getElementById('badge-rejected').innerText = rejected;
-        document.getElementById('badge-featured').innerText = featured;
-        document.getElementById('badge-photos').innerText = hasPhoto;
+        const badgeAll = document.getElementById('badge-all');
+        const badgePending = document.getElementById('badge-pending');
+        const badgeApproved = document.getElementById('badge-approved');
+        const badgeRejected = document.getElementById('badge-rejected');
+        const badgeFeatured = document.getElementById('badge-featured');
+        const badgePhotos = document.getElementById('badge-photos');
+        
+        if (badgeAll) badgeAll.innerText = total;
+        if (badgePending) badgePending.innerText = pending;
+        if (badgeApproved) badgeApproved.innerText = approved;
+        if (badgeRejected) badgeRejected.innerText = rejected;
+        if (badgeFeatured) badgeFeatured.innerText = featured;
+        if (badgePhotos) badgePhotos.innerText = hasPhoto;
         
         // Update rating distribution bars and counts
         for (let star = 1; star <= 5; star++) {
-            const count = ratingDistribution[star];
+            const count = ratingDistribution[star] || 0;
             const pct = total > 0 ? Math.round((count / total) * 100) : 0;
             
             const bar = document.getElementById(`breakdownBar-${star}`);
@@ -1387,6 +1494,116 @@
                 starsContainer.innerHTML += '<i class="far fa-star" style="opacity: 0.3;"></i>';
             }
         }
+    }
+
+    // Initialize Monthly Review Trend Chart using Chart.js
+    function initReviewChart() {
+        const ctx = document.getElementById('reviewTrendChart').getContext('2d');
+        if (!ctx) return;
+        
+        const months = {{ chart_months|tojson|safe if chart_months else '[]' }};
+        const positiveData = {{ chart_positive|tojson|safe if chart_positive else '[]' }};
+        const negativeData = {{ chart_negative|tojson|safe if chart_negative else '[]' }};
+        
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: months,
+                datasets: [
+                    {
+                        label: 'Positive Reviews',
+                        data: positiveData,
+                        backgroundColor: '#E67E22', // Orange
+                        borderColor: '#D35400',
+                        borderWidth: 1,
+                        borderRadius: 6,
+                        borderSkipped: false
+                    },
+                    {
+                        label: 'Negative Reviews',
+                        data: negativeData,
+                        backgroundColor: '#3E2723', // Dark Brown/Black
+                        borderColor: '#27120F',
+                        borderWidth: 1,
+                        borderRadius: 6,
+                        borderSkipped: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            boxWidth: 12,
+                            boxHeight: 12,
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            font: {
+                                family: "'Outfit', sans-serif",
+                                weight: '600'
+                            },
+                            padding: 20
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: '#1a1a2e',
+                        padding: 12,
+                        cornerRadius: 10,
+                        titleFont: {
+                            family: "'Outfit', sans-serif",
+                            weight: '700'
+                        },
+                        bodyFont: {
+                            family: "'Outfit', sans-serif"
+                        },
+                        callbacks: {
+                            label: function(context) {
+                                return ` ${context.dataset.label}: ${context.raw} reviews`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            font: {
+                                family: "'Outfit', sans-serif",
+                                weight: '600'
+                            },
+                            color: '#3E2723'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            borderDash: [5, 5],
+                            color: 'rgba(139, 99, 75, 0.08)'
+                        },
+                        ticks: {
+                            stepSize: 1,
+                            font: {
+                                family: "'Outfit', sans-serif",
+                                weight: '600'
+                            },
+                            color: '#8B634B'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Call chart initialization on DOM Content Loaded / Load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initReviewChart);
+    } else {
+        initReviewChart();
     }
 </script>
 {% endblock %}

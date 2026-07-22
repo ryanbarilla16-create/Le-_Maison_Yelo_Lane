@@ -720,15 +720,169 @@
             // Pre-load on page ready
             loadDeliveryAreas();
 
+            function normalizeName(str) {
+                return (str || '').toLowerCase()
+                    .replace(/municipality\s+of\s+/gi, '')
+                    .replace(/city\s+of\s+/gi, '')
+                    .replace(/[^a-z0-9\s]/g, '')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+            }
+
+            function findNearestArea(lat, lng) {
+                const selMuni = document.getElementById('select_municipality');
+                const selBrgy = document.getElementById('select_barangay');
+
+                // Show loading state
+                selMuni.disabled = true;
+                selBrgy.innerHTML = '<option value="">Detecting location...</option>';
+                selBrgy.disabled = true;
+
+                // Step 1: Reverse geocode using Nominatim — use actual geographic boundary
+                fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14&addressdetails=1`)
+                .then(r => r.json())
+                .then(data => {
+                    selMuni.disabled = false;
+
+                    if (!data || !data.address) {
+                        selBrgy.innerHTML = '<option value="">Barangay</option>';
+                        selBrgy.disabled = true;
+                        if (window.showToast) window.showToast('danger', 'Could not detect your location. Please select manually.');
+                        validateForm();
+                        return;
+                    }
+
+                    const addr = data.address;
+
+                    // Step 2: Extract municipality/city name from Nominatim response
+                    // Philippine OSM: municipality is usually in city, town, or municipality field
+                    const rawMuni = addr.city || addr.town || addr.municipality || addr.city_district || addr.county || '';
+                    const cleanRawMuni = normalizeName(rawMuni);
+
+                    // Step 2.5: ALWAYS fill the street address from the pinned location, even if out of range
+                    const road = addr.road || addr.subdivision || addr.residential || '';
+                    const house = addr.house_number || '';
+                    const landmark = addr.amenity || addr.shop || addr.building || '';
+                    const streetInput = document.getElementById('street_address');
+                    
+                    let str = '';
+                    if (house) str += house + ' ';
+                    if (road) str += road;
+                    if (landmark) str += (str ? ', ' : '') + landmark;
+                    
+                    // Fallback to village/suburb if no specific road/house is found
+                    if (!str) {
+                        str = addr.quarter || addr.suburb || addr.village || addr.neighbourhood || addr.city_district || addr.hamlet || rawMuni;
+                    }
+
+                    if (streetInput) {
+                        streetInput.value = str.trim(); // Unconditionally update to match pin
+                    }
+
+                    // Step 3: Match against our active municipality list
+                    let matchedMuni = null;
+                    const activeMusis = Object.keys(locationData);
+
+                    for (const muni of activeMusis) {
+                        const cleanMuni = normalizeName(muni);
+                        // Check both directions: "sta cruz" in "santa cruz" or exact match
+                        if (cleanRawMuni && (
+                            cleanRawMuni === cleanMuni ||
+                            cleanRawMuni.includes(cleanMuni) ||
+                            cleanMuni.includes(cleanRawMuni) ||
+                            // Also check abbreviations e.g. "sta" = "santa"
+                            cleanRawMuni.replace(/\bsta\b/g, 'santa').includes(cleanMuni) ||
+                            cleanMuni.replace(/\bsta\b/g, 'santa').includes(cleanRawMuni.replace(/\bsta\b/g, 'santa'))
+                        )) {
+                            matchedMuni = muni;
+                            break;
+                        }
+                    }
+
+                    if (!matchedMuni) {
+                        // Not in any active municipality
+                        selMuni.value = '';
+                        selBrgy.innerHTML = '<option value="">Barangay</option>';
+                        selBrgy.disabled = true;
+                        document.getElementById('delivery_address').value = '';
+                        document.getElementById('delivery_area_hidden').value = '';
+                        deliveryAllowed = false;
+                        validateForm();
+                        return;
+                    }
+
+                    // Step 4: Municipality matched! Populate its barangays
+                    selMuni.value = matchedMuni;
+                    selBrgy.innerHTML = '<option value="">Barangay</option>';
+                    (locationData[matchedMuni] || []).forEach(b => {
+                        const opt = document.createElement('option');
+                        opt.value = opt.textContent = b;
+                        selBrgy.appendChild(opt);
+                    });
+                    selBrgy.disabled = false;
+
+                    // Fly map to municipality center
+                    if (mapInitialized && map && townCoordinates[matchedMuni]) {
+                        // Don't fly away — keep pin at user's actual location
+                        // map.flyTo(townCoordinates[matchedMuni], 14);
+                    }
+
+                    // Step 5: Try to auto-select barangay from Nominatim
+                    const rawBrgy = addr.quarter || addr.suburb || addr.village || addr.neighbourhood || addr.city_district || addr.hamlet || '';
+                    let matched = false;
+
+                    if (rawBrgy && selBrgy.options.length > 1) {
+                        const cleanBrgy = normalizeName(rawBrgy)
+                            .replace(/\bbarangay\b/gi, '')
+                            .replace(/\bbrgy\b/gi, '')
+                            .trim();
+
+                        for (let i = 1; i < selBrgy.options.length; i++) {
+                            const optVal = normalizeName(selBrgy.options[i].value)
+                                .replace(/\bbarangay\b/gi, '')
+                                .replace(/\bbrgy\b/gi, '')
+                                .trim();
+
+                            if (optVal && (cleanBrgy === optVal || cleanBrgy.includes(optVal) || optVal.includes(cleanBrgy))) {
+                                selBrgy.value = selBrgy.options[i].value;
+                                matched = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!matched && window.showToast) {
+                        // Silent fail for barangay
+                    }
+
+                    validateForm();
+                })
+                .catch(err => {
+                    selMuni.disabled = false;
+                    selBrgy.innerHTML = '<option value="">Barangay</option>';
+                    selBrgy.disabled = true;
+                    console.error('Nominatim reverse geocode error:', err);
+                    validateForm();
+                });
+            }
+
             function initMap() {
                 if (mapInitialized) return;
                 mapInitialized = true;
                 map = L.map('delivery_map').setView([14.2833, 121.4167], 12);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
                 marker = L.marker([14.2833, 121.4167], { draggable: true }).addTo(map);
-                marker.on('dragend', validateForm);
-                map.on('click', e => { marker.setLatLng(e.latlng); validateForm(); });
-                // Force size recalculation after render
+                
+                marker.on('dragend', function() {
+                    const latlng = marker.getLatLng();
+                    findNearestArea(latlng.lat, latlng.lng);
+                });
+                
+                map.on('click', e => { 
+                    marker.setLatLng(e.latlng); 
+                    findNearestArea(e.latlng.lat, e.latlng.lng); 
+                });
+                
                 setTimeout(() => map.invalidateSize(), 100);
             }
 
@@ -748,8 +902,9 @@
                         map.setView([lat, lng], 16);
                         if (marker) marker.setLatLng([lat, lng]);
                         else marker = L.marker([lat, lng], { draggable: true }).addTo(map);
-                        marker.on('dragend', validateForm);
-                        validateForm();
+                        
+                        findNearestArea(lat, lng);
+                        
                         btn.innerHTML = '<i class="fas fa-check"></i> Located';
                         btn.style.background = 'rgba(87,117,81,0.12)';
                         btn.style.color = '#577551';
@@ -763,7 +918,6 @@
                     function() {
                         btn.innerHTML = '<i class="fas fa-crosshairs"></i> Use My Location';
                         btn.disabled = false;
-                        if (window.showToast) window.showToast('warning', 'Could not get your location. Please allow location access.');
                     },
                     { timeout: 8000 }
                 );
@@ -878,10 +1032,23 @@
                         document.getElementById('delivery_area_hidden').value = muni;
                     } else deliveryAllowed = false;
                 }
+                
                 if (submitBtn) {
                     const anyChecked = document.querySelectorAll('.item-checkbox:checked').length > 0;
-                    submitBtn.disabled = (isDel && !deliveryAllowed);
-                    submitBtn.style.opacity = ((isDel && !deliveryAllowed) || !anyChecked) ? '0.5' : '1';
+                    
+                    if (isDel && !deliveryAllowed) {
+                        submitBtn.disabled = true;
+                        submitBtn.style.opacity = '0.5';
+                        submitBtn.innerHTML = 'Out of Delivery Range <i class="fas fa-ban ms-1"></i>';
+                    } else if (!anyChecked) {
+                        submitBtn.disabled = true;
+                        submitBtn.style.opacity = '0.5';
+                        submitBtn.innerHTML = 'Proceed to Checkout <i class="fas fa-arrow-right ms-1"></i>';
+                    } else {
+                        submitBtn.disabled = false;
+                        submitBtn.style.opacity = '1';
+                        submitBtn.innerHTML = 'Proceed to Checkout <i class="fas fa-arrow-right ms-1"></i>';
+                    }
                 }
             }
 

@@ -3,30 +3,40 @@
 {% block title %}Verify OTP{% endblock %}
 
 {% block content %}
-<div class="form-wrapper">
-    <h2 class="title">Verify Your Email</h2>
-    <p class="subtitle">An OTP was sent to {{ user.email }}.</p>
+<div class="form-wrapper" style="max-width: 450px; margin: 2rem auto; padding: 2.5rem; background: #fff; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 1px solid rgba(139, 99, 75,0.1);">
+    <h2 class="title" style="font-family: 'Georgia', serif; font-weight: 700; text-align: center; color: #333; margin-bottom: 0.5rem;">Verify Your Email</h2>
+    <p class="subtitle" style="text-align: center; color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2rem;">An OTP was sent to <strong>{{ user.email }}</strong>.</p>
 
-    <form method="POST" action="{{ url_for('main.verify_otp', user_id=user.id) }}">
-        <div class="form-group">
-            <label for="otp">Enter 6-digit OTP</label>
+    <!-- Inline Alert Box -->
+    <div id="otpAlert" class="alert-box" style="display: none; align-items: center; gap: 10px; border-radius: 12px; padding: 12px 16px; font-size: 0.9rem; margin-bottom: 20px; font-weight: 500; line-height: 1.4;">
+        <i class="fas" id="otpAlertIcon"></i>
+        <span id="otpAlertText"></span>
+    </div>
+
+    <form method="POST" action="{{ url_for('main.verify_otp', user_id=user.id) }}" id="otpForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+        <div class="form-group mb-4">
+            <label for="otp" style="font-weight: 600; font-size: 0.9rem; color: #555; margin-bottom: 0.5rem; display: block;">Enter 6-digit OTP</label>
             <input type="text" id="otp" name="otp" minlength="6" maxlength="6" required placeholder="123456"
-                pattern="\d{6}">
-            <small style="color: var(--text-muted); font-size: 0.8rem;">Check your email inbox for the OTP code.</small>
+                pattern="\d{6}" style="width: 100%; padding: 1rem; border-radius: 8px; border: 1.5px solid rgba(139, 99, 75,0.2); font-size: 1.5rem; letter-spacing: 0.5rem; text-align: center; font-weight: bold; color: var(--primary-color);">
+            <div style="text-align: center; margin-top: 0.75rem;">
+                <small style="color: var(--text-muted); font-size: 0.8rem;">Check your email inbox for the OTP code.</small>
+            </div>
         </div>
 
-        <button type="submit" class="btn">Verify via OTP</button>
+        <button type="submit" id="verifyBtn" class="btn" style="width: 100%; padding: 1rem; border-radius: 8px; background-color: var(--primary-color); color: white; font-weight: 600; font-size: 1.05rem; border: none; cursor: pointer; transition: all 0.3s;">Verify via OTP</button>
     </form>
 
     <!-- Resend OTP Section -->
-    <div style="margin-top: 1.5rem; text-align: center; padding-top: 1rem; border-top: 1px solid rgba(139, 99, 75,0.1);">
+    <div style="margin-top: 1.5rem; text-align: center; padding-top: 1.5rem; border-top: 1px solid rgba(139, 99, 75,0.1);">
         <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.75rem;">Didn't receive the code?</p>
 
         <form method="POST" action="{{ url_for('main.resend_otp', user_id=user.id) }}" id="resendForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
             <button type="submit" id="resendBtn" class="btn"
                 style="background: transparent; color: var(--primary-color); border: 1.5px solid var(--primary-color); font-size: 0.85rem; padding: 0.5rem 1.5rem; border-radius: 50px; cursor: pointer; font-weight: 600; transition: all 0.3s;"
-                {% if cooldown_remaining> 0 %}disabled{% endif %}>
-                <i class="fas fa-redo me-1"></i>
+                {% if cooldown_remaining > 0 %}disabled{% endif %}>
+                <i class="fas fa-redo me-1" id="resendIcon"></i>
                 <span id="resendText">
                     {% if cooldown_remaining > 0 %}
                     Resend in <span id="countdown">{{ cooldown_remaining }}</span>s
@@ -41,19 +51,54 @@
 
 <input type="hidden" id="cooldownSeconds" value="{{ cooldown_remaining }}">
 
-{% raw %}
+<style>
+    .alert-box {
+        animation: slideDown 0.3s ease-out;
+    }
+    .alert-box.danger {
+        background: rgba(220, 53, 69, 0.08);
+        border: 1px solid rgba(220, 53, 69, 0.25);
+        color: #c62828;
+    }
+    .alert-box.success {
+        background: rgba(40, 167, 69, 0.08);
+        border: 1px solid rgba(40, 167, 69, 0.25);
+        color: #2e7d32;
+    }
+    @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        15%       { transform: translateX(-8px); }
+        30%       { transform: translateX(8px); }
+        45%       { transform: translateX(-6px); }
+        60%       { transform: translateX(6px); }
+        75%       { transform: translateX(-3px); }
+        90%       { transform: translateX(3px); }
+    }
+    .shake { animation: shake 0.5s ease-in-out; }
+</style>
+
 <script>
     (function () {
-        var remaining = parseInt(document.getElementById('cooldownSeconds').value) || 0;
-        var btn = document.getElementById('resendBtn');
-        var textSpan = document.getElementById('resendText');
+        let remaining = parseInt(document.getElementById('cooldownSeconds').value) || 0;
+        const btn = document.getElementById('resendBtn');
+        const textSpan = document.getElementById('resendText');
+        const alertBox = document.getElementById('otpAlert');
+        const alertIcon = document.getElementById('otpAlertIcon');
+        const alertText = document.getElementById('otpAlertText');
+        let timer = null;
 
-        if (remaining > 0) {
+        function startCountdown(duration) {
+            remaining = duration;
+            if (timer) clearInterval(timer);
             btn.disabled = true;
             btn.style.opacity = '0.5';
             btn.style.cursor = 'not-allowed';
 
-            var timer = setInterval(function () {
+            timer = setInterval(function () {
                 remaining--;
                 if (remaining <= 0) {
                     clearInterval(timer);
@@ -62,16 +107,118 @@
                     btn.style.cursor = 'pointer';
                     textSpan.innerHTML = 'Resend Code';
                 } else {
-                    var mins = Math.floor(remaining / 60);
-                    var secs = remaining % 60;
-                    var timeStr = mins > 0 ? mins + 'm ' + ('0' + secs).slice(-2) + 's' : secs + 's';
+                    const mins = Math.floor(remaining / 60);
+                    const secs = remaining % 60;
+                    const timeStr = mins > 0 ? mins + 'm ' + ('0' + secs).slice(-2) + 's' : secs + 's';
                     textSpan.innerHTML = 'Resend in ' + timeStr;
                 }
             }, 1000);
         }
+
+        if (remaining > 0) {
+            startCountdown(remaining);
+        }
+
+        // OTP verification form via AJAX
+        document.getElementById('otpForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const form = this;
+            const verifyBtn = document.getElementById('verifyBtn');
+            verifyBtn.disabled = true;
+            const origText = verifyBtn.innerHTML;
+            verifyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> VERIFYING...';
+            alertBox.style.display = 'none';
+            alertBox.classList.remove('shake');
+
+            fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alertBox.className = 'alert-box success';
+                    alertIcon.className = 'fas fa-check-circle';
+                    alertText.textContent = data.message || 'OTP Verified!';
+                    alertBox.style.display = 'flex';
+                    verifyBtn.innerHTML = '<i class="fas fa-check"></i> VERIFIED';
+                    verifyBtn.style.background = 'linear-gradient(135deg, #2e7d32, #43a047)';
+
+                    setTimeout(() => {
+                        window.location.href = data.redirect;
+                    }, 1500);
+                } else {
+                    alertBox.className = 'alert-box danger';
+                    alertIcon.className = 'fas fa-exclamation-circle';
+                    alertText.textContent = data.message || 'Invalid OTP. Please try again.';
+                    alertBox.style.display = 'flex';
+                    
+                    void alertBox.offsetWidth; // trigger reflow
+                    alertBox.classList.add('shake');
+
+                    verifyBtn.disabled = false;
+                    verifyBtn.innerHTML = origText;
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alertBox.className = 'alert-box danger';
+                alertIcon.className = 'fas fa-wifi';
+                alertText.textContent = 'Connection error. Please try again.';
+                alertBox.style.display = 'flex';
+
+                verifyBtn.disabled = false;
+                verifyBtn.innerHTML = origText;
+            });
+        });
+
+        // Resend form via AJAX
+        document.getElementById('resendForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const form = this;
+            btn.disabled = true;
+            const resendIcon = document.getElementById('resendIcon');
+            resendIcon.className = 'fas fa-redo fa-spin';
+            alertBox.style.display = 'none';
+
+            fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                resendIcon.className = 'fas fa-redo';
+                if (data.success) {
+                    alertBox.className = 'alert-box success';
+                    alertIcon.className = 'fas fa-check-circle';
+                    alertText.textContent = data.message || 'A new OTP has been sent.';
+                    alertBox.style.display = 'flex';
+                    
+                    if (data.cooldown_remaining) {
+                        startCountdown(data.cooldown_remaining);
+                    }
+                } else {
+                    alertBox.className = 'alert-box danger';
+                    alertIcon.className = 'fas fa-exclamation-circle';
+                    alertText.textContent = data.message || 'Failed to resend code. Please try again.';
+                    alertBox.style.display = 'flex';
+                    btn.disabled = false;
+                }
+            })
+            .catch(err => {
+                resendIcon.className = 'fas fa-redo';
+                console.error(err);
+                alertBox.className = 'alert-box danger';
+                alertIcon.className = 'fas fa-wifi';
+                alertText.textContent = 'Connection error. Please try again.';
+                alertBox.style.display = 'flex';
+                btn.disabled = false;
+            });
+        });
     })();
 </script>
-{% endraw %}
 {% endblock %}
 
 

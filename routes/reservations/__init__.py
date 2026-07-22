@@ -49,6 +49,7 @@ def check_reservation_time(t):
 @main_bp.route('/reserve', methods=['GET', 'POST'])
 @login_required
 def reserve():
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if request.method == 'POST':
         res_date_str = request.form.get('date')
         res_time_str = request.form.get('time')
@@ -63,8 +64,11 @@ def reserve():
             res_time = dtime(hour, minute)
             guest_count = int(guest_count_str)
             duration = int(duration_str)
-        except ValueError:
-            flash("Invalid data format provided.", "danger")
+        except (ValueError, TypeError, AttributeError):
+            msg = "Invalid data format provided."
+            if is_ajax:
+                return jsonify({'success': False, 'message': msg}), 400
+            flash(msg, "danger")
             return redirect(url_for('main.reserve'))
 
         today = date.today()
@@ -72,29 +76,46 @@ def reserve():
 
         if booking_type == 'EXCLUSIVE':
             if diff < 3:
-                flash("Exclusive reservations must be made at least 3 days in advance.", "danger")
+                msg = "Exclusive reservations must be made at least 3 days in advance."
+                if is_ajax:
+                    return jsonify({'success': False, 'message': msg}), 400
+                flash(msg, "danger")
                 return redirect(url_for('main.reserve'))
         else:
             if diff < 0:
-                flash("Cannot book in the past.", "danger")
+                msg = "Cannot book in the past."
+                if is_ajax:
+                    return jsonify({'success': False, 'message': msg}), 400
+                flash(msg, "danger")
                 return redirect(url_for('main.reserve'))
             if diff == 0:
                 curr_t = datetime.now().time()
                 if res_time <= curr_t:
-                    flash("You cannot book a time slot that has already passed today.", "danger")
+                    msg = "You cannot book a time slot that has already passed today."
+                    if is_ajax:
+                        return jsonify({'success': False, 'message': msg}), 400
+                    flash(msg, "danger")
                     return redirect(url_for('main.reserve'))
                 # Strict cutoff: No new same-day bookings after 8:30 PM
                 if curr_t >= dtime(20, 30):
-                    flash("Restaurant is now closed for same-day bookings. Please book for tomorrow.", "danger")
+                    msg = "Restaurant is now closed for same-day bookings. Please book for tomorrow."
+                    if is_ajax:
+                        return jsonify({'success': False, 'message': msg}), 400
+                    flash(msg, "danger")
                     return redirect(url_for('main.reserve'))
 
-
         if diff > 60:
-            flash("Reservation can be max 2 months (60 days) in advance.", "danger")
+            msg = "Reservation can be max 2 months (60 days) in advance."
+            if is_ajax:
+                return jsonify({'success': False, 'message': msg}), 400
+            flash(msg, "danger")
             return redirect(url_for('main.reserve'))
 
         if not check_reservation_time(res_time):
-            flash("Time must be between 11:30 AM - 8:30 PM with 30-minute intervals.", "danger")
+            msg = "Time must be between 11:30 AM - 8:30 PM with 30-minute intervals."
+            if is_ajax:
+                return jsonify({'success': False, 'message': msg}), 400
+            flash(msg, "danger")
             return redirect(url_for('main.reserve'))
 
         # Duplicate booking check: same user, same date, same time, active reservation
@@ -105,22 +126,34 @@ def reserve():
             Reservation.status.in_(['PENDING', 'CONFIRMED']),
         ).first()
         if duplicate:
-            flash("You already have a reservation on this date and time. Please choose a different schedule.", "danger")
+            msg = "You already have a reservation on this date and time. Please choose a different schedule."
+            if is_ajax:
+                return jsonify({'success': False, 'message': msg}), 400
+            flash(msg, "danger")
             return redirect(url_for('main.reserve'))
 
         if guest_count <= 0:
-            flash("Guest count must be at least 1.", "danger")
+            msg = "Guest count must be at least 1."
+            if is_ajax:
+                return jsonify({'success': False, 'message': msg}), 400
+            flash(msg, "danger")
             return redirect(url_for('main.reserve'))
 
         if booking_type == 'EXCLUSIVE':
             if guest_count > 40:
-                flash("Exclusive Venue can hold up to 40 guests maximum.", "danger")
+                msg = "Exclusive Venue can hold up to 40 guests maximum."
+                if is_ajax:
+                    return jsonify({'success': False, 'message': msg}), 400
+                flash(msg, "danger")
                 return redirect(url_for('main.reserve'))
             # Force duration to 2 hours for Exclusive
             duration = 2
         else:
             if guest_count > 20:
-                flash("Regular tables max at 20 guests.", "danger")
+                msg = "Regular tables max at 20 guests."
+                if is_ajax:
+                    return jsonify({'success': False, 'message': msg}), 400
+                flash(msg, "danger")
                 return redirect(url_for('main.reserve'))
 
         current_res_start = datetime.combine(res_date, res_time)
@@ -158,10 +191,10 @@ def reserve():
         )
 
         if conflict:
-            flash(
-                "Cannot book this slot. It conflicts with an existing Exclusive booking or overlaps with another reservation.",
-                "danger",
-            )
+            msg = "Cannot book this slot. It conflicts with an existing Exclusive booking or overlaps with another reservation."
+            if is_ajax:
+                return jsonify({'success': False, 'message': msg}), 400
+            flash(msg, "danger")
             return redirect(url_for('main.reserve'))
 
         # Capacity guard for REGULAR only (sum overlapping NON-EXCLUSIVE guests).
@@ -181,7 +214,10 @@ def reserve():
             ) or 0
 
             if overlapping_guests + guest_count > 50:
-                flash("Capacity Guard: Time slot is too full. Not enough seats.", "danger")
+                msg = "Capacity Guard: Time slot is too full. Not enough seats."
+                if is_ajax:
+                    return jsonify({'success': False, 'message': msg}), 400
+                flash(msg, "danger")
                 return redirect(url_for('main.reserve'))
 
         # ── Save reservation details in session, go to Step 2 (Menu) ──
@@ -195,6 +231,8 @@ def reserve():
         }
         session.modified = True
 
+        if is_ajax:
+            return jsonify({'success': True, 'redirect': url_for('main.reserve_menu')})
         return redirect(url_for('main.reserve_menu'))
 
     return render_template('reservations/reserve.html')
@@ -205,8 +243,12 @@ def reserve():
 @login_required
 def reserve_menu():
     pending = session.get('pending_reservation')
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if not pending:
-        flash("Please fill in your reservation details first.", "warning")
+        msg = "Please fill in your reservation details first."
+        if is_ajax:
+            return jsonify({'success': False, 'message': msg, 'redirect': url_for('main.reserve')}), 400
+        flash(msg, "warning")
         return redirect(url_for('main.reserve'))
 
     if request.method == 'POST':
@@ -220,9 +262,14 @@ def reserve_menu():
         if selected_items:
             session['pending_reservation']['menu_items'] = selected_items
             session.modified = True
+            if is_ajax:
+                return jsonify({'success': True, 'redirect': url_for('main.reserve_payment')})
             return redirect(url_for('main.reserve_payment'))
         else:
-            flash("Please select at least one menu item for your reservation.", "warning")
+            msg = "Please select at least one menu item for your reservation."
+            if is_ajax:
+                return jsonify({'success': False, 'message': msg}), 400
+            flash(msg, "warning")
 
     # Common loading logic for GET and failed POST
     menu_items, categories = _get_menu_items_and_categories_for_reserve_menu()

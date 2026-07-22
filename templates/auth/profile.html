@@ -30,6 +30,44 @@
     .profField input:focus { border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(139, 99, 75,0.08); outline: none; background: #fff; }
     .profField .fieldError { color: #C62828; font-size: 0.78rem; margin-top: 0.3rem; display: none; }
 
+    /* ── AJAX alert box styles ── */
+    .alert-box {
+        display: none;
+        align-items: center;
+        gap: 10px;
+        border-radius: 12px;
+        padding: 12px 16px;
+        font-size: 0.9rem;
+        margin-bottom: 20px;
+        font-weight: 500;
+        line-height: 1.4;
+        animation: slideDown 0.3s ease-out;
+    }
+    .alert-box.danger {
+        background: rgba(220, 53, 69, 0.08);
+        border: 1px solid rgba(220, 53, 69, 0.25);
+        color: #c62828;
+    }
+    .alert-box.success {
+        background: rgba(40, 167, 69, 0.08);
+        border: 1px solid rgba(40, 167, 69, 0.25);
+        color: #2e7d32;
+    }
+    @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        15%       { transform: translateX(-8px); }
+        30%       { transform: translateX(8px); }
+        45%       { transform: translateX(-6px); }
+        60%       { transform: translateX(6px); }
+        75%       { transform: translateX(-3px); }
+        90%       { transform: translateX(3px); }
+    }
+    .shake { animation: shake 0.5s ease-in-out; }
+
     .profActions { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 2rem; }
     .profCancel { background: rgba(139, 99, 75,0.04); color: var(--text-main); font-weight: 600; border: 1.5px solid rgba(139, 99, 75,0.1); border-radius: 50px; padding: 0.8rem; text-align: center; text-decoration: none; transition: all 0.3s; font-size: 0.92rem; }
     .profCancel:hover { background: rgba(139, 99, 75,0.08); color: var(--text-main); }
@@ -54,7 +92,14 @@
         </div>
 
         <div class="profBody">
+            <!-- Inline AJAX Alert Box -->
+            <div id="profileAlert" class="alert-box">
+                <i class="fas" id="profileAlertIcon"></i>
+                <span id="profileAlertText"></span>
+            </div>
+
             <form id="profileForm" action="{{ url_for('main.profile') }}" method="POST" enctype="multipart/form-data" onsubmit="return validateProfile()">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
 
                 <div class="profAvatar">
                     <div class="avatarWrap">
@@ -314,9 +359,91 @@
 
         return isValid;
     }
+
+    // Handle AJAX profile submission
+    document.getElementById('profileForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Execute client-side validations first
+        if (!validateProfile()) {
+            return;
+        }
+
+        const form = this;
+        const saveBtn = form.querySelector('.profSave');
+        const alertBox = document.getElementById('profileAlert');
+        const alertIcon = document.getElementById('profileAlertIcon');
+        const alertText = document.getElementById('profileAlertText');
+        
+        // Loading state
+        const originalText = saveBtn.textContent;
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        if (alertBox) {
+            alertBox.style.display = 'none';
+            alertBox.classList.remove('shake');
+        }
+
+        fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form),
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                if (alertBox) {
+                    alertBox.className = 'alert-box success';
+                    alertIcon.className = 'fas fa-check-circle';
+                    alertText.textContent = data.message || 'Profile updated successfully.';
+                    alertBox.style.display = 'flex';
+                }
+                
+                // Update profile image if changed
+                if (data.profile_picture_url) {
+                    const img = document.getElementById('profile-pic-preview');
+                    if (img) img.src = data.profile_picture_url;
+                }
+                
+                // Reset password input fields
+                document.getElementById('current_password').value = '';
+                document.getElementById('new_password').value = '';
+                document.getElementById('confirm_new_password').value = '';
+                checkStrength();
+
+                saveBtn.innerHTML = '<i class="fas fa-check"></i> Saved';
+                saveBtn.style.background = 'linear-gradient(135deg, #2e7d32, #43a047)';
+
+                setTimeout(() => {
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = originalText;
+                    saveBtn.style.background = '';
+                }, 2000);
+            } else {
+                if (alertBox) {
+                    alertBox.className = 'alert-box danger';
+                    alertIcon.className = 'fas fa-exclamation-circle';
+                    alertText.textContent = data.message || 'Failed to update profile.';
+                    alertBox.style.display = 'flex';
+                    
+                    void alertBox.offsetWidth; // trigger reflow
+                    alertBox.classList.add('shake');
+                }
+                saveBtn.disabled = false;
+                saveBtn.textContent = originalText;
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            if (alertBox) {
+                alertBox.className = 'alert-box danger';
+                alertIcon.className = 'fas fa-wifi';
+                alertText.textContent = 'Connection error. Please try again.';
+                alertBox.style.display = 'flex';
+            }
+            saveBtn.disabled = false;
+            saveBtn.textContent = originalText;
+        });
+    });
 </script>
 {% endblock %}
-%}
-
-
-

@@ -1,0 +1,424 @@
+{% extends "admin/base.html" %}
+{% block title %}Staff Management{% endblock %}
+
+{% block content %}
+<style>
+    /* Premium Staff Cards Layout */
+    .staff-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .staff-card {
+        background: #ffffff;
+        border-radius: 20px;
+        border: 1px solid rgba(139, 99, 75, 0.1);
+        overflow: hidden;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.03);
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .staff-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 35px rgba(139, 99, 75, 0.08);
+        border-color: rgba(139, 99, 75, 0.2);
+    }
+
+    .staff-card-header {
+        padding: 1.5rem;
+        background: linear-gradient(135deg, #ffffff 0%, #faf6f1 100%);
+        border-bottom: 1px solid rgba(139, 99, 75, 0.05);
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .staff-avatar {
+        width: 55px;
+        height: 55px;
+        background: linear-gradient(135deg, #8B634B, #5D4037);
+        color: #fff;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 1.4rem;
+        box-shadow: 0 4px 10px rgba(93, 64, 55, 0.2);
+    }
+
+    .staff-header-info h4 {
+        margin: 0 0 0.2rem 0;
+        font-family: 'Playfair Display', serif;
+        font-weight: 700;
+        color: #3E2723;
+        font-size: 1.15rem;
+    }
+
+    .staff-header-info p {
+        margin: 0;
+        color: #8D6E63;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    .staff-card-body {
+        padding: 1.5rem;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .staff-detail {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .staff-icon-box {
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+        background: #fdfaf7;
+        color: #8B634B;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        border: 1px solid rgba(139, 99, 75, 0.1);
+    }
+
+    .staff-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .staff-info-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #A1887F;
+        font-weight: 700;
+        margin-bottom: 0.2rem;
+    }
+
+    .staff-info-value {
+        font-size: 0.9rem;
+        color: #4E342E;
+        font-weight: 500;
+        word-break: break-all;
+    }
+
+    .staff-card-footer {
+        padding: 1.25rem 1.5rem;
+        background: #fdfaf7;
+        border-top: 1px solid rgba(139, 99, 75, 0.05);
+    }
+    
+    .branch-select-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+    }
+    
+    .branch-select-container label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #5D4037;
+        text-transform: uppercase;
+    }
+    
+    .form-select-branch {
+        border-radius: 10px;
+        border: 1px solid rgba(139, 99, 75, 0.2);
+        padding: 0.6rem 1rem;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #3E2723;
+        background-color: #fff;
+        cursor: pointer;
+        width: 100%;
+        transition: all 0.2s;
+    }
+    
+    .form-select-branch:focus {
+        border-color: #8B634B;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(139, 99, 75, 0.1);
+    }
+
+    .btn-filter-role {
+        border-radius: 20px;
+        padding: 0.4rem 1.2rem;
+        border: none;
+        cursor: pointer;
+        background: transparent;
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: #8B634B;
+        background: #fdfaf7;
+        border: 1px solid rgba(139, 99, 75, 0.2);
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-filter-role:hover {
+        background: #faf6f1;
+        color: #5D4037;
+    }
+
+    .btn-filter-role.active {
+        background: #5D4037;
+        color: #fff;
+        border-color: #5D4037;
+        box-shadow: 0 4px 10px rgba(93, 64, 55, 0.2);
+    }
+</style>
+
+<div class="mb-4 d-flex justify-content-between align-items-center">
+    <div>
+        <h3 class="mb-1" style="font-family: 'Playfair Display', serif; font-weight: 700; color: #3E2723;">
+            <i class="fas fa-id-badge me-2 opacity-50"></i>Staff Directory
+        </h3>
+        <p class="text-muted mb-0" style="font-size: 0.9rem;">View and manage active staff members and their branch assignments.</p>
+    </div>
+</div>
+
+<div class="mb-4 d-flex gap-2 flex-wrap">
+    <button onclick="filterStaff('ALL', this)" class="btn-filter-role active" data-role-filter="ALL">All Roles</button>
+    <button onclick="filterStaff('ADMIN', this)" class="btn-filter-role" data-role-filter="ADMIN">Admin</button>
+    <button onclick="filterStaff('CASHIER', this)" class="btn-filter-role" data-role-filter="CASHIER">Cashier</button>
+    <button onclick="filterStaff('KITCHEN', this)" class="btn-filter-role" data-role-filter="KITCHEN">Kitchen</button>
+    <button onclick="filterStaff('INVENTORY_STAFF', this)" class="btn-filter-role" data-role-filter="INVENTORY_STAFF">Inventory</button>
+    <button onclick="filterStaff('RIDER', this)" class="btn-filter-role" data-role-filter="RIDER">Rider</button>
+</div>
+
+{% if users.items %}
+<div class="staff-grid">
+    {% for user in users.items %}
+    <div class="staff-card" id="staff-card-{{ user.id }}" data-role="{{ user.role | upper }}">
+        <div class="staff-card-header">
+            <div class="staff-avatar">
+                {{ user.first_name[0] | upper }}{{ user.last_name[0] | upper }}
+            </div>
+            <div class="staff-header-info">
+                <h4>{{ user.first_name }} {{ user.last_name }}</h4>
+                <p>@{{ user.username }}</p>
+            </div>
+        </div>
+
+        <div class="staff-card-body">
+            <div class="staff-detail">
+                <div class="staff-icon-box"><i class="fas fa-user-tag"></i></div>
+                <div class="staff-info">
+                    <span class="staff-info-label">Role</span>
+                    <span class="staff-info-value staff-role-label" style="font-weight: 700; color: #5D4037;">
+                        {% if user.role == 'INVENTORY_STAFF' %}Inventory Staff
+                        {% elif user.role == 'CASHIER' %}Cashier
+                        {% elif user.role == 'KITCHEN' %}Kitchen
+                        {% elif user.role == 'RIDER' %}Rider
+                        {% elif user.role == 'ADMIN' %}Admin
+                        {% else %}{{ user.role|title }}{% endif %}
+                    </span>
+                </div>
+            </div>
+
+            <div class="staff-detail">
+                <div class="staff-icon-box"><i class="fas fa-envelope"></i></div>
+                <div class="staff-info">
+                    <span class="staff-info-label">Email Address</span>
+                    <span class="staff-info-value">{{ user.email }}</span>
+                </div>
+            </div>
+
+            <div class="staff-detail">
+                <div class="staff-icon-box"><i class="fas fa-phone"></i></div>
+                <div class="staff-info">
+                    <span class="staff-info-label">Phone Number</span>
+                    <span class="staff-info-value">{{ user.phone_number or 'Not provided' }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="staff-card-footer" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="branch-select-container">
+                <label for="role-select-{{ user.id }}">Role</label>
+                <select id="role-select-{{ user.id }}" class="form-select-branch" onchange="updateStaffRole(this, {{ user.id }})">
+                    <option value="ADMIN" {% if user.role == 'ADMIN' %}selected{% endif %}>Admin</option>
+                    <option value="CASHIER" {% if user.role == 'CASHIER' %}selected{% endif %}>Cashier</option>
+                    <option value="KITCHEN" {% if user.role == 'KITCHEN' %}selected{% endif %}>Kitchen</option>
+                    <option value="INVENTORY_STAFF" {% if user.role == 'INVENTORY_STAFF' %}selected{% endif %}>Inventory</option>
+                    <option value="RIDER" {% if user.role == 'RIDER' %}selected{% endif %}>Rider</option>
+                </select>
+            </div>
+            <div class="branch-select-container">
+                <label for="branch-select-{{ user.id }}">Assigned Branch</label>
+                <select id="branch-select-{{ user.id }}" class="form-select-branch" onchange="updateStaffBranch(this, {{ user.id }})">
+                    <option value="Pagsanjan" {% if user.branch == 'Pagsanjan' %}selected{% endif %}>Pagsanjan</option>
+                    <option value="Lucban" {% if user.branch == 'Lucban' %}selected{% endif %}>Lucban</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination (If needed) -->
+{% if users.pages > 1 %}
+<nav aria-label="Staff navigation" class="mt-4">
+    <ul class="pagination justify-content-center custom-pagination">
+        <li class="page-item {% if not users.has_prev %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('admin.staff_management', page=users.prev_num) if users.has_prev else '#' }}">Previous</a>
+        </li>
+        {% for page_num in users.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if page_num %}
+                <li class="page-item {% if page_num == users.page %}active{% endif %}">
+                    <a class="page-link" href="{{ url_for('admin.staff_management', page=page_num) }}">{{ page_num }}</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">...</span></li>
+            {% endif %}
+        {% endfor %}
+        <li class="page-item {% if not users.has_next %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('admin.staff_management', page=users.next_num) if users.has_next else '#' }}">Next</a>
+        </li>
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="empty-approval-state text-center py-5">
+    <div style="width: 80px; height: 80px; background: #f0f4ef; color: #577551; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin: 0 auto 1.5rem;">
+        <i class="fas fa-users"></i>
+    </div>
+    <h3 style="font-family: 'Playfair Display', serif; font-weight: 800; color: #3E2723; margin-bottom: 0.5rem;">No Staff Found</h3>
+    <p style="color: #8D6E63; max-width: 400px; margin: 0 auto;">There are currently no active staff members matching your criteria.</p>
+</div>
+{% endif %}
+
+<script>
+function updateStaffBranch(selectEl, userId) {
+    const newBranch = selectEl.value;
+    const originalValue = selectEl.getAttribute('data-original') || (selectEl.value === 'Pagsanjan' ? 'Lucban' : 'Pagsanjan'); // fallback
+    
+    // Store original in case of failure
+    if(!selectEl.getAttribute('data-original')) {
+        selectEl.setAttribute('data-original', selectEl.options[selectEl.selectedIndex].defaultSelected ? selectEl.value : originalValue);
+    }
+
+    // Disable to prevent spam
+    selectEl.disabled = true;
+    
+    const formData = new FormData();
+    formData.append('branch', newBranch);
+
+    fetch(`/admin/staff/${userId}/update-branch`, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        selectEl.disabled = false;
+        if (data.success) {
+            selectEl.setAttribute('data-original', newBranch);
+            if (window.showToast) showToast('success', data.message);
+        } else {
+            // Revert back
+            selectEl.value = selectEl.getAttribute('data-original');
+            if (window.showToast) showToast('danger', data.message || 'Failed to update branch.');
+        }
+    })
+    .catch(err => {
+        console.error('Update error:', err);
+        selectEl.disabled = false;
+        selectEl.value = selectEl.getAttribute('data-original');
+        if (window.showToast) showToast('danger', 'Network error. Please try again.');
+    });
+}
+
+function updateStaffRole(selectEl, userId) {
+    const newRole = selectEl.value;
+    
+    // Fallback logic for original value
+    let originalValue = selectEl.getAttribute('data-original');
+    if (!originalValue) {
+        const defaultOpt = Array.from(selectEl.options).find(opt => opt.defaultSelected);
+        originalValue = defaultOpt ? defaultOpt.value : selectEl.options[0].value;
+        selectEl.setAttribute('data-original', originalValue);
+    }
+
+    selectEl.disabled = true;
+    
+    const formData = new FormData();
+    formData.append('role', newRole);
+
+    fetch(`/admin/staff/${userId}/update-role`, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        selectEl.disabled = false;
+        if (data.success) {
+            selectEl.setAttribute('data-original', newRole);
+            if (window.showToast) showToast('success', data.message);
+            // Optionally update the label in the card body
+            const roleLabel = document.querySelector(`#staff-card-${userId} .staff-role-label`);
+            if (roleLabel) roleLabel.innerText = selectEl.options[selectEl.selectedIndex].text;
+        } else {
+            selectEl.value = selectEl.getAttribute('data-original');
+            if (window.showToast) showToast('danger', data.message || 'Failed to update role.');
+        }
+    })
+    .catch(err => {
+        console.error('Update error:', err);
+        selectEl.disabled = false;
+        selectEl.value = selectEl.getAttribute('data-original');
+        if (window.showToast) showToast('danger', 'Network error. Please try again.');
+    });
+}
+
+function filterStaff(role, btn) {
+    // Update active button
+    document.querySelectorAll('.btn-filter-role').forEach(function(b) {
+        b.classList.remove('active');
+    });
+    btn.classList.add('active');
+
+    // Instantly show/hide cards based on data-role
+    document.querySelectorAll('.staff-card[data-role]').forEach(function(card) {
+        if (role === 'ALL' || card.getAttribute('data-role') === role) {
+            card.style.display = '';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+
+    // Update URL without reload so back/refresh works
+    var newUrl = window.location.pathname + (role !== 'ALL' ? '?role=' + role : '');
+    history.replaceState(null, '', newUrl);
+}
+
+// On page load, restore filter from URL if present
+(function() {
+    var params = new URLSearchParams(window.location.search);
+    var role = (params.get('role') || 'ALL').toUpperCase();
+    var btn = document.querySelector('[data-role-filter="' + role + '"]');
+    if (btn && role !== 'ALL') {
+        document.querySelectorAll('.btn-filter-role').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        document.querySelectorAll('.staff-card[data-role]').forEach(function(card) {
+            card.style.display = card.getAttribute('data-role') === role ? '' : 'none';
+        });
+    }
+})();
+</script>
+{% endblock %}

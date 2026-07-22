@@ -50,15 +50,22 @@ def _portal_forgot_password(portal_name, allowed_roles, login_url_name, verify_u
     if request.method == 'POST':
         email = (request.form.get('email') or '').strip()
         user = User.query.filter_by(email=email).first()
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
         if not user or not user.role or user.role.upper() not in allowed_roles:
-            flash(f"If an account exists for {email}, a reset code has been sent.", "info")
+            msg = f"If an account exists for {email}, a reset code has been sent."
+            if is_ajax:
+                return jsonify({'success': True, 'redirect': url_for(login_url_name), 'message': msg})
+            flash(msg, "info")
             return redirect(url_for(login_url_name))
 
         if user.otp_created_at:
             elapsed = safe_elapsed(user.otp_created_at)
             if elapsed < 60:
-                flash(f"Please wait {int(60 - elapsed)}s before requesting a new code.", "warning")
+                msg = f"Please wait {int(60 - elapsed)}s before requesting a new code."
+                if is_ajax:
+                    return jsonify({'success': False, 'message': msg})
+                flash(msg, "warning")
                 return redirect(url_for(verify_url_name, user_id=user.id))
 
         otp = f"{random.randint(100000, 999999)}"
@@ -100,6 +107,8 @@ def _portal_forgot_password(portal_name, allowed_roles, login_url_name, verify_u
         ).start()
 
         session[f'{portal_name.lower()}_reset_user_id'] = user.id
+        if is_ajax:
+            return jsonify({'success': True, 'redirect': url_for(verify_url_name, user_id=user.id)})
         return redirect(url_for(verify_url_name, user_id=user.id))
 
     return None  # Let caller render template
@@ -111,7 +120,10 @@ def _portal_verify_otp(portal_name, user_id, forgot_url_name, reset_url_name, lo
     Step 2: Accept OTP code, verify against DB.
     """
     session_key = f'{portal_name.lower()}_reset_user_id'
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if session.get(session_key) != user_id:
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'Invalid session.'}), 400
         flash("Invalid session.", "danger")
         return redirect(url_for(forgot_url_name))
 
@@ -119,14 +131,20 @@ def _portal_verify_otp(portal_name, user_id, forgot_url_name, reset_url_name, lo
     if request.method == 'POST':
         otp_input = request.form.get('otp', '').strip()
         if user.otp_created_at and safe_elapsed(user.otp_created_at) > 300:
+            if is_ajax:
+                return jsonify({'success': False, 'message': 'Code expired. Please request a new one.'}), 400
             flash("Code expired. Please request a new one.", "danger")
             return redirect(url_for(forgot_url_name))
 
         if user.otp_code == otp_input:
             session[f'{portal_name.lower()}_reset_verified_id'] = user.id
+            if is_ajax:
+                return jsonify({'success': True, 'redirect': url_for(reset_url_name)})
             flash("Code verified. Set your new password.", "success")
             return redirect(url_for(reset_url_name))
         else:
+            if is_ajax:
+                return jsonify({'success': False, 'message': 'Invalid code.'}), 400
             flash("Invalid code.", "danger")
 
     cooldown = 0
@@ -139,11 +157,16 @@ def _portal_verify_otp(portal_name, user_id, forgot_url_name, reset_url_name, lo
 def _portal_resend_otp(portal_name, user_id, forgot_url_name, verify_url_name):
     """Resend OTP for any portal."""
     session_key = f'{portal_name.lower()}_reset_user_id'
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if session.get(session_key) != user_id:
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'Invalid session.'}), 400
         return redirect(url_for(forgot_url_name))
 
     user = User.query.get_or_404(user_id)
     if user.otp_created_at and safe_elapsed(user.otp_created_at) < 60:
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'Please wait before requesting a new code.'}), 400
         return redirect(url_for(verify_url_name, user_id=user.id))
 
     otp = f"{random.randint(100000, 999999)}"
@@ -164,6 +187,8 @@ def _portal_resend_otp(portal_name, user_id, forgot_url_name, verify_url_name):
         daemon=True,
     ).start()
 
+    if is_ajax:
+        return jsonify({'success': True, 'message': 'New code sent.', 'cooldown_remaining': 60})
     flash("New code sent.", "success")
     return redirect(url_for(verify_url_name, user_id=user.id))
 
@@ -175,8 +200,11 @@ def _portal_reset_password(portal_name, login_url_name):
     """
     verified_key = f'{portal_name.lower()}_reset_verified_id'
     session_key = f'{portal_name.lower()}_reset_user_id'
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     user_id = session.get(verified_key)
     if not user_id:
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'Session expired.'}), 400
         return redirect(url_for(login_url_name))
 
     user = User.query.get_or_404(user_id)
@@ -186,6 +214,8 @@ def _portal_reset_password(portal_name, login_url_name):
 
         err = validate_password(new_password, confirm_password)
         if err:
+            if is_ajax:
+                return jsonify({'success': False, 'message': err}), 400
             flash(err, "danger")
             return None  # Caller re-renders
 
@@ -197,10 +227,10 @@ def _portal_reset_password(portal_name, login_url_name):
         session.pop(session_key, None)
         session.pop(verified_key, None)
 
+        if is_ajax:
+            return jsonify({'success': True, 'redirect': url_for(login_url_name)})
         flash("Password updated successfully. Please log in.", "success")
         return redirect(url_for(login_url_name))
-
-    return None  # Caller renders template
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -226,16 +256,46 @@ def _get_dashboard_for_role(role):
 def staff_login():
     # If already logged in as staff, redirect to their dashboard
     if current_user.is_authenticated and current_user.role and current_user.role.upper() in ALL_STAFF_ROLES:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': True, 'redirect': url_for(_get_dashboard_for_role(current_user.role))})
         return redirect(url_for(_get_dashboard_for_role(current_user.role)))
 
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
     if request.method == 'POST':
-        user = _authenticate_portal(
-            request.form.get('email'),
-            request.form.get('password'),
-            ALL_STAFF_ROLES
-        )
-        if user:
-            role_upper = user.role.upper()
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '')
+        selected_branch = request.form.get('branch', '').strip()
+
+        user = User.query.filter_by(email=email).first()
+        if user and user.check_password(password):
+            role_upper = (user.role or '').upper()
+            if role_upper not in ALL_STAFF_ROLES:
+                msg = 'Insufficient permissions.'
+                if is_ajax: return jsonify({'success': False, 'message': msg}), 401
+                flash(msg, 'error')
+                return render_template('staff/login.html')
+
+            if user.status == 'PENDING':
+                msg = 'Your account is pending admin approval.'
+                if is_ajax: return jsonify({'success': False, 'message': msg}), 401
+                flash(msg, 'error')
+                return render_template('staff/login.html')
+            elif user.status != 'ACTIVE':
+                msg = 'Your account is not active.'
+                if is_ajax: return jsonify({'success': False, 'message': msg}), 401
+                flash(msg, 'error')
+                return render_template('staff/login.html')
+
+            # Validate branch (Super Admin and users with branch='ALL' can access any branch)
+            if role_upper != 'SUPER_ADMIN' and user.branch != 'ALL':
+                if not selected_branch or user.branch != selected_branch:
+                    msg = f'You are registered under the {user.branch} branch and cannot log in to {selected_branch or "this"} branch.'
+                    if is_ajax: return jsonify({'success': False, 'message': msg}), 401
+                    flash(msg, 'error')
+                    return render_template('staff/login.html')
+
+            # Success
             if role_upper in ('CASHIER', 'STAFF'):
                 session['logged_in_portal'] = 'cashier'
             elif role_upper == 'KITCHEN':
@@ -246,9 +306,100 @@ def staff_login():
                 session['logged_in_portal'] = 'admin'
 
             login_user(user)
-            return redirect(url_for(_get_dashboard_for_role(user.role)))
-        flash('Invalid email, password, or insufficient permissions.', 'error')
+            redirect_url = url_for(_get_dashboard_for_role(user.role))
+
+            if is_ajax:
+                return jsonify({'success': True, 'redirect': redirect_url})
+            return redirect(redirect_url)
+
+        msg = 'Invalid email, password, or insufficient permissions.'
+        if is_ajax:
+            return jsonify({'success': False, 'message': msg}), 401
+        flash(msg, 'error')
     return render_template('staff/login.html')
+
+
+@cashier_bp.route('/staff/register', methods=['GET', 'POST'])
+def staff_register():
+    if current_user.is_authenticated:
+        return redirect(url_for('cashier_portal.staff_login'))
+
+    if request.method == 'POST':
+        from datetime import datetime
+        from routes.auth import validate_name, validate_email, validate_username, calculate_age, validate_password as auth_validate_password
+
+        first_name = request.form.get('first_name', '').strip()
+        middle_name = request.form.get('middle_name', '').strip()
+        last_name = request.form.get('last_name', '').strip()
+        username = request.form.get('username', '').strip()
+        email = request.form.get('email', '').strip()
+        phone_number = request.form.get('phone_number', '').strip()
+        birthday_str = request.form.get('birthday', '')
+        password = request.form.get('password', '')
+        confirm_password = request.form.get('confirm_password', '')
+        terms = request.form.get('terms')
+        gender = request.form.get('gender', '').strip()
+        role = request.form.get('role', '').strip()
+        branch = request.form.get('branch', '').strip()
+
+        if not all([first_name, last_name, username, email, phone_number, birthday_str, password, confirm_password, terms, role, branch]):
+            flash("All required fields must be filled and terms accepted.", "danger")
+            return render_template('staff/register.html', get_ph_time=get_ph_time)
+
+        # Run validation checks
+        for name, label in [(first_name, 'First Name'), (last_name, 'Last Name')]:
+            err = validate_name(name, label)
+            if err: flash(err, "danger"); return render_template('staff/register.html', get_ph_time=get_ph_time)
+        if middle_name:
+            err = validate_name(middle_name, 'Middle Name')
+            if err: flash(err, "danger"); return render_template('staff/register.html', get_ph_time=get_ph_time)
+
+        err = validate_email(email)
+        if err: flash(err, "danger"); return render_template('staff/register.html', get_ph_time=get_ph_time)
+
+        err = validate_username(username, first_name, last_name)
+        if err: flash(err, "danger"); return render_template('staff/register.html', get_ph_time=get_ph_time)
+
+        full_identity = f"{first_name} {last_name}".lower()
+        if username.lower() == full_identity:
+            flash("Username cannot be identical to Full Name.", "danger"); return render_template('staff/register.html', get_ph_time=get_ph_time)
+
+        try:
+            birthday = datetime.strptime(birthday_str, '%Y-%m-%d').date()
+            age = calculate_age(birthday)
+            if age < 18:
+                flash("You must be at least 18 years old to register.", "danger"); return render_template('staff/register.html', get_ph_time=get_ph_time)
+            if age > 70:
+                flash("Please enter a valid birthday. Maximum age is 70 years.", "danger"); return render_template('staff/register.html', get_ph_time=get_ph_time)
+        except ValueError:
+            flash("Invalid birthday format.", "danger"); return render_template('staff/register.html', get_ph_time=get_ph_time)
+
+        err = auth_validate_password(password, confirm_password)
+        if err: flash(err, "danger"); return render_template('staff/register.html', get_ph_time=get_ph_time)
+
+        if User.query.filter_by(email=email).first():
+            flash("Email already registered.", "danger"); return render_template('staff/register.html', get_ph_time=get_ph_time)
+        if User.query.filter_by(username=username).first():
+            flash("Username already taken.", "danger"); return render_template('staff/register.html', get_ph_time=get_ph_time)
+        if User.query.filter_by(first_name=first_name, last_name=last_name).first():
+            flash("User with this First and Last name already exists.", "danger"); return render_template('staff/register.html', get_ph_time=get_ph_time)
+        if phone_number and User.query.filter_by(phone_number=phone_number).first():
+            flash("Phone number already registered to another account.", "danger"); return render_template('staff/register.html', get_ph_time=get_ph_time)
+
+        new_user = User(
+            first_name=first_name, middle_name=middle_name, last_name=last_name,
+            username=username, email=email, phone_number=phone_number, birthday=birthday, 
+            status='PENDING', is_verified=True, gender=gender, age=age, role=role, branch=branch
+        )
+        new_user.set_password(password)
+
+        db.session.add(new_user)
+        db.session.commit()
+
+        flash("Registration successful! Your staff account is pending admin approval.", "success")
+        return redirect(url_for('cashier_portal.staff_login'))
+
+    return render_template('staff/register.html', get_ph_time=get_ph_time)
 
 
 # ── Unified Staff Forgot Password ──
@@ -303,21 +454,26 @@ def cashier_dashboard():
     if not current_user.is_authenticated or current_user.role not in CASHIER_ROLES:
         return redirect(url_for('cashier_portal.staff_login'))
     
-    # Required by templates/cashier/dashboard.html: 
-    # active_orders (count), completed_today (count), unpaid_orders (count), orders (list)
-    
     today = get_ph_time().date()
+    from datetime import datetime, time
+    today_start = datetime.combine(today, time.min)
     from models import Reservation
     
     active_orders_count = Order.query.outerjoin(Reservation).filter(
+        Order.is_archived.is_(False),
         Order.status.in_(['PENDING', 'PREPARING', 'READY']),
         db.or_(
             Order.reservation_id.is_(None),
             Reservation.date <= today
         )
     ).count()
-    completed_today_count = Order.query.filter(Order.status == 'COMPLETED', db.func.date(Order.created_at) == today).count()
+    completed_today_count = Order.query.filter(
+        Order.is_archived.is_(False),
+        Order.status == 'COMPLETED',
+        db.func.date(Order.created_at) == today
+    ).count()
     unpaid_orders_count = Order.query.outerjoin(Reservation).filter(
+        Order.is_archived.is_(False),
         Order.payment_status == 'UNPAID',
         db.or_(
             Order.reservation_id.is_(None),
@@ -325,14 +481,21 @@ def cashier_dashboard():
         )
     ).count()
     
-    # Recent active orders for the live queue (filter out future event pre-orders)
+    # Recent active orders plus completed/cancelled orders from today
     live_orders = Order.query.outerjoin(Reservation).filter(
-        Order.status.in_(['PENDING', 'PREPARING', 'READY']),
+        Order.is_archived.is_(False),
+        db.or_(
+            Order.status.in_(['PENDING', 'PREPARING', 'READY']),
+            db.and_(
+                Order.status.in_(['COMPLETED', 'CANCELLED']),
+                Order.created_at >= today_start
+            )
+        ),
         db.or_(
             Order.reservation_id.is_(None),
             Reservation.date <= today
         )
-    ).order_by(Order.created_at.desc()).limit(50).all()
+    ).order_by(Order.created_at.desc()).limit(100).all()
     
     return render_template('cashier/dashboard.html', 
                            portal_name=f"{current_user.first_name} {current_user.last_name}",
@@ -373,20 +536,28 @@ def cashier_api_dashboard():
         return jsonify({'error': 'Unauthorized'}), 401
 
     today = get_ph_time().date()
+    from datetime import datetime, time
+    today_start = datetime.combine(today, time.min)
     from models import Reservation
     
     live_orders = (
         Order.query.outerjoin(Reservation)
         .filter(
             Order.is_archived.is_(False),
-            Order.status.in_(['PENDING', 'PREPARING', 'READY']),
+            db.or_(
+                Order.status.in_(['PENDING', 'PREPARING', 'READY']),
+                db.and_(
+                    Order.status.in_(['COMPLETED', 'CANCELLED']),
+                    Order.created_at >= today_start
+                )
+            ),
             db.or_(
                 Order.reservation_id.is_(None),
                 Reservation.date <= today
             )
         )
         .order_by(Order.created_at.desc())
-        .limit(50)
+        .limit(100)
         .all()
     )
     return jsonify({
@@ -419,9 +590,21 @@ def cashier_api_dashboard():
     })
 
 
+# In-memory table configurations store (with default 1–17 tables)
+TABLE_CONFIGS = {
+    i: {
+        'id': i,
+        'name': f'Table {i}',
+        'area': 'Main Dining' if i <= 10 else ('Patio Area' if i <= 14 else 'VIP Lounge'),
+        'capacity': 4 if i % 3 != 0 else (6 if i % 2 == 0 else 2)
+    }
+    for i in range(1, 18)
+}
+
+
 @cashier_bp.route('/staff/cashier/api/tables')
 def cashier_api_tables():
-    """Real-time table availability for staff (tables 1–17)."""
+    """Real-time table availability for staff."""
     if not current_user.is_authenticated or current_user.role not in CASHIER_ROLES:
         return jsonify({'error': 'Unauthorized'}), 401
 
@@ -429,7 +612,7 @@ def cashier_api_tables():
     import datetime as py_datetime
     import re
 
-    # 1. Query occupied tables (only active order statuses should count)
+    # 1. Query occupied tables — any non-archived order where table_status is OCCUPIED stays occupied until explicitly released
     from models import User as UserModel
     occupied_rows = (
         db.session.query(Order.table_number, Order.id, Order.customer_name, Order.status, UserModel.first_name, UserModel.last_name)
@@ -437,8 +620,7 @@ def cashier_api_tables():
         .filter(
             Order.table_status == 'OCCUPIED',
             Order.table_number.isnot(None),
-            Order.is_archived.is_(False),
-            Order.status.in_(['PENDING', 'PREPARING', 'READY', 'COMPLETED'])
+            Order.is_archived.is_(False)
         )
         .all()
     )
@@ -473,7 +655,7 @@ def cashier_api_tables():
             customer_name = f"{res.user.first_name} {res.user.last_name}" if res.user else "Guest"
             # Check for exclusive booking
             if "exclusive" in res.booking_type.lower() or "exclusive" in (res.table_number or '').lower():
-                for t_num in range(1, 18):
+                for t_num in TABLE_CONFIGS.keys():
                     reserved_tables[t_num] = {
                         'reservation_id': res.id,
                         'customer': customer_name,
@@ -483,7 +665,7 @@ def cashier_api_tables():
             else:
                 nums = [int(n) for n in re.findall(r'\d+', res.table_number)]
                 for num in nums:
-                    if 1 <= num <= 17:
+                    if num in TABLE_CONFIGS:
                         reserved_tables[num] = {
                             'reservation_id': res.id,
                             'customer': customer_name,
@@ -491,40 +673,112 @@ def cashier_api_tables():
                             'duration': res.duration,
                         }
 
-    # 3. Construct 1-17 tables availability map
+    # 3. Construct tables availability map
     tables = {}
     occupied_count = 0
     reserved_count = 0
     available_count = 0
-    for i in range(1, 18):
+    sorted_ids = sorted(list(TABLE_CONFIGS.keys()))
+    for i in sorted_ids:
+        config = TABLE_CONFIGS[i]
         if i in occupied_map:
-            tables[i] = {'status': 'OCCUPIED', **occupied_map[i]}
+            tables[i] = {'status': 'OCCUPIED', **config, **occupied_map[i]}
             occupied_count += 1
         elif i in reserved_tables:
-            tables[i] = {'status': 'RESERVED', **reserved_tables[i]}
+            tables[i] = {'status': 'RESERVED', **config, **reserved_tables[i]}
             reserved_count += 1
         else:
-            tables[i] = {'status': 'AVAILABLE'}
+            tables[i] = {'status': 'AVAILABLE', **config}
             available_count += 1
 
     return jsonify({
         'success': True,
         'time': get_ph_time().strftime('%I:%M:%S %p'),
         'tables': tables,
+        'total_count': len(sorted_ids),
         'occupied_count': occupied_count,
         'reserved_count': reserved_count,
         'available_count': available_count,
     })
 
 
+@cashier_bp.route('/staff/cashier/api/tables/<int:table_num>/update', methods=['POST'])
+def cashier_update_table(table_num):
+    """Update table details."""
+    if not current_user.is_authenticated or current_user.role not in CASHIER_ROLES:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+        
+    data = request.get_json() or {}
+    name = str(data.get('name') or f'Table {table_num}').strip()
+    area = str(data.get('area') or 'Main Dining').strip()
+    
+    try:
+        capacity = int(data.get('capacity', 4))
+    except (ValueError, TypeError):
+        return jsonify({'success': False, 'message': 'Invalid capacity. Must be a valid integer.'}), 400
+        
+    if capacity < 1:
+        return jsonify({'success': False, 'message': 'Capacity must be at least 1 pax.'}), 400
+        
+    if table_num not in TABLE_CONFIGS:
+        TABLE_CONFIGS[table_num] = {'id': table_num}
+        
+    TABLE_CONFIGS[table_num].update({
+        'id': table_num,
+        'name': name,
+        'area': area,
+        'capacity': capacity
+    })
+    
+    return jsonify({
+        'success': True,
+        'message': f'"{name}" updated successfully ({capacity} Pax, {area}).',
+        'table': TABLE_CONFIGS[table_num]
+    })
+
+
+@cashier_bp.route('/staff/cashier/api/tables/add', methods=['POST'])
+def cashier_add_table():
+    """Add a new dining table."""
+    if not current_user.is_authenticated or current_user.role not in CASHIER_ROLES:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+        
+    data = request.get_json() or {}
+    new_id = max(TABLE_CONFIGS.keys(), default=0) + 1
+    name = str(data.get('name') or f'Table {new_id}').strip()
+    area = str(data.get('area') or 'Main Dining').strip()
+    
+    try:
+        capacity = int(data.get('capacity', 4))
+    except (ValueError, TypeError):
+        return jsonify({'success': False, 'message': 'Invalid capacity. Must be a valid integer.'}), 400
+        
+    if capacity < 1:
+        return jsonify({'success': False, 'message': 'Capacity must be at least 1 pax.'}), 400
+        
+    TABLE_CONFIGS[new_id] = {
+        'id': new_id,
+        'name': name,
+        'area': area,
+        'capacity': capacity
+    }
+    
+    return jsonify({
+        'success': True,
+        'message': f'"{name}" added successfully ({capacity} Pax, {area}).',
+        'table': TABLE_CONFIGS[new_id]
+    })
+
+
+
 @cashier_bp.route('/staff/cashier/tables/<int:table_num>/release', methods=['POST'])
 def cashier_release_table(table_num):
-    """Release occupied table by setting occupying order's table_status to AVAILABLE."""
+    """Release occupied table when customer finishes dining and leaves."""
     if not current_user.is_authenticated or current_user.role not in CASHIER_ROLES:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 401
         
     try:
-        # Fetch ALL orders occupying this table to release them all in one click
+        # Find all non-archived OCCUPIED orders for this table
         orders = Order.query.filter(
             Order.table_number == table_num,
             Order.table_status == 'OCCUPIED',
@@ -533,11 +787,13 @@ def cashier_release_table(table_num):
         
         if not orders:
             return jsonify({'success': False, 'message': f'Table {table_num} is not currently occupied.'}), 400
-            
+        
+        # Release table and mark active order as COMPLETED
         for order in orders:
             order.table_status = 'AVAILABLE'
-            if order.status in ('READY', 'PREPARING', 'PENDING') and order.payment_status == 'PAID':
+            if order.status in ('PENDING', 'PREPARING', 'READY'):
                 order.status = 'COMPLETED'
+                
         db.session.commit()
         return jsonify({
             'success': True,
@@ -710,12 +966,11 @@ def cashier_assign_table(order_id):
         except ValueError:
             return jsonify({'success': False, 'message': 'Table number must be an integer.'}), 400
             
-        # Check if table is occupied
+        # Check if table is currently occupied by an active order
         occupied_order = Order.query.filter(
             Order.table_number == table_number,
             Order.table_status == 'OCCUPIED',
-            Order.is_archived.is_(False),
-            Order.status.in_(['PENDING', 'PREPARING', 'READY', 'COMPLETED'])
+            Order.is_archived.is_(False)
         ).first()
         
         if occupied_order:
@@ -908,63 +1163,7 @@ def cashier_bulk_complete_reservations():
     flash(msg, "success")
     return redirect(url_for('cashier_portal.cashier_reservations'))
 
-@cashier_bp.route('/staff/cashier/billing')
-def cashier_billing():
-    if not current_user.is_authenticated or current_user.role not in CASHIER_ROLES:
-        return redirect(url_for('cashier_portal.staff_login'))
 
-    status_filter = request.args.get('status', 'UNPAID')
-    page = request.args.get('page', 1, type=int)
-
-    query = Order.query.filter(Order.is_archived.is_(False))
-    user_branch = getattr(current_user, 'branch', None)
-    if user_branch and user_branch != 'ALL':
-        query = query.filter_by(branch=user_branch)
-    if status_filter != 'ALL':
-        query = query.filter_by(payment_status=status_filter)
-
-    pagination = query.order_by(Order.created_at.desc()).paginate(page=page, per_page=20, error_out=False)
-
-    today = get_ph_time().date()
-    # Stats for TODAY (for sales performance)
-    today_stats_q = db.session.query(
-        Order.payment_status, Order.payment_method,
-        db.func.count(Order.id), db.func.sum(Order.total_amount)
-    ).filter(db.func.date(Order.created_at) == today, Order.is_archived.is_(False))
-    if user_branch and user_branch != 'ALL':
-        today_stats_q = today_stats_q.filter(Order.branch == user_branch)
-    today_stats = today_stats_q.group_by(Order.payment_status, Order.payment_method).all()
-
-    # Stats for ALL UNPAID (for balance tracking)
-    all_unpaid_q = db.session.query(
-        db.func.count(Order.id), db.func.sum(Order.total_amount)
-    ).filter(Order.payment_status == 'UNPAID', Order.is_archived.is_(False))
-    if user_branch and user_branch != 'ALL':
-        all_unpaid_q = all_unpaid_q.filter(Order.branch == user_branch)
-    all_unpaid_stats = all_unpaid_q.first()
-
-    total_sales_today = 0
-    cash_sales = 0
-    online_sales = 0
-
-    for ps, pm, cnt, total in today_stats:
-        total_val = float(total or 0)
-        if ps == 'PAID':
-            total_sales_today += total_val
-            if pm == 'COUNTER': cash_sales += total_val
-            if pm == 'ONLINE': online_sales += total_val
-
-    unpaid_count = int(all_unpaid_stats[0] or 0)
-    unpaid_total = float(all_unpaid_stats[1] or 0)
-
-    return render_template('cashier/billing.html',
-                           orders=pagination,
-                           status_filter=status_filter,
-                           total_sales_today=total_sales_today,
-                           unpaid_count=unpaid_count,
-                           unpaid_total=unpaid_total,
-                           cash_sales=cash_sales,
-                           online_sales=online_sales)
 
 @cashier_bp.route('/staff/cashier/history')
 def cashier_orders_history():
@@ -1053,9 +1252,9 @@ def kitchen_dashboard():
     try:
         from sqlalchemy.orm import selectinload
         pending_orders = Order.query.options(selectinload(Order.items)).filter(Order.status == 'PENDING', Order.reservation_id.is_(None)).order_by(Order.created_at.asc()).all()
-        preparing_orders = Order.query.options(selectinload(Order.items)).filter(Order.status == 'PREPARING', Order.reservation_id.is_(None)).order_by(Order.created_at.asc()).all()
+        preparing_orders = Order.query.options(selectinload(Order.items)).filter(Order.status == 'PREPARING').order_by(Order.created_at.asc()).all()
         # For ready orders, we want to see the last 20
-        ready_orders = Order.query.options(selectinload(Order.items)).filter(Order.status == 'READY', Order.reservation_id.is_(None)).order_by(Order.created_at.desc()).limit(20).all()
+        ready_orders = Order.query.options(selectinload(Order.items)).filter(Order.status == 'READY').order_by(Order.created_at.desc()).limit(20).all()
         
         return render_template('kitchen/dashboard.html',
                                portal_name=f"{current_user.first_name} {current_user.last_name}",
@@ -1328,9 +1527,11 @@ def _serialize_order(o):
         'customer': (o.user.first_name if o.user else None) or o.customer_name or 'Walk-in Guest',
         'dining_label': dining.replace('_', ' ').title(),
         'dining_icon': icon,
+        'is_pre_order': o.reservation_id is not None,
         'items': [{'qty': i.quantity, 'name': i.menu_item.name if i.menu_item else 'Item'} for i in o.items]
     }
 
+@cashier_bp.route('/staff/kitchen/api/orders')
 @kitchen_bp.route('/staff/kitchen/api/orders')
 def kitchen_api_orders():
     """Ultra-fast JSON endpoint for dashboard polling — no template rendering."""
@@ -1345,10 +1546,10 @@ def kitchen_api_orders():
         Order.status == 'PENDING', Order.reservation_id.is_(None)
     ).order_by(Order.created_at.asc()).all()
     preparing = Order.query.options(*base_opts).filter(
-        Order.status == 'PREPARING', Order.reservation_id.is_(None)
+        Order.status == 'PREPARING'
     ).order_by(Order.created_at.asc()).all()
     ready = Order.query.options(*base_opts).filter(
-        Order.status == 'READY', Order.reservation_id.is_(None)
+        Order.status == 'READY'
     ).order_by(Order.created_at.desc()).limit(20).all()
     return jsonify({
         'pending': [_serialize_order(o) for o in pending],
@@ -1374,6 +1575,33 @@ def kitchen_api_pantry():
             'reorder_level': float(ing.reorder_level or 0)
         })
     return jsonify({'ingredients': data, 'time': get_ph_time().strftime('%I:%M:%S %p')})
+
+@kitchen_bp.route('/staff/kitchen/api/sidebar')
+def kitchen_api_sidebar():
+    """Lightweight polling endpoint for kitchen sidebar badge counts."""
+    if not current_user.is_authenticated or current_user.role not in KITCHEN_ROLES:
+        return jsonify({'error': 'Unauthorized'}), 401
+    pending_orders = Order.query.filter(
+        Order.status == 'PENDING', Order.reservation_id.is_(None)
+    ).count()
+    preparing_orders = Order.query.filter(
+        Order.status == 'PREPARING', Order.reservation_id.is_(None)
+    ).count()
+    from models import StockRequest as _SR
+    my_pending_requests = _SR.query.filter_by(
+        requested_by_id=current_user.id, status='PENDING'
+    ).count()
+    fulfilled_requests = _SR.query.filter_by(
+        requested_by_id=current_user.id, status='FULFILLED'
+    ).count()
+    return jsonify({
+        'success': True,
+        'pending_orders': pending_orders,
+        'preparing_orders': preparing_orders,
+        'my_pending_requests': my_pending_requests,
+        'fulfilled_requests': fulfilled_requests,
+        'time': get_ph_time().strftime('%I:%M:%S %p'),
+    })
 
 @kitchen_bp.route('/staff/kitchen/pantry/emergency-fill', methods=['POST'])
 def kitchen_emergency_fill():
@@ -1520,10 +1748,13 @@ def inventory_api_alerts():
         'unit': ing.unit,
         'status': 'OUT_OF_STOCK' if float(ing.stock_qty or 0) == 0 else 'LOW_STOCK',
     } for ing in low_stock]
+    from models import StockRequest as _SR
+    pending_stock = _SR.query.filter_by(status='PENDING').count()
     return jsonify({
         'success': True,
         'count': len(alerts),
         'alerts': alerts,
+        'pending_stock_requests': pending_stock,
         'time': get_ph_time().strftime('%I:%M:%S %p'),
     })
 
@@ -2760,6 +2991,296 @@ def supplier_receive_delivery(sup_id):
         'details': details
     })
 
+
+# ─── OCR DELIVERY RECEIPT UPLOAD ─────────────────────────────────────────────
+@inventory_bp.route('/staff/inventory/suppliers/ocr-scan', methods=['POST'])
+@login_required
+def supplier_ocr_scan():
+    """
+    Upload a delivery receipt image (jpg/png/pdf).
+    Uses Tesseract OCR to extract text, then parses supplier name and items.
+    Validates: supplier name match, today-only date, supplier-item ownership.
+    Returns JSON with extracted data for preview before confirming.
+    """
+    if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+
+    if 'receipt_file' not in request.files:
+        return jsonify({'success': False, 'message': 'No file uploaded.'})
+
+    file = request.files['receipt_file']
+    if not file or file.filename == '':
+        return jsonify({'success': False, 'message': 'No file selected.'})
+
+    allowed_ext = {'png', 'jpg', 'jpeg', 'bmp', 'tiff', 'tif', 'webp', 'pdf'}
+    ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+    if ext not in allowed_ext:
+        return jsonify({'success': False, 'message': f'File type .{ext} not supported. Use PNG, JPG, or PDF.'})
+
+    try:
+        import pytesseract
+        from PIL import Image, ImageEnhance, ImageFilter
+        import io, re
+        from datetime import date as _date, timedelta
+
+        pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+
+        file_bytes = file.read()
+
+        # Handle PDF
+        if ext == 'pdf':
+            try:
+                import fitz
+                pdf_doc = fitz.open(stream=file_bytes, filetype='pdf')
+                pix = pdf_doc[0].get_pixmap(matrix=fitz.Matrix(2.0, 2.0))
+                image = Image.open(io.BytesIO(pix.tobytes('png')))
+            except ImportError:
+                return jsonify({'success': False, 'message': 'PDF support requires PyMuPDF. Please upload an image instead.'})
+        else:
+            image = Image.open(io.BytesIO(file_bytes))
+
+        image = image.convert('L')
+        image = ImageEnhance.Contrast(image).enhance(2.0)
+        image = image.filter(ImageFilter.SHARPEN)
+
+        raw_text = pytesseract.image_to_string(image, config='--psm 6')
+        lines = [l.strip() for l in raw_text.splitlines() if l.strip()]
+
+        today = _date.today()
+
+        # ── MONTH NAMES & DATE REGEX ─────────────────────────────
+        month_names = {
+            'january','february','march','april','may','june','july','august',
+            'september','october','november','december',
+            'jan','feb','mar','apr','jun','jul','aug','sep','oct','nov','dec'
+        }
+        month_num = {
+            'january':1,'february':2,'march':3,'april':4,'may':5,'june':6,
+            'july':7,'august':8,'september':9,'october':10,'november':11,'december':12,
+            'jan':1,'feb':2,'mar':3,'apr':4,'jun':6,'jul':7,'aug':8,
+            'sep':9,'oct':10,'nov':11,'dec':12
+        }
+        date_line_re = re.compile(
+            r'\b(january|february|march|april|may|june|july|august|september|october|'
+            r'november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec|'
+            r'\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})\b', re.IGNORECASE)
+
+        # ── 1. EXTRACT DATE from receipt ─────────────────────────
+        receipt_date = None
+        # Pattern: "Month Day, Year"  e.g. "July 15, 2026" or "Jul 15 2026"
+        date_full_re = re.compile(
+            r'\b(january|february|march|april|may|june|july|august|september|october|'
+            r'november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)\s+'
+            r'(\d{1,2})[,\s]+(\d{4})\b', re.IGNORECASE)
+        # Pattern: numeric  "15/07/2026" or "07-15-2026"
+        date_num_re = re.compile(
+            r'\b(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})\b')
+
+        for line in lines[:20]:
+            m = date_full_re.search(line)
+            if m:
+                try:
+                    mon = month_num.get(m.group(1).lower()[:3]) or month_num.get(m.group(1).lower())
+                    if mon:
+                        receipt_date = _date(int(m.group(3)), mon, int(m.group(2)))
+                        break
+                except Exception:
+                    pass
+            m2 = date_num_re.search(line)
+            if m2:
+                try:
+                    d1, d2, yr = int(m2.group(1)), int(m2.group(2)), int(m2.group(3))
+                    # Try MM/DD/YYYY first, then DD/MM/YYYY
+                    try:
+                        receipt_date = _date(yr, d1, d2)
+                    except ValueError:
+                        receipt_date = _date(yr, d2, d1)
+                    break
+                except Exception:
+                    pass
+
+        # VALIDATION 1 — Date must exist
+        if receipt_date is None:
+            return jsonify({
+                'success': False,
+                'message': '❌ Date not found in receipt. Please make sure the receipt has today\'s date (e.g. "Date: July 16, 2026").'
+            })
+
+        # VALIDATION 2 — Date must be today only (no future, no past)
+        if receipt_date != today:
+            return jsonify({
+                'success': False,
+                'message': f'❌ Invalid date on receipt. Receipt date is {receipt_date.strftime("%B %d, %Y")} but today is {today.strftime("%B %d, %Y")}. Only today\'s receipts are accepted.'
+            })
+
+        # ── 2. EXTRACT SUPPLIER NAME ─────────────────────────────
+        supplier_name_raw = None
+        supplier_keywords = ['supplier', 'from:', 'vendor', 'company', 'farm', 'trading',
+                             'enterprises', 'corp', 'inc', 'aling', 'manong', 'store', 'panaderia']
+        for line in lines[:15]:
+            ll = line.lower()
+            if date_line_re.search(line):
+                continue
+            for kw in supplier_keywords:
+                if kw in ll:
+                    supplier_name_raw = line.split(':', 1)[1].strip() if ':' in line else line.strip()
+                    break
+            if supplier_name_raw:
+                break
+
+        if not supplier_name_raw:
+            for line in lines[:8]:
+                if len(line) > 3 and not date_line_re.search(line) \
+                        and not re.match(r'^[\d\s\-\/\.\,₱]+$', line):
+                    supplier_name_raw = line
+                    break
+
+        # VALIDATION 3 — Supplier must exist in DB (fuzzy match)
+        all_suppliers = Supplier.query.all()
+        matched_supplier = None
+        raw_lower = (supplier_name_raw or '').lower().strip()
+
+        for sup in all_suppliers:
+            sup_lower = sup.name.lower().strip()
+            # Exact match or one name contains the other (first 5+ chars)
+            if sup_lower == raw_lower or sup_lower in raw_lower or raw_lower in sup_lower:
+                matched_supplier = sup
+                break
+            # Word-by-word match — if 2+ significant words match
+            sup_words = set(sup_lower.split())
+            raw_words = set(raw_lower.split())
+            common = sup_words & raw_words - {'the','ni','ng','at','and','of','de','na'}
+            if len(common) >= 2:
+                matched_supplier = sup
+                break
+
+        if matched_supplier is None:
+            known = ', '.join([s.name for s in all_suppliers]) or 'None registered'
+            return jsonify({
+                'success': False,
+                'message': f'❌ Supplier "{supplier_name_raw}" not found. Registered suppliers: {known}. Please match the name exactly.'
+            })
+
+        # ── 3. PARSE ITEMS ───────────────────────────────────────
+        item_re = re.compile(
+            r'^([A-Za-z][A-Za-z\s\-\/]{1,40}?)\s+(\d+(?:\.\d+)?)\s*'
+            r'(kg|g|liter|litre|L|pcs|pc|pack|bag|box|bottle|gallon|ml|oz|lb|kl|sack)\b',
+            re.IGNORECASE
+        )
+        skip_words = {'total', 'date', 'invoice', 'receipt', 'delivery receipt',
+                      'subtotal', 'vat', 'tax', 'amount', 'paid', 'change',
+                      'cash', 'balance', 'supplier', 'vendor', 'from'}
+
+        # Get all ingredients belonging to this supplier
+        supplier_ingredients = {
+            ing.name.lower(): ing
+            for ing in Ingredient.query.filter_by(supplier_id=matched_supplier.id).all()
+        }
+
+        items = []
+        seen_names = set()
+
+        for line in lines:
+            if date_line_re.search(line):
+                continue
+            m = item_re.match(line)
+            if not m:
+                continue
+
+            name      = m.group(1).strip().title()
+            qty       = float(m.group(2))
+            unit      = m.group(3).lower()
+            name_lower = name.lower().strip()
+
+            if name_lower in month_names:
+                continue
+            if any(sw in name_lower for sw in skip_words):
+                continue
+            if len(name_lower) < 2 or qty <= 0 or name_lower in seen_names:
+                continue
+
+            seen_names.add(name_lower)
+
+            first_word = name_lower.split()[0]
+
+            # Try to match: 1) supplier's own ingredients first
+            existing = (
+                supplier_ingredients.get(name_lower)
+                or next((v for k, v in supplier_ingredients.items() if name_lower in k or k in name_lower), None)
+                or Ingredient.query.filter(db.func.lower(Ingredient.name) == name_lower).first()
+                or Ingredient.query.filter(db.func.lower(Ingredient.name).contains(name_lower)).first()
+                or Ingredient.query.filter(db.func.lower(Ingredient.name).contains(first_word)).first()
+            )
+
+            cost = float(existing.cost_per_unit) if existing and existing.cost_per_unit else 0.0
+
+            # Determine if this is a new item not yet assigned to supplier
+            is_supplier_item = existing and existing.supplier_id == matched_supplier.id
+            is_new = existing is None
+            # If item exists but belongs to different supplier, flag it
+            is_wrong_supplier = existing and existing.supplier_id and existing.supplier_id != matched_supplier.id
+
+            if is_wrong_supplier:
+                # Still allow but flag as warning
+                items.append({
+                    'name': name,
+                    'qty': qty,
+                    'unit': unit,
+                    'price': cost,
+                    'line_total': round(qty * cost, 2),
+                    'matched': existing.name,
+                    'ingredient_id': existing.id,
+                    'status': 'warning',  # belongs to different supplier
+                    'status_label': 'Other Supplier',
+                })
+            elif is_new:
+                items.append({
+                    'name': name,
+                    'qty': qty,
+                    'unit': unit,
+                    'price': 0.0,
+                    'line_total': 0.0,
+                    'matched': None,
+                    'ingredient_id': None,
+                    'status': 'new',
+                    'status_label': 'NEW',
+                })
+            else:
+                items.append({
+                    'name': name,
+                    'qty': qty,
+                    'unit': unit,
+                    'price': cost,
+                    'line_total': round(qty * cost, 2),
+                    'matched': existing.name,
+                    'ingredient_id': existing.id,
+                    'status': 'matched',
+                    'status_label': existing.name,
+                })
+
+        if not items:
+            return jsonify({
+                'success': False,
+                'message': '❌ No items found in receipt. Make sure items have a unit (e.g. "Tea Leaves 10 kg").'
+            })
+
+        return jsonify({
+            'success': True,
+            'raw_text': raw_text[:500],
+            'supplier_name': matched_supplier.name,
+            'supplier_id': matched_supplier.id,
+            'receipt_date': receipt_date.strftime('%B %d, %Y'),
+            'items': items,
+            'item_count': len(items),
+            'message': f'Extracted {len(items)} item(s) from receipt.'
+        })
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'OCR Error: {str(e)}'})
+
+
 @inventory_bp.route('/inventory/logout')
 def inventory_logout():
     return redirect(url_for('admin.admin_logout'))
@@ -2807,6 +3328,7 @@ def inventory_reset_password():
 def _handle_profile_post(user):
     """Shared handler for profile update and password change POST requests."""
     form_type = request.form.get('form_type')
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     
     if form_type == 'profile':
         first_name = request.form.get('first_name', '').strip()
@@ -2814,6 +3336,8 @@ def _handle_profile_post(user):
         phone_number = request.form.get('phone_number', '').strip()
         
         if not first_name or not last_name:
+            if is_ajax:
+                return jsonify({'success': False, 'message': 'First name and last name are required.'}), 400
             flash('First name and last name are required.', 'danger')
             return False
         
@@ -2821,6 +3345,8 @@ def _handle_profile_post(user):
         user.last_name = last_name
         user.phone_number = phone_number if phone_number else None
         db.session.commit()
+        if is_ajax:
+            return jsonify({'success': True, 'message': 'Profile updated successfully!'})
         flash('Profile updated successfully!', 'success')
         return True
         
@@ -2830,19 +3356,27 @@ def _handle_profile_post(user):
         confirm_password = request.form.get('confirm_password', '')
         
         if not user.check_password(current_password):
+            if is_ajax:
+                return jsonify({'success': False, 'message': 'Current password is incorrect.'}), 400
             flash('Current password is incorrect.', 'danger')
             return False
         
         err = validate_password(new_password, confirm_password)
         if err:
+            if is_ajax:
+                return jsonify({'success': False, 'message': err}), 400
             flash(err, 'danger')
             return False
         
         user.set_password(new_password)
         db.session.commit()
+        if is_ajax:
+            return jsonify({'success': True, 'message': 'Password changed successfully!'})
         flash('Password changed successfully!', 'success')
         return True
     
+    if is_ajax:
+        return jsonify({'success': False, 'message': 'Invalid request.'}), 400
     return False
 
 
@@ -2853,7 +3387,9 @@ def kitchen_profile():
         return redirect(url_for('cashier_portal.staff_login'))
     
     if request.method == 'POST':
-        _handle_profile_post(current_user)
+        res = _handle_profile_post(current_user)
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return res
         return redirect(url_for('kitchen_portal.kitchen_profile'))
     
     sidebar_items = [
@@ -2881,7 +3417,9 @@ def inventory_profile():
         return redirect(url_for('cashier_portal.staff_login'))
     
     if request.method == 'POST':
-        _handle_profile_post(current_user)
+        res = _handle_profile_post(current_user)
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return res
         return redirect(url_for('inventory_portal.inventory_profile'))
     
     sidebar_items = [
@@ -2911,13 +3449,14 @@ def cashier_profile():
         return redirect(url_for('cashier_portal.staff_login'))
     
     if request.method == 'POST':
-        _handle_profile_post(current_user)
+        res = _handle_profile_post(current_user)
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return res
         return redirect(url_for('cashier_portal.cashier_profile'))
     
     sidebar_items = [
         {'url': url_for('cashier_portal.cashier_dashboard'), 'icon': 'shopping-bag', 'label': 'Orders'},
         {'url': url_for('cashier_portal.cashier_walkin_order'), 'icon': 'walking', 'label': 'Walk-In Order'},
-        {'url': url_for('cashier_portal.cashier_billing'), 'icon': 'file-invoice-dollar', 'label': 'Billing'},
         {'url': url_for('cashier_portal.cashier_orders_history'), 'icon': 'clock-rotate-left', 'label': 'Order History'},
         {'url': url_for('cashier_portal.cashier_chats'), 'icon': 'comments', 'label': 'Customer Chat'},
     ]
@@ -2941,14 +3480,21 @@ RIDER_ROLES = ['RIDER']
 @rider_bp.route('/staff/rider/login', methods=['GET', 'POST'])
 def rider_login():
     if current_user.is_authenticated and current_user.role in RIDER_ROLES:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': True, 'redirect': url_for('rider_portal.rider_dashboard')})
         return redirect(url_for('rider_portal.rider_dashboard'))
         
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if request.method == 'POST':
         user = _authenticate_portal(request.form.get('email'), request.form.get('password'), RIDER_ROLES)
         if user:
             session['logged_in_portal'] = 'rider'
             login_user(user)
+            if is_ajax:
+                return jsonify({'success': True, 'redirect': url_for('rider_portal.rider_dashboard')})
             return redirect(url_for('rider_portal.rider_dashboard'))
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'Invalid credentials or insufficient permissions for Rider Portal.'}), 401
         flash('Invalid credentials or insufficient permissions for Rider Portal.', 'error')
     return render_template('rider/login.html')
 

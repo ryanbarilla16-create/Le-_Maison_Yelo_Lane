@@ -154,19 +154,13 @@
                         <h2 class="text-center lu-user_type my-3">KITCHEN</h2>
                         <hr class="my-1" style="width:80%; margin: 0 auto; opacity: 0.1;">
 
-                        {% with messages = get_flashed_messages(with_categories=true) %}
-                        {% if messages %}
-                        <div class="mt-4 px-2">
-                            {% for category, message in messages %}
-                            <div class="flash-message text-center">
-                                <i class="fas fa-exclamation-circle me-2"></i> {{ message }}
+                        <div class="mt-2 px-2" id="ajaxErrorBox" style="display: none;">
+                            <div class="flash-message text-center" style="background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; border-radius: 12px; padding: 0.8rem; font-size: 0.85rem;">
+                                <i class="fas fa-exclamation-circle me-2"></i> <span id="errorText"></span>
                             </div>
-                            {% endfor %}
                         </div>
-                        {% endif %}
-                        {% endwith %}
 
-                        <form method="POST" action="{{ url_for('kitchen_portal.kitchen_login') }}" id="login_form" style="padding: 1rem 2rem 2rem 2rem;">
+                        <form method="POST" action="{{ url_for('cashier_portal.staff_login') }}" id="login_form" style="padding: 1rem 2rem 2rem 2rem;">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
                             <div class="form-group mt-4 mb-3">
                                 <div class="input-icon">
@@ -184,7 +178,7 @@
                                     </span>
                                 </div>
                                 <div class="text-end mt-2">
-                                    <a href="{{ url_for('kitchen_portal.kitchen_forgot_password') }}" style="color: #5D4037; font-size: 0.8rem; text-decoration: none; font-weight: 500;">Forgot Password?</a>
+                                    <a href="{{ url_for('cashier_portal.staff_forgot_password') }}" style="color: #5D4037; font-size: 0.8rem; text-decoration: none; font-weight: 500;">Forgot Password?</a>
                                 </div>
                             </div>
 
@@ -208,12 +202,44 @@
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        $(document).on('click', '#login_btn', function (e) {
-            const form = $('#login_form')[0];
-            if (form.checkValidity()) {
-                $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i> LOADING');
-                form.submit();
-            }
+        $('#login_form').on('submit', function (e) {
+            e.preventDefault();
+            const form = this;
+            const btn = $('#login_btn');
+            const errBox = $('#ajaxErrorBox');
+            const errText = $('#errorText');
+
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i> LOADING');
+            errBox.hide();
+
+            $.ajax({
+                url: form.action,
+                type: 'POST',
+                data: $(form).serialize(),
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                success: function (data) {
+                    if (data.success && data.redirect) {
+                        btn.html('<i class="fas fa-check-circle me-2"></i> SUCCESS');
+                        btn.css('background-color', '#2e7d32');
+                        setTimeout(function () {
+                            window.location.href = data.redirect;
+                        }, 500);
+                    } else {
+                        errText.text(data.message || 'Login failed. Please check credentials.');
+                        errBox.show();
+                        btn.prop('disabled', false).html('<i class="fa fa-sign-in-alt me-2"></i> LOGIN');
+                    }
+                },
+                error: function (xhr) {
+                    let errMsg = 'An error occurred. Please try again.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errMsg = xhr.responseJSON.message;
+                    }
+                    errText.text(errMsg);
+                    errBox.show();
+                    btn.prop('disabled', false).html('<i class="fa fa-sign-in-alt me-2"></i> LOGIN');
+                }
+            });
         });
 
         $('#togglePassword').click(function() {

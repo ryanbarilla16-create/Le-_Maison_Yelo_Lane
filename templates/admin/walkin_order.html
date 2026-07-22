@@ -218,9 +218,13 @@
                                     </select>
                                 </div>
                                 <div class="col-6">
-                                    <input type="text" name="notes" class="form-control form-control-sm shadow-sm"
-                                        placeholder="Notes..."
+                                    <select name="table_number" id="tableSelect" class="form-select form-select-sm shadow-sm" required
                                         style="border-radius: 20px; border: 1px solid rgba(139, 99, 75,0.2);">
+                                        <option value="">Select Table...</option>
+                                        {% for i in range(1, 18) %}
+                                        <option value="{{ i }}">Table {{ i }}</option>
+                                        {% endfor %}
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -592,9 +596,122 @@
         this.disabled = true;
         this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Processing...';
 
-        // Submit bypassing onsubmit handler
-        HTMLFormElement.prototype.submit.call(document.getElementById('orderForm'));
+        const form = document.getElementById('orderForm');
+        const formData = new FormData(form);
+
+        // Submit via AJAX
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                // Close modal and redirect
+                const modalEl = document.getElementById('paymentModal');
+                const modal = bootstrap.Modal.getInstance(modalEl);
+                if (modal) modal.hide();
+                // Show brief success notice then redirect
+                const successDiv = document.createElement('div');
+                successDiv.className = 'alert alert-success position-fixed top-0 start-50 translate-middle-x mt-3 shadow-lg';
+                successDiv.style.cssText = 'z-index:9999; min-width:320px; text-align:center; border-radius:12px;';
+                successDiv.innerHTML = '<i class="fas fa-check-circle me-2"></i>' + (data.message || 'Order placed!');
+                document.body.appendChild(successDiv);
+                setTimeout(() => { window.location.href = data.redirect || '{{ url_for("admin.orders") }}'; }, 1500);
+            } else {
+                const modalEl = document.getElementById('paymentModal');
+                const modal = bootstrap.Modal.getInstance(modalEl);
+                if (modal) modal.hide();
+                const errDiv = document.createElement('div');
+                errDiv.className = 'alert alert-danger position-fixed top-0 start-50 translate-middle-x mt-3 shadow-lg';
+                errDiv.style.cssText = 'z-index:9999; min-width:320px; text-align:center; border-radius:12px;';
+                errDiv.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i>' + (data.message || 'Order submission failed.');
+                document.body.appendChild(errDiv);
+                setTimeout(() => errDiv.remove(), 4000);
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-check-circle me-1"></i> Confirm Order';
+            }
+        })
+        .catch(() => {
+            const errDiv = document.createElement('div');
+            errDiv.className = 'alert alert-danger position-fixed top-0 start-50 translate-middle-x mt-3 shadow-lg';
+            errDiv.style.cssText = 'z-index:9999; min-width:320px; text-align:center; border-radius:12px;';
+            errDiv.textContent = 'Network error. Please try again.';
+            document.body.appendChild(errDiv);
+            setTimeout(() => errDiv.remove(), 4000);
+            this.disabled = false;
+            this.innerHTML = '<i class="fas fa-check-circle me-1"></i> Confirm Order';
+        });
     });
+
+    // Load table status on page load
+    function loadTableStatus() {
+        fetch('{{ url_for("admin.get_table_status") }}')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.tables) {
+                    const tableSelect = document.getElementById('tableSelect');
+                    if (tableSelect) {
+                        const currentVal = tableSelect.value;
+                        const tableKeys = Object.keys(data.tables).map(Number).sort((a, b) => a - b);
+                        tableKeys.forEach(i => {
+                            let option = tableSelect.querySelector(`option[value="${i}"]`);
+                            if (!option) {
+                                option = document.createElement('option');
+                                option.value = i;
+                                tableSelect.appendChild(option);
+                            }
+                            const info = data.tables[i];
+                            const status = (typeof info === 'object' && info !== null) ? info.status : info;
+                            const name = (typeof info === 'object' && info !== null && info.name) ? info.name : `Table ${i}`;
+
+                            if (status === 'OCCUPIED') {
+                                option.disabled = true;
+                                option.textContent = `${name} (Occupied)`;
+                                option.style.color = '#dc3545';
+                            } else if (status === 'RESERVED') {
+                                option.disabled = true;
+                                option.textContent = `${name} (Reserved)`;
+                                option.style.color = '#ef6c00';
+                            } else {
+                                option.disabled = false;
+                                option.textContent = name;
+                                option.style.color = '';
+                            }
+                        });
+                        if (currentVal) {
+                            const selectedOpt = tableSelect.querySelector(`option[value="${currentVal}"]`);
+                            if (selectedOpt && !selectedOpt.disabled) {
+                                tableSelect.value = currentVal;
+                            }
+                        }
+                    }
+                }
+            })
+            .catch(error => console.error('Error loading table status:', error));
+    }
+
+    // Toggle table select based on Dining Option
+    const diningOptionSelect = document.querySelector('select[name="dining_option"]');
+    if (diningOptionSelect) {
+        diningOptionSelect.addEventListener('change', function() {
+            const tableSelect = document.getElementById('tableSelect');
+            if (tableSelect) {
+                if (this.value === 'TAKE_OUT') {
+                    tableSelect.required = false;
+                    tableSelect.disabled = true;
+                    tableSelect.value = '';
+                } else {
+                    tableSelect.required = true;
+                    tableSelect.disabled = false;
+                }
+            }
+        });
+    }
+
+    loadTableStatus();
+    setInterval(loadTableStatus, 10000);
 </script>
 {% endblock %}
 

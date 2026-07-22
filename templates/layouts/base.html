@@ -631,9 +631,6 @@
                 <div class="branch-select-wrapper">
                     <select id="branchSelect">
                         <option value="" disabled selected>Choose a location near you...</option>
-                        <option value="Lucban, Quezon">Lucban, Quezon (Main Branch)</option>
-                        <option value="Pagsanjan, Laguna">Pagsanjan, Laguna</option>
-                        <option value="Lucena, Quezon">Lucena, Quezon (Coming Soon)</option>
                     </select>
                 </div>
 
@@ -731,20 +728,63 @@
     </div>
 
     <script>
-        const branchData = {
-            "Lucban, Quezon": {
-                address: "Fidel Rada St, Lucban, 4328 Quezon",
-                phone: "+63 (998) 886-3566",
-                map: "https://maps.google.com/maps?q=Fidel%20Rada%20St,%20Lucban,%204328%20Quezon&t=&z=16&ie=UTF8&iwloc=&output=embed"
-            },
-            "Pagsanjan, Laguna": {
-                address: "National Highway Brgy, Pagsanjan, Laguna",
-                phone: "+63 (998) 886-3566",
-                map: "https://maps.google.com/maps?q=National%20Highway%20Brgy,%20Pagsanjan,%20Laguna&t=&z=16&ie=UTF8&iwloc=&output=embed"
-            }
-        };
+        // branchData is now populated dynamically from /api/public/branches
+        let branchData = {};
+        let branchesLoaded = false;
+
+        // Load branches from API and populate the select
+        function loadBranchOptions() {
+            fetch('/api/public/branches')
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.success) return;
+                    const select = document.getElementById('branchSelect');
+                    // Clear existing options except placeholder
+                    select.innerHTML = '<option value="" disabled selected>Choose a location near you...</option>';
+
+                    // Rebuild branchData
+                    branchData = {};
+
+                    data.branches.forEach(b => {
+                        const option = document.createElement('option');
+                        const key = b.city + (b.province ? ', ' + b.province : '');
+                        option.value = key;
+                        option.textContent = b.label;
+                        if (!b.is_active) {
+                            option.disabled = true;
+                            option.style.color = '#aaa';
+                        }
+                        select.appendChild(option);
+
+                        // Build branchData map
+                        if (b.is_active) {
+                            branchData[key] = {
+                                address: b.address || key,
+                                phone: b.phone || '+63 (998) 886-3566',
+                                map: 'https://maps.google.com/maps?q=' + encodeURIComponent(b.address || key) + '&t=&z=16&ie=UTF8&iwloc=&output=embed'
+                            };
+                        }
+                    });
+                    branchesLoaded = true;
+                })
+                .catch(() => {
+                    // Fallback — keep hardcoded options
+                    const select = document.getElementById('branchSelect');
+                    select.innerHTML = '<option value="" disabled selected>Choose a location near you...</option>'
+                        + '<option value="Lucban, Quezon">Lucban, Quezon (Main Branch)</option>'
+                        + '<option value="Pagsanjan, Laguna">Pagsanjan, Laguna</option>'
+                        + '<option value="Lucena, Quezon" disabled style="color:#aaa">Lucena, Quezon (Coming Soon)</option>';
+                    branchData = {
+                        "Lucban, Quezon": { address: "Fidel Rada St, Lucban, 4328 Quezon", phone: "+63 (998) 886-3566", map: "https://maps.google.com/maps?q=Fidel%20Rada%20St,%20Lucban,%204328%20Quezon&t=&z=16&ie=UTF8&iwloc=&output=embed" },
+                        "Pagsanjan, Laguna": { address: "National Highway Brgy, Pagsanjan, Laguna", phone: "+63 (998) 886-3566", map: "https://maps.google.com/maps?q=National%20Highway%20Brgy,%20Pagsanjan,%20Laguna&t=&z=16&ie=UTF8&iwloc=&output=embed" }
+                    };
+                });
+        }
 
         document.addEventListener('DOMContentLoaded', function() {
+            // Load branch options first
+            loadBranchOptions();
+
             const selectedBranch = localStorage.getItem('selected_branch');
             const branchModal = document.getElementById('branchModal');
 
@@ -753,8 +793,13 @@
                     branchModal.classList.add('show');
                 }, 800);
             } else {
-                // If branch exists, apply it immediately without loading
-                applyBranchInfo(selectedBranch);
+                // Delay apply until branches are loaded
+                const tryApply = setInterval(() => {
+                    if (branchesLoaded) {
+                        clearInterval(tryApply);
+                        applyBranchInfo(selectedBranch);
+                    }
+                }, 100);
             }
         });
 
@@ -788,8 +833,10 @@
                 return;
             }
 
-            if (branchName === 'Lucena, Quezon') {
-                if (window.showToast) showToast('info', 'Lucena Branch is currently under construction. Stay tuned for our grand opening!');
+            // Check if selected option is disabled (Coming Soon)
+            const selectedOption = select.options[select.selectedIndex];
+            if (selectedOption && selectedOption.disabled) {
+                if (window.showToast) showToast('info', 'This branch is currently coming soon. Stay tuned for our grand opening!');
                 return;
             }
 
@@ -805,6 +852,8 @@
 
             // 3. Save & Apply
             localStorage.setItem('selected_branch', branchName);
+            const pureBranch = branchName.split(',')[0].trim();
+            document.cookie = "selected_branch=" + encodeURIComponent(pureBranch) + "; path=/; max-age=31536000"; // 1 year
             applyBranchInfo(branchName);
 
             // 4. Fade out after 2 seconds

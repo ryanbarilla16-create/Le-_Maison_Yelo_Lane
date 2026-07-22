@@ -3,8 +3,14 @@
     <i class="fas fa-chevron-down toggle-icon"></i>
 </div>
 <div id="group-workspace" class="nav-group">
-    <a class="nav-item {% if request.endpoint == 'kitchen_portal.kitchen_dashboard' %}active{% endif %}" href="{{ url_for('kitchen_portal.kitchen_dashboard') }}">
+    <a class="nav-item {% if request.endpoint == 'kitchen_portal.kitchen_dashboard' %}active{% endif %}" href="{{ url_for('kitchen_portal.kitchen_dashboard') }}" style="position:relative;">
         <i class="fas fa-fire"></i> Order Board
+        <!-- Live badge: pending + preparing orders -->
+        <span id="kitch-orders-badge"
+              style="position:absolute; right:10px; top:50%; transform:translateY(-50%);
+                     background:#e53935; color:#fff; font-size:0.6rem; font-weight:800;
+                     padding:2px 6px; border-radius:50px; display:none;
+                     animation: kitchBadgePulse 2s infinite;">0</span>
     </a>
     <a class="nav-item {% if request.endpoint == 'kitchen_portal.kitchen_reservations' %}active{% endif %}" href="{{ url_for('kitchen_portal.kitchen_reservations') }}">
         <i class="fas fa-calendar-check"></i> Event Pre-Orders
@@ -22,7 +28,64 @@
     <a class="nav-item {% if request.endpoint == 'kitchen_portal.kitchen_recipes' %}active{% endif %}" href="{{ url_for('kitchen_portal.kitchen_recipes') }}">
         <i class="fas fa-utensils"></i> Menu Recipes
     </a>
-    <a class="nav-item {% if request.endpoint == 'kitchen_portal.kitchen_stock_requests' %}active{% endif %}" href="{{ url_for('kitchen_portal.kitchen_stock_requests') }}">
+    <a class="nav-item {% if request.endpoint == 'kitchen_portal.kitchen_stock_requests' %}active{% endif %}" href="{{ url_for('kitchen_portal.kitchen_stock_requests') }}" style="position:relative;">
         <i class="fas fa-file-invoice"></i> Stock Requests
+        <!-- Live badge: fulfilled requests waiting for pickup -->
+        <span id="kitch-stkreq-badge"
+              style="position:absolute; right:10px; top:50%; transform:translateY(-50%);
+                     background:#43a047; color:#fff; font-size:0.6rem; font-weight:800;
+                     padding:2px 6px; border-radius:50px; display:none;
+                     animation: kitchBadgePulse 2s infinite;">0</span>
     </a>
 </div>
+
+<!-- ─── KITCHEN SIDEBAR LIVE BADGE POLLING ──────────── -->
+<style>
+  @keyframes kitchBadgePulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(229,57,53,0.5); }
+    50%       { box-shadow: 0 0 0 5px rgba(229,57,53,0); }
+  }
+</style>
+<script>
+(function () {
+  const POLL_URL  = "{{ url_for('kitchen_portal.kitchen_api_sidebar') }}";
+  const INTERVAL  = 15000; // every 15 seconds
+
+  const ordersBadge  = document.getElementById('kitch-orders-badge');
+  const stkreqBadge  = document.getElementById('kitch-stkreq-badge');
+
+  function updateBadge(el, count, color) {
+    if (!el) return;
+    if (count > 0) {
+      el.textContent = count > 99 ? '99+' : count;
+      if (color) el.style.background = color;
+      el.style.display = 'inline-block';
+    } else {
+      el.style.display = 'none';
+    }
+  }
+
+  function pollSidebar() {
+    fetch(POLL_URL, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(function(res) {
+      if (!res.ok) return;   // silently ignore 401 / network issues
+      return res.json();
+    })
+    .then(function(data) {
+      if (!data || !data.success) return;
+      // Order Board: show pending + preparing
+      var activeOrders = (data.pending_orders || 0) + (data.preparing_orders || 0);
+      updateBadge(ordersBadge, activeOrders, '#e53935');
+      // Stock Requests: green badge when inventory has fulfilled our requests
+      updateBadge(stkreqBadge, data.fulfilled_requests || 0, '#43a047');
+    })
+    .catch(function() { /* network error — ignore, retry next cycle */ });
+  }
+
+  // Run once on load, then on interval
+  pollSidebar();
+  setInterval(pollSidebar, INTERVAL);
+})();
+</script>

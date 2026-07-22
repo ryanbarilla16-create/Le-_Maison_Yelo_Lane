@@ -12,9 +12,11 @@
 </div>
 
 {% if detail['source'] != 'legacy' %}
-<form method="POST" action="{{ url_for('admin.archive_order_restore', order_id=detail['order'].id) }}" class="mb-3" onsubmit="return confirm('Restore this order back to active lists?');">
-    <button type="submit" class="btn btn-success">Restore / Unarchive</button>
-</form>
+<div id="restoreAlertBox" class="mb-3" style="display:none;"></div>
+<button id="restoreBtn" class="btn btn-success mb-3"
+        data-url="{{ url_for('admin.archive_order_restore', order_id=detail['order'].id) }}">
+    <i class="fas fa-undo me-1"></i> Restore / Unarchive
+</button>
 {% endif %}
 
 <div class="admin-cards-grid">
@@ -56,5 +58,46 @@
     </div>
     {% endfor %}
 </div>
+{% endif %}
+
+{% if detail['source'] != 'legacy' %}
+<script>
+document.getElementById('restoreBtn') && document.getElementById('restoreBtn').addEventListener('click', function() {
+    if (!confirm('Restore this order back to active lists?')) return;
+    const btn = this;
+    const alertBox = document.getElementById('restoreAlertBox');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Restoring...';
+    alertBox.style.display = 'none';
+
+    fetch(btn.dataset.url, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'csrf_token={{ csrf_token() if csrf_token else "" }}'
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            alertBox.className = 'alert alert-success';
+            alertBox.textContent = data.message || 'Order restored!';
+            alertBox.style.display = 'block';
+            setTimeout(() => { window.location.href = data.redirect; }, 1200);
+        } else {
+            alertBox.className = 'alert alert-danger';
+            alertBox.textContent = data.message || 'Failed to restore order.';
+            alertBox.style.display = 'block';
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-undo me-1"></i> Restore / Unarchive';
+        }
+    })
+    .catch(() => {
+        alertBox.className = 'alert alert-danger';
+        alertBox.textContent = 'Network error. Please try again.';
+        alertBox.style.display = 'block';
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-undo me-1"></i> Restore / Unarchive';
+    });
+});
+</script>
 {% endif %}
 {% endblock %}

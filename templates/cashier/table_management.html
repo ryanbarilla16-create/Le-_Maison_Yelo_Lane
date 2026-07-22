@@ -50,7 +50,7 @@
         transform: translateY(-3px);
         box-shadow: 0 16px 36px rgba(139, 99, 75, 0.06);
     }
-    .table-summary-card h3 { font-size: 2.2rem; font-weight: 800; margin: 0; font-family: 'Playfair Display', serif; color: #3E2723; }
+    .table-summary-card h3 { font-size: 2.2rem; font-weight: 800; margin: 0; font-family: 'Outfit', 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif; color: #3E2723; letter-spacing: -0.5px; }
     .table-summary-card p { margin: 6px 0 0; font-size: 0.72rem; color: #a48c7e; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; }
     
     .table-grid {
@@ -60,22 +60,22 @@
     }
     .table-tile {
         background: #ffffff;
-        border-radius: 24px;
-        padding: 24px 20px;
+        border-radius: 20px;
+        padding: 22px 18px;
         text-align: center;
         border: 1.5px solid rgba(139, 99, 75, 0.08);
-        box-shadow: 0 10px 30px rgba(139, 99, 75, 0.02);
+        box-shadow: 0 10px 30px rgba(139, 99, 75, 0.03);
         transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, border-color 0.3s ease;
         cursor: default;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        min-height: 200px;
+        min-height: 210px;
         position: relative;
     }
     .table-tile:hover { 
-        transform: translateY(-5px); 
-        box-shadow: 0 16px 36px rgba(139, 99, 75, 0.07);
+        transform: translateY(-4px); 
+        box-shadow: 0 16px 36px rgba(139, 99, 75, 0.08);
     }
     
     /* State styling */
@@ -104,41 +104,43 @@
     }
     
     .table-tile .tile-icon-container {
-        width: 48px;
-        height: 48px;
+        width: 44px;
+        height: 44px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin: 0 auto 12px;
+        margin: 0 auto 10px;
         transition: transform 0.3s ease, background-color 0.3s ease;
-        font-size: 1.2rem;
+        font-size: 1.15rem;
     }
     
     .table-tile.available .tile-icon-container {
-        background: rgba(46, 125, 50, 0.06);
+        background: rgba(46, 125, 50, 0.08);
         color: #2e7d32;
     }
     .table-tile.occupied .tile-icon-container {
-        background: rgba(198, 40, 40, 0.06);
+        background: rgba(198, 40, 40, 0.08);
         color: #c62828;
     }
     .table-tile.reserved .tile-icon-container {
-        background: rgba(239, 108, 0, 0.06);
+        background: rgba(239, 108, 0, 0.08);
         color: #ef6c00;
     }
     
     .table-tile:hover .tile-icon-container {
-        transform: scale(1.1);
+        transform: scale(1.08);
     }
     
+    /* Modern, clean sans-serif font for Table Labels */
     .table-tile .num { 
-        font-size: 1.5rem; 
-        font-weight: 800; 
-        line-height: 1.2; 
-        font-family: 'Playfair Display', serif;
-        color: #3E2723;
-        margin-bottom: 4px;
+        font-size: 1.35rem; 
+        font-weight: 700; 
+        line-height: 1.25; 
+        font-family: 'Outfit', 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+        color: #2D1810;
+        margin-bottom: 2px;
+        letter-spacing: -0.3px;
     }
     
     .table-tile .label { 
@@ -146,7 +148,7 @@
         font-weight: 800; 
         text-transform: uppercase; 
         letter-spacing: 1px; 
-        padding: 4px 12px;
+        padding: 3px 12px;
         border-radius: 50px;
         display: inline-block;
         margin: 4px auto 0;
@@ -154,17 +156,20 @@
     
     .table-tile.available .label {
         background: rgba(46,125,50,0.08);
+        color: #2e7d32;
     }
     .table-tile.occupied .label {
         background: rgba(198,40,40,0.08);
+        color: #c62828;
     }
     .table-tile.reserved .label {
         background: rgba(239,108,0,0.08);
+        color: #ef6c00;
     }
     
     .table-tile .meta { 
         font-size: 0.82rem; 
-        margin-top: 14px; 
+        margin-top: 10px; 
         font-weight: 700;
         color: #3e2723;
         line-height: 1.4;
@@ -178,49 +183,97 @@
         align-items: center;
         justify-content: center;
         gap: 4px;
-        margin-top: 4px;
+        margin-top: 2px;
     }
     
-    /* Elegant rounded action buttons */
+    /* Ultra-elegant rounded action buttons */
     .action-btn {
-        margin-top: 16px;
-        padding: 9px 16px;
-        font-size: 0.75rem;
+        margin-top: 14px;
+        padding: 10px 16px;
+        font-size: 0.78rem;
         font-weight: 700;
         border: none;
-        border-radius: 50px;
+        border-radius: 12px;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        transition: all 0.25s ease;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         width: 100%;
         justify-content: center;
-        letter-spacing: 0.5px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        letter-spacing: 0.3px;
+        font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
     }
     
-    .action-btn.release-btn {
-        background: #c62828;
+    .action-btn.assign-btn {
+        background: linear-gradient(135deg, #8b634b 0%, #6d4c38 100%);
         color: #fff;
-        box-shadow: 0 4px 12px rgba(198, 40, 40, 0.15);
+        box-shadow: 0 4px 14px rgba(139, 99, 75, 0.2);
+    }
+    .action-btn.assign-btn:hover {
+        background: linear-gradient(135deg, #75523d 0%, #5a3d2c 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(139, 99, 75, 0.32);
+    }
+
+    .action-btn.release-btn {
+        background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
+        color: #fff;
+        box-shadow: 0 4px 14px rgba(211, 47, 47, 0.2);
     }
     .action-btn.release-btn:hover {
-        background: #b71c1c;
+        background: linear-gradient(135deg, #c62828 0%, #9a0007 100%);
         transform: translateY(-2px);
-        box-shadow: 0 6px 18px rgba(198, 40, 40, 0.25);
+        box-shadow: 0 6px 18px rgba(211, 47, 47, 0.32);
     }
-    
+
     .action-btn.complete-btn {
-        background: #ef6c00;
+        background: linear-gradient(135deg, #f57c00 0%, #e65100 100%);
         color: #fff;
-        box-shadow: 0 4px 12px rgba(239, 108, 0, 0.15);
+        box-shadow: 0 4px 14px rgba(245, 124, 0, 0.2);
     }
     .action-btn.complete-btn:hover {
-        background: #e65100;
+        background: linear-gradient(135deg, #ef6c00 0%, #bf360c 100%);
         transform: translateY(-2px);
-        box-shadow: 0 6px 18px rgba(239, 108, 0, 0.25);
+        box-shadow: 0 6px 18px rgba(245, 124, 0, 0.32);
     }
+
+    /* Locked Release button — food not yet served */
+    .action-btn.release-btn--locked {
+        background: linear-gradient(135deg, #bdbdbd 0%, #9e9e9e 100%);
+        color: #fff;
+        box-shadow: none;
+        cursor: not-allowed;
+        opacity: 0.7;
+        pointer-events: none;
+    }
+    .release-locked-hint {
+        margin-top: 6px;
+        font-size: 0.68rem;
+        font-weight: 700;
+        color: #f57c00;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        letter-spacing: 0.2px;
+    }
+    /* Order status badge on occupied tile */
+    .order-status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.65rem;
+        font-weight: 800;
+        padding: 2px 8px;
+        border-radius: 50px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: 2px;
+    }
+    .order-status-pill.pending  { background: #fff3e0; color: #e65100; }
+    .order-status-pill.preparing { background: #e3f2fd; color: #1565c0; }
+    .order-status-pill.ready    { background: #e8f5e9; color: #2e7d32; }
     
     .live-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #2e7d32; margin-right: 6px; animation: pulse-live 2s infinite; }
     @keyframes pulse-live {
@@ -230,18 +283,384 @@
     @media (max-width: 992px) { .table-summary { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 576px) { .table-summary { grid-template-columns: 1fr; } }
 
-    .action-btn.assign-btn {
+    .edit-tile-btn {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: 1px solid rgba(139, 99, 75, 0.12);
+        background: #ffffff;
+        color: #8b634b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.78rem;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+        z-index: 2;
+    }
+    .edit-tile-btn:hover {
+        background: #8b634b;
+        color: #ffffff;
+        border-color: #8b634b;
+        transform: scale(1.1);
+    }
+
+    .table-pax-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #5D4037;
+        background: rgba(139, 99, 75, 0.08);
+        padding: 3px 10px;
+        border-radius: 20px;
+        margin-top: 4px;
+    }
+    .table-area-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.68rem;
+        font-weight: 700;
+        color: #8D6E63;
+        margin-top: 2px;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       PREMIUM CONTROL BAR / TOOLBAR
+       ═══════════════════════════════════════════════════════════ */
+    .control-bar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: #ffffff;
+        border: 1px solid rgba(139, 99, 75, 0.10);
+        border-radius: 16px;
+        padding: 10px 16px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 12px rgba(139, 99, 75, 0.04);
+        flex-wrap: wrap;
+    }
+
+    /* Segmented Control */
+    .seg-control {
+        display: flex;
+        background: #f5f0eb;
+        border-radius: 10px;
+        padding: 3px;
+        flex-shrink: 0;
+    }
+    .seg-control__btn {
+        padding: 8px 16px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+        border: none;
+        border-radius: 8px;
+        background: transparent;
+        color: #8D6E63;
+        cursor: pointer;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        white-space: nowrap;
+        letter-spacing: 0.15px;
+    }
+    .seg-control__btn:hover:not(.active) {
+        color: #5D4037;
+        background: rgba(139, 99, 75, 0.06);
+    }
+    .seg-control__btn.active {
+        background: rgba(239, 108, 0, 0.10);
+        color: #bf5b04;
+        box-shadow: 0 1px 4px rgba(239, 108, 0, 0.08);
+    }
+
+    /* Search Bar */
+    .toolbar-search {
+        position: relative;
+        flex: 1;
+        min-width: 160px;
+        max-width: 280px;
+    }
+    .toolbar-search__icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #a48c7e;
+        font-size: 0.82rem;
+        pointer-events: none;
+    }
+    .toolbar-search__input {
+        width: 100%;
+        padding: 8px 60px 8px 34px;
+        border: 1.5px solid rgba(139, 99, 75, 0.12);
+        border-radius: 10px;
+        background: #faf8f5;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #3E2723;
+        outline: none;
+        font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+        transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+        box-sizing: border-box;
+    }
+    .toolbar-search__input::placeholder {
+        color: #b0998c;
+        font-weight: 600;
+    }
+    .toolbar-search__input:focus {
+        border-color: #8b634b;
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(139, 99, 75, 0.08);
+    }
+    .toolbar-search__kbd {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        pointer-events: none;
+    }
+    .toolbar-search__kbd kbd {
+        background: #efe9e3;
+        border: 1px solid rgba(139, 99, 75, 0.12);
+        border-radius: 5px;
+        padding: 1px 6px;
+        font-size: 0.68rem;
+        font-weight: 700;
+        color: #8D6E63;
+        font-family: 'Outfit', system-ui, sans-serif;
+        line-height: 1.4;
+    }
+
+    /* Dropdown Filters */
+    .toolbar-select-wrap {
+        position: relative;
+        flex-shrink: 0;
+    }
+    .toolbar-select {
+        appearance: none;
+        -webkit-appearance: none;
+        padding: 8px 34px 8px 12px;
+        border: 1.5px solid rgba(139, 99, 75, 0.12);
+        border-radius: 10px;
+        background: #faf8f5;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #5D4037;
+        cursor: pointer;
+        outline: none;
+        font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .toolbar-select:focus {
+        border-color: #8b634b;
+        box-shadow: 0 0 0 3px rgba(139, 99, 75, 0.08);
+    }
+    .toolbar-select-chevron {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.6rem;
+        color: #a48c7e;
+        pointer-events: none;
+    }
+
+    /* Action Buttons */
+    .toolbar-spacer {
+        flex: 1;
+    }
+    .toolbar-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+    .btn-create-table {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 18px;
+        border-radius: 10px;
+        border: 1.8px solid #8b634b;
+        background: transparent;
+        color: #8b634b;
+        font-size: 0.8rem;
+        font-weight: 700;
+        font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+        cursor: pointer;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        white-space: nowrap;
+    }
+    .btn-create-table:hover {
         background: #8b634b;
         color: #fff;
-        box-shadow: 0 4px 12px rgba(139, 99, 75, 0.15);
+        box-shadow: 0 4px 14px rgba(139, 99, 75, 0.22);
+        transform: translateY(-1px);
     }
-    .action-btn.assign-btn:hover {
-        background: #75523d;
-        transform: translateY(-2px);
-        box-shadow: 0 6px 18px rgba(139, 99, 75, 0.25);
+    .btn-more {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 8px 14px;
+        border-radius: 10px;
+        border: 1.5px solid rgba(139, 99, 75, 0.12);
+        background: #faf8f5;
+        color: #8D6E63;
+        font-size: 0.78rem;
+        font-weight: 700;
+        font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        position: relative;
     }
-    
-    /* Assign Table Modal Styling */
+    .btn-more:hover {
+        background: #f0e8e0;
+        border-color: rgba(139, 99, 75, 0.25);
+        color: #5D4037;
+    }
+
+    /* More Dropdown Menu */
+    .more-dropdown {
+        display: none;
+        position: absolute;
+        top: calc(100% + 6px);
+        right: 0;
+        background: #fff;
+        border: 1px solid rgba(139, 99, 75, 0.12);
+        border-radius: 12px;
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.10);
+        min-width: 180px;
+        z-index: 100;
+        padding: 6px;
+        animation: fadeIn 0.15s ease;
+    }
+    .more-dropdown.show { display: block; }
+    .more-dropdown__item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 14px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #5D4037;
+        border-radius: 8px;
+        cursor: pointer;
+        border: none;
+        background: transparent;
+        width: 100%;
+        text-align: left;
+        transition: background 0.15s;
+        font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+    }
+    .more-dropdown__item:hover {
+        background: rgba(139, 99, 75, 0.06);
+    }
+    .more-dropdown__item i {
+        width: 16px;
+        text-align: center;
+        color: #8D6E63;
+        font-size: 0.82rem;
+    }
+
+    /* Live indicator in toolbar */
+    .toolbar-live-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 12px;
+        background: rgba(46, 125, 50, 0.06);
+        border-radius: 50px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #2e7d32;
+        flex-shrink: 0;
+    }
+
+    /* Responsive control bar */
+    @media (max-width: 900px) {
+        .control-bar {
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .toolbar-search {
+            max-width: none;
+            min-width: 0;
+            flex: 1 1 100%;
+            order: 10;
+        }
+        .toolbar-spacer { display: none; }
+        .toolbar-actions { order: 5; margin-left: auto; }
+    }
+    @media (max-width: 576px) {
+        .seg-control__btn {
+            padding: 6px 10px;
+            font-size: 0.72rem;
+        }
+        .control-bar { padding: 8px 12px; }
+        .btn-create-table span.btn-label-full { display: none; }
+        .btn-create-table span.btn-label-short { display: inline; }
+    }
+    @media (min-width: 577px) {
+        .btn-create-table span.btn-label-short { display: none; }
+    }
+
+    .form-group-custom {
+        margin-bottom: 1.2rem;
+    }
+    .form-group-custom label {
+        display: block;
+        font-size: 0.76rem;
+        font-weight: 700;
+        color: #3E2723;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        margin-bottom: 6px;
+    }
+    .form-control-custom {
+        width: 100%;
+        padding: 10px 14px;
+        border-radius: 12px;
+        border: 1.5px solid rgba(139, 99, 75, 0.18);
+        background: #faf8f5;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #3E2723;
+        outline: none;
+        transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
+        box-sizing: border-box;
+    }
+    .form-control-custom:focus {
+        border-color: #8b634b;
+        background: #ffffff;
+        box-shadow: 0 0 0 3px rgba(139, 99, 75, 0.12);
+    }
+    .capacity-help-text {
+        font-size: 0.72rem;
+        color: #8D6E63;
+        font-weight: 600;
+        margin-top: 4px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .capacity-error-msg {
+        font-size: 0.75rem;
+        color: #c62828;
+        font-weight: 700;
+        margin-top: 6px;
+        display: none;
+    }
+
     .table-modal {
         display: none;
         position: fixed;
@@ -357,12 +776,67 @@
         </div>
     </div>
 
+    <!-- ═══ Premium Control Bar / Toolbar ═══ -->
+    <div class="control-bar" id="controlBar">
+
+        <!-- Search Bar -->
+        <div class="toolbar-search">
+            <i class="fas fa-search toolbar-search__icon"></i>
+            <input type="text" class="toolbar-search__input" id="toolbarSearchInput" placeholder="Search tables..." oninput="applyFilters()">
+            <div class="toolbar-search__kbd">
+                <kbd>⌘</kbd><kbd>K</kbd>
+            </div>
+        </div>
+
+        <!-- Dropdown Filters -->
+        <div class="toolbar-select-wrap">
+            <select class="toolbar-select" id="filterStatus" onchange="applyFilters()">
+                <option value="all">All Statuses</option>
+                <option value="AVAILABLE">Available</option>
+                <option value="OCCUPIED">Occupied</option>
+                <option value="RESERVED">Reserved</option>
+            </select>
+            <i class="fas fa-chevron-down toolbar-select-chevron"></i>
+        </div>
+
+        <!-- Live Badge -->
+        <span class="toolbar-live-badge">
+            <span class="live-dot"></span><span id="tableLastUpdate">Live</span>
+        </span>
+
+        <!-- Spacer -->
+        <div class="toolbar-spacer"></div>
+
+        <!-- 4. Action Buttons -->
+        <div class="toolbar-actions">
+            <button type="button" class="btn-create-table" onclick="openAddTableModal()">
+                <i class="fas fa-plus"></i>
+                <span class="btn-label-full">Create New Table</span>
+                <span class="btn-label-short">New</span>
+            </button>
+            <div style="position:relative;">
+                <button type="button" class="btn-more" id="btnMore" onclick="toggleMoreMenu()">
+                    More <i class="fas fa-chevron-right" style="font-size:0.6rem; margin-left:2px;"></i>
+                </button>
+                <div class="more-dropdown" id="moreDropdown">
+                    <button type="button" class="more-dropdown__item" onclick="exportTableData()">
+                        <i class="fas fa-download"></i> Export Data
+                    </button>
+                    <button type="button" class="more-dropdown__item" onclick="pollTableStatus(); closeMoreMenu();">
+                        <i class="fas fa-sync-alt"></i> Refresh Now
+                    </button>
+                    <button type="button" class="more-dropdown__item" onclick="resetFilters(); closeMoreMenu();">
+                        <i class="fas fa-filter"></i> Reset Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="section-card">
-        <div class="section-header">
-            <h2><i class="fas fa-chair" style="opacity:0.5; margin-right:10px;"></i>Floor Plan Map</h2>
-            <span class="pill" style="background:rgba(46,125,50,0.08); color:#2e7d32; font-weight:700;">
-                <span class="live-dot"></span><span id="tableLastUpdate">Live</span>
-            </span>
+        <div class="section-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <h2 id="sectionTitle"><i class="fas fa-chair" style="opacity:0.5; margin-right:10px;"></i>Floor Plan Map & Table Configuration</h2>
+            <div id="filterSummary" style="font-size:0.76rem; color:#8D6E63; font-weight:600;"></div>
         </div>
         <div class="table-grid" id="tableGrid"></div>
     </div>
@@ -372,7 +846,7 @@
         <div class="table-modal-card">
             <div class="modal-head">
                 <h4>Assign Dine-in Table</h4>
-                <p>Select an active order to assign to <strong>Table <span id="assignTableNum"></span></strong></p>
+                <p>Select an active order to assign to <strong><span id="assignTableTitle">Table</span> <span id="assignTableNum"></span></strong></p>
             </div>
             <div id="assignOrdersList" style="max-height: 250px; overflow-y: auto; margin-bottom: 1.5rem; border: 1px solid rgba(139, 99, 75, 0.12); border-radius: 12px; padding: 0.5rem; background: #faf9f6;">
                 <!-- Active orders will be populated here -->
@@ -386,17 +860,194 @@
             </div>
         </div>
     </div>
+
+    <!-- Edit Table Modal -->
+    <div id="editTableModal" class="table-modal">
+        <div class="table-modal-card">
+            <div class="modal-head">
+                <h4>Edit Table Details</h4>
+                <p>Update configuration, location area, and capacity for <strong>Table <span id="editTableDisplayNum"></span></strong></p>
+            </div>
+            <form id="editTableForm" onsubmit="submitEditTable(event)">
+                <input type="hidden" id="editTableNum">
+                <div class="form-group-custom">
+                    <label for="editTableName">Table Label / Name</label>
+                    <input type="text" id="editTableName" class="form-control-custom" required placeholder="e.g. Table 1">
+                </div>
+                <div class="form-group-custom">
+                    <label for="editTableArea">Area / Location</label>
+                    <select id="editTableArea" class="form-control-custom" required>
+                        <option value="Main Dining">Main Dining Room</option>
+                        <option value="Patio Area">Patio Area</option>
+                        <option value="VIP Lounge">VIP Lounge</option>
+                        <option value="Second Floor">Second Floor</option>
+                        <option value="Outdoor Terrace">Outdoor Terrace</option>
+                    </select>
+                </div>
+                <div class="form-group-custom" style="margin-bottom: 1.5rem;">
+                    <label for="editTableCapacity">Capacity (Pax)</label>
+                    <input type="number" id="editTableCapacity" class="form-control-custom" min="1" required placeholder="e.g. 4" onkeydown="preventInvalidCapacityKeys(event)" oninput="validateCapacityInput(this, 'editCapacityError', 'confirmEditTableBtn')">
+                    <div id="editCapacityError" class="capacity-error-msg">
+                        <i class="fas fa-exclamation-triangle"></i> Capacity must be at least 1 pax.
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-modal btn-cancel" onclick="closeEditModal()">Cancel</button>
+                    <button type="submit" class="btn-modal btn-assign" id="confirmEditTableBtn">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Table Modal -->
+    <div id="addTableModal" class="table-modal">
+        <div class="table-modal-card">
+            <div class="modal-head">
+                <h4>Add New Dining Table</h4>
+                <p>Configure a new table for the floor plan map</p>
+            </div>
+            <form id="addTableForm" onsubmit="submitAddTable(event)">
+                <div class="form-group-custom">
+                    <label for="addTableName">Table Label / Name</label>
+                    <input type="text" id="addTableName" class="form-control-custom" required placeholder="e.g. Table 18">
+                </div>
+                <div class="form-group-custom" style="margin-bottom: 1.5rem;">
+                    <label for="addTableCapacity">Capacity (Pax)</label>
+                    <input type="number" id="addTableCapacity" class="form-control-custom" min="1" value="4" required placeholder="e.g. 4" onkeydown="preventInvalidCapacityKeys(event)" oninput="validateCapacityInput(this, 'addCapacityError', 'confirmAddTableBtn')">
+                    <div id="addCapacityError" class="capacity-error-msg">
+                        <i class="fas fa-exclamation-triangle"></i> Capacity must be at least 1 pax.
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-modal btn-cancel" onclick="closeAddTableModal()">Cancel</button>
+                    <button type="submit" class="btn-modal btn-assign" id="confirmAddTableBtn">Create Table</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Release Table Confirmation Modal -->
+    <div id="releaseConfirmModal" class="table-modal">
+        <div class="table-modal-card" style="max-width: 440px; text-align: center; padding: 2.2rem 2rem; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.2);">
+            <div style="width: 70px; height: 70px; border-radius: 50%; background: linear-gradient(135deg, rgba(198, 40, 40, 0.12), rgba(198, 40, 40, 0.04)); color: #c62828; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 1.2rem; border: 1.5px solid rgba(198, 40, 40, 0.25); box-shadow: 0 10px 25px rgba(198, 40, 40, 0.15);">
+                <i class="fas fa-sign-out-alt"></i>
+            </div>
+            <div class="modal-head" style="margin-bottom: 1rem;">
+                <h4 style="font-family: 'Outfit', sans-serif; font-weight: 800; color: #3E2723; font-size: 1.45rem; margin-bottom: 0.5rem;">Release <span id="releaseConfirmTableName">Table</span>?</h4>
+                <p style="color: #8D6E63; font-size: 0.92rem; line-height: 1.5; margin: 0;">
+                    Are you sure you want to release <strong id="releaseConfirmTableSub" style="color: #3E2723;">this table</strong>? This will complete the dining session and set the table to <span style="color: #2e7d32; font-weight: 700;">AVAILABLE</span> for new guests.
+                </p>
+            </div>
+            <div class="modal-actions" style="display: flex; gap: 12px; margin-top: 1.8rem;">
+                <button type="button" class="btn-modal btn-cancel" onclick="closeReleaseConfirmModal()" style="flex: 1; border-radius: 14px; font-weight: 700; padding: 12px 18px; font-size: 0.95rem;">Cancel</button>
+                <button type="button" class="btn-modal" id="confirmReleaseBtn" onclick="submitReleaseTable()" style="flex: 1.2; border-radius: 14px; font-weight: 700; padding: 12px 18px; font-size: 0.95rem; background: linear-gradient(135deg, #c62828, #b71c1c); color: #fff; border: none; box-shadow: 0 8px 20px rgba(198, 40, 40, 0.3); transition: all 0.2s ease;">
+                    <i class="fas fa-check-circle me-1"></i> Release Table
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
 {% block extra_script %}
 <script>
+    let cachedTables = {};
+    let currentView = 'realtime';
+
+    /* ═══ Control Bar Logic ═══ */
+
+    function applyFilters() {
+        const searchVal = (document.getElementById('toolbarSearchInput').value || '').toLowerCase().trim();
+        const statusVal = document.getElementById('filterStatus').value;
+
+        const tiles = document.querySelectorAll('#tableGrid .table-tile');
+        let shown = 0;
+        let total = tiles.length;
+
+        tiles.forEach(tile => {
+            const name = (tile.getAttribute('data-name') || '').toLowerCase();
+            const status = tile.getAttribute('data-status') || '';
+            const area = tile.getAttribute('data-area') || '';
+
+            let visible = true;
+            if (searchVal && !name.includes(searchVal)) visible = false;
+            if (statusVal !== 'all' && status !== statusVal) visible = false;
+
+            tile.style.display = visible ? '' : 'none';
+            if (visible) shown++;
+        });
+
+        const summary = document.getElementById('filterSummary');
+        if (searchVal || statusVal !== 'all') {
+            summary.textContent = `Showing ${shown} of ${total} tables`;
+        } else {
+            summary.textContent = '';
+        }
+    }
+
+    function resetFilters() {
+        document.getElementById('toolbarSearchInput').value = '';
+        document.getElementById('filterStatus').value = 'all';
+        applyFilters();
+        showToastNotification('success', 'Filters reset.');
+    }
+
+    function toggleMoreMenu() {
+        const dd = document.getElementById('moreDropdown');
+        dd.classList.toggle('show');
+    }
+    function closeMoreMenu() {
+        document.getElementById('moreDropdown').classList.remove('show');
+    }
+
+    function exportTableData() {
+        closeMoreMenu();
+        let csv = 'Table,Area,Capacity,Status\n';
+        Object.keys(cachedTables).sort((a, b) => a - b).forEach(k => {
+            const t = cachedTables[k];
+            csv += `"${(t.name || 'Table ' + k).replace(/"/g, '""')}","${t.area || 'Main Dining'}",${t.capacity || 4},"${t.status || 'AVAILABLE'}"\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `table_data_${new Date().toISOString().slice(0,10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToastNotification('success', 'Table data exported successfully.');
+    }
+
+    /* ⌘K / Ctrl+K keyboard shortcut for search */
+    document.addEventListener('keydown', function(e) {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+            e.preventDefault();
+            document.getElementById('toolbarSearchInput').focus();
+        }
+    });
+
+    /* Close more dropdown on outside click */
+    document.addEventListener('click', function(e) {
+        const moreBtn = document.getElementById('btnMore');
+        const moreDd = document.getElementById('moreDropdown');
+        if (moreBtn && moreDd && !moreBtn.contains(e.target) && !moreDd.contains(e.target)) {
+            moreDd.classList.remove('show');
+        }
+    });
+
     function renderTableGrid(tables) {
+        cachedTables = tables || {};
         const grid = document.getElementById('tableGrid');
         if (!grid) return;
         grid.innerHTML = '';
-        for (let i = 1; i <= 17; i++) {
-            const info = tables[i] || { status: 'AVAILABLE' };
+        
+        const tableKeys = Object.keys(tables).map(Number).sort((a, b) => a - b);
+        if (tableKeys.length === 0) {
+            grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: #8D6E63;">No tables configured. Click "Add Table" above to create one.</div>';
+            return;
+        }
+
+        tableKeys.forEach(i => {
+            const info = tables[i] || { status: 'AVAILABLE', name: `Table ${i}`, area: 'Main Dining', capacity: 4 };
             const tile = document.createElement('div');
             
             let statusClass = 'available';
@@ -413,14 +1064,30 @@
                 statusClass = 'occupied';
                 iconHtml = '<div class="tile-icon-container"><i class="fas fa-user-friends"></i></div>';
                 statusLabel = 'Occupied';
+
+                const orderStatus = (info.order_status || 'PENDING').toUpperCase();
+                const isReady = orderStatus === 'READY';
+
+                // Order status pill label
+                let pillClass = 'pending';
+                let pillIcon = 'fa-clock';
+                let pillLabel = 'Pending';
+                if (orderStatus === 'PREPARING') { pillClass = 'preparing'; pillIcon = 'fa-fire'; pillLabel = 'Preparing'; }
+                if (orderStatus === 'READY')     { pillClass = 'ready';     pillIcon = 'fa-check-circle'; pillLabel = 'Served — Dining'; }
+                if (orderStatus === 'COMPLETED') { pillClass = 'ready';     pillIcon = 'fa-check-double'; pillLabel = 'Served — Dining'; }
+
+                // Build the release button — clickable when table is occupied
+                const releaseBtn = `<button class="action-btn release-btn" onclick="releaseTable(${i}, event)">
+                       <i class="fas fa-sign-out-alt"></i> Release Table
+                   </button>`;
+
                 metaHtml = `
                     <div class="meta">
                         ${escapeHtml(info.customer || 'Guest')}
-                        <span class="meta-detail"><i class="fas fa-utensils"></i> Active Dine-in Order</span>
+                        <span class="meta-detail"><i class="fas fa-utensils"></i> Active Order</span>
+                        <span class="order-status-pill ${pillClass}"><i class="fas ${pillIcon}"></i> ${pillLabel}</span>
                     </div>
-                    <button class="action-btn release-btn" onclick="releaseTable(${i}, event)">
-                        <i class="fas fa-sign-out-alt"></i> Release Table
-                    </button>
+                    ${releaseBtn}
                 `;
             } else if (info.status === 'RESERVED') {
                 statusClass = 'reserved';
@@ -438,16 +1105,29 @@
             }
             
             tile.className = `table-tile ${statusClass}`;
+            tile.setAttribute('data-name', (info.name || ('Table ' + i)).toLowerCase());
+            tile.setAttribute('data-status', info.status || 'AVAILABLE');
+            tile.setAttribute('data-area', info.area || 'Main Dining');
             tile.innerHTML = `
+                <button type="button" class="edit-tile-btn" onclick="openEditTableModal(${i}, event)" title="Edit Table Details">
+                    <i class="fas fa-pen"></i>
+                </button>
                 <div>
                     ${iconHtml}
-                    <div class="num">Table ${i}</div>
-                    <div class="label">${statusLabel}</div>
+                    <div class="num">${escapeHtml(info.name || ('Table ' + i))}</div>
+                    <div style="display:flex; align-items:center; justify-content:center; gap:6px; margin: 4px 0 8px; flex-wrap:wrap;">
+                        <span class="table-area-tag"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(info.area || 'Main Dining')}</span>
+                        <span class="table-pax-tag"><i class="fas fa-users me-1"></i> ${info.capacity || 4} Pax</span>
+                    </div>
+                    <div><span class="label">${statusLabel}</span></div>
                 </div>
                 ${metaHtml}
             `;
             grid.appendChild(tile);
-        }
+        });
+
+        /* Re-apply any active filters after grid re-render */
+        applyFilters();
     }
 
     function escapeHtml(str) {
@@ -464,6 +1144,9 @@
         .then(r => r.json())
         .then(data => {
             if (!data.success) return;
+            if (data.total_count !== undefined) {
+                document.getElementById('tblTotal').textContent = data.total_count;
+            }
             document.getElementById('tblAvailable').textContent = data.available_count;
             document.getElementById('tblOccupied').textContent = data.occupied_count;
             document.getElementById('tblReserved').textContent = data.reserved_count || 0;
@@ -474,21 +1157,214 @@
         .catch(err => console.warn('Table sync failed:', err));
     }
 
-    function releaseTable(tableNum, event) {
-        if (event) event.stopPropagation();
-        if (!confirm(`Are you sure you want to release Table ${tableNum}?`)) return;
-        
-        const url = `/staff/cashier/tables/${tableNum}/release`;
-        fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
+    /* Capacity Validation Handlers */
+    function preventInvalidCapacityKeys(e) {
+        if (['e', 'E', '+', '-', '.'].includes(e.key)) {
+            e.preventDefault();
+        }
+    }
+
+    function validateCapacityInput(inputEl, errorElId, submitBtnId) {
+        const errorEl = document.getElementById(errorElId);
+        const submitBtn = document.getElementById(submitBtnId);
+        let val = parseInt(inputEl.value, 10);
+
+        if (isNaN(val) || val < 1) {
+            if (errorEl) {
+                errorEl.style.display = 'block';
+                errorEl.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i> Capacity must be at least 1 Pax.';
             }
+            if (submitBtn) submitBtn.disabled = true;
+        } else {
+            if (errorEl) errorEl.style.display = 'none';
+            if (submitBtn) submitBtn.disabled = false;
+        }
+    }
+
+    /* Edit Table Modal Functions */
+    function openEditTableModal(tableNum, event) {
+        if (event) event.stopPropagation();
+        const tableData = cachedTables[tableNum] || { name: `Table ${tableNum}`, area: 'Main Dining', capacity: 4 };
+        
+        document.getElementById('editTableNum').value = tableNum;
+        document.getElementById('editTableDisplayNum').textContent = tableNum;
+        document.getElementById('editTableName').value = tableData.name || `Table ${tableNum}`;
+        document.getElementById('editTableArea').value = tableData.area || 'Main Dining';
+        document.getElementById('editTableCapacity').value = tableData.capacity || 4;
+        
+        const errEl = document.getElementById('editCapacityError');
+        if (errEl) errEl.style.display = 'none';
+        document.getElementById('confirmEditTableBtn').disabled = false;
+        
+        document.getElementById('editTableModal').style.display = 'flex';
+    }
+
+    function closeEditModal() {
+        document.getElementById('editTableModal').style.display = 'none';
+    }
+
+    function submitEditTable(event) {
+        event.preventDefault();
+        const tableNum = document.getElementById('editTableNum').value;
+        const name = document.getElementById('editTableName').value;
+        const area = document.getElementById('editTableArea').value;
+        const capacity = parseInt(document.getElementById('editTableCapacity').value, 10);
+        
+        if (isNaN(capacity) || capacity < 1) {
+            showToastNotification('danger', 'Capacity must be at least 1 pax.');
+            return;
+        }
+
+        const btn = document.getElementById('confirmEditTableBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Saving...';
+
+        fetch(`/staff/cashier/api/tables/${tableNum}/update`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, area, capacity })
         })
         .then(r => r.json())
         .then(data => {
+            btn.innerHTML = 'Save Changes';
+            btn.disabled = false;
             if (data.success) {
-                showToastNotification('success', data.message || `Table ${tableNum} is now available.`);
+                showToastNotification('success', data.message || 'Table updated successfully.');
+                closeEditModal();
+                pollTableStatus();
+            } else {
+                showToastNotification('danger', data.message || 'Failed to update table.');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            btn.innerHTML = 'Save Changes';
+            btn.disabled = false;
+            showToastNotification('danger', 'Network error occurred while updating table.');
+        });
+    }
+
+    /* Add Table Modal Functions */
+    function openAddTableModal() {
+        const keys = Object.keys(cachedTables).map(Number);
+        const nextId = (keys.length > 0) ? (Math.max(...keys) + 1) : 18;
+        document.getElementById('addTableName').value = `Table ${nextId}`;
+        document.getElementById('addTableCapacity').value = 4;
+        
+        const errEl = document.getElementById('addCapacityError');
+        if (errEl) errEl.style.display = 'none';
+        document.getElementById('confirmAddTableBtn').disabled = false;
+        
+        document.getElementById('addTableModal').style.display = 'flex';
+    }
+
+    function closeAddTableModal() {
+        document.getElementById('addTableModal').style.display = 'none';
+    }
+
+    function submitAddTable(event) {
+        event.preventDefault();
+        const name = document.getElementById('addTableName').value;
+        const area = "Main Dining"; // Default since field was removed
+        const capacity = parseInt(document.getElementById('addTableCapacity').value, 10);
+        
+        if (isNaN(capacity) || capacity < 1) {
+            showToastNotification('danger', 'Capacity must be at least 1 pax.');
+            return;
+        }
+
+        const btn = document.getElementById('confirmAddTableBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Creating...';
+
+        fetch('/staff/cashier/api/tables/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, area, capacity })
+        })
+        .then(r => r.json())
+        .then(data => {
+            btn.innerHTML = 'Create Table';
+            btn.disabled = false;
+            if (data.success) {
+                showToastNotification('success', data.message || 'Table created successfully.');
+                closeAddTableModal();
+                pollTableStatus();
+            } else {
+                showToastNotification('danger', data.message || 'Failed to create table.');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            btn.innerHTML = 'Create Table';
+            btn.disabled = false;
+            showToastNotification('danger', 'Network error occurred while creating table.');
+        });
+    }
+
+    let pendingReleaseTableNum = null;
+    let pendingReleaseType = 'table'; // 'table' or 'reservation'
+
+    function releaseTable(tableNum, event) {
+        if (event) event.stopPropagation();
+        pendingReleaseTableNum = tableNum;
+        pendingReleaseType = 'table';
+        
+        const tData = cachedTables[tableNum];
+        const tName = tData ? (tData.name || `Table ${tableNum}`) : `Table ${tableNum}`;
+        
+        document.getElementById('releaseConfirmTableName').textContent = tName;
+        document.getElementById('releaseConfirmTableSub').textContent = tName;
+        document.getElementById('confirmReleaseBtn').innerHTML = '<i class="fas fa-check-circle me-1"></i> Release Table';
+        document.getElementById('confirmReleaseBtn').disabled = false;
+        
+        document.getElementById('releaseConfirmModal').style.display = 'flex';
+    }
+
+    function releaseReservation(tableNum, event) {
+        if (event) event.stopPropagation();
+        pendingReleaseTableNum = tableNum;
+        pendingReleaseType = 'reservation';
+        
+        const tData = cachedTables[tableNum];
+        const tName = tData ? (tData.name || `Table ${tableNum}`) : `Table ${tableNum}`;
+        
+        document.getElementById('releaseConfirmTableName').textContent = `${tName} Reservation`;
+        document.getElementById('releaseConfirmTableSub').textContent = `the reservation for ${tName}`;
+        document.getElementById('confirmReleaseBtn').innerHTML = '<i class="fas fa-check-circle me-1"></i> Complete Booking';
+        document.getElementById('confirmReleaseBtn').disabled = false;
+        
+        document.getElementById('releaseConfirmModal').style.display = 'flex';
+    }
+
+    function closeReleaseConfirmModal() {
+        document.getElementById('releaseConfirmModal').style.display = 'none';
+        pendingReleaseTableNum = null;
+    }
+
+    function submitReleaseTable() {
+        if (!pendingReleaseTableNum) return;
+        const tableNum = pendingReleaseTableNum;
+        const btn = document.getElementById('confirmReleaseBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Processing...';
+
+        const url = pendingReleaseType === 'reservation' 
+            ? `/staff/cashier/tables/${tableNum}/release-reservation`
+            : `/staff/cashier/tables/${tableNum}/release`;
+
+        fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            closeReleaseConfirmModal();
+            if (data.success) {
+                const msg = pendingReleaseType === 'reservation'
+                    ? (data.message || `Table ${tableNum} reservation completed.`)
+                    : (data.message || `Table ${tableNum} is now available.`);
+                showToastNotification('success', msg);
                 pollTableStatus();
             } else {
                 showToastNotification('danger', data.message || 'Failed to release table.');
@@ -496,32 +1372,7 @@
         })
         .catch(err => {
             console.error(err);
-            showToastNotification('danger', 'Network error occurred.');
-        });
-    }
-
-    function releaseReservation(tableNum, event) {
-        if (event) event.stopPropagation();
-        if (!confirm(`Mark reservation for Table ${tableNum} as Completed?`)) return;
-        
-        const url = `/staff/cashier/tables/${tableNum}/release-reservation`;
-        fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                showToastNotification('success', data.message || `Table ${tableNum} reservation completed.`);
-                pollTableStatus();
-            } else {
-                showToastNotification('danger', data.message || 'Failed to complete reservation.');
-            }
-        })
-        .catch(err => {
-            console.error(err);
+            closeReleaseConfirmModal();
             showToastNotification('danger', 'Network error occurred.');
         });
     }
@@ -567,7 +1418,12 @@
         selectedTableNum = tableNum;
         selectedOrderId = null;
         
+        const tData = cachedTables[tableNum];
+        const tName = tData ? tData.name : `Table ${tableNum}`;
         document.getElementById('assignTableNum').textContent = tableNum;
+        if (document.getElementById('assignTableTitle')) {
+            document.getElementById('assignTableTitle').textContent = tName;
+        }
         document.getElementById('confirmAssignOrderBtn').disabled = true;
         
         const modal = document.getElementById('assignOrderModal');
@@ -576,7 +1432,6 @@
         const listContainer = document.getElementById('assignOrdersList');
         listContainer.innerHTML = '<div style="text-align: center; color: #8D6E63; padding: 1.5rem; font-size: 0.9rem;"><i class="fas fa-spinner fa-spin me-2"></i>Loading active orders...</div>';
         
-        // Fetch active orders
         fetch('/staff/cashier/api/unassigned-orders')
         .then(r => r.json())
         .then(data => {
@@ -619,11 +1474,9 @@
     }
 
     function selectOrderForAssign(orderId, element) {
-        // Deselect previous
         const items = document.querySelectorAll('.order-select-item');
         items.forEach(i => i.classList.remove('selected'));
         
-        // Select new
         element.classList.add('selected');
         selectedOrderId = orderId;
         document.getElementById('confirmAssignOrderBtn').disabled = false;
@@ -671,9 +1524,13 @@
 
     window.addEventListener('click', function(event) {
         const assignModal = document.getElementById('assignOrderModal');
-        if (event.target === assignModal) {
-            closeAssignModal();
-        }
+        const editModal = document.getElementById('editTableModal');
+        const addModal = document.getElementById('addTableModal');
+        const releaseModal = document.getElementById('releaseConfirmModal');
+        if (event.target === assignModal) closeAssignModal();
+        if (event.target === editModal) closeEditModal();
+        if (event.target === addModal) closeAddTableModal();
+        if (event.target === releaseModal) closeReleaseConfirmModal();
     });
 
     document.addEventListener('DOMContentLoaded', pollTableStatus);

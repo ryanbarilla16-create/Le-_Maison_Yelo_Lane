@@ -178,16 +178,24 @@ def signup():
 @main_bp.route('/verify_otp/<int:user_id>', methods=['GET', 'POST'])
 def verify_otp(user_id):
     user = User.query.get_or_404(user_id)
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if request.method == 'POST':
         otp_input = request.form.get('otp', '').strip()
         if user.otp_code == otp_input:
             user.is_verified = True
+            user.status = 'ACTIVE'
             user.otp_code = None
             db.session.commit()
-            flash("Account successfully verified! You can now log in.", "success")
+            success_msg = "Account successfully verified! You can now log in."
+            flash(success_msg, "success")
+            if is_ajax:
+                return jsonify({'success': True, 'redirect': url_for('main.login'), 'message': success_msg})
             return redirect(url_for('main.login'))
         else:
-            flash("Invalid OTP.", "danger")
+            danger_msg = "Invalid OTP."
+            if is_ajax:
+                return jsonify({'success': False, 'message': danger_msg})
+            flash(danger_msg, "danger")
     
     # Calculate remaining cooldown seconds for the resend button
     cooldown_remaining = 0
@@ -200,9 +208,13 @@ def verify_otp(user_id):
 @main_bp.route('/resend_otp/<int:user_id>', methods=['POST'])
 def resend_otp(user_id):
     user = User.query.get_or_404(user_id)
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     
     if user.is_verified:
-        flash("Your account is already verified.", "info")
+        info_msg = "Your account is already verified."
+        if is_ajax:
+            return jsonify({'success': False, 'message': info_msg, 'redirect': url_for('main.login')})
+        flash(info_msg, "info")
         return redirect(url_for('main.login'))
     
     # 5-minute cooldown check
@@ -212,7 +224,10 @@ def resend_otp(user_id):
             remaining = int(300 - elapsed)
             minutes = remaining // 60
             seconds = remaining % 60
-            flash(f"Please wait {minutes}m {seconds}s before requesting a new code.", "warning")
+            warn_msg = f"Please wait {minutes}m {seconds}s before requesting a new code."
+            if is_ajax:
+                return jsonify({'success': False, 'message': warn_msg, 'redirect': url_for('main.verify_otp', user_id=user.id)})
+            flash(warn_msg, "warning")
             return redirect(url_for('main.verify_otp', user_id=user.id))
     
     # Generate a new OTP
@@ -248,8 +263,11 @@ def resend_otp(user_id):
     # Send OTP via Gmail (Sync for debugging)
     from utils import send_email
     send_email(user.email, 'Le Maison Yelo Lane - Your New OTP Code', html_msg)
-    flash(f"A new OTP has been created and is being sent to {user.email}. Please check your inbox.", "success")
+    success_msg = f"A new OTP has been created and is being sent to {user.email}. Please check your inbox."
+    flash(success_msg, "success")
     
+    if is_ajax:
+        return jsonify({'success': True, 'message': success_msg, 'cooldown_remaining': 300})
     return redirect(url_for('main.verify_otp', user_id=user.id))
 
 @main_bp.route('/social_auth', methods=['POST'])
@@ -403,20 +421,27 @@ def login():
 @main_bp.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
     from flask import session
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if request.method == 'POST':
         email = (request.form.get('email') or '').strip()
         user = User.query.filter_by(email=email).first()
         
         if not user:
             # Reveal as little as possible
-            flash(f"If an account exists for {email}, an OTP has been sent.", "info")
+            msg = f"If an account exists for {email}, an OTP has been sent."
+            if is_ajax:
+                return jsonify({'success': True, 'redirect': url_for('main.login'), 'message': msg})
+            flash(msg, "info")
             return redirect(url_for('main.login'))
             
         # Rate-limit OTP (wait 60 seconds between requests)
         if user.otp_created_at:
             elapsed = safe_elapsed(user.otp_created_at)
             if elapsed < 60:
-                flash(f"Please wait {int(60 - elapsed)}s before requesting a new code.", "warning")
+                msg = f"Please wait {int(60 - elapsed)}s before requesting a new code."
+                if is_ajax:
+                    return jsonify({'success': False, 'message': msg, 'redirect': url_for('main.verify_reset_otp', user_id=user.id)})
+                flash(msg, "warning")
                 return redirect(url_for('main.verify_reset_otp', user_id=user.id))
         
         otp = f"{random.randint(100000, 999999)}"
@@ -451,9 +476,12 @@ def forgot_password():
         # Send OTP (Sync for debugging)
         from utils import send_email
         send_email(email, 'Le Maison Yelo Lane - Password Reset Code', html_msg)
-        flash(f"An OTP has been created and is being sent to {email}. Please check your inbox.", "success")
+        success_msg = f"An OTP has been created and is being sent to {email}. Please check your inbox."
+        flash(success_msg, "success")
             
         session['reset_user_id'] = user.id
+        if is_ajax:
+            return jsonify({'success': True, 'redirect': url_for('main.verify_reset_otp', user_id=user.id), 'message': success_msg})
         return redirect(url_for('main.verify_reset_otp', user_id=user.id))
         
     return render_template('auth/forgot_password.html')
@@ -461,8 +489,12 @@ def forgot_password():
 @main_bp.route('/verify-reset-otp/<int:user_id>', methods=['GET', 'POST'])
 def verify_reset_otp(user_id):
     from flask import session
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if session.get('reset_user_id') != user_id:
-        flash("Invalid session. Please start the password reset process again.", "danger")
+        msg = "Invalid session. Please start the password reset process again."
+        if is_ajax:
+            return jsonify({'success': False, 'message': msg, 'redirect': url_for('main.forgot_password')})
+        flash(msg, "danger")
         return redirect(url_for('main.forgot_password'))
         
     user = User.query.get_or_404(user_id)
@@ -474,15 +506,24 @@ def verify_reset_otp(user_id):
         if user.otp_created_at:
             elapsed = safe_elapsed(user.otp_created_at)
             if elapsed > 300:
-                flash("OTP has expired. Please request a new one.", "danger")
+                msg = "OTP has expired. Please request a new one."
+                if is_ajax:
+                    return jsonify({'success': False, 'message': msg, 'redirect': url_for('main.verify_reset_otp', user_id=user.id)})
+                flash(msg, "danger")
                 return redirect(url_for('main.verify_reset_otp', user_id=user.id))
                 
         if user.otp_code == otp_input:
             session['reset_verified_user_id'] = user.id
-            flash("OTP verified! You can now set a new password.", "success")
+            msg = "OTP verified! You can now set a new password."
+            flash(msg, "success")
+            if is_ajax:
+                return jsonify({'success': True, 'redirect': url_for('main.reset_password'), 'message': msg})
             return redirect(url_for('main.reset_password'))
         else:
-            flash("Invalid OTP.", "danger")
+            msg = "Invalid OTP."
+            if is_ajax:
+                return jsonify({'success': False, 'message': msg})
+            flash(msg, "danger")
             
     cooldown_remaining = 0
     if user.otp_created_at:
@@ -493,10 +534,14 @@ def verify_reset_otp(user_id):
 
 @main_bp.route('/resend-reset-otp/<int:user_id>', methods=['POST'])
 def resend_reset_otp(user_id):
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     try:
         from flask import session
         if session.get('reset_user_id') != user_id:
-            flash("Invalid session. Please start the password reset process again.", "danger")
+            msg = "Invalid session. Please start the password reset process again."
+            if is_ajax:
+                return jsonify({'success': False, 'message': msg, 'redirect': url_for('main.forgot_password')})
+            flash(msg, "danger")
             return redirect(url_for('main.forgot_password'))
             
         user = User.query.get_or_404(user_id)
@@ -505,7 +550,10 @@ def resend_reset_otp(user_id):
             elapsed = safe_elapsed(user.otp_created_at)
             if elapsed < 60:
                 remaining = int(60 - elapsed)
-                flash(f"Please wait {remaining}s before requesting a new code.", "warning")
+                msg = f"Please wait {remaining}s before requesting a new code."
+                if is_ajax:
+                    return jsonify({'success': False, 'message': msg, 'redirect': url_for('main.verify_reset_otp', user_id=user.id)})
+                flash(msg, "warning")
                 return redirect(url_for('main.verify_reset_otp', user_id=user.id))
                 
         otp = f"{random.randint(100000, 999999)}"
@@ -537,22 +585,32 @@ def resend_reset_otp(user_id):
         # Send OTP (Sync for debugging)
         from utils import send_email
         send_email(user.email, 'Le Maison Yelo Lane - New Password Reset Code', html_msg)
-        flash(f"A new OTP has been created and is being sent to {user.email}. Please check your inbox.", "success")
+        success_msg = f"A new OTP has been created and is being sent to {user.email}. Please check your inbox."
+        flash(success_msg, "success")
             
+        if is_ajax:
+            return jsonify({'success': True, 'message': success_msg, 'cooldown_remaining': 60})
         return redirect(url_for('main.verify_reset_otp', user_id=user.id))
 
     except Exception as e:
         import traceback
         traceback.print_exc()
-        flash(f"An internal error occurred: {str(e)}", "danger")
+        msg = f"An internal error occurred: {str(e)}"
+        if is_ajax:
+            return jsonify({'success': False, 'message': msg, 'redirect': url_for('main.login')})
+        flash(msg, "danger")
         return redirect(url_for('main.login'))
 
 @main_bp.route('/reset-password', methods=['GET', 'POST'])
 def reset_password():
     from flask import session
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     user_id = session.get('reset_verified_user_id')
     if not user_id:
-        flash("You must verify your OTP before resetting your password.", "danger")
+        msg = "You must verify your OTP before resetting your password."
+        if is_ajax:
+            return jsonify({'success': False, 'message': msg, 'redirect': url_for('main.forgot_password')})
+        flash(msg, "danger")
         return redirect(url_for('main.forgot_password'))
         
     user = User.query.get_or_404(user_id)
@@ -565,13 +623,18 @@ def reset_password():
         if user.otp_created_at:
             elapsed = safe_elapsed(user.otp_created_at)
             if elapsed > 300:
-                flash("Your password reset session has expired (5 minutes). Please start over.", "danger")
+                msg = "Your password reset session has expired (5 minutes). Please start over."
                 session.pop('reset_user_id', None)
                 session.pop('reset_verified_user_id', None)
+                if is_ajax:
+                    return jsonify({'success': False, 'message': msg, 'redirect': url_for('main.forgot_password')})
+                flash(msg, "danger")
                 return redirect(url_for('main.forgot_password'))
                 
         err = validate_password(new_password, confirm_password)
         if err:
+            if is_ajax:
+                return jsonify({'success': False, 'message': err})
             flash(err, "danger")
             return render_template('auth/reset_password.html')
             
@@ -587,7 +650,10 @@ def reset_password():
         session.pop('reset_user_id', None)
         session.pop('reset_verified_user_id', None)
         
-        flash("Password reset successfully! You can now log in with your new password.", "success")
+        success_msg = "Password reset successfully! You can now log in with your new password."
+        flash(success_msg, "success")
+        if is_ajax:
+            return jsonify({'success': True, 'redirect': url_for('main.login'), 'message': success_msg})
         return redirect(url_for('main.login'))
         
     return render_template('auth/reset_password.html')
@@ -601,6 +667,7 @@ def logout():
 @main_bp.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if request.method == 'POST':
         first_name = request.form.get('first_name', '').strip()
         middle_name = request.form.get('middle_name', '').strip()
@@ -615,56 +682,90 @@ def profile():
 
         # --- VALIDATIONS ---
         if not all([first_name, last_name, username, email, phone_number]):
-            flash("Profile information fields are required.", "danger")
+            msg = "Profile information fields are required."
+            if is_ajax:
+                return jsonify({'success': False, 'message': msg})
+            flash(msg, "danger")
             return redirect(url_for('main.profile'))
 
         # Validate Names
         for name, label in [(first_name, 'First Name'), (last_name, 'Last Name')]:
             err = validate_name(name, label)
-            if err: flash(err, "danger"); return redirect(url_for('main.profile'))
+            if err:
+                if is_ajax:
+                    return jsonify({'success': False, 'message': err})
+                flash(err, "danger")
+                return redirect(url_for('main.profile'))
         if middle_name:
             err = validate_name(middle_name, 'Middle Name')
-            if err: flash(err, "danger"); return redirect(url_for('main.profile'))
+            if err:
+                if is_ajax:
+                    return jsonify({'success': False, 'message': err})
+                flash(err, "danger")
+                return redirect(url_for('main.profile'))
 
         # Validate Email
         err = validate_email(email)
-        if err: flash(err, "danger"); return redirect(url_for('main.profile'))
+        if err:
+            if is_ajax:
+                return jsonify({'success': False, 'message': err})
+            flash(err, "danger")
+            return redirect(url_for('main.profile'))
 
         # Validate Username
         err = validate_username(username, first_name, last_name)
-        if err: flash(err, "danger"); return redirect(url_for('main.profile'))
+        if err:
+            if is_ajax:
+                return jsonify({'success': False, 'message': err})
+            flash(err, "danger")
+            return redirect(url_for('main.profile'))
 
         # Check for conflicts
         if email != current_user.email:
             if User.query.filter_by(email=email).first():
-                flash("Email already registered by another account.", "danger")
+                msg = "Email already registered by another account."
+                if is_ajax:
+                    return jsonify({'success': False, 'message': msg})
+                flash(msg, "danger")
                 return redirect(url_for('main.profile'))
         if username != current_user.username:
             if User.query.filter_by(username=username).first():
-                flash("Username already taken.", "danger")
+                msg = "Username already taken."
+                if is_ajax:
+                    return jsonify({'success': False, 'message': msg})
+                flash(msg, "danger")
                 return redirect(url_for('main.profile'))
 
         # --- PASSWORD CHANGE HANDLING ---
         if new_password:
             if not current_password:
-                flash("Current password is required to change to a new password.", "danger")
+                msg = "Current password is required to change to a new password."
+                if is_ajax:
+                    return jsonify({'success': False, 'message': msg})
+                flash(msg, "danger")
                 return redirect(url_for('main.profile'))
             if not current_user.check_password(current_password):
-                flash("Incorrect current password.", "danger")
+                msg = "Incorrect current password."
+                if is_ajax:
+                    return jsonify({'success': False, 'message': msg})
+                flash(msg, "danger")
                 return redirect(url_for('main.profile'))
             
             err = validate_password(new_password, confirm_new_password)
             if err:
+                if is_ajax:
+                    return jsonify({'success': False, 'message': err})
                 flash(err, "danger")
                 return redirect(url_for('main.profile'))
             
             current_user.set_password(new_password)
-            flash("Password updated successfully.", "success")
+            # We don't flash directly yet, we will bundle it
         elif current_password:
-            # User provided current password but no new password - maybe just validating to change profile details?
-            # Or just check it if they want to ensure they are the owner
             if not current_user.check_password(current_password):
-                flash("Incorrect current password.", "danger")
+                msg = "Incorrect current password."
+                if is_ajax:
+                    return jsonify({'success': False, 'message': msg})
+                flash(msg, "danger")
                 return redirect(url_for('main.profile'))
 
         # Update Info
@@ -683,13 +784,22 @@ def profile():
         if profile_picture and profile_picture.filename:
             upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'profiles')
             os.makedirs(upload_folder, exist_ok=True)
+            from utils import save_optimized_image
             filename = secure_filename(f"{current_user.id}_{profile_picture.filename}")
             filepath = os.path.join(upload_folder, filename)
-            profile_picture.save(filepath)
+            save_optimized_image(profile_picture, filepath, max_dim=(600, 600), quality=82)
             current_user.profile_picture_url = url_for('static', filename=f"uploads/profiles/{filename}")
 
         db.session.commit()
-        flash("Profile updated successfully.", "success")
+        success_msg = "Profile updated successfully."
+        flash(success_msg, "success")
+        if is_ajax:
+            return jsonify({
+                'success': True,
+                'message': success_msg,
+                'redirect': url_for('main.profile'),
+                'profile_picture_url': current_user.profile_picture_url
+            })
         return redirect(url_for('main.profile'))
 
     return render_template('auth/profile.html')

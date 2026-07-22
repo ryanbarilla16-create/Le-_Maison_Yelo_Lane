@@ -26,8 +26,8 @@
     .category-card:hover .category-img { transform: scale(1.08) !important; }
     .back-btn:hover { background-color: var(--primary) !important; color: white !important; border-color: var(--primary) !important; }
 
-    /* Fix for staff_layout content area - ADD CREAM BACKGROUND */
-    .main { background: var(--bg) !important; }
+    /* Reduce main padding for walkin page */
+    .main { background: var(--bg) !important; padding: 16px 24px !important; }
     .walkin-content { max-width: 100%; }
     .walkin-content .card { background: #fff; }
     .walkin-content .form-control, .walkin-content .form-select { font-family: 'Outfit', sans-serif; }
@@ -35,12 +35,6 @@
 
 {% block content %}
 <div class="walkin-content">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div></div>
-        <a href="{{ url_for('cashier_portal.cashier_dashboard') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3" style="font-weight:600;">
-            <i class="fas fa-arrow-left me-1"></i>Back to Orders
-        </a>
-    </div>
 
     {% set categories_data = {} %}
     {% for item in items %}
@@ -52,10 +46,10 @@
     {% endif %}
     {% endfor %}
 
-    <div class="row g-4 h-100">
+    <div class="row g-4">
         <!-- LEFT: Menu Categories & Items -->
         <div class="col-lg-7">
-            <div class="card border-0 shadow-sm" style="border-radius: 12px; height: calc(100vh - 160px); display: flex; flex-direction: column;">
+            <div class="card border-0 shadow-sm" style="border-radius: 12px; height: calc(100vh - 80px); display: flex; flex-direction: column;">
                 <div class="card-body p-4" style="overflow-y: auto; flex-grow: 1;">
                     <!-- 1. Categories Grid View -->
                     <div id="categories-grid-view">
@@ -184,22 +178,22 @@
         </div>
 
         <!-- RIGHT: Order Summary -->
-        <div class="col-lg-5">
+        <div class="col-lg-5" style="position: sticky; top: 16px; align-self: flex-start;">
             <form action="{{ url_for('admin.walkin_order_submit') }}" method="POST" id="orderForm"
                 onsubmit="return handleOrderSubmit(event)" style="height: 100%;">
                 <input type="hidden" name="amount_tendered" id="hiddenAmountTendered">
-                <div class="card border-0 shadow-sm" style="border-radius: 12px; height: calc(100vh - 160px); display: flex; flex-direction: column;">
+                <div class="card border-0 shadow-sm" style="border-radius: 12px; height: calc(100vh - 80px); display: flex; flex-direction: column;">
                     <div class="card-header bg-white border-bottom p-3">
                         <h5 class="mb-0 fw-bold" style="color: var(--text);"><i class="fas fa-receipt me-2"></i>Order Summary</h5>
                     </div>
                     <div class="card-body p-0" style="display: flex; flex-direction: column; overflow: hidden; height: 100%;">
-                        <div class="p-3" style="flex-grow: 1; overflow-y: auto; scrollbar-width: thin;">
+                        <div class="p-3" style="display: flex; flex-direction: column; flex-grow: 1; overflow: hidden;">
                             <!-- 1. ORDER LIST -->
                             <div class="mb-2 d-flex justify-content-between align-items-center">
                                 <span class="fw-bold fs-6" style="color: var(--text);">1. Items Ordered</span>
                                 <button type="button" onclick="Object.keys(orderItems).forEach(removeItem); renderOrder();" class="btn btn-link btn-sm text-danger p-0" style="text-decoration: none; font-size: 0.75rem;">Clear All</button>
                             </div>
-                            <div id="orderItems" style="min-height: 150px; background: #fff; border-radius: 12px; border: 1px solid rgba(139, 99, 75, 0.15); padding: 10px; margin-bottom: 1.5rem; box-shadow: inset 0 2px 5px rgba(0,0,0,0.02);">
+                            <div id="orderItems" style="flex-grow: 1; overflow-y: auto; background: #fff; border-radius: 12px; border: 1px solid rgba(139, 99, 75, 0.15); padding: 10px; margin-bottom: 1rem; box-shadow: inset 0 2px 5px rgba(0,0,0,0.02);">
                                 <div class="h-100 d-flex flex-column align-items-center justify-content-center text-muted opacity-75">
                                     <i class="fas fa-shopping-basket fa-2x mb-2"></i>
                                     <p id="emptyMsg" style="font-size: 0.85rem;">Order is empty.</p>
@@ -207,7 +201,7 @@
                             </div>
 
                             <!-- 2. DINING & CUSTOMER INFO -->
-                            <div class="p-3 mb-3" style="background: rgba(139, 99, 75, 0.03); border-radius: 15px; border: 1px dashed rgba(139, 99, 75, 0.2);">
+                            <div class="p-3 mb-3" style="background: rgba(139, 99, 75, 0.03); border-radius: 15px; border: 1px dashed rgba(139, 99, 75, 0.2); flex-shrink: 0;">
                                 <div class="mb-2 fs-6 fw-bold" style="color: var(--text);">2. Details</div>
                                 <div class="mb-3">
                                     <input type="text" name="customer_name" class="form-control form-control-sm shadow-sm"
@@ -236,7 +230,7 @@
                             </div>
 
                             <!-- 3. PAYMENT METHOD -->
-                            <div class="p-3 mb-2" style="background: #fff; border-radius: 15px; border: 1px solid rgba(139, 99, 75, 0.1);">
+                            <div class="p-3 mb-2" style="background: #fff; border-radius: 15px; border: 1px solid rgba(139, 99, 75, 0.1); flex-shrink: 0;">
                                 <div class="mb-2 fs-6 fw-bold" style="color: var(--text);">3. Payment</div>
                                 <div class="d-flex flex-row gap-2">
                                     <label class="flex-grow-1 btn btn-outline-dark rounded-3 text-start p-2 shadow-sm d-flex align-items-center" style="font-size: 0.75rem; border: 1px solid rgba(139, 99, 75, 0.2);">
@@ -253,7 +247,8 @@
 
                         <!-- FIXED FOOTER AREA -->
                         <div class="p-3 border-top bg-white">
-                            <div class="d-flex justify-content-between align-items-center mb-3 p-3 rounded"
+                            <!-- Total -->
+                            <div class="d-flex justify-content-between align-items-center mb-3 p-2 rounded"
                                 style="background: rgba(139, 99, 75, 0.05); border: 1px solid rgba(139, 99, 75, 0.1);">
                                 <span class="fw-bold fs-5" style="color: var(--text);">Total:</span>
                                 <span class="fw-bold fs-4 text-success" id="totalAmount">₱0.00</span>
@@ -283,38 +278,72 @@
     <!-- Payment Modal -->
     <div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-sm">
-            <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
-                <div class="modal-header border-0 pb-0">
-                    <h5 class="modal-title fw-bold" style="color: var(--text);">Process Payment</h5>
+            <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.12);">
+                <div class="modal-header border-0 pb-0 px-4 pt-4">
+                    <h5 class="modal-title fw-bold" style="color: var(--text); font-size: 1.1rem;"><i class="fas fa-cash-register me-2" style="color: var(--primary);"></i>Process Payment</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body pb-4">
-                    <div class="mb-3 d-flex justify-content-between align-items-center">
-                        <span class="text-muted fw-bold">Total Amount</span>
-                        <span class="fw-bold fs-4 text-success" id="modalTotalAmount">₱0.00</span>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold" style="font-size: 0.85rem; color: var(--text);">Amount Tendered (₱)</label>
-                        <input type="number" class="form-control form-control-lg text-end shadow-sm" id="modalAmountTendered" min="0" step="0.01"
-                            style="font-weight: bold; border-radius: 8px; border: 1px solid rgba(139, 99, 75,0.2);">
-                        <div class="d-flex gap-2 mt-2 flex-wrap">
-                            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="setTender('exact')" style="flex: 1; min-width: 70px;">Exact</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="setTender(100)" style="flex: 1; min-width: 70px;">₱100</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="setTender(200)" style="flex: 1; min-width: 70px;">₱200</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="setTender(500)" style="flex: 1; min-width: 70px;">₱500</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="setTender(1000)" style="flex: 1; min-width: 70px;">₱1000</button>
+                <div class="modal-body px-4 pb-4 pt-3">
+
+                    <!-- Breakdown Table -->
+                    <div class="mb-3 rounded-3 overflow-hidden" style="border: 1px solid rgba(139,99,75,0.12);">
+                        <!-- Sub Total -->
+                        <div class="d-flex justify-content-between align-items-center px-3 py-2" style="background: #faf8f6; border-bottom: 1px solid rgba(139,99,75,0.08);">
+                            <span class="fw-semibold" style="color: #888; font-size: 0.88rem;">Sub Total</span>
+                            <span class="fw-bold" style="color: var(--text); font-size: 0.95rem;" id="modalSubTotal">₱0.00</span>
+                        </div>
+                        <!-- Cash -->
+                        <div class="d-flex justify-content-between align-items-center px-3 py-2" style="background: #faf8f6; border-bottom: 1px solid rgba(139,99,75,0.08);">
+                            <span class="fw-semibold" style="color: #888; font-size: 0.88rem;">Cash</span>
+                            <input type="number" id="modalAmountTendered" min="0" step="0.01"
+                                class="form-control form-control-sm text-end"
+                                style="width: 130px; font-weight: 700; border-radius: 8px; border: 1px solid rgba(139,99,75,0.2); font-size: 0.95rem; color: var(--text);">
+                        </div>
+                        <!-- Change -->
+                        <div class="d-flex justify-content-between align-items-center px-3 py-2" style="background: #faf8f6; border-bottom: 1px solid rgba(139,99,75,0.08);">
+                            <span class="fw-semibold" style="color: #888; font-size: 0.88rem;">Change</span>
+                            <span class="fw-bold" style="color: var(--primary); font-size: 0.95rem;" id="modalChangeAmount">₱0.00</span>
+                        </div>
+                        <!-- Grand Total -->
+                        <div class="d-flex justify-content-between align-items-center px-3 py-3" style="background: linear-gradient(135deg, rgba(139,99,75,0.06), rgba(139,99,75,0.02));">
+                            <span class="fw-bold" style="color: var(--text); font-size: 1rem;">Grand Total</span>
+                            <span class="fw-bold" style="color: #2e7d32; font-size: 1.2rem;" id="modalTotalAmount">₱0.00</span>
                         </div>
                     </div>
-                    <div class="mb-3 d-flex justify-content-between align-items-center p-3 rounded"
-                        style="background: rgba(139, 99, 75,0.05); border: 1px dashed rgba(139, 99, 75,0.2);">
-                        <span class="fw-bold text-muted">Change</span>
-                        <span class="fw-bold fs-4" style="color: var(--primary);" id="modalChangeAmount">₱0.00</span>
+
+                    <!-- Quick Tender Buttons -->
+                    <div class="d-flex gap-2 mb-3 flex-wrap">
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="setTender('exact')" style="flex:1; min-width:60px; font-size:0.78rem;">Exact</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="setTender(100)" style="flex:1; min-width:60px; font-size:0.78rem;">₱100</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="setTender(200)" style="flex:1; min-width:60px; font-size:0.78rem;">₱200</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="setTender(500)" style="flex:1; min-width:60px; font-size:0.78rem;">₱500</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="setTender(1000)" style="flex:1; min-width:60px; font-size:0.78rem;">₱1000</button>
                     </div>
+
                     <button type="button" id="confirmPaymentBtn"
-                        class="btn w-100 rounded-pill fw-bold text-white py-3 shadow-sm mt-2"
-                        style="background: linear-gradient(135deg, #8b634b, #8b634b);" disabled>
-                        <i class="fas fa-check-circle me-1"></i> Confirm Order
+                        class="btn w-100 rounded-pill fw-bold text-white shadow-sm"
+                        style="background: linear-gradient(135deg, #8b634b, #a67c64); padding: 14px; font-size: 1rem;" disabled>
+                        <i class="fas fa-check-circle me-2"></i> Confirm Order
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Large Amount Warning Modal -->
+    <div class="modal fade" id="confirmGuardModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
+            <div class="modal-content border-0 shadow" style="border-radius: 20px;">
+                <div class="modal-body text-center p-4">
+                    <div style="width: 56px; height: 56px; border-radius: 50%; background: #fff9c4; color: #fbc02d; display: inline-flex; align-items: center; justify-content: center; font-size: 1.8rem; margin-bottom: 16px;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h5 class="fw-bold mb-2" style="color: #3E2723; font-family: 'Outfit', sans-serif;">Large Amount Warning</h5>
+                    <p class="text-muted mb-0" id="confirmGuardMessage" style="font-size: 0.88rem; line-height: 1.5; font-family: 'Outfit', sans-serif;"></p>
+                </div>
+                <div class="modal-footer border-0 p-3 justify-content-center" style="background: white; border-radius: 0 0 20px 20px; gap: 10px;">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" id="confirmGuardCancelBtn" style="font-weight: 700; font-size: 0.85rem; font-family: 'Outfit', sans-serif;">Check Again</button>
+                    <button type="button" class="btn btn-primary rounded-pill px-4" id="confirmGuardProceedBtn" style="font-weight: 700; font-size: 0.85rem; background: #8B634B; border-color: #8B634B; font-family: 'Outfit', sans-serif;">Yes, Correct</button>
                 </div>
             </div>
         </div>
@@ -485,6 +514,7 @@
         if (document.querySelector('input[name="payment_method"]:checked').value === 'ONLINE') return true;
         e.preventDefault();
         let total = parseFloat(document.getElementById('totalAmount').textContent.replace('₱', '').replace(/,/g, ''));
+        document.getElementById('modalSubTotal').textContent = '₱' + total.toFixed(2);
         document.getElementById('modalTotalAmount').textContent = '₱' + total.toFixed(2);
         document.getElementById('modalAmountTendered').value = '';
         document.getElementById('modalAmountTendered').min = total;
@@ -495,16 +525,68 @@
         return false;
     }
 
+    let _isConfirmingGuard = false;
+
+    document.getElementById('modalAmountTendered').addEventListener('keydown', function(e) {
+        if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
+    });
+
     document.getElementById('modalAmountTendered').addEventListener('input', function () {
         let total = parseFloat(document.getElementById('totalAmount').textContent.replace('₱', '').replace(/,/g, ''));
+        
+        // Prevent e, +, - symbols
+        if (/[eE+\-]/.test(this.value) && this.value !== '') {
+            this.value = this.value.replace(/[eE+\-]/g, '');
+            return;
+        }
+
         let tendered = parseFloat(this.value) || 0;
         let change = tendered - total;
+
         if (change >= 0 && this.value !== '') {
             document.getElementById('modalChangeAmount').textContent = '₱' + change.toFixed(2);
             document.getElementById('confirmPaymentBtn').disabled = false;
         } else {
             document.getElementById('modalChangeAmount').textContent = '₱0.00';
             document.getElementById('confirmPaymentBtn').disabled = true;
+        }
+
+        // Warning threshold: if tendered is greater than 10x total
+        if (tendered > total * 10 && this.value !== '') {
+            if (_isConfirmingGuard) return;
+            _isConfirmingGuard = true;
+
+            const msg = `Amount Tendered (₱${tendered.toLocaleString(undefined, {minimumFractionDigits: 2})}) is significantly higher than the Grand Total (₱${total.toLocaleString(undefined, {minimumFractionDigits: 2})}). Is this correct?`;
+            document.getElementById('confirmGuardMessage').textContent = msg;
+
+            const guardModal = new bootstrap.Modal(document.getElementById('confirmGuardModal'));
+            guardModal.show();
+
+            const proceedBtn = document.getElementById('confirmGuardProceedBtn');
+            const cancelBtn = document.getElementById('confirmGuardCancelBtn');
+
+            const handleProceed = () => {
+                _isConfirmingGuard = false;
+                guardModal.hide();
+                cleanup();
+            };
+
+            const handleCancel = () => {
+                _isConfirmingGuard = false;
+                guardModal.hide();
+                this.value = '';
+                document.getElementById('modalChangeAmount').textContent = '₱0.00';
+                document.getElementById('confirmPaymentBtn').disabled = true;
+                cleanup();
+            };
+
+            function cleanup() {
+                proceedBtn.removeEventListener('click', handleProceed);
+                cancelBtn.removeEventListener('click', handleCancel);
+            }
+
+            proceedBtn.addEventListener('click', handleProceed);
+            cancelBtn.addEventListener('click', handleCancel);
         }
     });
 
@@ -601,25 +683,43 @@
 
     // Load table status on page load
     function loadTableStatus() {
-        fetch('{{ url_for("admin.get_table_status") }}')
+        fetch('{{ url_for("cashier_portal.cashier_api_tables") }}')
             .then(response => response.json())
             .then(data => {
-                if (data.success) {
+                if (data.success && data.tables) {
                     const tableSelect = document.getElementById('tableSelect');
                     if (tableSelect) {
-                        // Update table options
-                        for (let i = 1; i <= 17; i++) {
-                            const option = tableSelect.querySelector(`option[value="${i}"]`);
-                            if (option) {
-                                if (data.tables[i] === 'OCCUPIED') {
-                                    option.disabled = true;
-                                    option.textContent = `Table ${i} (Occupied)`;
-                                    option.style.color = '#dc3545';
-                                } else {
-                                    option.disabled = false;
-                                    option.textContent = `Table ${i}`;
-                                    option.style.color = '';
-                                }
+                        const currentVal = tableSelect.value;
+                        const tableKeys = Object.keys(data.tables).map(Number).sort((a, b) => a - b);
+                        tableKeys.forEach(i => {
+                            let option = tableSelect.querySelector(`option[value="${i}"]`);
+                            if (!option) {
+                                option = document.createElement('option');
+                                option.value = i;
+                                tableSelect.appendChild(option);
+                            }
+                            const info = data.tables[i];
+                            const status = (typeof info === 'object' && info !== null) ? info.status : info;
+                            const name = (typeof info === 'object' && info !== null && info.name) ? info.name : `Table ${i}`;
+
+                            if (status === 'OCCUPIED') {
+                                option.disabled = true;
+                                option.textContent = `${name} (Occupied)`;
+                                option.style.color = '#dc3545';
+                            } else if (status === 'RESERVED') {
+                                option.disabled = true;
+                                option.textContent = `${name} (Reserved)`;
+                                option.style.color = '#ef6c00';
+                            } else {
+                                option.disabled = false;
+                                option.textContent = name;
+                                option.style.color = '';
+                            }
+                        });
+                        if (currentVal) {
+                            const selectedOpt = tableSelect.querySelector(`option[value="${currentVal}"]`);
+                            if (selectedOpt && !selectedOpt.disabled) {
+                                tableSelect.value = currentVal;
                             }
                         }
                     }
@@ -628,10 +728,28 @@
             .catch(error => console.error('Error loading table status:', error));
     }
 
+    // Toggle table select based on Dining Option
+    const diningOptionSelect = document.querySelector('select[name="dining_option"]');
+    if (diningOptionSelect) {
+        diningOptionSelect.addEventListener('change', function() {
+            const tableSelect = document.getElementById('tableSelect');
+            if (tableSelect) {
+                if (this.value === 'TAKE_OUT') {
+                    tableSelect.required = false;
+                    tableSelect.disabled = true;
+                    tableSelect.value = '';
+                } else {
+                    tableSelect.required = true;
+                    tableSelect.disabled = false;
+                }
+            }
+        });
+    }
+
     // Load table status on page load
     loadTableStatus();
 
-    // Refresh table status every 30 seconds
-    setInterval(loadTableStatus, 30000);
+    // Refresh table status every 10 seconds for real-time responsiveness
+    setInterval(loadTableStatus, 10000);
 </script>
 {% endblock %}

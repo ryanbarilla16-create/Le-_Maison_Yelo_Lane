@@ -230,6 +230,8 @@ def checkout():
     from utils import generate_order_code
     order_code = generate_order_code()
         
+    selected_branch = request.cookies.get('selected_branch', 'Pagsanjan')
+
     new_order = Order(
         order_code=order_code,
         user_id=current_user.id,
@@ -237,7 +239,8 @@ def checkout():
         status=status_override or 'PENDING', # Use status_override (e.g., 'HOLD')
         dining_option=dining_option,
         payment_method=payment_method,
-        notes=notes
+        notes=notes,
+        branch=selected_branch
     )
     
     if dining_option == 'DELIVERY':

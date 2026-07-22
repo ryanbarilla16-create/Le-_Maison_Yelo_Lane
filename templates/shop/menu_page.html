@@ -5,20 +5,31 @@
 {% block content %}
     <!-- Build categories map early for use in filters -->
     {% set categories_data = {} %}
+    {% set bestsellers_list = [] %}
     {% for item in menu_items %}
-    {% if item.category not in categories_data %}
-    {% set _ = categories_data.update({item.category: {'image': item.image_url, 'count': 1}}) %}
-    {% else %}
-    {% set count = categories_data[item.category]['count'] + 1 %}
-    {% set _ = categories_data.update({item.category: {'image': categories_data[item.category]['image'], 'count':
-    count}}) %}
+        {% if item.is_bestseller %}
+            {% set _ = bestsellers_list.append(item) %}
+        {% endif %}
+    {% endfor %}
+    {% if bestsellers_list|length > 0 %}
+        {% set _ = categories_data.update({'Best Sellers': {'image': bestsellers_list[0].image_url, 'count': bestsellers_list|length}}) %}
     {% endif %}
+
+    {% for item in menu_items %}
+        {% if item.category != 'Best Sellers' %}
+            {% if item.category not in categories_data %}
+                {% set _ = categories_data.update({item.category: {'image': item.image_url, 'count': 1}}) %}
+            {% else %}
+                {% set count = categories_data[item.category]['count'] + 1 %}
+                {% set _ = categories_data.update({item.category: {'image': categories_data[item.category]['image'] or item.image_url, 'count': count}}) %}
+            {% endif %}
+        {% endif %}
     {% endfor %}
 
 <!-- Hero Section -->
 <div class="position-relative w-100 shadow-lg"
     style="height: 400px; border-radius: 20px; overflow: hidden; margin-bottom: 4rem; margin-top: 90px;">
-    <img loading="lazy" decoding="async"
+    <img loading="eager" fetchpriority="high" decoding="sync"
         src="https://images.unsplash.com/photo-1559925393-8be0ec4767c8?q=80&w=2071&auto=format&fit=crop"
         class="w-100 h-100" style="object-fit: cover; filter: brightness(0.6);" alt="Menu Banner">
     <div class="position-absolute top-50 start-50 translate-middle text-center w-100 px-3">
@@ -156,7 +167,7 @@
 
 
             <div class="menu-items-grid">
-                {% for item in menu_items if item.category == cat_name %}
+                {% for item in menu_items if (cat_name == 'Best Sellers' and item.is_bestseller) or (cat_name != 'Best Sellers' and item.category == cat_name) %}
                 <div class="menu-item-card" data-item-id="{{ item.id }}" data-item-name="{{ item.name|e }}"
                     data-item-price="{{ item.price }}" data-item-desc="{{ item.description|e|default('', true) }}"
                     data-item-image="{{ item.image_url|default('', true) }}"
@@ -165,8 +176,9 @@
                     <!-- Image Wrapper with Hover Overlay -->
                     <div class="menu-item-img-wrap">
                         {% if item.image_url %}
-                        <img loading="lazy" decoding="async" src="{{ item.image_url }}" alt="{{ item.name }}"
-                            class="menu-item-img">
+                        <img data-src="{{ item.image_url }}" alt="{{ item.name }}"
+                            class="menu-item-img lm-lazy"
+                            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200'%3E%3C/svg%3E">
                         {% else %}
                         <div class="menu-item-img-placeholder">
                             <i class="fas fa-utensils fa-3x" style="color: rgba(139,99,75,0.2);"></i>
@@ -619,6 +631,12 @@
             document.querySelectorAll('.menu-category-section').forEach(function (s) {
                 s.style.display = s.getAttribute('data-category') === categoryName ? 'block' : 'none';
             });
+            /* Trigger lazy loading for images now visible in this category */
+            document.querySelectorAll('.menu-category-section[data-category="' + categoryName + '"] img.lm-lazy').forEach(function(img) {
+                img.src = img.dataset.src;
+                img.classList.remove('lm-lazy');
+                img.classList.add('lm-lazy-loaded');
+            });
             window.scrollTo({ top: document.getElementById('items-view').offsetTop - 140, behavior: 'smooth' });
         }
 
@@ -837,7 +855,46 @@
             document.getElementById('priceTo').value = '';
             applyFilters();
         }
+
+        /* ── True Lazy Loading with IntersectionObserver ── */
+        (function() {
+            var lazyImages = [].slice.call(document.querySelectorAll('img.lm-lazy'));
+            if ('IntersectionObserver' in window) {
+                var observer = new IntersectionObserver(function(entries) {
+                    entries.forEach(function(entry) {
+                        if (entry.isIntersecting) {
+                            var img = entry.target;
+                            img.src = img.dataset.src;
+                            img.classList.remove('lm-lazy');
+                            img.classList.add('lm-lazy-loaded');
+                            observer.unobserve(img);
+                        }
+                    });
+                }, { rootMargin: '200px 0px' }); /* start loading 200px before visible */
+                lazyImages.forEach(function(img) { observer.observe(img); });
+            } else {
+                /* Fallback for old browsers: load all immediately */
+                lazyImages.forEach(function(img) { img.src = img.dataset.src; });
+            }
+        })();
     </script>
+
+    <style>
+        /* Shimmer skeleton while image loads */
+        img.lm-lazy {
+            background: linear-gradient(90deg, #f0ebe6 25%, #e8e0d8 50%, #f0ebe6 75%);
+            background-size: 200% 100%;
+            animation: lm-shimmer 1.4s infinite;
+        }
+        img.lm-lazy-loaded {
+            animation: none;
+            background: none;
+        }
+        @keyframes lm-shimmer {
+            0%   { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
 
     {% if not menu_items %}
     <div class="text-center py-5">

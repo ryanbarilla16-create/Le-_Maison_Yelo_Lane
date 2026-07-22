@@ -1,124 +1,123 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+  import 'package:flutter/material.dart';
+  import 'package:shared_preferences/shared_preferences.dart';
 
-// ═══ THEME MANAGER ═══
-class ThemeManager extends ChangeNotifier {
-  static final ThemeManager _instance = ThemeManager._internal();
-  factory ThemeManager() => _instance;
-  ThemeManager._internal();
+  // ═══ THEME MANAGER ═══
+  class ThemeManager extends ChangeNotifier {
+    static final ThemeManager _instance = ThemeManager._internal();
+    factory ThemeManager() => _instance;
+    ThemeManager._internal();
 
-  bool _isDark = false;
-  bool get isDark => _isDark;
+    bool _isDark = false;
+    bool get isDark => _isDark;
 
-  Future<void> init() async {
-    final prefs = await SharedPreferences.getInstance();
-    _isDark = prefs.getBool('isDark') ?? false;
-    notifyListeners();
+    Future<void> init() async {
+      final prefs = await SharedPreferences.getInstance();
+      _isDark = prefs.getBool('isDark') ?? false;
+      notifyListeners();
+    }
+
+    void toggleTheme() async {
+      _isDark = !_isDark;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isDark', _isDark);
+      notifyListeners();
+    }
   }
 
-  void toggleTheme() async {
-    _isDark = !_isDark;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isDark', _isDark);
-    notifyListeners();
+  // ═══ APP COLORS ═══
+  class AppColors {
+    // Coffee Brown Palette — slightly lighter, warmer tone
+    static const Color primary      = Color(0xFF6D4C41); // Warm Coffee (lighter)
+    static const Color primaryLight = Color(0xFF8D6E63); // Light Latte
+    static const Color accent       = Color(0xFF8B634B); // Coffee Brown (Prices)
+    static const Color success      = Color(0xFF2E7D32);
+    static const Color warning      = Color(0xFFE8740C);
+    static const Color danger       = Color(0xFFC62828);
+    static const Color info         = Color(0xFF1565C0);
+    static const Color gold         = Color(0xFFF9A825);
+
+    // ── Button Gradient: #6D4C41 → #8D6E63 (warm coffee, slightly lighter than before) ──
+    static const LinearGradient buttonGradient = LinearGradient(
+      colors: [Color(0xFF6D4C41), Color(0xFF8D6E63)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+
+    // Light Mode (Premium Latte)
+    static const Color background = Color(0xFFFDFBF9);
+    static const Color cardBg     = Color(0xFFF8F1EB);
+    static const Color textMain   = Color(0xFF4A3B32);
+    static const Color textMuted  = Color(0xFF8B634B);
+
+    // Dark Mode (Deep Mocha)
+    static const Color darkBg   = Color(0xFF1E1410);
+    static const Color darkCard = Color(0xFF2D1F1A);
+    static const Color darkText = Color(0xFFFDFBF9);
+    static const Color darkMuted= Color(0xFFB59380);
   }
-}
 
-// ═══ APP COLORS ═══
-class AppColors {
-  // Coffee Brown Palette — slightly lighter, warmer tone
-  static const Color primary      = Color(0xFF6D4C41); // Warm Coffee (lighter)
-  static const Color primaryLight = Color(0xFF8D6E63); // Light Latte
-  static const Color accent       = Color(0xFF8B634B); // Coffee Brown (Prices)
-  static const Color success      = Color(0xFF2E7D32);
-  static const Color warning      = Color(0xFFE8740C);
-  static const Color danger       = Color(0xFFC62828);
-  static const Color info         = Color(0xFF1565C0);
-  static const Color gold         = Color(0xFFF9A825);
+  // ═══ GRADIENT BUTTON WIDGET ═══
+  // Drop-in replacement for gradient styled buttons.
+  // Usage: GradientButton(label: 'Sign In', onPressed: _login)
+  // Usage with icon: GradientButton(label: 'Reserve', icon: Icons.calendar_today, onPressed: _book)
+  class GradientButton extends StatelessWidget {
+    final String label;
+    final VoidCallback? onPressed;
+    final IconData? icon;
+    final double height;
+    final double radius;
+    final bool isLoading;
+    final double fontSize;
 
-  // ── Button Gradient: #6D4C41 → #8D6E63 (warm coffee, slightly lighter than before) ──
-  static const LinearGradient buttonGradient = LinearGradient(
-    colors: [Color(0xFF6D4C41), Color(0xFF8D6E63)],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
+    const GradientButton({
+      super.key,
+      required this.label,
+      required this.onPressed,
+      this.icon,
+      this.height = 52,
+      this.radius = 16,
+      this.isLoading = false,
+      this.fontSize = 15,
+    });
 
-  // Light Mode (Premium Latte)
-  static const Color background = Color(0xFFFDFBF9);
-  static const Color cardBg     = Color(0xFFF8F1EB);
-  static const Color textMain   = Color(0xFF4A3B32);
-  static const Color textMuted  = Color(0xFF8B634B);
-
-  // Dark Mode (Deep Mocha)
-  static const Color darkBg   = Color(0xFF1E1410);
-  static const Color darkCard = Color(0xFF2D1F1A);
-  static const Color darkText = Color(0xFFFDFBF9);
-  static const Color darkMuted= Color(0xFFB59380);
-}
-
-// ═══ GRADIENT BUTTON WIDGET ═══
-// Drop-in replacement for gradient styled buttons.
-// Usage: GradientButton(label: 'Sign In', onPressed: _login)
-// Usage with icon: GradientButton(label: 'Reserve', icon: Icons.calendar_today, onPressed: _book)
-class GradientButton extends StatelessWidget {
-  final String label;
-  final VoidCallback? onPressed;
-  final IconData? icon;
-  final double height;
-  final double radius;
-  final bool isLoading;
-  final double fontSize;
-
-  const GradientButton({
-    super.key,
-    required this.label,
-    required this.onPressed,
-    this.icon,
-    this.height = 52,
-    this.radius = 16,
-    this.isLoading = false,
-    this.fontSize = 15,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final bool disabled = onPressed == null || isLoading;
-    return SizedBox(
-      width: double.infinity,
-      height: height,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: disabled
-              ? const LinearGradient(colors: [Color(0xFFBCAAA4), Color(0xFFBCAAA4)])
-              : AppColors.buttonGradient,
-          borderRadius: BorderRadius.circular(radius),
-          boxShadow: disabled
-              ? []
-              : [
-                  BoxShadow(
-                    color: AppColors.primary.withOpacity(0.30),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-        ),
-        child: MaterialButton(
-          onPressed: disabled ? null : onPressed,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
-          elevation: 0,
-          highlightElevation: 0,
-          splashColor: Colors.white.withOpacity(0.15),
-          highlightColor: Colors.white.withOpacity(0.08),
-          child: isLoading
-              ? const SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: SpinKitFadingCircle(
-                    color: Colors.white,
-                    size: 22.0,
-                  ),
-                )
+    @override
+    Widget build(BuildContext context) {
+      final bool disabled = onPressed == null || isLoading;
+      return SizedBox(
+        width: double.infinity,
+        height: height,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: disabled
+                ? const LinearGradient(colors: [Color(0xFFBCAAA4), Color(0xFFBCAAA4)])
+                : AppColors.buttonGradient,
+            borderRadius: BorderRadius.circular(radius),
+            boxShadow: disabled
+                ? []
+                : [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.30),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+          ),
+          child: MaterialButton(
+            onPressed: disabled ? null : onPressed,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
+            elevation: 0,
+            highlightElevation: 0,
+            splashColor: Colors.white.withOpacity(0.15),
+            highlightColor: Colors.white.withOpacity(0.08),
+            child: isLoading
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2.5,
+                    ),
+                  )
               : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,

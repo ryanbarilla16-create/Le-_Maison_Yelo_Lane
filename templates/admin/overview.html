@@ -58,77 +58,419 @@
     </div>
 </div>
 
-<!-- CARDS ROW -->
-<div class="admin-cards-grid">
-    <!-- Recent Activity -->
+<style>
+/* Modern Data Table */
+.premium-table-container {
+    overflow-x: auto;
+    margin-top: 1rem;
+}
+.premium-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 12px;
+}
+.premium-table th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #8d6e63;
+    padding: 8px 16px;
+    font-weight: 700;
+    border: none;
+}
+.premium-table tr.table-row {
+    background: #fff;
+    box-shadow: 0 4px 12px rgba(139, 99, 75, 0.03);
+    border-radius: 12px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.premium-table tr.table-row:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(139, 99, 75, 0.06);
+}
+.premium-table td {
+    padding: 14px 16px;
+    vertical-align: middle;
+    border-top: 1px solid rgba(139, 99, 75, 0.04);
+    border-bottom: 1px solid rgba(139, 99, 75, 0.04);
+    background: #fff;
+}
+.premium-table td:first-child {
+    border-left: 1px solid rgba(139, 99, 75, 0.04);
+    border-top-left-radius: 12px;
+    border-bottom-left-radius: 12px;
+}
+.premium-table td:last-child {
+    border-right: 1px solid rgba(139, 99, 75, 0.04);
+    border-top-right-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
+.avatar-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.avatar-bubble {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(139, 99, 75, 0.1);
+    color: #8b634b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+.pill-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    gap: 5px;
+}
+.pill-badge-confirmed, .pill-badge-completed {
+    background: rgba(34, 197, 94, 0.12);
+    color: #22c55e;
+}
+.pill-badge-pending {
+    background: rgba(245, 158, 11, 0.12);
+    color: #f59e0b;
+}
+.pill-badge-cancelled, .pill-badge-rejected {
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+}
+
+/* Trending Menus Grid */
+.trending-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-top: 1rem;
+}
+.trending-card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid rgba(139, 99, 75, 0.05);
+    overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s;
+    box-shadow: 0 4px 12px rgba(139, 99, 75, 0.02);
+}
+.trending-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 24px rgba(139, 99, 75, 0.08);
+}
+.trending-img {
+    height: 140px;
+    background: linear-gradient(135deg, #f5f3f0 0%, #e2ded9 100%);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+}
+.trending-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: #ef4444;
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 20px;
+    text-transform: uppercase;
+}
+.trending-body {
+    padding: 16px;
+}
+.trending-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #3e2723;
+    margin-bottom: 6px;
+}
+.trending-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+}
+.trending-rating {
+    font-size: 0.8rem;
+    color: #f59e0b;
+    font-weight: 600;
+}
+.trending-price {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #8b634b;
+}
+
+/* Vertical Timeline */
+.timeline-container {
+    position: relative;
+    padding-left: 20px;
+    margin-top: 1rem;
+}
+.timeline-line {
+    position: absolute;
+    left: 4px;
+    top: 5px;
+    bottom: 5px;
+    width: 2px;
+    background: rgba(139, 99, 75, 0.15);
+}
+.timeline-item {
+    position: relative;
+    padding-bottom: 24px;
+}
+.timeline-item:last-child {
+    padding-bottom: 0;
+}
+.timeline-dot {
+    position: absolute;
+    left: -20px;
+    top: 4px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #8b634b;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 3px rgba(139, 99, 75, 0.15);
+}
+.timeline-dot.pulse {
+    animation: timelinePulse 1.5s infinite;
+}
+@keyframes timelinePulse {
+    0% { box-shadow: 0 0 0 0 rgba(139, 99, 75, 0.4); }
+    70% { box-shadow: 0 0 0 6px rgba(139, 99, 75, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(139, 99, 75, 0); }
+}
+.timeline-time {
+    font-size: 0.72rem;
+    color: #8d6e63;
+    font-weight: 600;
+}
+.timeline-text {
+    font-size: 0.85rem;
+    color: #3e2723;
+    margin-top: 2px;
+}
+
+/* Main Grid Layout */
+.overview-main-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 24px;
+    align-items: start;
+}
+@media (max-width: 992px) {
+    .overview-main-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<!-- MAIN GRID LAYOUT -->
+<div class="overview-main-grid">
+    <!-- LEFT COLUMN: Recent Reservations Table -->
     <div class="admin-card">
-        <h3><i class="fas fa-history me-2" style="color: var(--admin-accent);"></i> Recent Reservations</h3>
+        <h3 class="mb-3"><i class="fas fa-history me-2" style="color: var(--admin-accent);"></i> Recent Reservations</h3>
         {% if recent_reservations %}
-        {% for res in recent_reservations %}
-        <div class="admin-alert admin-alert-warning" style="justify-content: space-between;">
-            <div style="display: flex; gap: 0.75rem; align-items: center;">
-                <i class="fas fa-calendar-check"></i>
-                <div>
-                    <div style="font-weight: 600;">{{ res.user.first_name }} {{ res.user.last_name }}</div>
-                    <div style="font-size: 0.78rem; color: var(--admin-text-muted);">{{ res.date.strftime('%b %d') }} at
-                        {{ res.time.strftime('%I:%M %p') }} &middot; {{ res.guest_count }} guests</div>
-                </div>
-            </div>
-            <span class="badge-status badge-{{ res.status|lower }}">{{ res.status }}</span>
+        <div class="premium-table-container">
+            <table class="premium-table">
+                <thead>
+                    <tr>
+                        <th>Customer Name</th>
+                        <th>Details (Date/Time & Guests)</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for res in recent_reservations %}
+                    <tr class="table-row">
+                        <td>
+                            <div class="avatar-cell">
+                                <div class="avatar-bubble">
+                                    {{ res.user.first_name[0]|upper }}{{ res.user.last_name[0]|upper }}
+                                </div>
+                                <div>
+                                    <div style="font-weight: 700; color: #3e2723;">{{ res.user.first_name }} {{ res.user.last_name }}</div>
+                                    <div style="font-size: 0.75rem; color: #8d6e63;">#{{ res.id }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div style="font-weight: 600; color: #3e2723;">
+                                <i class="far fa-calendar-alt me-1" style="color: #8b634b; opacity: 0.7;"></i>{{ res.date.strftime('%b %d, %Y') }}
+                            </div>
+                            <div style="font-size: 0.75rem; color: #8d6e63; margin-top: 2px;">
+                                <i class="far fa-clock me-1" style="color: #8b634b; opacity: 0.7;"></i>{{ res.time.strftime('%I:%M %p') }} &middot; 
+                                <i class="fas fa-users me-1" style="color: #8b634b; opacity: 0.7;"></i>{{ res.guest_count }} guests
+                            </div>
+                        </td>
+                        <td>
+                            <span class="pill-badge pill-badge-{{ res.status|lower }}">
+                                <i class="fas {% if res.status|lower == 'confirmed' or res.status|lower == 'completed' %}fa-check-circle{% elif res.status|lower == 'pending' %}fa-clock{% else %}fa-times-circle{% endif %}"></i>
+                                {{ res.status }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-        {% endfor %}
         {% else %}
-        <p style="color: var(--admin-text-muted); font-size: 0.9rem; text-align: center; padding: 2rem 0;">No recent
-            reservations.</p>
+        <p style="color: var(--admin-text-muted); font-size: 0.9rem; text-align: center; padding: 2rem 0;">No recent reservations.</p>
         {% endif %}
     </div>
 
-    <!-- Inventory & Operations -->
-    <div class="admin-card">
-        <h3><i class="fas fa-box-open me-2" style="color: var(--admin-accent);"></i> Inventory & Operations</h3>
-        
-        {% if pending_stock_requests is defined and pending_stock_requests > 0 %}
-        <div class="admin-alert admin-alert-warning" style="border-left: 4px solid #f59e0b;">
-            <i class="fas fa-truck-ramp-box" style="color: #f59e0b;"></i>
-            <div>
-                <strong>{{ pending_stock_requests }} Stock Request{{ 's' if pending_stock_requests > 1 else '' }}</strong>
-                <div style="font-size: 0.78rem; color: var(--admin-text-muted);">New requests from Kitchen awaiting fulfillment</div>
+    <!-- RIGHT COLUMN: Operations & Timeline -->
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+        <!-- Inventory & Operations Card -->
+        <div class="admin-card">
+            <h3><i class="fas fa-box-open me-2" style="color: var(--admin-accent);"></i> Inventory & Operations</h3>
+            
+            {% if pending_stock_requests is defined and pending_stock_requests > 0 %}
+            <div class="admin-alert admin-alert-warning" style="border-left: 4px solid #f59e0b;">
+                <i class="fas fa-truck-ramp-box" style="color: #f59e0b;"></i>
+                <div>
+                    <strong>{{ pending_stock_requests }} Stock Request{{ 's' if pending_stock_requests > 1 else '' }}</strong>
+                    <div style="font-size: 0.78rem; color: var(--admin-text-muted);">New requests from Kitchen awaiting fulfillment</div>
+                </div>
             </div>
+            {% endif %}
 
+            {% if low_ingredients_count is defined and low_ingredients_count > 0 %}
+            <div class="admin-alert admin-alert-danger" style="border-left: 4px solid var(--admin-red);">
+                <i class="fas fa-triangle-exclamation" style="color: var(--admin-red);"></i>
+                <div>
+                    <strong>{{ low_ingredients_count }} Low Stock Ingredient{{ 's' if low_ingredients_count > 1 else '' }}</strong>
+                    <div style="font-size: 0.78rem; color: var(--admin-text-muted);">Items in bodega are below reorder levels</div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if low_stock_items %}
+            {% for item in low_stock_items %}
+            <div class="admin-alert admin-alert-danger" style="border-left: 4px solid var(--admin-red); opacity: 0.8;">
+                <i class="fas fa-ban" style="color: var(--admin-red);"></i>
+                <div>
+                    <strong>{{ item.name }} (Menu)</strong>
+                    <div style="font-size: 0.78rem; color: var(--admin-text-muted);">Automatically hidden from customers</div>
+                </div>
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            {% if (pending_stock_requests|default(0)) == 0 and (low_ingredients_count|default(0)) == 0 and not low_stock_items %}
+            <div style="text-align: center; padding: 2rem 0;">
+                <div style="width: 60px; height: 60px; background: rgba(34,197,94,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
+                    <i class="fas fa-check text-success" style="font-size: 1.5rem;"></i>
+                </div>
+                <p style="color: var(--admin-green); font-size: 0.9rem; font-weight: 600;">All Operations Nominal</p>
+                <p style="color: var(--admin-text-muted); font-size: 0.75rem;">Inventory and kitchen requests are up to date.</p>
+            </div>
+            {% endif %}
         </div>
-        {% endif %}
 
-        {% if low_ingredients_count is defined and low_ingredients_count > 0 %}
-        <div class="admin-alert admin-alert-danger" style="border-left: 4px solid var(--admin-red);">
-            <i class="fas fa-triangle-exclamation" style="color: var(--admin-red);"></i>
-            <div>
-                <strong>{{ low_ingredients_count }} Low Stock Ingredient{{ 's' if low_ingredients_count > 1 else '' }}</strong>
-                <div style="font-size: 0.78rem; color: var(--admin-text-muted);">Items in bodega are below reorder levels</div>
+        <!-- Recent Activity Timeline Card -->
+        <div class="admin-card">
+            <h3><i class="fas fa-clock me-2" style="color: var(--admin-accent);"></i> Recent Activity</h3>
+            <div class="timeline-container">
+                <div class="timeline-line"></div>
+                <div class="timeline-item">
+                    <div class="timeline-dot pulse"></div>
+                    <div class="timeline-time">10 mins ago</div>
+                    <div class="timeline-text">User confirmed reservation #1024</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-time">1 hour ago</div>
+                    <div class="timeline-text">Stock request for "Matcha Powder" approved</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-time">2 hours ago</div>
+                    <div class="timeline-text">Kitchen waste record added by Chef Leo</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-time">5 hours ago</div>
+                    <div class="timeline-text">New cashier shift started on Branch Lucban</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-time">Yesterday</div>
+                    <div class="timeline-text">Weekly inventory audit logs consolidated</div>
+                </div>
             </div>
         </div>
-        {% endif %}
+    </div>
+</div>
 
-        {% if low_stock_items %}
-        {% for item in low_stock_items %}
-        <div class="admin-alert admin-alert-danger" style="border-left: 4px solid var(--admin-red); opacity: 0.8;">
-            <i class="fas fa-ban" style="color: var(--admin-red);"></i>
-            <div>
-                <strong>{{ item.name }} (Menu)</strong>
-                <div style="font-size: 0.78rem; color: var(--admin-text-muted);">Automatically hidden from customers</div>
+<!-- TRENDING MENUS SECTION -->
+<div class="mt-5 mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 style="font-size: 1.25rem; font-weight: 800; color: #3e2723; margin: 0;">
+            <i class="fas fa-fire me-2" style="color: #ef4444;"></i> Trending Menus
+        </h2>
+        <span class="badge" style="background: rgba(139, 99, 75, 0.1); color: #8b634b; font-size: 0.75rem; font-weight: 700; padding: 6px 12px; border-radius: 20px;">Top Sellers This Week</span>
+    </div>
+    <div class="trending-grid">
+        <div class="trending-card">
+            <div class="trending-img" style="background: linear-gradient(135deg, #fcefe6 0%, #c8794144 100%);">
+                🍳 <span class="trending-badge">Hot</span>
+            </div>
+            <div class="trending-body">
+                <div class="trending-title">Garlic Butter Shrimp</div>
+                <div class="trending-meta">
+                    <span class="trending-rating">★ 4.9</span>
+                    <span class="trending-price">₱380.00</span>
+                </div>
             </div>
         </div>
-        {% endfor %}
-        {% endif %}
-
-        {% if (pending_stock_requests|default(0)) == 0 and (low_ingredients_count|default(0)) == 0 and not low_stock_items %}
-        <div style="text-align: center; padding: 2rem 0;">
-            <div style="width: 60px; height: 60px; background: rgba(34,197,94,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
-                <i class="fas fa-check text-success" style="font-size: 1.5rem;"></i>
+        <div class="trending-card">
+            <div class="trending-img" style="background: linear-gradient(135deg, #e3f2fd 0%, #1565c033 100%);">
+                ☕ <span class="trending-badge" style="background: #3b82f6;">Best Seller</span>
             </div>
-            <p style="color: var(--admin-green); font-size: 0.9rem; font-weight: 600;">All Operations Nominal</p>
-            <p style="color: var(--admin-text-muted); font-size: 0.75rem;">Inventory and kitchen requests are up to date.</p>
+            <div class="trending-body">
+                <div class="trending-title">Le Yelo Specialty Coffee</div>
+                <div class="trending-meta">
+                    <span class="trending-rating">★ 4.8</span>
+                    <span class="trending-price">₱180.00</span>
+                </div>
+            </div>
         </div>
-        {% endif %}
+        <div class="trending-card">
+            <div class="trending-img" style="background: linear-gradient(135deg, #e8f5e9 0%, #2e7d3233 100%);">
+                🍵
+            </div>
+            <div class="trending-body">
+                <div class="trending-title">Matcha Cream Latte</div>
+                <div class="trending-meta">
+                    <span class="trending-rating">★ 4.7</span>
+                    <span class="trending-price">₱160.00</span>
+                </div>
+            </div>
+        </div>
+        <div class="trending-card">
+            <div class="trending-img" style="background: linear-gradient(135deg, #fff3e0 0%, #e6510033 100%);">
+                🍗
+            </div>
+            <div class="trending-body">
+                <div class="trending-title">Exclusive Roasted Chicken</div>
+                <div class="trending-meta">
+                    <span class="trending-rating">★ 4.9</span>
+                    <span class="trending-price">₱450.00</span>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 

@@ -138,6 +138,10 @@
                     </div>
                     <div class="mb-3"><label>Image URL</label><input class="form-control" id="editItemImageUrl"
                             name="image_url" type="url" maxlength="255"></div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="editItemBestSeller" name="is_bestseller">
+                        <label class="form-check-label" for="editItemBestSeller">Best Seller (Featured)</label>
+                    </div>
                 </div> <!-- Missing closing div for modal-body -->
                 <div class="modal-footer"><button type="submit" class="btn-admin btn-admin-primary">Save
                         Changes</button></div>
@@ -173,6 +177,10 @@
                     </div>
                     <div class="mb-3"><label>Image URL</label><input class="form-control" name="image_url" type="url"
                             maxlength="255"></div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="addItemBestSeller" name="is_bestseller">
+                        <label class="form-check-label" for="addItemBestSeller">Best Seller (Featured)</label>
+                    </div>
                 </div> <!-- Missing closing div for modal-body -->
                 <div class="modal-footer"><button type="submit" class="btn-admin btn-admin-primary">Add
                         Item</button>
@@ -478,6 +486,11 @@
 
             const cards = (payload.items || []).map(function (item) {
                 const statusHtml = item.is_available ? '' : `<div class="menu-card-status" style="color: var(--admin-red);">OUT OF STOCK</div>`;
+                const bestsellerHtml = item.is_bestseller ? `
+                    <div class="menu-card-bestseller-badge" style="position: absolute; bottom: 10px; left: 10px; background: rgba(255, 193, 7, 0.95); color: #3E2723; padding: 0.25rem 0.6rem; border-radius: 6px; font-size: 0.7rem; font-weight: bold; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.15); z-index: 5;">
+                        <i class="fas fa-fire" style="color: #ff3d00;"></i> Best Seller
+                    </div>
+                ` : '';
 
                 const actionsHtml = IS_ADMIN ? `
                     <div class="menu-card-actions" onclick="event.stopPropagation()">
@@ -505,6 +518,7 @@
                         ${actionsHtml}
                         <div class="menu-card-img-wrap" onclick="openViewModal(${item.id}, '${escapeHtml(item.name)}', '${escapeHtml(item.description)}', ${item.price}, '${escapeHtml(item.image_url)}')">
                             ${statusHtml}
+                            ${bestsellerHtml}
                             ${imgHtml}
                         </div>
                         <div class="menu-card-body" style="display: flex; flex-direction: column; justify-content: space-between; flex-grow: 1;">
@@ -583,6 +597,11 @@
 
             const cards = (payload.items || []).map(function (item) {
                 const statusHtml = item.is_available ? '' : `<div class="menu-card-status" style="color: var(--admin-red);">OUT OF STOCK</div>`;
+                const bestsellerHtml = item.is_bestseller ? `
+                    <div class="menu-card-bestseller-badge" style="position: absolute; bottom: 10px; left: 10px; background: rgba(255, 193, 7, 0.95); color: #3E2723; padding: 0.25rem 0.6rem; border-radius: 6px; font-size: 0.7rem; font-weight: bold; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.15); z-index: 5;">
+                        <i class="fas fa-fire" style="color: #ff3d00;"></i> Best Seller
+                    </div>
+                ` : '';
 
                 const actionsHtml = IS_ADMIN ? `
                     <div class="menu-card-actions" onclick="event.stopPropagation()">
@@ -610,6 +629,7 @@
                         ${actionsHtml}
                         <div class="menu-card-img-wrap" onclick="openViewModal(${item.id}, '${escapeHtml(item.name)}', '${escapeHtml(item.description)}', ${item.price}, '${escapeHtml(item.image_url)}')">
                             ${statusHtml}
+                            ${bestsellerHtml}
                             ${imgHtml}
                         </div>
                         <div class="menu-card-body" style="display: flex; flex-direction: column; justify-content: space-between; flex-grow: 1;">
@@ -645,6 +665,7 @@
     }
 
     function openAddModal() {
+        document.getElementById('addItemBestSeller').checked = false;
         const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('addMenuModal'));
         modal.show();
     }
@@ -663,6 +684,7 @@
             document.getElementById('editItemDescription').value = data.description || '';
             document.getElementById('editItemPrice').value = data.price ?? 0;
             document.getElementById('editItemImageUrl').value = data.image_url || '';
+            document.getElementById('editItemBestSeller').checked = !!data.is_bestseller;
 
             const catSel = document.getElementById('editItemCategory');
             for (const opt of catSel.options) {
