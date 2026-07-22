@@ -512,18 +512,39 @@ def send_email(to_email, subject, html_content):
                 # Fall back to sync send below
                 print(f"⚠️ RQ enqueue failed, falling back to direct send: {e}")
 
+        mail_user = os.environ.get('MAIL_USERNAME')
+        mail_pass = os.environ.get('MAIL_PASSWORD')
         sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
         sender = current_app.config.get('MAIL_DEFAULT_SENDER') or 'ryanbarilla16@gmail.com'
-        
-        # Try SendGrid first if API key exists
+
+        # 1. Try Flask-Mail (Gmail SMTP) FIRST if credentials exist
+        if mail_user and mail_pass:
+            try:
+                from flask_mail import Message
+                mail = current_app.extensions.get('mail')
+                if mail:
+                    msg = Message(
+                        subject=subject,
+                        sender=sender,
+                        recipients=[to_email]
+                    )
+                    msg.html = html_content
+                    mail.send(msg)
+                    print(f"[SUCCESS] Email sent via Gmail SMTP to {to_email}")
+                    return True
+                else:
+                    print("[ERROR] Flask-Mail extension not initialized.")
+            except Exception as e:
+                print(f"[ERROR] Gmail SMTP exception: {str(e)}")
+
+        # 2. Try SendGrid as fallback if API key exists
         if sendgrid_api_key:
             try:
                 from sendgrid import SendGridAPIClient
                 from sendgrid.helpers.mail import Mail as SGMail
-                
-                # Handle Flask-Mail tuple format (name, email)
+
                 if isinstance(sender, tuple) and len(sender) == 2:
-                    sg_sender = (sender[1], sender[0]) # SendGrid expects (email, name)
+                    sg_sender = (sender[1], sender[0])
                 else:
                     sg_sender = sender
 
@@ -544,29 +565,10 @@ def send_email(to_email, subject, html_content):
                 print(f"[ERROR] SendGrid exception: {str(e)}")
                 if hasattr(e, 'body'):
                     print(f"[ERROR] SendGrid error body: {e.body}")
-        
-        # Fallback to Flask-Mail (e.g. Gmail SMTP)
-        try:
-            from flask_mail import Message
-            mail = current_app.extensions.get('mail')
-            if mail:
-                msg = Message(
-                    subject=subject,
-                    sender=sender,
-                    recipients=[to_email]
-                )
-                msg.html = html_content
-                mail.send(msg)
-                print(f"[SUCCESS] Email sent via Flask-Mail fallback to {to_email}")
-                return True
-            else:
-                print("[ERROR] Flask-Mail extension not found.")
-        except Exception as e:
-            print(f"[ERROR] Flask-Mail error: {str(e)}")
-            
+
     except Exception as e:
         print(f"[ERROR] Critical error in send_email: {str(e)}")
-        
+
     return False
 
 def _send_email_job(to_email, subject, html_content):
@@ -586,8 +588,20 @@ def send_email_direct(to_email, subject, html_content):
     """Direct send used by queue worker (no re-enqueue)."""
     import os
     try:
+        mail_user = os.environ.get('MAIL_USERNAME')
+        mail_pass = os.environ.get('MAIL_PASSWORD')
         sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
         sender = os.environ.get('MAIL_DEFAULT_SENDER') or os.environ.get('MAIL_USERNAME') or 'ryanbarilla16@gmail.com'
+
+        if mail_user and mail_pass:
+            from flask import current_app
+            from flask_mail import Message
+            mail = current_app.extensions.get('mail') if current_app else None
+            if mail:
+                msg = Message(subject=subject, sender=sender, recipients=[to_email])
+                msg.html = html_content
+                mail.send(msg)
+                return True
 
         if sendgrid_api_key:
             from sendgrid import SendGridAPIClient
@@ -595,16 +609,6 @@ def send_email_direct(to_email, subject, html_content):
             sg = SendGridAPIClient(sendgrid_api_key)
             msg = SGMail(from_email=sender, to_emails=to_email, subject=subject, html_content=html_content)
             sg.send(msg)
-            return True
-
-        # Fallback to Flask-Mail if available (requires app context configured externally)
-        from flask import current_app
-        from flask_mail import Message
-        mail = current_app.extensions.get('mail') if current_app else None
-        if mail:
-            msg = Message(subject=subject, sender=sender, recipients=[to_email])
-            msg.html = html_content
-            mail.send(msg)
             return True
     except Exception:
         pass
