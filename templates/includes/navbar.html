@@ -320,78 +320,124 @@
 
         <button class="navbar-toggler border-0 text-white ms-2 d-md-none" type="button" onclick="toggleMobileMenu()"
             aria-label="Menu">
-            <i class="fas fa-bars"></i>
+            <i class="fas fa-bars" style="font-size: 1.3rem;"></i>
         </button>
     </div>
 </nav>
 
-<!-- Mobile Navigation Menu Dropdown -->
-<div class="mobile-menu-dropdown d-md-none" id="mobileMenu">
-    <nav>
-        <ul class="nav-links-container active" id="navbar-menu">
-            <li id="mobile-background-icons">
-                <a href="{{ url_for('main.index') }}"><i class="fas fa-home"></i> <span class="nav-text">Home</span></a>
-            </li>
-            <li id="mobile-background-icons">
-                <a href="{{ url_for('main.menu_page') }}"><i class="fas fa-utensils"></i> <span
-                        class="nav-text">Menu</span></a>
-            </li>
-            <li id="mobile-background-icons">
-                <a href="{{ url_for('main.about_page') }}"><i class="fas fa-info-circle"></i> <span
-                        class="nav-text">About</span></a>
-            </li>
+<!-- Mobile Navigation Drawer Overlay & Side Drawer -->
+<div class="mobile-drawer-overlay d-md-none" id="mobileDrawerOverlay" onclick="closeMobileMenu()"></div>
 
-            <li id="mobile-background-icons">
-                <a href="{{ url_for('main.reviews_page') }}"><i class="fas fa-star"></i> <span
-                        class="nav-text">Reviews</span></a>
+<div class="mobile-menu-drawer d-md-none" id="mobileMenu">
+    <div class="mobile-drawer-header">
+        <div class="mobile-drawer-brand">
+            <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Logo">
+            <span class="mobile-drawer-brand-name">Le Maison Yelo Lane</span>
+        </div>
+        <button type="button" class="mobile-drawer-close-btn" onclick="closeMobileMenu()" aria-label="Close menu">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
+    <div class="mobile-drawer-body">
+        <ul class="mobile-nav-list">
+            <li>
+                <a href="{{ url_for('main.index') }}" class="mobile-nav-item {{ 'active' if (request.endpoint == 'main.index' or request.path == '/') }}">
+                    <i class="fas fa-home"></i> <span>Home</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('main.menu_page') }}" class="mobile-nav-item {{ 'active' if (request.endpoint == 'main.menu_page' or '/menu' in request.path) }}">
+                    <i class="fas fa-utensils"></i> <span>Menu</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('main.locations_page') }}" class="mobile-nav-item {{ 'active' if (request.endpoint == 'main.locations_page' or '/locations' in request.path) }}">
+                    <i class="fas fa-map-marker-alt"></i> <span>Locations</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('main.about_page') }}" class="mobile-nav-item {{ 'active' if (request.endpoint == 'main.about_page' or '/about' in request.path) }}">
+                    <i class="fas fa-info-circle"></i> <span>About</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('main.reviews_page') }}" class="mobile-nav-item {{ 'active' if (request.endpoint == 'main.reviews_page' or '/reviews' in request.path) }}">
+                    <i class="fas fa-star"></i> <span>Reviews</span>
+                </a>
             </li>
 
             {% if current_user.is_authenticated %}
-            <!-- Logged-in specific user items -->
-            <li id="mobile-background-icons">
-                <a href="{{ url_for('main.view_cart') }}">
-                    <i class="fas fa-shopping-cart"></i> <span class="nav-text">Cart</span>
+            <li class="mobile-nav-divider"></li>
+            <li>
+                <a href="{{ url_for('main.view_cart') }}" class="mobile-nav-item justify-content-between">
+                    <div class="d-flex align-items-center gap-3">
+                        <i class="fas fa-shopping-cart"></i> <span>Shopping Cart</span>
+                    </div>
+                    {% set cart_data = session.get('cart', {}) %}
+                    {% set cart_total_qty = cart_data.values()|list|sum if cart_data else 0 %}
+                    <span class="badge rounded-pill bg-danger" id="mobileCartBadge" style="font-size: 0.7rem;{{ ' display: none;' if cart_total_qty == 0 else '' }}">{{ cart_total_qty }}</span>
                 </a>
             </li>
-            <li id="mobile-background-icons">
-                <a href="{{ url_for('main.my_orders') }}">
-                    <i class="fas fa-receipt"></i> <span class="nav-text">Orders</span>
+            <li>
+                <a href="{{ url_for('main.my_orders') }}" class="mobile-nav-item">
+                    <i class="fas fa-receipt"></i> <span>My Orders</span>
                 </a>
             </li>
-            <li id="mobile-background-icons">
-                <a href="javascript:void(0)" onclick="closeMobileMenu(); toggleUserNotifPanel();"
-                    class="position-relative">
-                    <i class="fas fa-bell"></i> <span class="nav-text">Notifs</span>
-                    <span id="userNotifBadgeMobile" class="position-absolute badge rounded-pill bg-danger"
-                        style="font-size: 0.55rem; top: 8px; right: 25px; min-width: 16px; display: none;">0</span>
+            <li>
+                <a href="{{ url_for('main.reserve') }}" onclick="clearReservationSession()" class="mobile-nav-item">
+                    <i class="fas fa-calendar-check"></i> <span>Reserve a Table</span>
                 </a>
             </li>
-
+            <li>
+                <a href="{{ url_for('main.my_reservations') }}" class="mobile-nav-item">
+                    <i class="fas fa-calendar-alt"></i> <span>My Reservations</span>
+                </a>
+            </li>
+            <li>
+                <a href="javascript:void(0)" onclick="closeMobileMenu(); toggleUserNotifPanel();" class="mobile-nav-item justify-content-between">
+                    <div class="d-flex align-items-center gap-3">
+                        <i class="fas fa-bell"></i> <span>Notifications</span>
+                    </div>
+                    <span id="userNotifBadgeMobile" class="badge rounded-pill bg-danger" style="font-size: 0.7rem; display: none;">0</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('main.profile') }}" class="mobile-nav-item">
+                    <i class="fas fa-user-cog"></i> <span>Profile Settings</span>
+                </a>
+            </li>
             {% endif %}
-
-            <li class="mobile-login-wrapper">
-                {% if current_user.is_authenticated %}
-                <a href="{{ url_for('main.profile') }}" class="mobile-grid-login">
-                    <i class="fas fa-user-circle"></i> <span class="nav-text">Profile</span>
-                </a>
-                <a href="{{ url_for('main.logout') }}" class="mobile-grid-login logout-btn">
-                    <i class="fas fa-sign-out-alt"></i> <span class="nav-text">Sign Out</span>
-                </a>
-                {% else %}
-                <a href="javascript:void(0)"
-                    onclick="closeMobileMenu(); setTimeout(function(){ $('#termsModal').modal('show'); window.authIntent = 'login'; }, 300);"
-                    class="mobile-grid-login">
-                    <i class="fas fa-sign-in-alt"></i> <span class="nav-text">Sign In</span>
-                </a>
-                <a href="javascript:void(0)"
-                    onclick="closeMobileMenu(); setTimeout(function(){ $('#termsModal').modal('show'); window.authIntent = 'signup'; }, 300);"
-                    class="mobile-grid-login join-btn">
-                    <i class="fas fa-user-plus"></i> <span class="nav-text">Join Now</span>
-                </a>
-                {% endif %}
-            </li>
         </ul>
-    </nav>
+    </div>
+
+    <div class="mobile-drawer-footer">
+        {% if current_user.is_authenticated %}
+        <div class="mobile-user-card mb-3">
+            {% if current_user.profile_picture_url %}
+            <img src="{{ current_user.profile_picture_url }}" class="mobile-user-avatar-img" alt="Avatar">
+            {% else %}
+            <div class="mobile-user-avatar-initial">{{ current_user.first_name[:1] }}</div>
+            {% endif %}
+            <div class="mobile-user-info">
+                <div class="mobile-user-name">{{ current_user.first_name }} {{ current_user.last_name }}</div>
+                <div class="mobile-user-email">{{ current_user.email }}</div>
+            </div>
+        </div>
+        <a href="{{ url_for('main.logout') }}" class="btn-mobile-action btn-mobile-logout">
+            <i class="fas fa-sign-out-alt"></i> <span>Sign Out</span>
+        </a>
+        {% else %}
+        <div class="d-flex gap-2">
+            <a href="javascript:void(0)" onclick="closeMobileMenu(); setTimeout(function(){ $('#termsModal').modal('show'); window.authIntent = 'login'; }, 300);" class="btn-mobile-action btn-mobile-signin flex-fill">
+                <i class="fas fa-sign-in-alt"></i> <span>Sign In</span>
+            </a>
+            <a href="javascript:void(0)" onclick="closeMobileMenu(); setTimeout(function(){ $('#termsModal').modal('show'); window.authIntent = 'signup'; }, 300);" class="btn-mobile-action btn-mobile-join flex-fill">
+                <i class="fas fa-user-plus"></i> <span>Join Now</span>
+            </a>
+        </div>
+        {% endif %}
+    </div>
 </div>
 
 <script>
@@ -614,20 +660,28 @@
         if (toggler) toggler.onclick = toggleMobileMenu;
     });
 
-    // Mobile Menu Control (Dropdown)
+    // Mobile Menu Control (Off-canvas Drawer)
     function toggleMobileMenu() {
         const menu = document.getElementById('mobileMenu');
+        const overlay = document.getElementById('mobileDrawerOverlay');
         if (!menu) return;
-        menu.classList.toggle('open');
-        document.body.style.overflow = menu.classList.contains('open') ? 'hidden' : '';
+        
+        const isOpen = menu.classList.contains('open');
+        if (isOpen) {
+            closeMobileMenu();
+        } else {
+            menu.classList.add('open');
+            if (overlay) overlay.classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
     }
 
     function closeMobileMenu() {
         const menu = document.getElementById('mobileMenu');
-        if (menu) {
-            menu.classList.remove('open');
-            document.body.style.overflow = '';
-        }
+        const overlay = document.getElementById('mobileDrawerOverlay');
+        if (menu) menu.classList.remove('open');
+        if (overlay) overlay.classList.remove('open');
+        document.body.style.overflow = '';
     }
 
 
