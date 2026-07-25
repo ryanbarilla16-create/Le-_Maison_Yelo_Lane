@@ -515,9 +515,40 @@ def send_email(to_email, subject, html_content):
         mail_user = os.environ.get('MAIL_USERNAME')
         mail_pass = os.environ.get('MAIL_PASSWORD')
         sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
+        resend_api_key = os.environ.get('RESEND_API_KEY')
         sender = current_app.config.get('MAIL_DEFAULT_SENDER') or 'ryanbarilla16@gmail.com'
+        # Get plain sender email string for APIs that need it
+        sender_email = sender[1] if isinstance(sender, tuple) else sender
+        sender_name = sender[0] if isinstance(sender, tuple) else 'Le Maison Yelo Lane'
 
-        # 1. Try Flask-Mail (Gmail SMTP) FIRST if credentials exist
+        # 1. Try Resend API FIRST (uses HTTPS - works on Render free tier, not blocked like SMTP)
+        if resend_api_key:
+            try:
+                import urllib.request
+                import json as _json
+                payload = _json.dumps({
+                    "from": f"{sender_name} <onboarding@resend.dev>",
+                    "to": [to_email],
+                    "subject": subject,
+                    "html": html_content
+                }).encode('utf-8')
+                req = urllib.request.Request(
+                    "https://api.resend.com/emails",
+                    data=payload,
+                    headers={
+                        "Authorization": f"Bearer {resend_api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    method="POST"
+                )
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                    body = resp.read().decode()
+                    print(f"[SUCCESS] Email sent via Resend to {to_email} | status={resp.status} | body={body}")
+                    return True
+            except Exception as e:
+                print(f"[ERROR] Resend API exception: {str(e)}")
+
+        # 2. Try Flask-Mail (Gmail SMTP) if credentials exist
         if mail_user and mail_pass:
             try:
                 from flask_mail import Message
