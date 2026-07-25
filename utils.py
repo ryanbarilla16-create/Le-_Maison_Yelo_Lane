@@ -526,18 +526,20 @@ def send_email(to_email, subject, html_content):
             try:
                 import urllib.request
                 import json as _json
-                payload = _json.dumps({
-                    "from": f"{sender_name} <onboarding@resend.dev>",
+                payload_data = {
+                    "from": "Le Maison Yelo Lane <onboarding@resend.dev>",
                     "to": [to_email],
                     "subject": subject,
                     "html": html_content
-                }).encode('utf-8')
+                }
+                payload = _json.dumps(payload_data).encode('utf-8')
                 req = urllib.request.Request(
                     "https://api.resend.com/emails",
                     data=payload,
                     headers={
-                        "Authorization": f"Bearer {resend_api_key}",
-                        "Content-Type": "application/json"
+                        "Authorization": f"Bearer {resend_api_key.strip()}",
+                        "Content-Type": "application/json",
+                        "User-Agent": "LeMaisonApp/1.0"
                     },
                     method="POST"
                 )
@@ -545,6 +547,9 @@ def send_email(to_email, subject, html_content):
                     body = resp.read().decode()
                     print(f"[SUCCESS] Email sent via Resend to {to_email} | status={resp.status} | body={body}")
                     return True
+            except urllib.error.HTTPError as http_err:
+                err_body = http_err.read().decode() if hasattr(http_err, 'read') else ''
+                print(f"[ERROR] Resend API HTTP Error {http_err.code}: {http_err.reason} | details: {err_body}")
             except Exception as e:
                 print(f"[ERROR] Resend API exception: {str(e)}")
 
