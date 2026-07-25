@@ -165,9 +165,13 @@ def signup():
         </div>
         """
         
-        # Send OTP via Gmail (Sync for debugging)
-        from utils import send_email
-        send_email(email, 'Le Maison Yelo Lane - Your OTP Verification Code', html_msg)
+        # Send OTP via Gmail in background thread (keeps request fast, avoids OOM on Render)
+        app_obj = current_app._get_current_object()
+        threading.Thread(
+            target=_send_email_async_worker,
+            args=(app_obj, email, 'Le Maison Yelo Lane - Your OTP Verification Code', html_msg),
+            daemon=True,
+        ).start()
         flash(f"An OTP has been created and is being sent to {email}. Please check your inbox.", "success")
         
         return redirect(url_for('main.verify_otp', user_id=new_user.id))
@@ -260,9 +264,13 @@ def resend_otp(user_id):
     </div>
     """
     
-    # Send OTP via Gmail (Sync for debugging)
-    from utils import send_email
-    send_email(user.email, 'Le Maison Yelo Lane - Your New OTP Code', html_msg)
+    # Send OTP via Gmail in background thread (keeps request fast, avoids OOM on Render)
+    app_obj = current_app._get_current_object()
+    threading.Thread(
+        target=_send_email_async_worker,
+        args=(app_obj, user.email, 'Le Maison Yelo Lane - Your New OTP Code', html_msg),
+        daemon=True,
+    ).start()
     success_msg = f"A new OTP has been created and is being sent to {user.email}. Please check your inbox."
     flash(success_msg, "success")
     
@@ -320,9 +328,13 @@ def social_auth():
                 </div>
             </div>
             """
-            # Send OTP (Sync for debugging)
-            from utils import send_email
-            send_email(user.email, 'Verify your account', html_msg)
+            # Send OTP via Gmail in background thread (keeps request fast, avoids OOM on Render)
+            app_obj = current_app._get_current_object()
+            threading.Thread(
+                target=_send_email_async_worker,
+                args=(app_obj, user.email, 'Verify your account', html_msg),
+                daemon=True,
+            ).start()
             flash(f"Please verify your account. An OTP was sent to {user.email}.", "info")
             return jsonify({"success": True, "redirect": url_for('main.verify_otp', user_id=user.id)})
 
@@ -380,9 +392,13 @@ def social_auth():
         </div>
     </div>
     """
-    # Send OTP (Sync for debugging)
-    from utils import send_email
-    send_email(email, 'Verify your account', html_msg)
+    # Send OTP via Gmail in background thread (keeps request fast, avoids OOM on Render)
+    app_obj = current_app._get_current_object()
+    threading.Thread(
+        target=_send_email_async_worker,
+        args=(app_obj, email, 'Verify your account', html_msg),
+        daemon=True,
+    ).start()
     
     flash(f"Account created via {provider}! An OTP has been sent to {email}. Please verify to continue.", "info")
     return jsonify({"success": True, "redirect": url_for('main.verify_otp', user_id=new_user.id)})
@@ -473,9 +489,13 @@ def forgot_password():
         </div>
         """
         
-        # Send OTP (Sync for debugging)
-        from utils import send_email
-        send_email(email, 'Le Maison Yelo Lane - Password Reset Code', html_msg)
+        # Send OTP via Gmail in background thread (keeps request fast, avoids OOM on Render)
+        app_obj = current_app._get_current_object()
+        threading.Thread(
+            target=_send_email_async_worker,
+            args=(app_obj, email, 'Le Maison Yelo Lane - Password Reset Code', html_msg),
+            daemon=True,
+        ).start()
         success_msg = f"An OTP has been created and is being sent to {email}. Please check your inbox."
         flash(success_msg, "success")
             
@@ -582,9 +602,13 @@ def resend_reset_otp(user_id):
         </div>
         """
         
-        # Send OTP (Sync for debugging)
-        from utils import send_email
-        send_email(user.email, 'Le Maison Yelo Lane - New Password Reset Code', html_msg)
+        # Send OTP via Gmail in background thread (keeps request fast, avoids OOM on Render)
+        app_obj = current_app._get_current_object()
+        threading.Thread(
+            target=_send_email_async_worker,
+            args=(app_obj, user.email, 'Le Maison Yelo Lane - New Password Reset Code', html_msg),
+            daemon=True,
+        ).start()
         success_msg = f"A new OTP has been created and is being sent to {user.email}. Please check your inbox."
         flash(success_msg, "success")
             
