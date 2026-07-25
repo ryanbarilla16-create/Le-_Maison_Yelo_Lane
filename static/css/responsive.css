@@ -973,3 +973,96 @@ body {
         font-size: 2rem !important;
     }
 }
+
+
+/* ═══════════════════════════════════════
+   HOT MENU ITEMS GRID — Mobile Optimization
+   ═══════════════════════════════════════ */
+@media (max-width: 991px) {
+    .lm-menu-grid {
+        grid-template-columns: 1fr !important;
+        gap: 1.5rem !important;
+        padding: 0 1.25rem !important;
+        width: 100% !important;
+    }
+
+    .lm-menu-card,
+    .lm-menu-card:nth-child(n+4):nth-child(-n+6),
+    .lm-menu-card:nth-child(n+10):nth-child(-n+12) {
+        flex-direction: column !important;
+        height: auto !important;
+        border-radius: 20px !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        overflow: hidden !important;
+        background: #4E342E !important;
+        margin: 0 !important;
+    }
+
+    .lm-menu-card .img-wrap {
+        width: 100% !important;
+        height: 220px !important;
+        border-radius: 20px 20px 0 0 !important;
+        overflow: hidden !important;
+    }
+
+    .lm-menu-card .img-wrap img {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: cover !important;
+    }
+
+    .lm-menu-card .menu-text,
+    .lm-menu-card:nth-child(n+4):nth-child(-n+6) .menu-text,
+    .lm-menu-card:nth-child(n+10):nth-child(-n+12) .menu-text {
+        width: 100% !important;
+        height: auto !important;
+        padding: 1.5rem 1.25rem !important;
+        background: #4E342E !important;
+        text-align: left !important;
+    }
+
+    .lm-menu-card .menu-text h6 {
+        font-size: 1.25rem !important;
+        font-weight: 700 !important;
+        margin-bottom: 0.5rem !important;
+        color: #FFFFFF !important;
+        font-family: 'Playfair Display', serif !important;
+    }
+
+    .lm-menu-card .menu-text p {
+        font-size: 0.88rem !important;
+        margin-bottom: 1.25rem !important;
+        line-height: 1.6 !important;
+        color: rgba(255, 255, 255, 0.75) !important;
+    }
+
+    .lm-menu-card .menu-text .price-wrap {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        margin-top: 0.5rem !important;
+    }
+
+    .lm-menu-card .menu-text .price {
+        font-size: 1.25rem !important;
+        font-weight: 800 !important;
+        color: #E0C097 !important;
+    }
+
+    .lm-menu-card .menu-text .btn-order {
+        padding: 8px 22px !important;
+        font-size: 0.85rem !important;
+        font-weight: 700 !important;
+        border-radius: 50px !important;
+        background: #8B634B !important;
+        color: #FFFFFF !important;
+        border: none !important;
+        box-shadow: 0 4px 12px rgba(139, 99, 75, 0.3) !important;
+        text-decoration: none !important;
+    }
+
+    .lm-menu-card .menu-text .btn-order:hover {
+        background: #5D4037 !important;
+    }
+}
