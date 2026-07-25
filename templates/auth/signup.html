@@ -4,101 +4,114 @@
 
 {% block content %}
 <div class="row w-100 m-0 login-split-layout">
-    <!-- Left Section: Image (Hidden on small screens) -->
-    <div class="col-12 col-md-6 d-none d-md-block login-image-section position-relative p-0">
-        <div
-            class="login-image-overlay position-absolute top-0 start-0 w-100 h-100 d-flex flex-column justify-content-center align-items-center text-center p-5">
-            <h1 class="text-white fw-bold mb-3" style="font-family: 'Georgia', serif; font-size: 3.5rem;">Join Le Maison
+    <!-- Left Section: Brand Logo & Luxury Coffee Theme -->
+    <div class="col-12 col-md-6 d-none d-md-block login-brand-section position-relative p-0" style="background: linear-gradient(135deg, #3E2723 0%, #4E342E 50%, #2C1B17 100%);">
+        <div class="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column justify-content-center align-items-center text-center p-5">
+            <!-- Navbar Brand Logo -->
+            <div class="brand-logo-wrapper mb-4">
+                <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Le Maison Logo"
+                     style="width: 110px; height: 110px; border-radius: 50%; object-fit: cover; border: 3.5px solid #E0C097; box-shadow: 0 12px 35px rgba(0,0,0,0.45);">
+            </div>
+
+            <h1 class="text-white fw-bold mb-2" style="font-family: 'Playfair Display', 'Georgia', serif; font-size: 2.8rem; letter-spacing: 1px;">
+                Le Maison Yelo Lane
             </h1>
-            <p class="text-white fs-5 mb-5" style="max-width: 80%;">Experience the art of premium dining. Create an
-                account to manage your reservations and orders.</p>
-            <a href="{{ url_for('main.about_page') }}"
-                class="text-white text-decoration-none border-bottom border-white pb-1 fw-semibold"
-                style="letter-spacing: 0.5px;">About Le Maison &rarr;</a>
+            
+            <div style="width: 60px; height: 3px; background: #E0C097; margin: 1rem 0 1.5rem; border-radius: 2px;"></div>
+
+            <p class="fs-5 mb-4" style="max-width: 82%; color: rgba(255,255,255,0.85); font-weight: 300; line-height: 1.6;">
+                Experience the art of premium dining & artisanal flavors. Create an account to manage your reservations and orders.
+            </p>
+
+            <a href="{{ url_for('main.index') }}"
+               class="text-decoration-none fw-bold px-4 py-2 rounded-pill"
+               style="color: #E0C097; border: 1.5px solid #E0C097; font-size: 0.88rem; letter-spacing: 1px; transition: all 0.3s ease;">
+                &larr; Return to Home
+            </a>
         </div>
     </div>
 
-    <!-- Right Section: Form -->
+    <!-- Right Section: Form (Warm Luxury Cream Background) -->
     <div
-        class="col-12 col-md-6 d-flex flex-column align-items-center justify-content-center bg-white p-4 p-md-5 position-relative border-start border-light border-2">
+        class="col-12 col-md-6 d-flex flex-column align-items-center justify-content-center p-2 p-md-4 position-relative border-start border-2" style="height: 100vh; overflow-y: auto; background-color: #FAF6F0 !important; border-color: rgba(139, 99, 75, 0.15) !important;">
         <div class="login-form-container w-100" style="max-width: 420px; z-index: 2;">
-            <div class="text-start mb-4 pb-2">
-                <h2 class="fw-bold mb-2 text-dark"
-                    style="font-family: 'Inter', sans-serif; font-size: 2.2rem; letter-spacing: -0.5px;">Create an
+            <div class="text-start mb-2 pb-1">
+                <h2 class="fw-bold mb-1"
+                    style="font-family: 'Playfair Display', 'Inter', sans-serif; font-size: 1.6rem; letter-spacing: -0.5px; color: #3E2723;">Create an
                     Account</h2>
-                <p class="text-muted" style="font-size: 1rem;">Join our exclusive dining community.</p>
+                <p class="mb-0" style="font-size: 0.82rem; color: #795548;">Join our exclusive dining community.</p>
             </div>
 
             <!-- Social Login Buttons -->
-            <div class="row g-3 mb-4">
+            <div class="row g-2 mb-2">
                 <div class="col-6">
                     <button type="button" id="google-signup-btn" onclick="handleGoogleLogin()"
-                        class="btn btn-outline-secondary text-dark w-100 rounded-3 d-flex align-items-center justify-content-center gap-2 shadow-sm btn-social-new border-opacity-50">
+                        class="btn text-dark w-100 rounded-3 d-flex align-items-center justify-content-center gap-2 shadow-sm btn-social-new py-1.5" style="background: #ffffff; border: 1.5px solid rgba(139, 99, 75, 0.22);">
                         <img loading="lazy" decoding="async" src="https://cdn-icons-png.flaticon.com/512/300/300221.png"
-                            alt="Google" style="width: 20px; height: 20px;">
-                        <span class="fw-bold" style="font-size: 0.95rem;">Google</span>
+                            alt="Google" style="width: 16px; height: 16px;">
+                        <span class="fw-bold" style="font-size: 0.82rem; color: #4E342E;">Google</span>
                     </button>
                 </div>
                 <div class="col-6">
                     <button type="button" id="facebook-signup-btn" onclick="handleFacebookLogin()"
-                        class="btn btn-outline-secondary text-dark w-100 rounded-3 d-flex align-items-center justify-content-center gap-2 shadow-sm btn-social-new border-opacity-50">
+                        class="btn text-dark w-100 rounded-3 d-flex align-items-center justify-content-center gap-2 shadow-sm btn-social-new py-1.5" style="background: #ffffff; border: 1.5px solid rgba(139, 99, 75, 0.22);">
                         <img loading="lazy" decoding="async"
                             src="https://upload.wikimedia.org/wikipedia/commons/b/b8/2021_Facebook_icon.svg"
-                            alt="Facebook" style="width: 20px; height: 20px;">
-                        <span class="fw-bold" style="font-size: 0.95rem;">Facebook</span>
+                            alt="Facebook" style="width: 16px; height: 16px;">
+                        <span class="fw-bold" style="font-size: 0.82rem; color: #4E342E;">Facebook</span>
                     </button>
                 </div>
             </div>
 
-            <div class="d-flex align-items-center mb-4 pb-1 mt-2">
+            <div class="d-flex align-items-center mb-2 my-1">
                 <hr class="flex-grow-1 divider-line m-0">
-                <span class="mx-3 fw-bold divider-text" style="font-size: 0.75rem; color: #a18a7a;">OR SIGN UP WITH
+                <span class="mx-2 fw-bold divider-text" style="font-size: 0.65rem; color: #8B634B;">OR SIGN UP WITH
                     EMAIL</span>
                 <hr class="flex-grow-1 divider-line m-0">
             </div>
 
             <form method="POST" action="{{ url_for('main.signup') }}" onsubmit="return validateForm()">
 
-                <div class="row g-2 mb-3">
+                <div class="row g-2 mb-1.5">
                     <div class="col-12 col-md-4 form-field-wrapper">
                         <input type="text" id="first_name" name="first_name"
-                            class="form-control rounded-3 p-3 border-opacity-50" placeholder="First Name" required
-                            value="{{ request.form.get('first_name', '') }}">
+                            class="form-control rounded-3 py-1.5 px-3" placeholder="First Name" required
+                            value="{{ request.form.get('first_name', '') }}" style="font-size: 0.82rem; background: #ffffff !important; border: 1.5px solid rgba(139, 99, 75, 0.22) !important; color: #3E2723;">
                     </div>
                     <div class="col-12 col-md-4 form-field-wrapper">
                         <input type="text" id="middle_name" name="middle_name"
-                            class="form-control rounded-3 p-3 border-opacity-50" placeholder="Middle (Opt)"
-                            value="{{ request.form.get('middle_name', '') }}">
+                            class="form-control rounded-3 py-1.5 px-3" placeholder="Middle (Opt)"
+                            value="{{ request.form.get('middle_name', '') }}" style="font-size: 0.82rem; background: #ffffff !important; border: 1.5px solid rgba(139, 99, 75, 0.22) !important; color: #3E2723;">
                     </div>
                     <div class="col-12 col-md-4 form-field-wrapper">
                         <input type="text" id="last_name" name="last_name"
-                            class="form-control rounded-3 p-3 border-opacity-50" placeholder="Last Name" required
-                            value="{{ request.form.get('last_name', '') }}">
+                            class="form-control rounded-3 py-1.5 px-3" placeholder="Last Name" required
+                            value="{{ request.form.get('last_name', '') }}" style="font-size: 0.82rem; background: #ffffff !important; border: 1.5px solid rgba(139, 99, 75, 0.22) !important; color: #3E2723;">
                     </div>
                 </div>
 
-                <div class="row g-2 mb-3">
+                <div class="row g-2 mb-1.5">
                     <div class="col-12 col-md-6 form-field-wrapper">
-                        <input type="email" id="email" name="email" class="form-control rounded-3 p-3 border-opacity-50"
-                            placeholder="Email Address" required value="{{ request.form.get('email', '') }}">
+                        <input type="email" id="email" name="email" class="form-control rounded-3 py-1.5 px-3"
+                            placeholder="Email Address" required value="{{ request.form.get('email', '') }}" style="font-size: 0.82rem; background: #ffffff !important; border: 1.5px solid rgba(139, 99, 75, 0.22) !important; color: #3E2723;">
                     </div>
                     <div class="col-12 col-md-6 form-field-wrapper">
                         <div class="position-relative">
                             <input type="text" id="phone_number" name="phone_number"
-                                class="form-control rounded-3 p-3 border-opacity-50" placeholder="Phone (09xxxxxxxxx)"
-                                required maxlength="11" value="{{ request.form.get('phone_number', '') }}">
+                                class="form-control rounded-3 py-1.5 px-3" placeholder="Phone (09xxxxxxxxx)"
+                                required maxlength="11" value="{{ request.form.get('phone_number', '') }}" style="font-size: 0.82rem; background: #ffffff !important; border: 1.5px solid rgba(139, 99, 75, 0.22) !important; color: #3E2723;">
                         </div>
                     </div>
                 </div>
 
-                <div class="row g-2 mb-3">
+                <div class="row g-2 mb-1.5">
                     <div class="col-12 col-md-6 form-field-wrapper">
                         <input type="text" id="username" name="username"
-                            class="form-control rounded-3 p-3 border-opacity-50" placeholder="Username" minlength="5"
-                            maxlength="20" required value="{{ request.form.get('username', '') }}">
+                            class="form-control rounded-3 py-1.5 px-3" placeholder="Username" minlength="5"
+                            maxlength="20" required value="{{ request.form.get('username', '') }}" style="font-size: 0.82rem; background: #ffffff !important; border: 1.5px solid rgba(139, 99, 75, 0.22) !important; color: #3E2723;">
                     </div>
                     <div class="col-12 col-md-6 form-field-wrapper">
-                        <select name="gender" id="gender" class="form-control rounded-3 p-3 border-opacity-50" required>
+                        <select name="gender" id="gender" class="form-control rounded-3 py-1.5 px-3" required style="font-size: 0.82rem; background: #ffffff !important; border: 1.5px solid rgba(139, 99, 75, 0.22) !important; color: #3E2723;">
                             <option value="" disabled {% if not request.form.get('gender') %}selected{% endif %}>Select Gender</option>
                             <option value="Male" {% if request.form.get('gender') == 'Male' %}selected{% endif %}>Male</option>
                             <option value="Female" {% if request.form.get('gender') == 'Female' %}selected{% endif %}>Female</option>
@@ -107,48 +120,40 @@
                     </div>
                 </div>
 
-                <div class="row g-2 mb-2">
+                <div class="row g-2 mb-1.5">
                     <div class="col-12 col-md-6 form-field-wrapper">
                         {% set today = get_ph_time().date() %}
                         {% set min_date = (today.year - 80) ~ "-01-01" %}
                         {% set max_date = today.strftime('%Y-%m-%d') %}
                         <div class="position-relative">
                             <input type="date" id="birthday" name="birthday"
-                                class="form-control rounded-3 p-3 border-opacity-50" required min="{{ min_date }}"
-                                max="{{ max_date }}" value="{{ request.form.get('birthday', '') }}" title="Birthday" onchange="calculateAndSetAge()">
+                                class="form-control rounded-3 py-1.5 px-3" required min="{{ min_date }}"
+                                max="{{ max_date }}" value="{{ request.form.get('birthday', '') }}" title="Birthday" onchange="calculateAndSetAge()" style="font-size: 0.82rem; background: #ffffff !important; border: 1.5px solid rgba(139, 99, 75, 0.22) !important; color: #3E2723;">
                         </div>
                     </div>
                     <div class="col-12 col-md-6 form-field-wrapper">
                         <input type="number" id="age" name="age"
-                            class="form-control rounded-3 p-3 border-opacity-50" placeholder="Age" readonly
-                            value="{{ request.form.get('age', '') }}">
+                            class="form-control rounded-3 py-1.5 px-3" placeholder="Age" readonly
+                            value="{{ request.form.get('age', '') }}" style="font-size: 0.82rem; background: #f5ede8 !important; border: 1.5px solid rgba(139, 99, 75, 0.22) !important; color: #3E2723;">
                     </div>
                 </div>
 
-                <div class="row g-2 mb-4">
+                <div class="row g-2 mb-1.5">
                     <div class="col-12 col-md-6 form-field-wrapper">
                         <div class="position-relative">
                             <input type="password" id="password" name="password"
-                                class="form-control rounded-3 p-3 border-opacity-50 password-input" placeholder="Password"
-                                minlength="6" required oninput="checkStrength()">
+                                class="form-control rounded-3 py-1.5 px-3 password-input" placeholder="Password"
+                                minlength="6" required oninput="checkStrength()" style="font-size: 0.82rem; background: #ffffff !important; border: 1.5px solid rgba(139, 99, 75, 0.22) !important; color: #3E2723;">
                             <i class="fas fa-eye text-muted toggle-password"
                                 onclick="togglePasswordVisibility('password', this)"
                                 style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); cursor: pointer; color: #b38b6d !important;"></i>
                         </div>
-                        <div class="password-strength mt-1"
-                            style="height: 3px; background: rgba(139, 99, 75, 0.2); border-radius: 2px; overflow: hidden;">
-                            <div id="strength-bar" class="strength-bar h-100" style="width: 0%; transition: 0.3s ease;">
-                            </div>
-                        </div>
-                        <div id="strength-text" class="strength-text small mt-1"
-                            style="font-size: 0.70rem; color: #8b634b; display: none; text-align: right;">Password
-                            Strength</div>
                     </div>
                     <div class="col-12 col-md-6 form-field-wrapper">
                         <div class="position-relative">
                             <input type="password" id="confirm_password" name="confirm_password"
-                                class="form-control rounded-3 p-3 border-opacity-50 password-input"
-                                placeholder="Confirm Password" required>
+                                class="form-control rounded-3 py-1.5 px-3 password-input"
+                                placeholder="Confirm Password" required oninput="checkStrength()" style="font-size: 0.82rem; background: #ffffff !important; border: 1.5px solid rgba(139, 99, 75, 0.22) !important; color: #3E2723;">
                             <i class="fas fa-eye text-muted toggle-password"
                                 onclick="togglePasswordVisibility('confirm_password', this)"
                                 style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); cursor: pointer; color: #b38b6d !important;"></i>
@@ -156,25 +161,33 @@
                     </div>
                 </div>
 
-                <div class="d-flex align-items-center justify-content-start mb-4">
+                <!-- Live Password Requirements Box -->
+                <div id="pwd-checklist" class="mb-2 p-2 rounded-2" style="background: #ffffff; border: 1px solid rgba(139, 99, 75, 0.2); font-size: 0.72rem;">
+                    <div class="fw-bold mb-1" style="color: #5D4037;">Password Requirements:</div>
+                    <div id="chk-len" class="d-flex align-items-center gap-1.5 text-muted mb-0.5"><i class="fas fa-times-circle text-danger me-1"></i> <span>At least 6 characters</span></div>
+                    <div id="chk-num" class="d-flex align-items-center gap-1.5 text-muted mb-0.5"><i class="fas fa-times-circle text-danger me-1"></i> <span>Contains a number or symbol</span></div>
+                    <div id="chk-match" class="d-flex align-items-center gap-1.5 text-muted"><i class="fas fa-times-circle text-danger me-1"></i> <span>Passwords match</span></div>
+                </div>
+
+                <div class="d-flex align-items-center justify-content-start mb-2">
                     <input type="checkbox" id="terms" name="terms" required
-                        style="width: 16px !important; height: 16px !important; margin: 0; margin-right: 10px; cursor: pointer; flex-shrink: 0; accent-color: #8b5a2b;">
+                        style="width: 14px !important; height: 14px !important; margin: 0; margin-right: 8px; cursor: pointer; flex-shrink: 0; accent-color: #8b5a2b;">
                     <label class="form-check-label text-muted m-0" for="terms"
-                        style="font-size: 0.85rem; line-height: 1.4;">
+                        style="font-size: 0.78rem; line-height: 1.2;">
                         I agree to the <a href="#" class="text-decoration-none"
                             style="color: #8b5a2b; font-weight: 500;">Terms of Service</a> & <a href="#"
                             class="text-decoration-none" style="color: #8b5a2b; font-weight: 500;">Privacy Policy</a>.
                     </label>
                 </div>
 
-                <button type="submit" class="btn w-100 rounded-3 fw-bold text-white shadow py-3 btn-primary-custom"
-                    style="font-size: 1.1rem; letter-spacing: 0.3px;">
+                <button type="submit" class="btn w-100 rounded-3 fw-bold text-white shadow py-2 btn-primary-custom"
+                    style="font-size: 0.9rem; letter-spacing: 0.3px;">
                     Register Account
                 </button>
             </form>
 
-            <div class="text-center mt-4">
-                <p class="text-muted fw-medium mb-0" style="font-size: 0.95rem;">
+            <div class="text-center mt-2">
+                <p class="text-muted fw-medium mb-0" style="font-size: 0.82rem;">
                     Already have an account?
                     <a href="{{ url_for('main.login') }}"
                         class="fw-bold text-decoration-none border-bottom border-dark pb-1"
@@ -186,6 +199,7 @@
         </div>
     </div>
 </div>
+</div>
 
 <style>
     /* Reset Container Padding for Full Width */
@@ -196,7 +210,11 @@
 
     /* Base override to let splitting stretch */
     .login-split-layout {
-        min-height: 850px;
+        height: 100vh;
+        min-height: 100vh;
+        max-height: 100vh;
+        overflow: hidden;
+    }
         /* Fixed height to match login perfectly */
     }
 
@@ -316,13 +334,13 @@
     }
     
     .form-field-wrapper {
-        min-height: 85px;
+        min-height: 46px;
         position: relative;
     }
     
     .text-danger.small {
         font-weight: 500;
-        margin-top: 4px;
+        margin-top: 2px;
     }
 
     /* Date picker indicator fix */
@@ -413,28 +431,38 @@
 
     function checkStrength() {
         const pwd = document.getElementById('password').value;
-        const bar = document.getElementById('strength-bar');
-        const txt = document.getElementById('strength-text');
+        const confirmPwd = document.getElementById('confirm_password').value;
+        
+        const chkLen = document.getElementById('chk-len');
+        const chkNum = document.getElementById('chk-num');
+        const chkMatch = document.getElementById('chk-match');
 
-        if (pwd.length === 0) {
-            txt.style.display = 'none';
-            bar.style.width = '0%';
-            return;
+        // 1. Length check
+        if (pwd.length >= 6) {
+            chkLen.className = "d-flex align-items-center gap-1.5 text-success mb-0.5 fw-bold";
+            chkLen.querySelector('i').className = "fas fa-check-circle text-success me-1";
+        } else {
+            chkLen.className = "d-flex align-items-center gap-1.5 text-muted mb-0.5";
+            chkLen.querySelector('i').className = "fas fa-times-circle text-danger me-1";
         }
 
-        txt.style.display = 'block';
+        // 2. Number or symbol check
+        if (/[0-9]/.test(pwd) || /[^A-Za-z0-9]/.test(pwd)) {
+            chkNum.className = "d-flex align-items-center gap-1.5 text-success mb-0.5 fw-bold";
+            chkNum.querySelector('i').className = "fas fa-check-circle text-success me-1";
+        } else {
+            chkNum.className = "d-flex align-items-center gap-1.5 text-muted mb-0.5";
+            chkNum.querySelector('i').className = "fas fa-times-circle text-danger me-1";
+        }
 
-        let strength = 0;
-        if (pwd.length >= 6) strength += 25;
-        if (/[A-Z]/.test(pwd)) strength += 25;
-        if (/[0-9]/.test(pwd)) strength += 25;
-        if (/[^A-Za-z0-9]/.test(pwd)) strength += 25;
-
-        bar.style.width = strength + '%';
-        if (strength <= 25) { bar.style.background = '#ef4444'; txt.textContent = 'Weak'; }
-        else if (strength <= 50) { bar.style.background = '#f59e0b'; txt.textContent = 'Fair'; }
-        else if (strength <= 75) { bar.style.background = '#3b82f6'; txt.textContent = 'Good'; }
-        else { bar.style.background = '#22c55e'; txt.textContent = 'Strong'; }
+        // 3. Confirm match check
+        if (pwd.length >= 6 && confirmPwd.length > 0 && pwd === confirmPwd) {
+            chkMatch.className = "d-flex align-items-center gap-1.5 text-success fw-bold";
+            chkMatch.querySelector('i').className = "fas fa-check-circle text-success me-1";
+        } else {
+            chkMatch.className = "d-flex align-items-center gap-1.5 text-muted";
+            chkMatch.querySelector('i').className = "fas fa-times-circle text-danger me-1";
+        }
     }
 
     function validateForm() {

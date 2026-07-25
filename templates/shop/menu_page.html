@@ -113,35 +113,21 @@
             Menu Categories
         </h2>
 
-        <div
-            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 2rem; align-items: stretch;">
+        <div class="category-grid-container">
             {% for cat_name, info in categories_data.items() %}
-            <div class="category-card"
-                style="display: flex; flex-direction: column; background: transparent; border: none; box-shadow: none; cursor: pointer; height: 100%; transition: transform 0.4s ease;"
-                onclick="showCategory('{{ cat_name }}')">
-
-                <div
-                    style="position: relative; padding-top: 130%; border-radius: 0; overflow: hidden; background: #f8f9fa;">
+            <div class="category-card" onclick="showCategory('{{ cat_name }}')">
+                <div class="category-card-inner">
                     {% if info.image %}
-                    <img loading="lazy" decoding="async" src="{{ info.image }}" class="category-img"
-                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);"
-                        alt="{{ cat_name }}">
+                    <img loading="lazy" decoding="async" src="{{ info.image }}" class="category-card-img" alt="{{ cat_name }}">
                     {% else %}
-                    <div class="d-flex align-items-center justify-content-center"
-                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(139, 99, 75, 0.05);">
-                        <i class="fas fa-utensils fa-3x" style="color: rgba(139, 99, 75, 0.2);"></i>
+                    <div class="category-card-placeholder">
+                        <i class="fas fa-utensils fa-3x" style="color: rgba(255,255,255,0.4);"></i>
                     </div>
                     {% endif %}
-                </div>
-
-                <div style="padding: 1rem 0; display: flex; flex-direction: column;">
-                    <h4 class="fw-bold m-0"
-                        style="font-family: 'Georgia', serif; font-size: 1.15rem; color: var(--text-main);">
-                        {{ cat_name }}
-                    </h4>
-                    <p class="mb-0 fw-bold" style="font-size: 0.9rem; margin-top: 0.3rem; color: #443127;">
-                        See More <i class="fas fa-arrow-right ms-1"></i>
-                    </p>
+                    <div class="category-glass-overlay">
+                        <h4 class="category-card-title">{{ cat_name }}</h4>
+                        <span class="category-card-link">See More <i class="fas fa-arrow-right ms-1"></i></span>
+                    </div>
                 </div>
             </div>
             {% endfor %}

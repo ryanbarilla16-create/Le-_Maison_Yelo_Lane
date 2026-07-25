@@ -7,14 +7,18 @@
 
 <body style="font-family: 'Inter', sans-serif;">
     <div class="auth-bg"></div>
+    {% if not hide_nav and request.path not in ['/login', '/signup'] and request.endpoint not in ['main.login',
+    'main.signup'] %}
     {% include 'includes/navbar.html' %}
+    {% endif %}
 
     <!-- Toast Notification Container -->
     <div id="toastContainer"
         style="position: fixed; bottom: 40px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; justify-content: flex-end;">
     </div>
 
-    <div class="container-fluid main-container p-0" style="padding-top: 65px;">
+    <div class="container-fluid main-container p-0"
+        style="{% if not hide_nav and request.path not in ['/login', '/signup'] and request.endpoint not in ['main.login', 'main.signup'] %}padding-top: 65px;{% else %}padding-top: 0;{% endif %}">
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
         <script>
@@ -43,8 +47,18 @@
                 height: 100%;
                 border-radius: inherit;
             }
-            .img-error-wrap i { font-size: 1.8rem; }
-            .img-error-wrap span { font-size: 0.65rem; font-weight: 700; margin-top: 6px; letter-spacing: 0.5px; text-transform: uppercase; }
+
+            .img-error-wrap i {
+                font-size: 1.8rem;
+            }
+
+            .img-error-wrap span {
+                font-size: 0.65rem;
+                font-weight: 700;
+                margin-top: 6px;
+                letter-spacing: 0.5px;
+                text-transform: uppercase;
+            }
 
             /* ── Mini Cart Sidebar ── */
             .mini-cart-drawer {
@@ -373,8 +387,11 @@
         {% block content %}{% endblock %}
     </div>
 
+    {% if not hide_footer and request.path not in ['/login', '/signup'] and request.endpoint not in ['main.login',
+    'main.signup'] %}
     {% include 'includes/footer.html' %}
     {% include 'includes/chatbot.html' %}
+    {% endif %}
     {% include 'includes/modals.html' %}
 
     <!-- Mini Cart Sidebar -->
@@ -601,13 +618,13 @@
 
     <!-- Global image error handler — replaces broken images with a styled placeholder -->
     <script>
-        document.addEventListener('error', function(e) {
+        document.addEventListener('error', function (e) {
             const img = e.target;
             if (img.tagName !== 'IMG' || img.dataset.errHandled) return;
             img.dataset.errHandled = '1';
             const wrap = document.createElement('div');
             wrap.className = 'img-error-wrap';
-            wrap.style.width  = img.offsetWidth  ? img.offsetWidth  + 'px' : '100%';
+            wrap.style.width = img.offsetWidth ? img.offsetWidth + 'px' : '100%';
             wrap.style.height = img.offsetHeight ? img.offsetHeight + 'px' : '100%';
             wrap.style.borderRadius = getComputedStyle(img).borderRadius || '8px';
             wrap.innerHTML = '<i class="fas fa-utensils"></i><span>No Image</span>';
@@ -639,7 +656,8 @@
                     Confirm &amp; Proceed
                 </button>
 
-                <p class="branch-modal-footnote">&ldquo;Experience premium French dining at your nearest location.&rdquo;</p>
+                <p class="branch-modal-footnote">&ldquo;Experience premium French dining at your nearest
+                    location.&rdquo;</p>
             </div>
         </div>
     </div>
@@ -647,22 +665,54 @@
     <!-- Welcome Loading Overlay Styles & Keyframes -->
     <style>
         @keyframes lm-spin {
-            0%   { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
+
         @keyframes lm-pulse-ring {
-            0%   { transform: scale(0.9); opacity: 0.6; }
-            50%  { transform: scale(1.05); opacity: 1; }
-            100% { transform: scale(0.9); opacity: 0.6; }
+            0% {
+                transform: scale(0.9);
+                opacity: 0.6;
+            }
+
+            50% {
+                transform: scale(1.05);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(0.9);
+                opacity: 0.6;
+            }
         }
+
         @keyframes lm-shimmer {
-            0%   { background-position: -200% center; }
-            100% { background-position:  200% center; }
+            0% {
+                background-position: -200% center;
+            }
+
+            100% {
+                background-position: 200% center;
+            }
         }
+
         @keyframes lm-fadeSlideUp {
-            from { opacity: 0; transform: translateY(18px); }
-            to   { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(18px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
+
         #welcomeLoading .lm-loader-card {
             animation: lm-fadeSlideUp 0.5s cubic-bezier(0.23, 1, 0.32, 1) both;
         }
@@ -670,10 +720,9 @@
 
     <!-- Welcome Loading Overlay — Light & Elegant -->
     <div id="welcomeLoading" class="branch-modal-overlay"
-         style="z-index:10001; background: linear-gradient(135deg, rgba(253,248,240,0.97) 0%, rgba(250,243,232,0.98) 100%); display:none; flex-direction:column; backdrop-filter:blur(0px);">
+        style="z-index:10001; background: linear-gradient(135deg, rgba(253,248,240,0.97) 0%, rgba(250,243,232,0.98) 100%); display:none; flex-direction:column; backdrop-filter:blur(0px);">
 
-        <div class="lm-loader-card"
-             style="background:#fff; border-radius:36px; padding:56px 48px; max-width:440px; width:90%; text-align:center;
+        <div class="lm-loader-card" style="background:#fff; border-radius:36px; padding:56px 48px; max-width:440px; width:90%; text-align:center;
                     box-shadow: 0 30px 80px rgba(93,64,55,0.14), 0 4px 20px rgba(93,64,55,0.06);
                     border: 1px solid rgba(201,169,110,0.18); position:relative; overflow:hidden;">
 
@@ -706,17 +755,18 @@
             </div>
 
             <!-- Title -->
-            <h2 id="welcomeMsg"
-                style="font-family:'Playfair Display',serif; font-weight:900; color:#1c110e;
+            <h2 id="welcomeMsg" style="font-family:'Playfair Display',serif; font-weight:900; color:#1c110e;
                        font-size:1.65rem; margin-bottom:8px; letter-spacing:-0.5px; line-height:1.2;">
                 Welcome to Le Maison
             </h2>
 
             <!-- Gold accent divider -->
             <div style="display:flex; align-items:center; gap:10px; justify-content:center; margin:14px 0 18px;">
-                <span style="flex:1; height:1px; background:linear-gradient(90deg,transparent,rgba(201,169,110,0.4));"></span>
+                <span
+                    style="flex:1; height:1px; background:linear-gradient(90deg,transparent,rgba(201,169,110,0.4));"></span>
                 <i class="fas fa-star" style="color:#c9a96e; font-size:0.55rem; opacity:0.7;"></i>
-                <span style="flex:1; height:1px; background:linear-gradient(90deg,rgba(201,169,110,0.4),transparent);"></span>
+                <span
+                    style="flex:1; height:1px; background:linear-gradient(90deg,rgba(201,169,110,0.4),transparent);"></span>
             </div>
 
             <!-- Subtitle -->
@@ -781,7 +831,7 @@
                 });
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // Load branch options first
             loadBranchOptions();
 
@@ -811,7 +861,7 @@
             const addrEl = document.getElementById('branchAddress');
             const phoneEl = document.getElementById('branchPhone');
             const mapEl = document.getElementById('branchMap');
-            
+
             if (addrEl) addrEl.innerText = data.address;
             if (phoneEl) phoneEl.innerText = data.phone;
             if (mapEl) mapEl.src = data.map;
@@ -819,7 +869,7 @@
             // Update Contact Page elements if they exist
             const contactAddrEl = document.getElementById('contactBranchAddress');
             const contactPhoneEl = document.getElementById('contactBranchPhone');
-            
+
             if (contactAddrEl) contactAddrEl.innerText = data.address;
             if (contactPhoneEl) contactPhoneEl.innerText = data.phone;
         }

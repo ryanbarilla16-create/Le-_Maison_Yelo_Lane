@@ -4,95 +4,108 @@
 
 {% block content %}
 <div class="row w-100 m-0 login-split-layout">
-    <!-- Left Section: Image (Hidden on small screens) -->
-    <div class="col-12 col-md-6 d-none d-md-block login-image-section position-relative p-0">
-        <div
-            class="login-image-overlay position-absolute top-0 start-0 w-100 h-100 d-flex flex-column justify-content-center align-items-center text-center p-5">
-            <h1 class="text-white fw-bold mb-3" style="font-family: 'Georgia', serif; font-size: 3.5rem;">Welcome Back
+    <!-- Left Section: Brand Logo & Luxury Coffee Theme -->
+    <div class="col-12 col-md-6 d-none d-md-block login-brand-section position-relative p-0" style="background: linear-gradient(135deg, #3E2723 0%, #4E342E 50%, #2C1B17 100%);">
+        <div class="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column justify-content-center align-items-center text-center p-5">
+            <!-- Navbar Brand Logo -->
+            <div class="brand-logo-wrapper mb-4">
+                <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Le Maison Logo"
+                     style="width: 110px; height: 110px; border-radius: 50%; object-fit: cover; border: 3.5px solid #E0C097; box-shadow: 0 12px 35px rgba(0,0,0,0.45);">
+            </div>
+
+            <h1 class="text-white fw-bold mb-2" style="font-family: 'Playfair Display', 'Georgia', serif; font-size: 2.8rem; letter-spacing: 1px;">
+                Welcome Back
             </h1>
-            <p class="text-white fs-5 mb-5" style="max-width: 80%;">Settle in, relax, and log in to your account. We've
-                missed your presence at our tables.</p>
-            <a href="{{ url_for('main.about_page') }}"
-                class="text-white text-decoration-none border-bottom border-white pb-1 fw-semibold"
-                style="letter-spacing: 0.5px;">About Le Maison &rarr;</a>
+            
+            <div style="width: 60px; height: 3px; background: #E0C097; margin: 1rem 0 1.5rem; border-radius: 2px;"></div>
+
+            <p class="fs-5 mb-4" style="max-width: 82%; color: rgba(255,255,255,0.85); font-weight: 300; line-height: 1.6;">
+                Settle in, relax, and log in to your account. We've missed your presence at our tables.
+            </p>
+
+            <a href="{{ url_for('main.index') }}"
+               class="text-decoration-none fw-bold px-4 py-2 rounded-pill"
+               style="color: #E0C097; border: 1.5px solid #E0C097; font-size: 0.88rem; letter-spacing: 1px; transition: all 0.3s ease;">
+                &larr; Return to Home
+            </a>
         </div>
     </div>
 
-    <!-- Right Section: Form -->
+    <!-- Right Section: Form (Warm Luxury Cream Background) -->
     <div
-        class="col-12 col-md-6 d-flex flex-column align-items-center justify-content-center bg-white p-4 p-md-5 position-relative border-start border-light border-2">
+        class="col-12 col-md-6 d-flex flex-column align-items-center justify-content-center p-4 p-md-5 position-relative border-start border-2" style="height: 100vh; overflow-y: auto; background-color: #FAF6F0 !important; border-color: rgba(139, 99, 75, 0.15) !important;">
         <div class="login-form-container w-100" style="max-width: 420px; z-index: 2;">
-            <div class="text-start mb-4 pb-2">
-                <h2 class="fw-bold mb-2 text-dark"
-                    style="font-family: 'Inter', sans-serif; font-size: 2.2rem; letter-spacing: -0.5px;">Sign In</h2>
-                <p class="text-muted" style="font-size: 1rem;">Access your account to manage reservations and orders.
+            <div class="text-start mb-3 pb-1">
+                <h2 class="fw-bold mb-1"
+                    style="font-family: 'Playfair Display', 'Inter', sans-serif; font-size: 2rem; letter-spacing: -0.5px; color: #3E2723;">Sign In</h2>
+                <p class="mb-0" style="font-size: 0.9rem; color: #795548;">Access your account to manage reservations and orders.
                 </p>
             </div>
 
             <!-- Social Login Buttons -->
-            <div class="row g-3 mb-4">
+            <div class="row g-2 mb-3">
                 <div class="col-6">
                     <button type="button" onclick="handleGoogleLogin()"
-                        class="btn btn-outline-secondary text-dark w-100 rounded-3 d-flex align-items-center justify-content-center gap-2 shadow-sm btn-social-new border-opacity-50">
+                        class="btn text-dark w-100 rounded-3 d-flex align-items-center justify-content-center gap-2 shadow-sm btn-social-new py-2" style="background: #ffffff; border: 1.5px solid rgba(139, 99, 75, 0.22);">
                         <img loading="lazy" decoding="async" src="https://cdn-icons-png.flaticon.com/512/300/300221.png"
-                            alt="Google" style="width: 20px; height: 20px;">
-                        <span class="fw-bold" style="font-size: 0.95rem;">Google</span>
+                            alt="Google" style="width: 18px; height: 18px;">
+                        <span class="fw-bold" style="font-size: 0.9rem; color: #4E342E;">Google</span>
                     </button>
                 </div>
                 <div class="col-6">
                     <button type="button" onclick="handleFacebookLogin()"
-                        class="btn btn-outline-secondary text-dark w-100 rounded-3 d-flex align-items-center justify-content-center gap-2 shadow-sm btn-social-new border-opacity-50">
+                        class="btn text-dark w-100 rounded-3 d-flex align-items-center justify-content-center gap-2 shadow-sm btn-social-new py-2" style="background: #ffffff; border: 1.5px solid rgba(139, 99, 75, 0.22);">
                         <img loading="lazy" decoding="async"
                             src="https://upload.wikimedia.org/wikipedia/commons/b/b8/2021_Facebook_icon.svg"
-                            alt="Facebook" style="width: 20px; height: 20px;">
-                        <span class="fw-bold" style="font-size: 0.95rem;">Facebook</span>
+                            alt="Facebook" style="width: 18px; height: 18px;">
+                        <span class="fw-bold" style="font-size: 0.9rem; color: #4E342E;">Facebook</span>
                     </button>
                 </div>
             </div>
 
-            <div class="d-flex align-items-center mb-4 pb-1 mt-2">
+            <div class="d-flex align-items-center mb-3 my-2">
                 <hr class="flex-grow-1 divider-line m-0">
-                <span class="mx-3 fw-bold divider-text" style="font-size: 0.75rem; color: #a18a7a;">OR USE YOUR
+                <span class="mx-3 fw-bold divider-text" style="font-size: 0.75rem; color: #8B634B;">OR USE YOUR
                     EMAIL</span>
                 <hr class="flex-grow-1 divider-line m-0">
             </div>
 
             <form method="POST" action="{{ url_for('main.login') }}">
                 <!-- Email field -->
-                <div class="form-group mb-4">
-                    <input type="email" id="email" name="email" class="form-control rounded-3 p-3 border-opacity-50"
-                        required placeholder="Email Address">
+                <div class="form-group mb-3">
+                    <input type="email" id="email" name="email" class="form-control rounded-3 py-2 px-3"
+                        required placeholder="Email Address" style="font-size: 0.9rem; background: #ffffff !important; border: 1.5px solid rgba(139, 99, 75, 0.22) !important; color: #3E2723;">
                 </div>
 
                 <!-- Password field -->
-                <div class="form-group mb-5 position-relative">
+                <div class="form-group mb-3 position-relative">
                     <div class="position-relative">
                         <input type="password" id="password" name="password"
-                            class="form-control rounded-3 p-3 border-opacity-50 password-input" required
-                            placeholder="Password">
+                            class="form-control rounded-3 py-2 px-3 password-input" required
+                            placeholder="Password" style="font-size: 0.9rem; background: #ffffff !important; border: 1.5px solid rgba(139, 99, 75, 0.22) !important; color: #3E2723;">
                         <!-- Custom eye icon color to match the design -->
                         <i class="fas fa-eye text-muted toggle-password"
                             onclick="togglePasswordVisibility('password', this)"
                             style="position: absolute; right: 1.2rem; top: 50%; transform: translateY(-50%); cursor: pointer; color: #b38b6d !important;"></i>
                     </div>
-                    <div class="text-end mt-3">
+                    <div class="text-end mt-2">
                         <a href="{{ url_for('main.forgot_password') }}" class="text-decoration-none fw-bold"
-                            style="font-size: 0.85rem; color: #8b5a2b; letter-spacing: 0.3px;">Forgot Password?</a>
+                            style="font-size: 0.82rem; color: #8b5a2b; letter-spacing: 0.3px;">Forgot Password?</a>
                     </div>
                 </div>
 
-                <button type="submit" class="btn w-100 rounded-3 fw-bold text-white shadow py-3 btn-primary-custom"
-                    style="font-size: 1.1rem; letter-spacing: 0.3px;">
+                <button type="submit" class="btn w-100 rounded-3 fw-bold text-white shadow py-2 btn-primary-custom"
+                    style="font-size: 1rem; letter-spacing: 0.3px;">
                     Sign In
                 </button>
             </form>
 
-            <div class="text-center mt-5">
-                <p class="text-muted fw-medium mb-0" style="font-size: 0.95rem;">
+            <div class="text-center mt-3">
+                <p class="fw-medium mb-0" style="font-size: 0.9rem; color: #795548;">
                     New to Le Maison?
                     <a href="{{ url_for('main.signup') }}"
                         class="fw-bold text-decoration-none border-bottom border-dark pb-1"
-                        style="color: #4a3b32; margin-left: 5px;">
+                        style="color: #3E2723; margin-left: 5px;">
                         Create an account
                     </a>
                 </p>
@@ -110,7 +123,11 @@
 
     /* Base override to let splitting stretch */
     .login-split-layout {
-        min-height: 850px;
+        height: 100vh;
+        min-height: 100vh;
+        max-height: 100vh;
+        overflow: hidden;
+    }
         /* Fixed height to match signup perfectly */
     }
 
