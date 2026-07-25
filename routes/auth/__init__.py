@@ -12,12 +12,20 @@ from .. import main_bp
 
 # Email sending can be slow (SMTP/API). Queue it in a background thread so pages don't time out.
 def _send_email_async_worker(app, to_email: str, subject: str, html_content: str):
+    import os
     with app.app_context():
         try:
+            mail_user = os.environ.get('MAIL_USERNAME', '')
+            mail_pass = os.environ.get('MAIL_PASSWORD', '')
+            print(f"[EMAIL DEBUG] Sending to: {to_email} | MAIL_USERNAME set: {'YES' if mail_user else 'NO'} | MAIL_PASSWORD set: {'YES' if mail_pass else 'NO'}")
             from utils import send_email
-            send_email(to_email, subject, html_content)
+            result = send_email(to_email, subject, html_content)
+            if result:
+                print(f"[EMAIL OK] Email successfully sent to {to_email}")
+            else:
+                print(f"[EMAIL FAIL] send_email returned False for {to_email} — check MAIL_USERNAME/MAIL_PASSWORD on Render")
         except Exception as e:
-            print(f"Async send_email failed: {e}")
+            print(f"[EMAIL ERROR] Async send_email failed for {to_email}: {e}")
             traceback.print_exc()
 
 # --- VALIDATION HELPERS ---
