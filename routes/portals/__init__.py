@@ -516,7 +516,7 @@ def _serialize_cashier_order(o):
     dining = (o.dining_option or 'DINE_IN').replace('_', ' ').title()
     return {
         'id': o.id,
-        'order_code': o.order_code or f'#{o.id}',
+        'order_code': o.display_code,
         'customer': customer,
         'total_amount': float(o.total_amount or 0),
         'dining_option': o.dining_option or 'DINE_IN',
@@ -525,7 +525,7 @@ def _serialize_cashier_order(o):
         'payment_status': o.payment_status,
         'table_number': o.table_number,
         'table_status': o.table_status or 'AVAILABLE',
-        'created_at': o.created_at.strftime('%I:%M %p') if o.created_at else '',
+        'created_at': o.display_date_time,
     }
 
 
@@ -933,12 +933,12 @@ def cashier_api_unassigned_orders():
             
         serialized.append({
             'id': o.id,
-            'order_code': o.order_code or f'#{o.id}',
+            'order_code': o.display_code,
             'customer': customer,
             'dining_option': o.dining_option,
             'status': o.status,
             'total_amount': float(o.total_amount or 0),
-            'created_at': o.created_at.strftime('%I:%M %p') if o.created_at else '',
+            'created_at': o.display_date_time,
         })
         
     return jsonify({

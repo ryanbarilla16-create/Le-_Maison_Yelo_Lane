@@ -467,11 +467,11 @@
         {% if orders %}
         <div class="pos-card-grid" id="posCardGrid">
             {% for order in orders %}
-            <div class="pos-card {{ order.status.lower() }}" data-order-id="{{ order.id }}" data-status="{{ order.status }}" data-payment-status="{{ order.payment_status }}" data-customer="{% if order.user %}{{ order.user.first_name }} {{ order.user.last_name }}{% elif order.customer_name %}{{ order.customer_name }}{% else %}Walk-in{% endif %}" data-code="{{ order.order_code or '#' + order.id|string }}">
+            <div class="pos-card {{ order.status.lower() }}" data-order-id="{{ order.id }}" data-status="{{ order.status }}" data-payment-status="{{ order.payment_status }}" data-customer="{% if order.user %}{{ order.user.first_name }} {{ order.user.last_name }}{% elif order.customer_name %}{{ order.customer_name }}{% else %}Walk-in{% endif %}" data-code="{{ order.display_code }}">
                 <div class="pos-card-header">
                     <div class="pos-card-header-top">
-                        <span class="order-id">{{ order.order_code or '#' + order.id|string }}</span>
-                        <span class="pos-card-time"><i class="far fa-clock me-1"></i>{{ order.created_at.strftime('%I:%M %p') if order.created_at else 'N/A' }}</span>
+                        <span class="order-id">{{ order.display_code }}</span>
+                        <span class="pos-card-time"><i class="far fa-clock me-1"></i>{{ order.display_date_time }}</span>
                     </div>
                     <div class="d-flex justify-content-between align-items-center mt-2">
                         <span class="pos-card-customer">

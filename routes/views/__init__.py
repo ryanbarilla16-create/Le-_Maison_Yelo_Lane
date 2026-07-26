@@ -234,14 +234,14 @@ def api_my_orders_status():
         overall = _customer_order_overall_status(o)
         payload.append({
             'id': o.id,
-            'order_code': o.order_code or f'Order #{o.id}',
+            'order_code': o.display_code,
             'overall_status': overall,
             'status': o.status,
             'delivery_status': o.delivery_status,
             'payment_status': o.payment_status,
             'dining_option': o.dining_option,
             'total_amount': float(o.total_amount or 0),
-            'created_at': o.created_at.strftime('%b %d, %Y - %I:%M %p') if o.created_at else '',
+            'created_at': o.display_date_time,
         })
 
     pending_count = sum(1 for o in payload if o['overall_status'] == 'PENDING')

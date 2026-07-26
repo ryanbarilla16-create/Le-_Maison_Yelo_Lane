@@ -704,8 +704,8 @@
                     {% endif %}
                     <div class="moCard-head">
                         <div>
-                            <div class="moCard-id">{{ order.order_code or ('Order #' ~ order.id) }}</div>
-                            <div class="moCard-date">{{ order.created_at.strftime('%b %d, %Y - %I:%M %p') }}</div>
+                            <div class="moCard-id">{{ order.display_code }}</div>
+                            <div class="moCard-date">{{ order.display_date_time }}</div>
                         </div>
                         <div class="text-end">
                             <div class="moCard-price">₱{{ "%.2f"|format(order.total_amount) }}</div>

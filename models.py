@@ -123,6 +123,32 @@ class Order(db.Model):
     reservation = db.relationship('Reservation', foreign_keys=[reservation_id], backref=db.backref('linked_order', uselist=False, lazy=True))
     items = db.relationship('OrderItem', backref='order', lazy=True, cascade='all, delete-orphan')
 
+    @property
+    def display_code(self):
+        """Format order code cleanly like #ORD-002 instead of raw ORD-20260725-002"""
+        if not self.order_code:
+            return f"#ORD-{self.id:03d}"
+        parts = str(self.order_code).split('-')
+        if len(parts) >= 2:
+            seq = parts[-1]
+            return f"#ORD-{seq}"
+        return f"#{self.order_code}"
+
+    @property
+    def display_date_time(self):
+        """Format creation date and time nicely like July 26, 2026 • 10:50 PM"""
+        if not self.created_at:
+            return "N/A"
+        return self.created_at.strftime('%B %d, %Y • %I:%M %p')
+
+    @property
+    def display_date(self):
+        """Format creation date nicely like July 26, 2026"""
+        if not self.created_at:
+            return "N/A"
+        return self.created_at.strftime('%B %d, %Y')
+
+
 class OrderItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     order_id = db.Column(db.Integer, db.ForeignKey('order.id'), nullable=False)
