@@ -703,15 +703,19 @@
                             const name = (typeof info === 'object' && info !== null && info.name) ? info.name : `Table ${i}`;
 
                             if (status === 'OCCUPIED') {
-                                option.disabled = true;
-                                option.textContent = `${name} (Occupied)`;
-                                option.style.color = '#dc3545';
+                                option.disabled = false;
+                                const custName = (typeof info === 'object' && info !== null && info.customer) ? info.customer : '';
+                                option.dataset.customerName = custName;
+                                option.textContent = `${name} (Occupied — Add-On Order)`;
+                                option.style.color = '#d97706';
                             } else if (status === 'RESERVED') {
                                 option.disabled = true;
+                                option.dataset.customerName = '';
                                 option.textContent = `${name} (Reserved)`;
                                 option.style.color = '#ef6c00';
                             } else {
                                 option.disabled = false;
+                                option.dataset.customerName = '';
                                 option.textContent = name;
                                 option.style.color = '';
                             }
@@ -728,6 +732,18 @@
             .catch(error => console.error('Error loading table status:', error));
     }
 
+    // Auto-fill customer name when selecting an occupied table for add-on order
+    const tableSelectEl = document.getElementById('tableSelect');
+    if (tableSelectEl) {
+        tableSelectEl.addEventListener('change', function() {
+            const selectedOpt = this.options[this.selectedIndex];
+            const customerInput = document.querySelector('input[name="customer_name"]');
+            if (selectedOpt && selectedOpt.dataset.customerName && customerInput) {
+                customerInput.value = selectedOpt.dataset.customerName;
+            }
+        });
+    }
+
     // Toggle table select based on Dining Option
     const diningOptionSelect = document.querySelector('select[name="dining_option"]');
     if (diningOptionSelect) {
@@ -736,8 +752,7 @@
             if (tableSelect) {
                 if (this.value === 'TAKE_OUT') {
                     tableSelect.required = false;
-                    tableSelect.disabled = true;
-                    tableSelect.value = '';
+                    tableSelect.disabled = false;
                 } else {
                     tableSelect.required = true;
                     tableSelect.disabled = false;

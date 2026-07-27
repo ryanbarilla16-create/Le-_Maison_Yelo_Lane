@@ -115,6 +115,28 @@
         align-content: start;
     }
 
+    @media (max-width: 991px) {
+        .kitchen-tabs {
+            max-width: 100%;
+            gap: 6px;
+            padding: 4px;
+        }
+        .tab-btn {
+            padding: 10px 8px;
+            font-size: 0.75rem;
+            gap: 6px;
+            letter-spacing: 0.5px;
+        }
+        .board-col {
+            padding: 16px 12px;
+            border-radius: 16px;
+        }
+        .board-col.active {
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 14px;
+        }
+    }
+
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }

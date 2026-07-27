@@ -9,6 +9,38 @@ import requests
 import base64
 from decimal import Decimal
 
+def get_occupied_table_numbers():
+    """Fetch all occupied or reserved table numbers for today."""
+    occupied = set()
+    import re
+    from models import Reservation, Order
+
+    # 1. Fetch from active orders (PENDING, PREPARING, READY, HOLD)
+    active_orders = db.session.query(Order.table_number).filter(
+        Order.table_number.isnot(None),
+        Order.status.in_(['PENDING', 'PREPARING', 'READY', 'HOLD'])
+    ).all()
+    for row in active_orders:
+        if row[0]:
+            nums = [int(n) for n in re.findall(r'\d+', str(row[0]))]
+            for n in nums:
+                occupied.add(n)
+
+    # 2. Fetch from active reservations for today
+    today = get_ph_time().date()
+    active_res = db.session.query(Reservation.table_number).filter(
+        Reservation.table_number.isnot(None),
+        Reservation.date == today,
+        Reservation.status.in_(['PENDING', 'CONFIRMED'])
+    ).all()
+    for row in active_res:
+        if row[0]:
+            nums = [int(n) for n in re.findall(r'\d+', str(row[0]))]
+            for n in nums:
+                occupied.add(n)
+
+    return occupied
+
 @main_bp.route('/cart')
 def view_cart():
     cart = session.get('cart', {})
@@ -24,7 +56,32 @@ def view_cart():
                 'quantity': quantity,
                 'subtotal': subtotal
             })
-    return render_template('shop/cart.html', cart_items=cart_items, total=total)
+
+    user_occupied_tables = set()
+    if current_user.is_authenticated:
+        user_orders = Order.query.filter(
+            Order.user_id == current_user.id,
+            Order.table_number.isnot(None),
+            Order.is_archived.is_(False),
+            Order.table_status == 'OCCUPIED'
+        ).all()
+        for uo in user_orders:
+            if uo.table_number:
+                user_occupied_tables.add(int(uo.table_number))
+
+    occupied_tables = get_occupied_table_numbers()
+
+    available_tables = []
+    for num in range(1, 18):
+        is_user_table = (num in user_occupied_tables)
+        is_occ = (num in occupied_tables) and not is_user_table
+        available_tables.append({
+            'number': num,
+            'is_occupied': is_occ,
+            'is_user_table': is_user_table
+        })
+
+    return render_template('shop/cart.html', cart_items=cart_items, total=total, available_tables=available_tables)
 
 @main_bp.route('/cart/add/<int:item_id>', methods=['POST'])
 def add_to_cart(item_id):
@@ -230,6 +287,35 @@ def checkout():
     from utils import generate_order_code
     order_code = generate_order_code()
         
+    table_number_raw = request.form.get('table_number')
+    target_table_number = None
+
+    if dining_option == 'DINE_IN':
+        if not table_number_raw:
+            flash("Please select a table for Dine-In order.", "warning")
+            return redirect(url_for('main.view_cart'))
+        try:
+            target_table_number = int(table_number_raw)
+            occupied_now = get_occupied_table_numbers()
+
+            is_own_table = False
+            if current_user.is_authenticated:
+                own_order = Order.query.filter(
+                    Order.user_id == current_user.id,
+                    Order.table_number == target_table_number,
+                    Order.table_status == 'OCCUPIED',
+                    Order.is_archived.is_(False)
+                ).first()
+                if own_order:
+                    is_own_table = True
+
+            if target_table_number in occupied_now and not is_own_table:
+                flash(f"Table {target_table_number} is currently occupied by another customer. Please select a vacant table.", "danger")
+                return redirect(url_for('main.view_cart'))
+        except (ValueError, TypeError):
+            flash("Invalid table selection.", "danger")
+            return redirect(url_for('main.view_cart'))
+
     selected_branch = request.cookies.get('selected_branch', 'Pagsanjan')
 
     new_order = Order(
@@ -240,7 +326,9 @@ def checkout():
         dining_option=dining_option,
         payment_method=payment_method,
         notes=notes,
-        branch=selected_branch
+        branch=selected_branch,
+        table_number=target_table_number,
+        table_status='OCCUPIED' if target_table_number else 'AVAILABLE'
     )
     
     if dining_option == 'DELIVERY':

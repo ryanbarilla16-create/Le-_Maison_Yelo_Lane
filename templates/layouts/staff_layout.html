@@ -454,9 +454,137 @@
             animation: toastProgress 4s linear forwards;
         }
 
-        @keyframes toastProgress {
-            from { width: 100%; }
-            to { width: 0%; }
+        /* ── RESPONSIVE TABLET & MOBILE MEDIA QUERIES ── */
+        @media (max-width: 991px) {
+            :root {
+                --sidebar-w: 72px;
+            }
+
+            .sidebar {
+                width: 72px !important;
+                padding: 0 !important;
+                overflow-x: hidden !important;
+            }
+
+            .sidebar-brand {
+                padding: 16px 8px !important;
+                justify-content: center !important;
+            }
+
+            .sidebar-brand .brand-name,
+            .sidebar-brand .brand-sub {
+                display: none !important;
+            }
+
+            .sidebar-user {
+                margin: 12px 6px !important;
+                padding: 8px 4px !important;
+                justify-content: center !important;
+                background: rgba(255, 255, 255, 0.05) !important;
+            }
+
+            .sidebar-user .user-info {
+                display: none !important;
+            }
+
+            .sidebar-nav {
+                padding: 8px 4px !important;
+            }
+
+            .nav-section-label {
+                padding: 10px 0 4px !important;
+                justify-content: center !important;
+                text-align: center !important;
+            }
+
+            .nav-section-label span,
+            .nav-section-label i.toggle-icon {
+                display: none !important;
+            }
+
+            .nav-item {
+                justify-content: center !important;
+                padding: 12px 0 !important;
+                gap: 0 !important;
+                text-align: center !important;
+            }
+
+            .nav-item i {
+                font-size: 1.15rem !important;
+                width: auto !important;
+                margin: 0 !important;
+            }
+
+            .nav-item .nav-text {
+                display: none !important;
+            }
+
+            .nav-item {
+                font-size: 0 !important;
+            }
+
+            .sidebar-badge,
+            .nav-item .sidebar-badge,
+            .nav-item span[id*="badge"] {
+                position: absolute !important;
+                top: 4px !important;
+                right: 14px !important;
+                margin-left: 0 !important;
+                font-size: 0.62rem !important;
+                min-width: 18px !important;
+                height: 18px !important;
+                padding: 0 4px !important;
+                z-index: 10 !important;
+            }
+
+            .sidebar-footer {
+                padding: 12px 6px !important;
+            }
+
+            .btn-logout {
+                justify-content: center !important;
+                padding: 10px 4px !important;
+                font-size: 0 !important;
+            }
+
+            .btn-logout i {
+                font-size: 1.05rem !important;
+            }
+
+            .main {
+                margin-left: 72px !important;
+                padding: 16px 18px !important;
+                width: calc(100% - 72px) !important;
+                overflow-x: hidden !important;
+            }
+
+            .topbar {
+                flex-wrap: wrap !important;
+                gap: 12px !important;
+                margin-bottom: 20px !important;
+            }
+
+            .topbar-title h1 {
+                font-size: 1.3rem !important;
+            }
+
+            .topbar-title .topbar-subtitle {
+                font-size: 0.78rem !important;
+            }
+
+            .topbar-right {
+                gap: 8px !important;
+                flex-wrap: wrap !important;
+            }
+
+            .clock {
+                font-size: 1.2rem !important;
+            }
+
+            .date-badge {
+                padding: 4px 10px !important;
+                font-size: 0.75rem !important;
+            }
         }
 
         {% block extra_style %}{% endblock %}

@@ -61,6 +61,14 @@
         from { transform: scale(0.5); opacity: 0; }
         to   { transform: scale(1);   opacity: 1; }
     }
+    @media (max-width: 991px) {
+        .sidebar-badge {
+            position: absolute !important;
+            top: 4px !important;
+            right: 14px !important;
+            margin-left: 0 !important;
+        }
+    }
 </style>
 
 {# ── AJAX Polling Script ──────────────────────────────── #}

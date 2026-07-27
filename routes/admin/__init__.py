@@ -2597,16 +2597,7 @@ def walkin_order_submit():
             flash("Please select a table for dine-in orders.", "danger")
             return redirect(url_for('admin.walkin_order'))
 
-        # Check if table is already occupied
-        if dining_option == 'DINE_IN' and table_number:
-            occupied_order = Order.query.filter(
-                Order.table_number == int(table_number),
-                Order.table_status == 'OCCUPIED',
-                Order.is_archived.is_(False)
-            ).first()
-            if occupied_order:
-                flash(f"Table {table_number} is already occupied. Please select another table.", "danger")
-                return redirect(url_for('admin.walkin_order'))
+        # Allow add-on orders for occupied tables in POS
 
         # Parse items from form
         item_ids = request.form.getlist('item_id[]')
@@ -2735,12 +2726,22 @@ def get_table_status():
         from routes.portals import TABLE_CONFIGS
 
         # Get active occupied tables (any non-archived occupied order)
-        occupied_tables = db.session.query(Order.table_number).filter(
-            Order.table_status == 'OCCUPIED',
-            Order.table_number.isnot(None),
-            Order.is_archived.is_(False)
-        ).all()
-        occupied_set = {int(t[0]) for t in occupied_tables if t[0] is not None}
+        from models import User as UserModel
+        occupied_rows = (
+            db.session.query(Order.table_number, Order.id, Order.customer_name, UserModel.first_name, UserModel.last_name)
+            .outerjoin(UserModel, Order.user_id == UserModel.id)
+            .filter(
+                Order.table_status == 'OCCUPIED',
+                Order.table_number.isnot(None),
+                Order.is_archived.is_(False)
+            )
+            .all()
+        )
+        occupied_map = {}
+        for t_num, o_id, cust_name, fn, ln in occupied_rows:
+            if t_num is not None:
+                display_name = f"{fn} {ln}".strip() if fn else (cust_name or f'Order #{o_id}')
+                occupied_map[int(t_num)] = display_name
 
         # Check today's active reservations
         current_dt = get_ph_time()
@@ -2764,12 +2765,12 @@ def get_table_status():
 
         table_status = {}
         for i in sorted(TABLE_CONFIGS.keys()):
-            if i in occupied_set:
-                table_status[i] = 'OCCUPIED'
+            if i in occupied_map:
+                table_status[i] = {'status': 'OCCUPIED', 'customer': occupied_map[i]}
             elif i in reserved_set:
-                table_status[i] = 'RESERVED'
+                table_status[i] = {'status': 'RESERVED'}
             else:
-                table_status[i] = 'AVAILABLE'
+                table_status[i] = {'status': 'AVAILABLE'}
 
         return jsonify({'success': True, 'tables': table_status})
     except Exception as e:

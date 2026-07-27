@@ -121,7 +121,15 @@ def handle_database_error(error):
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    try:
+        return User.query.get(int(user_id))
+    except Exception:
+        try:
+            db.session.rollback()
+            db.session.remove()
+            return User.query.get(int(user_id))
+        except Exception:
+            return None
 
 @app.context_processor
 def inject_ph_time():

@@ -598,6 +598,40 @@
                     <label for="delivery"><i class="fas fa-motorcycle me-1"></i>Delivery</label>
                 </div>
 
+                <!-- Table Selection for Dine-In -->
+                <div id="table_select_fields" class="mb-3">
+                    <div style="background: rgba(139, 99, 75, 0.04); border-radius: 14px; padding: 1rem; border: 1.5px solid rgba(139, 99, 75, 0.15);">
+                        <label class="form-label mb-1" style="font-size: 0.85rem; font-weight: 700; color: #3E2723;">
+                            <i class="fas fa-chair me-1" style="color:#8B634B;"></i> Select Table <span class="text-danger">*</span>
+                        </label>
+                        <select name="table_number" id="select_table_number" class="form-select form-select-sm" style="border-radius: 10px; border: 1.5px solid rgba(139, 99, 75, 0.2); font-weight: 600; color: #3E2723;">
+                            <option value="">-- Choose Vacant Table --</option>
+                            {% if available_tables %}
+                                {% for table in available_tables %}
+                                    {% if table.is_user_table %}
+                                        <option value="{{ table.number }}" selected style="color: #1565c0; font-weight: 700; background: #e3f2fd;">
+                                            Table {{ table.number }} (Your Current Table — Add-On Order ✨)
+                                        </option>
+                                    {% elif table.is_occupied %}
+                                        <option value="{{ table.number }}" disabled style="color: #c62828; background: #fff5f5;">
+                                            Table {{ table.number }} — Occupied ❌
+                                        </option>
+                                    {% else %}
+                                        <option value="{{ table.number }}" style="color: #2e7d32; font-weight: 700;">
+                                            Table {{ table.number }} (Vacant ✓)
+                                        </option>
+                                    {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                {% for num in range(1, 18) %}
+                                    <option value="{{ num }}">Table {{ num }}</option>
+                                {% endfor %}
+                            {% endif %}
+                        </select>
+                        <small class="text-muted d-block mt-1" style="font-size: 0.76rem;">Select a vacant table in the dining hall.</small>
+                    </div>
+                </div>
+
                 <div id="delivery_fields" style="display: none;" class="mb-3">
                     <div
                         style="background: rgba(139, 99, 75,0.03); border-radius: 14px; padding: 1rem; border: 1px solid rgba(139, 99, 75,0.06);">
@@ -1313,6 +1347,17 @@
                     if (!hasChecked) {
                         e.preventDefault();
                         if (window.showToast) window.showToast('danger', 'Please select at least one item to checkout.');
+                        return;
+                    }
+
+                    // Validate Table Selection for Dine-In
+                    const isDineIn = document.getElementById('dine_in')?.checked;
+                    const selectTable = document.getElementById('select_table_number');
+                    if (isDineIn && selectTable && !selectTable.value) {
+                        e.preventDefault();
+                        if (window.showToast) window.showToast('warning', 'Please select a vacant table for Dine-In.');
+                        selectTable.focus();
+                        return;
                     }
                 });
             }
@@ -1320,16 +1365,20 @@
             // --- Event Listeners: Dining Option ---
             document.querySelectorAll('input[name="dining_option"]').forEach(r => {
                 r.addEventListener('change', function () {
+                    const isDineIn = this.value === 'DINE_IN';
                     const isDel = this.value === 'DELIVERY';
                     const deliveryFields = document.getElementById('delivery_fields');
+                    const tableFields = document.getElementById('table_select_fields');
+                    const selectTable = document.getElementById('select_table_number');
                     const summary = document.querySelector('.cartSummary');
 
-                    deliveryFields.style.display = isDel ? 'block' : 'none';
+                    if (tableFields) tableFields.style.display = isDineIn ? 'block' : 'none';
+                    if (selectTable) selectTable.required = isDineIn;
+                    if (deliveryFields) deliveryFields.style.display = isDel ? 'block' : 'none';
 
-                    // Switch summary between sticky (non-delivery) and relative (delivery)
-                    // so the full delivery form is visible without clipping
+                    // Switch summary between sticky and relative
                     if (summary) {
-                        if (isDel) {
+                        if (isDel || isDineIn) {
                             summary.classList.add('delivery-mode');
                         } else {
                             summary.classList.remove('delivery-mode');

@@ -56,7 +56,8 @@
 
     .pill { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 50px; font-size: 0.7rem; font-weight: 700; }
     .pill.pending { background: rgba(230,81,0,0.08); color: #e65100; }
-    .pill.preparing { background: rgba(25,118,210,0.08); color: #1976d2; }
+    .pill.accepted { background: rgba(25,118,210,0.08); color: #1976d2; }
+    .pill.preparing { background: rgba(230,81,0,0.08); color: #e65100; }
     .pill.ready { background: rgba(46,125,50,0.08); color: #2e7d32; }
     .pill.completed { background: rgba(139,99,75,0.08); color: #8b634b; }
     .pill.cancelled { background: rgba(198,40,40,0.08); color: #dc3545; }
@@ -171,6 +172,7 @@
         grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
         gap: 24px;
         margin-top: 16px;
+        align-items: stretch;
     }
     
     .pos-card {
@@ -181,14 +183,16 @@
         flex-direction: column;
         overflow: hidden;
         transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s;
-        min-height: 400px;
+        height: 100%;
+        min-height: 420px;
         box-shadow: 0 4px 16px rgba(62,39,35,0.04);
         position: relative;
     }
     
     /* Top border status color indicator strip */
     .pos-card.pending { border-top: 4px solid #e65100; }
-    .pos-card.preparing { border-top: 4px solid #1976d2; }
+    .pos-card.accepted { border-top: 4px solid #1976d2; }
+    .pos-card.preparing { border-top: 4px solid #e65100; }
     .pos-card.ready { border-top: 4px solid #2e7d32; }
     .pos-card.completed { border-top: 4px solid #8b634b; }
     .pos-card.cancelled { border-top: 4px solid #dc3545; }
@@ -232,11 +236,12 @@
     
     .pos-card-body {
         padding: 18px 20px;
-        flex-grow: 1;
+        flex: 1 1 auto;
         display: flex;
         flex-direction: column;
         gap: 12px;
-        max-height: 220px;
+        max-height: 200px;
+        min-height: 140px;
         overflow-y: auto;
         background: rgba(139,99,75,0.018);
         border-bottom: 1px solid rgba(139,99,75,0.05);
@@ -294,6 +299,8 @@
         padding: 16px 20px;
         background: white;
         margin-top: auto;
+        border-top: 1px solid rgba(139,99,75,0.08);
+        border-radius: 0 0 20px 20px;
     }
     
     .pos-card-total-row {
@@ -301,11 +308,12 @@
         justify-content: space-between;
         align-items: center;
         margin-bottom: 12px;
+        height: 32px;
     }
     
     .pos-total-label {
         font-size: 0.75rem;
-        font-weight: 700;
+        font-weight: 800;
         text-transform: uppercase;
         color: var(--muted);
         letter-spacing: 0.8px;
@@ -319,22 +327,47 @@
     
     .pos-card-actions {
         display: flex;
-        gap: 10px;
+        gap: 6px;
+        align-items: center;
+        height: 44px;
+        min-height: 44px;
     }
     
     .pos-btn {
-        flex: 1;
-        padding: 10px 14px;
+        height: 44px;
+        min-height: 44px;
+        max-height: 44px;
+        padding: 0 8px;
         border-radius: 12px;
-        font-size: 0.8rem;
-        font-weight: 700;
+        font-size: 0.74rem;
+        font-weight: 750;
         border: none;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 6px;
+        gap: 4px;
+        white-space: nowrap;
         transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        box-sizing: border-box;
+    }
+    
+    /* First button (Details) takes compact auto width */
+    .pos-card-actions > .pos-btn:first-child {
+        flex: 0 0 auto;
+        padding: 0 10px;
+    }
+
+    /* Main middle button (Accept & Kitchen, Cooking, Serve) expands to take all remaining space */
+    .pos-card-actions > .pos-btn:nth-child(2) {
+        flex: 1 1 0px;
+        min-width: 0;
+    }
+
+    /* Third button (Pay when 3 buttons present) takes compact auto width */
+    .pos-card-actions > .pos-btn:nth-child(3) {
+        flex: 0 0 auto;
+        padding: 0 12px;
     }
     
     .pos-btn-secondary {
@@ -402,16 +435,40 @@
         color: var(--primary);
     }
     
-    @media (max-width: 768px) {
-        .pos-card-grid { grid-template-columns: 1fr; }
-    }
-    .table-btn:active {
-        transform: translateY(0);
-        box-shadow: none;
+    @media (max-width: 991px) {
+        .stats-row {
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 12px !important;
+            margin-bottom: 20px !important;
+        }
+        .stat-card {
+            padding: 14px 10px !important;
+            border-radius: 14px !important;
+        }
+        .stat-card .icon-wrap {
+            width: 38px !important;
+            height: 38px !important;
+            font-size: 1rem !important;
+            margin-bottom: 8px !important;
+            border-radius: 10px !important;
+        }
+        .stat-value {
+            font-size: 1.4rem !important;
+            margin-bottom: 4px !important;
+        }
+        .stat-label {
+            font-size: 0.62rem !important;
+            letter-spacing: 0.6px !important;
+        }
+        .pos-card-grid {
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+            gap: 14px !important;
+        }
     }
 
-    @media (max-width: 768px) {
-        .stats-row { grid-template-columns: 1fr; }
+    @media (max-width: 576px) {
+        .stats-row { grid-template-columns: 1fr !important; }
+        .pos-card-grid { grid-template-columns: 1fr !important; }
     }
 {% endblock %}
 
@@ -467,7 +524,7 @@
         {% if orders %}
         <div class="pos-card-grid" id="posCardGrid">
             {% for order in orders %}
-            <div class="pos-card {{ order.status.lower() }}" data-order-id="{{ order.id }}" data-status="{{ order.status }}" data-payment-status="{{ order.payment_status }}" data-customer="{% if order.user %}{{ order.user.first_name }} {{ order.user.last_name }}{% elif order.customer_name %}{{ order.customer_name }}{% else %}Walk-in{% endif %}" data-code="{{ order.display_code }}">
+            <div class="pos-card {{ order.status.lower() }}" data-order-id="{{ order.id }}" data-status="{{ order.status }}" data-payment-status="{{ order.payment_status }}" data-total-amount="{{ order.total_amount }}" data-dining-option="{{ order.dining_option }}" data-customer="{% if order.user %}{{ order.user.first_name }} {{ order.user.last_name }}{% elif order.customer_name %}{{ order.customer_name }}{% else %}Walk-in{% endif %}" data-code="{{ order.display_code }}">
                 <div class="pos-card-header">
                     <div class="pos-card-header-top">
                         <span class="order-id">{{ order.display_code }}</span>
@@ -483,7 +540,7 @@
                                 <i class="fas fa-walking" style="opacity:0.3;"></i> Walk-in Guest
                             {% endif %}
                         </span>
-                        <span class="pill service">{{ order.dining_option.replace('_', ' ').title() }}</span>
+                        <span class="pill service">{{ order.dining_option.replace('_', ' ').title() }}{% if order.table_number and order.dining_option == 'DINE_IN' %} · Table {{ order.table_number }}{% endif %}</span>
                     </div>
                     <div class="d-flex justify-content-between align-items-center mt-2">
                         <span class="pill {{ order.status.lower() }}">{{ order.status.title() }}</span>
@@ -519,9 +576,26 @@
                             <button type="button" class="pos-btn pos-btn-secondary" disabled style="opacity:0.6; cursor:not-allowed; background:rgba(0,0,0,0.03);">
                                 <i class="fas fa-ban"></i> Cancelled
                             </button>
+                        {% elif order.status == 'PENDING' %}
+                            <button type="button" class="pos-btn pos-btn-success accept-order-btn" data-order-id="{{ order.id }}">
+                                <i class="fas fa-check-circle me-1"></i> Accept & Kitchen
+                            </button>
+                            {% if order.payment_status == 'UNPAID' %}
+                            <button type="button" class="pos-btn pos-btn-primary" onclick="openSettleModal({{ order.id }}, {{ order.total_amount }})">
+                                <i class="fas fa-cash-register"></i> Pay
+                            </button>
+                            {% endif %}
                         {% elif order.payment_status == 'UNPAID' %}
                             <button type="button" class="pos-btn pos-btn-primary" onclick="openSettleModal({{ order.id }}, {{ order.total_amount }})">
                                 <i class="fas fa-cash-register"></i> Pay Bills
+                            </button>
+                        {% elif order.status == 'ACCEPTED' %}
+                            <button type="button" class="pos-btn pos-btn-secondary" disabled style="opacity:0.75; cursor:not-allowed; background:rgba(25,118,210,0.06); color:#1976d2; border: 1px solid rgba(25,118,210,0.2);">
+                                <i class="fas fa-clock me-1"></i> To Cook
+                            </button>
+                        {% elif order.status == 'PREPARING' %}
+                            <button type="button" class="pos-btn pos-btn-secondary" disabled style="opacity:0.75; cursor:not-allowed; background:rgba(230,81,0,0.06); color:#e65100; border: 1px solid rgba(230,81,0,0.2);">
+                                <i class="fas fa-fire fa-spin me-1"></i> Cooking
                             </button>
                         {% elif order.status == 'READY' %}
                             <button type="button" class="pos-btn pos-btn-success complete-order-btn" data-order-id="{{ order.id }}">
@@ -534,13 +608,9 @@
                                     Serve
                                 {% endif %}
                             </button>
-                        {% elif order.status == 'PENDING' %}
-                            <button type="button" class="pos-btn pos-btn-secondary" disabled style="opacity:0.6; cursor:not-allowed; background:rgba(0,0,0,0.03);">
-                                <i class="fas fa-hourglass-half"></i> Waiting
-                            </button>
                         {% else %}
                             <button type="button" class="pos-btn pos-btn-secondary" disabled style="opacity:0.6; cursor:not-allowed; background:rgba(0,0,0,0.03);">
-                                <i class="fas fa-spinner fa-spin"></i> Preparing
+                                <i class="fas fa-spinner fa-spin me-1"></i> Cooking
                             </button>
                         {% endif %}
                     </div>
@@ -555,6 +625,7 @@
         </div>
         {% endif %}
     </div>
+</div>
 
     <!-- SETTLE BILL MODAL -->
     <div id="settleBillModal" class="billing-overlay">
@@ -700,7 +771,6 @@
             </div>
         </div>
     </div>
-</div>
 
 <script>
     window.ordersData = {
@@ -769,7 +839,7 @@
             if (currentFilterTab === 'ALL') {
                 matchTab = true;
             } else if (currentFilterTab === 'PROCESS') {
-                matchTab = ['PENDING', 'PREPARING', 'READY'].includes(status);
+                matchTab = ['PENDING', 'ACCEPTED', 'PREPARING', 'READY'].includes(status);
             } else if (currentFilterTab === 'COMPLETED') {
                 matchTab = status === 'COMPLETED';
             } else if (currentFilterTab === 'CANCELLED') {
@@ -789,48 +859,77 @@
 
     // ─── SEE DETAILS MODAL HANDLER ──────────────────────────────────────
     function openDetailsModal(orderId) {
-        const order = window.ordersData[orderId];
-        if (!order) return;
-
-        document.getElementById('detailOrderCode').textContent = order.code;
-        document.getElementById('detailCustomerName').textContent = order.customer;
-        document.getElementById('detailDiningOption').textContent = order.dining_option;
-        
-        const tableRow = document.getElementById('detailTableNumberRow');
-        if (order.dining_option.toLowerCase().includes('dine')) {
-            tableRow.style.display = 'flex';
-            document.getElementById('detailTableNumber').textContent = order.table_number;
-        } else {
-            tableRow.style.display = 'none';
-        }
-
-        document.getElementById('detailCreatedAt').textContent = order.created_at;
-        
-        const payStatus = document.getElementById('detailPaymentStatus');
-        payStatus.className = `pill ${order.payment_status.toLowerCase()}`;
-        payStatus.textContent = order.payment_status;
-
-        document.getElementById('detailPaymentMethod').textContent = order.payment_method;
-        document.getElementById('detailNotes').textContent = order.notes;
-        document.getElementById('detailTotalAmount').textContent = '₱' + parseFloat(order.total).toLocaleString(undefined, {minimumFractionDigits: 2});
-
-        // Items body
-        const itemsBody = document.getElementById('detailItemsBody');
-        itemsBody.innerHTML = '';
-        order.items.forEach(item => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td style="padding: 6px 0; font-weight:600;">${item.name}</td>
-                <td style="text-align:center; padding: 6px 0;">x${item.qty}</td>
-                <td style="text-align:right; padding: 6px 0; font-weight:700;">₱${parseFloat(item.price).toFixed(2)}</td>
-            `;
-            itemsBody.appendChild(tr);
-        });
-
-        // Set print receipt URL
+        // Clear previous data & show loading state
+        document.getElementById('detailOrderCode').textContent = 'Loading...';
+        document.getElementById('detailCustomerName').textContent = '...';
+        document.getElementById('detailDiningOption').textContent = '...';
+        document.getElementById('detailCreatedAt').textContent = '...';
+        document.getElementById('detailNotes').textContent = 'Loading...';
+        document.getElementById('detailItemsBody').innerHTML = '<tr><td colspan="3" class="text-center py-3"><i class="fas fa-spinner fa-spin me-2"></i>Loading details...</td></tr>';
+        document.getElementById('detailTotalAmount').textContent = '₱0.00';
         document.getElementById('detailPrintReceiptBtn').href = '/admin/orders/print_receipt/' + orderId;
-
+        
         openModal('orderDetailsModal');
+
+        // Fetch fresh details via API
+        fetch('/staff/cashier/api/orders/' + orderId + '/details')
+        .then(r => r.json())
+        .then(data => {
+            let order = data.success ? data.order : (window.ordersData ? window.ordersData[orderId] : null);
+            if (!order) {
+                document.getElementById('detailItemsBody').innerHTML = '<tr><td colspan="3" class="text-danger text-center py-2">Failed to load order details.</td></tr>';
+                return;
+            }
+
+            document.getElementById('detailOrderCode').textContent = order.code;
+            document.getElementById('detailCustomerName').textContent = order.customer;
+            document.getElementById('detailDiningOption').textContent = order.dining_option;
+            
+            const tableRow = document.getElementById('detailTableNumberRow');
+            if (order.dining_option.toLowerCase().includes('dine')) {
+                tableRow.style.display = 'flex';
+                document.getElementById('detailTableNumber').textContent = (order.table_number && order.table_number !== 'N/A') ? ('Table ' + order.table_number) : 'Not assigned';
+            } else {
+                tableRow.style.display = 'none';
+            }
+
+            document.getElementById('detailCreatedAt').textContent = order.created_at;
+            
+            const payStatus = document.getElementById('detailPaymentStatus');
+            payStatus.className = `pill ${order.payment_status.toLowerCase()}`;
+            payStatus.textContent = order.payment_status;
+
+            document.getElementById('detailPaymentMethod').textContent = order.payment_method;
+            document.getElementById('detailNotes').textContent = order.notes;
+            document.getElementById('detailTotalAmount').textContent = '₱' + parseFloat(order.total).toLocaleString(undefined, {minimumFractionDigits: 2});
+
+            // Items body
+            const itemsBody = document.getElementById('detailItemsBody');
+            itemsBody.innerHTML = '';
+            order.items.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="padding: 6px 0; font-weight:600;">${item.name}</td>
+                    <td style="text-align:center; padding: 6px 0;">x${item.qty}</td>
+                    <td style="text-align:right; padding: 6px 0; font-weight:700;">₱${parseFloat(item.price).toFixed(2)}</td>
+                `;
+                itemsBody.appendChild(tr);
+            });
+
+            document.getElementById('detailPrintReceiptBtn').href = '/admin/orders/print_receipt/' + orderId;
+        })
+        .catch(err => {
+            console.error('Error fetching details:', err);
+            const fallback = window.ordersData ? window.ordersData[orderId] : null;
+            if (fallback) {
+                document.getElementById('detailOrderCode').textContent = fallback.code;
+                document.getElementById('detailCustomerName').textContent = fallback.customer;
+                document.getElementById('detailDiningOption').textContent = fallback.dining_option;
+                document.getElementById('detailCreatedAt').textContent = fallback.created_at;
+                document.getElementById('detailNotes').textContent = fallback.notes;
+                document.getElementById('detailTotalAmount').textContent = '₱' + parseFloat(fallback.total).toFixed(2);
+            }
+        });
     }
 
     // ─── BILL PAYMENT SETTLEMENT MODAL ──────────────────────────────────
@@ -842,7 +941,7 @@
         document.getElementById('amountDueHidden').value = amountDue;
 
         const form = document.getElementById('settleBillForm');
-        form.action = '/admin/orders/update_payment/' + orderId;
+        form.action = '/staff/cashier/orders/update_payment/' + orderId;
 
         const tenderedInput = document.getElementById('amountTenderedInput');
         tenderedInput.value = '';
@@ -999,6 +1098,86 @@
         if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
     });
 
+    function renderCardActions(card) {
+        if (!card) return;
+        const orderId = card.dataset.orderId;
+        const status = card.dataset.status;
+        const paymentStatus = card.dataset.paymentStatus;
+        const totalAmount = card.dataset.totalAmount || '0';
+        const diningOption = (card.dataset.diningOption || '').toUpperCase();
+        const actionsDiv = card.querySelector('.pos-card-actions');
+        if (!actionsDiv) return;
+
+        let html = `
+            <button type="button" class="pos-btn pos-btn-secondary" onclick="openDetailsModal(${orderId})">
+                <i class="fas fa-info-circle"></i> Details
+            </button>
+        `;
+
+        if (status === 'COMPLETED') {
+            html += `
+                <button type="button" class="pos-btn pos-btn-secondary" disabled style="opacity:0.6; cursor:not-allowed; background:rgba(0,0,0,0.03);">
+                    <i class="fas fa-check-double"></i> Served
+                </button>
+            `;
+        } else if (status === 'CANCELLED') {
+            html += `
+                <button type="button" class="pos-btn pos-btn-secondary" disabled style="opacity:0.6; cursor:not-allowed; background:rgba(0,0,0,0.03);">
+                    <i class="fas fa-ban"></i> Cancelled
+                </button>
+            `;
+        } else if (status === 'PENDING') {
+            html += `
+                <button type="button" class="pos-btn pos-btn-success accept-order-btn" data-order-id="${orderId}">
+                    <i class="fas fa-check-circle"></i> Accept & Kitchen
+                </button>
+            `;
+            if (paymentStatus === 'UNPAID') {
+                html += `
+                    <button type="button" class="pos-btn pos-btn-primary" onclick="openSettleModal(${orderId}, ${totalAmount})">
+                        <i class="fas fa-cash-register"></i> Pay
+                    </button>
+                `;
+            }
+        } else if (paymentStatus === 'UNPAID') {
+            html += `
+                <button type="button" class="pos-btn pos-btn-primary" onclick="openSettleModal(${orderId}, ${totalAmount})">
+                    <i class="fas fa-cash-register"></i> Pay Bills
+                </button>
+            `;
+        } else if (status === 'ACCEPTED') {
+            html += `
+                <button type="button" class="pos-btn pos-btn-secondary" disabled style="opacity:0.75; cursor:not-allowed; background:rgba(25,118,210,0.06); color:#1976d2; border: 1px solid rgba(25,118,210,0.2);">
+                    <i class="fas fa-clock"></i> To Cook
+                </button>
+            `;
+        } else if (status === 'PREPARING') {
+            html += `
+                <button type="button" class="pos-btn pos-btn-secondary" disabled style="opacity:0.75; cursor:not-allowed; background:rgba(230,81,0,0.06); color:#e65100; border: 1px solid rgba(230,81,0,0.2);">
+                    <i class="fas fa-fire fa-spin"></i> Cooking
+                </button>
+            `;
+        } else if (status === 'READY') {
+            let label = 'Serve';
+            if (diningOption.includes('TAKE')) label = 'Pick Up';
+            else if (diningOption.includes('DELIVER')) label = 'Complete';
+            html += `
+                <button type="button" class="pos-btn pos-btn-success complete-order-btn" data-order-id="${orderId}">
+                    <i class="fas fa-check-double"></i> ${label}
+                </button>
+            `;
+        } else {
+            html += `
+                <button type="button" class="pos-btn pos-btn-secondary" disabled style="opacity:0.6; cursor:not-allowed; background:rgba(0,0,0,0.03);">
+                    <i class="fas fa-spinner fa-spin"></i> Cooking
+                </button>
+            `;
+        }
+
+        actionsDiv.innerHTML = html;
+        attachDashboardListeners();
+    }
+
     // Handle settle payment form submission
     document.getElementById('settleBillForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -1037,37 +1216,7 @@
                         paymentBadge.className = 'pill paid';
                     }
 
-                    // Re-render button depending on current preparation status
-                    const status = card.dataset.status;
-                    const diningOption = card.querySelector('.pill.service') ? card.querySelector('.pill.service').textContent.trim().toLowerCase() : 'dine in';
-                    const actionsDiv = card.querySelector('.pos-card-actions');
-                    
-                    if (actionsDiv) {
-                        let btnLabel = 'Serve';
-                        if (diningOption.includes('take')) btnLabel = 'Pick Up';
-                        else if (diningOption.includes('deliver')) btnLabel = 'Complete';
-
-                        if (status === 'READY') {
-                            actionsDiv.innerHTML = `
-                                <button type="button" class="pos-btn pos-btn-secondary" onclick="openDetailsModal(${orderId})">
-                                    <i class="fas fa-info-circle"></i> Details
-                                </button>
-                                <button type="button" class="pos-btn pos-btn-success complete-order-btn" data-order-id="${orderId}">
-                                    <i class="fas fa-check-double"></i> ${btnLabel}
-                                </button>
-                            `;
-                            attachDashboardListeners();
-                        } else {
-                            actionsDiv.innerHTML = `
-                                <button type="button" class="pos-btn pos-btn-secondary" onclick="openDetailsModal(${orderId})">
-                                    <i class="fas fa-info-circle"></i> Details
-                                </button>
-                                <button type="button" class="pos-btn pos-btn-secondary" disabled style="opacity:0.6; cursor:not-allowed; background:rgba(0,0,0,0.03);">
-                                    <i class="fas fa-spinner fa-spin"></i> Preparing
-                                </button>
-                            `;
-                        }
-                    }
+                    renderCardActions(card);
                 }
 
                 pollCashierDashboard(true);
@@ -1121,6 +1270,8 @@
                         statusBadge.className = 'pill completed';
                     }
                     
+                    renderCardActions(card);
+
                     // Hide completed orders if current tab is PROCESS or ALL (if tab doesn't match complete state)
                     if (typeof filterCards === 'function') filterCards();
                 }
@@ -1135,6 +1286,55 @@
         .catch(error => {
             console.error('Error:', error);
             if (window.showToast) showToast('danger', 'Network error while serving order.');
+            btnElement.disabled = false;
+            btnElement.innerHTML = origHtml;
+        });
+    }
+
+    // ─── ACCEPT ORDER FUNCTIONALITY ────────────────────────────────────
+    function acceptOrder(orderId, btnElement) {
+        btnElement.disabled = true;
+        const origHtml = btnElement.innerHTML;
+        btnElement.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Accepting...';
+        
+        fetch('/staff/cashier/orders/' + orderId + '/accept', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (window.showToast) showToast('success', data.message || 'Order accepted & sent to kitchen!');
+                
+                // INSTANT CLIENT-SIDE UI UPDATE:
+                const card = document.querySelector(`.pos-card[data-order-id="${orderId}"]`);
+                if (card) {
+                    card.dataset.status = 'ACCEPTED';
+                    card.classList.remove('pending');
+                    card.classList.add('accepted');
+                    
+                    const statusBadge = card.querySelector('.pos-card-header .pill:not(.service):not(.paid):not(.unpaid)');
+                    if (statusBadge) {
+                        statusBadge.textContent = 'Accepted';
+                        statusBadge.className = 'pill accepted';
+                    }
+                    
+                    renderCardActions(card);
+                }
+                
+                refreshCashierDashboardHtml();
+            } else {
+                if (window.showToast) showToast('danger', data.message || 'Failed to accept order.');
+                btnElement.disabled = false;
+                btnElement.innerHTML = origHtml;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            if (window.showToast) showToast('danger', 'Network error while accepting order.');
             btnElement.disabled = false;
             btnElement.innerHTML = origHtml;
         });
@@ -1161,6 +1361,7 @@
     const _cashierOrderStatuses = {};
 
     function refreshCashierDashboardHtml() {
+        if (document.querySelector('.billing-overlay.show')) return;
         const url = window.location.pathname + '?_t=' + Date.now();
         fetch(url, { 
             headers: { 
@@ -1247,6 +1448,12 @@
             btn.addEventListener('click', function() {
                 const orderId = this.dataset.orderId;
                 completeOrder(orderId, this);
+            });
+        });
+        document.querySelectorAll('.accept-order-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const orderId = this.dataset.orderId;
+                acceptOrder(orderId, this);
             });
         });
     }

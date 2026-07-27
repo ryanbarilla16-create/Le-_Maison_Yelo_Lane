@@ -461,7 +461,7 @@ def cashier_dashboard():
     
     active_orders_count = Order.query.outerjoin(Reservation).filter(
         Order.is_archived.is_(False),
-        Order.status.in_(['PENDING', 'PREPARING', 'READY']),
+        Order.status.in_(['PENDING', 'ACCEPTED', 'PREPARING', 'READY']),
         db.or_(
             Order.reservation_id.is_(None),
             Reservation.date <= today
@@ -485,10 +485,10 @@ def cashier_dashboard():
     live_orders = Order.query.outerjoin(Reservation).filter(
         Order.is_archived.is_(False),
         db.or_(
-            Order.status.in_(['PENDING', 'PREPARING', 'READY']),
+            Order.status.in_(['PENDING', 'ACCEPTED', 'PREPARING', 'READY']),
             db.and_(
                 Order.status.in_(['COMPLETED', 'CANCELLED']),
-                Order.created_at >= today_start
+                db.func.date(Order.created_at) == today
             )
         ),
         db.or_(
@@ -545,10 +545,10 @@ def cashier_api_dashboard():
         .filter(
             Order.is_archived.is_(False),
             db.or_(
-                Order.status.in_(['PENDING', 'PREPARING', 'READY']),
+                Order.status.in_(['PENDING', 'ACCEPTED', 'PREPARING', 'READY']),
                 db.and_(
                     Order.status.in_(['COMPLETED', 'CANCELLED']),
-                    Order.created_at >= today_start
+                    db.func.date(Order.created_at) == today
                 )
             ),
             db.or_(
@@ -566,7 +566,7 @@ def cashier_api_dashboard():
         'stats': {
             'active_orders': Order.query.outerjoin(Reservation).filter(
                 Order.is_archived.is_(False),
-                Order.status.in_(['PENDING', 'PREPARING', 'READY']),
+                Order.status.in_(['PENDING', 'ACCEPTED', 'PREPARING', 'READY']),
                 db.or_(
                     Order.reservation_id.is_(None),
                     Reservation.date <= today
@@ -892,6 +892,154 @@ def cashier_complete_order(order_id):
         })
     except Exception as e:
         db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@cashier_bp.route('/staff/cashier/orders/<int:order_id>/accept', methods=['POST'])
+def cashier_accept_order(order_id):
+    """Accept an incoming PENDING order and send it to the kitchen (status = ACCEPTED)."""
+    if not current_user.is_authenticated or current_user.role not in CASHIER_ROLES:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+        
+    try:
+        order = Order.query.get_or_404(order_id)
+        order.status = 'ACCEPTED'
+        
+        # Notify user
+        if order.user_id:
+            from utils import create_notification
+            create_notification(
+                order.user_id,
+                'Order Accepted',
+                f'Your order {order.display_code} has been accepted by Cashier and sent to Kitchen! 🍳',
+                'ORDER',
+                link='/my-orders'
+            )
+            
+        # Notify via SocketIO if available
+        try:
+            from extensions import socketio
+            socketio.emit('order_status_update', {'id': order.id, 'status': 'ACCEPTED'}, namespace='/')
+        except:
+            pass
+            
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': f'Order {order.display_code} accepted and sent to kitchen!'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@cashier_bp.route('/staff/cashier/orders/update_payment/<int:order_id>', methods=['POST'])
+def cashier_update_payment_status(order_id):
+    """Settle bill payment for an order from Cashier Dashboard."""
+    if not current_user.is_authenticated or current_user.role not in CASHIER_ROLES:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+        
+    try:
+        order = Order.query.get_or_404(order_id)
+        new_payment_status = request.form.get('payment_status', 'PAID')
+
+        if new_payment_status == 'PAID':
+            amount_tendered_raw = request.form.get('amount_tendered', '').strip()
+            try:
+                amount_tendered = float(amount_tendered_raw)
+            except (ValueError, TypeError):
+                return jsonify({'success': False, 'message': 'Invalid amount tendered.'}), 400
+
+            actual_due = float(order.total_amount)
+            if amount_tendered < actual_due:
+                return jsonify({'success': False, 'message': f'Amount tendered (₱{amount_tendered:,.2f}) is less than total bill (₱{actual_due:,.2f}).'}), 400
+
+            change_amount = round(amount_tendered - actual_due, 2)
+            order.payment_status = 'PAID'
+            order.amount_tendered = amount_tendered
+            order.change_amount = change_amount
+            order.processed_by_id = current_user.id
+
+            # Auto-complete order if it's already READY
+            if order.status == 'READY':
+                if order.dining_option != 'DINE_IN' or order.table_status == 'AVAILABLE' or not order.table_number:
+                    order.status = 'COMPLETED'
+
+            if order.user_id:
+                from utils import create_notification
+                create_notification(
+                    order.user_id,
+                    'Payment Confirmed',
+                    f'Payment of ₱{amount_tendered:,.2f} confirmed for order {order.display_code}. Change: ₱{change_amount:,.2f}. Thank you! ✨',
+                    'ORDER',
+                    link='/my-orders'
+                )
+
+            db.session.commit()
+            return jsonify({
+                'success': True,
+                'message': f'Payment of ₱{amount_tendered:,.2f} confirmed! Change: ₱{change_amount:,.2f}',
+                'change_amount': change_amount
+            })
+
+        elif new_payment_status == 'UNPAID':
+            order.payment_status = 'UNPAID'
+            order.amount_tendered = None
+            order.change_amount = None
+            db.session.commit()
+            return jsonify({'success': True, 'message': f'Order {order.display_code} marked as UNPAID.'})
+
+        return jsonify({'success': False, 'message': 'Invalid status'}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@cashier_bp.route('/staff/cashier/api/orders/<int:order_id>/details')
+def cashier_order_details_api(order_id):
+    """Fetch complete details of an order for Cashier modal."""
+    if not current_user.is_authenticated or current_user.role not in CASHIER_ROLES:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+        
+    try:
+        from sqlalchemy.orm import selectinload
+        order = Order.query.options(selectinload(Order.items).selectinload(OrderItem.menu_item)).get_or_404(order_id)
+        
+        customer = 'Walk-in Guest'
+        email = 'N/A'
+        if order.user:
+            customer = f"{order.user.first_name} {order.user.last_name}".strip()
+            email = order.user.email or 'N/A'
+        elif order.customer_name:
+            customer = order.customer_name
+
+        items = []
+        for item in order.items:
+            items.append({
+                'name': item.menu_item.name if item.menu_item else 'Item',
+                'qty': item.quantity,
+                'price': float(item.price_at_time or 0)
+            })
+
+        return jsonify({
+            'success': True,
+            'order': {
+                'id': order.id,
+                'code': order.display_code,
+                'customer': customer,
+                'email': email,
+                'notes': order.notes or 'No special instructions',
+                'dining_option': (order.dining_option or 'DINE_IN').replace('_', ' ').title(),
+                'payment_method': order.payment_method or 'COUNTER',
+                'payment_status': order.payment_status or 'UNPAID',
+                'status': order.status or 'PENDING',
+                'table_number': order.table_number if order.dining_option == 'DINE_IN' else None,
+                'created_at': order.display_date_time,
+                'total': float(order.total_amount or 0),
+                'items': items
+            }
+        })
+    except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
@@ -1251,7 +1399,8 @@ def kitchen_dashboard():
         
     try:
         from sqlalchemy.orm import selectinload
-        pending_orders = Order.query.options(selectinload(Order.items)).filter(Order.status == 'PENDING', Order.reservation_id.is_(None)).order_by(Order.created_at.asc()).all()
+        # Kitchen receives ACCEPTED orders in TO COOK, PREPARING orders in COOKING
+        pending_orders = Order.query.options(selectinload(Order.items)).filter(Order.status == 'ACCEPTED', Order.reservation_id.is_(None)).order_by(Order.created_at.asc()).all()
         preparing_orders = Order.query.options(selectinload(Order.items)).filter(Order.status == 'PREPARING').order_by(Order.created_at.asc()).all()
         # For ready orders, we want to see the last 20
         ready_orders = Order.query.options(selectinload(Order.items)).filter(Order.status == 'READY').order_by(Order.created_at.desc()).limit(20).all()
@@ -1542,8 +1691,9 @@ def kitchen_api_orders():
         selectinload(Order.items).selectinload(OrderItem.menu_item),
         selectinload(Order.user)
     ]
+    # Kitchen 'TO COOK' tab shows orders that Cashier has ACCEPTED (status == 'ACCEPTED')
     pending = Order.query.options(*base_opts).filter(
-        Order.status == 'PENDING', Order.reservation_id.is_(None)
+        Order.status == 'ACCEPTED', Order.reservation_id.is_(None)
     ).order_by(Order.created_at.asc()).all()
     preparing = Order.query.options(*base_opts).filter(
         Order.status == 'PREPARING'
@@ -1581,8 +1731,9 @@ def kitchen_api_sidebar():
     """Lightweight polling endpoint for kitchen sidebar badge counts."""
     if not current_user.is_authenticated or current_user.role not in KITCHEN_ROLES:
         return jsonify({'error': 'Unauthorized'}), 401
+    # Kitchen sidebar tracks ACCEPTED orders in TO COOK and PREPARING orders in COOKING
     pending_orders = Order.query.filter(
-        Order.status == 'PENDING', Order.reservation_id.is_(None)
+        Order.status == 'ACCEPTED', Order.reservation_id.is_(None)
     ).count()
     preparing_orders = Order.query.filter(
         Order.status == 'PREPARING', Order.reservation_id.is_(None)
