@@ -15,10 +15,11 @@ _MENU_CACHE_TTL = 120  # seconds
 def _get_menu_items_for_menu_page():
     """Fetch menu items with a 2-minute in-memory cache to avoid repeated DB hits."""
     try:
-        store = current_app._simple_cache
-        entry = store.get(_MENU_CACHE_KEY)
-        if entry and (time.time() - entry['ts']) < _MENU_CACHE_TTL:
-            return entry['data']
+        store = getattr(current_app, '_simple_cache', None)
+        if store is not None:
+            entry = store.get(_MENU_CACHE_KEY)
+            if entry and (time.time() - entry['ts']) < _MENU_CACHE_TTL:
+                return entry['data']
     except Exception:
         store = None
 

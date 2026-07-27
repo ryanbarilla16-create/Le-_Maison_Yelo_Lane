@@ -1691,6 +1691,7 @@ def api_get_notifications(user_id):
     }), 200
 
 @api_bp.route('/user/<int:user_id>/notifications/unread-count', methods=['GET'])
+@api_bp.route('/user/<int:user_id>/unread-notifications/count', methods=['GET'])
 def api_unread_notification_count(user_id):
     """Get count of unread notifications"""
     from models import Notification
