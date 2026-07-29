@@ -146,6 +146,10 @@ app.register_blueprint(admin_bp)
 
 from routes.api import api_bp
 app.register_blueprint(api_bp)
+try:
+    limiter.exempt(api_bp)
+except Exception:
+    pass
 
 from routes.portals import cashier_bp, kitchen_bp, inventory_bp, rider_bp
 app.register_blueprint(cashier_bp)

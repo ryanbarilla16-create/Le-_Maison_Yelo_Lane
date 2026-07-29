@@ -448,9 +448,12 @@
     function updateNotifCount() {
         if (!userId) return;
         fetch(`/api/user/${userId}/unread-notifications/count`)
-            .catch(() => fetch(`/api/user/${userId}/notifications/unread-count`)) // Fallback if name differs
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) return null;
+                return res.json();
+            })
             .then(data => {
+                if (!data) return;
                 const badge = document.getElementById('userNotifBadge');
                 const mBadge = document.getElementById('userNotifBadgeMobile');
                 const count = data.count || 0;
@@ -466,7 +469,7 @@
                     }
                 });
             })
-            .catch(err => console.error('Error fetching notif count:', err));
+            .catch(() => {});
     }
 
     function renderNotifItems(data, listId) {
@@ -611,8 +614,8 @@
 
         // Initial count update
         updateNotifCount();
-        // Refresh count every 30s
-        setInterval(updateNotifCount, 5000);
+        // Refresh count every 20s
+        setInterval(updateNotifCount, 20000);
 
     });
 
