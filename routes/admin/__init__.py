@@ -1186,11 +1186,13 @@ def analytics():
         if date_filter == 'TODAY':
             revenue_trend_labels = [f'{h:02d}:00' for h in range(9, 23)]
             h_col = func.extract('hour', Order.created_at)
+            today_start = datetime.combine(today, datetime.min.time())
+            today_end = datetime.combine(today, datetime.max.time())
             hq = db.session.query(
                 h_col.label('hr'),
                 func.coalesce(func.sum(Order.total_amount), 0).label('rev'),
                 func.count(Order.id).label('cnt')
-            ).filter(func.date(Order.created_at) == today)
+            ).filter(Order.created_at >= today_start, Order.created_at <= today_end)
             if br != 'ALL': hq = hq.filter(Order.branch == br)
             h_rows = hq.group_by(h_col).all()
             h_map = {int(r.hr): (float(r.rev or 0), int(r.cnt or 0)) for r in h_rows if r.hr is not None}
@@ -1223,12 +1225,15 @@ def analytics():
                     revenue_trend_labels.append(d.strftime('%b %d'))
 
             if dates:
+                # Use datetime bounds (NOT func.date) for PostgreSQL index usage
+                range_start = datetime.combine(min(dates), datetime.min.time())
+                range_end = datetime.combine(max(dates), datetime.max.time())
                 d_col = func.date(Order.created_at)
                 dq = db.session.query(
                     d_col.label('d'),
                     func.coalesce(func.sum(Order.total_amount), 0).label('rev'),
                     func.count(Order.id).label('cnt')
-                ).filter(d_col >= min(dates), d_col <= max(dates))
+                ).filter(Order.created_at >= range_start, Order.created_at <= range_end)
                 if br != 'ALL': dq = dq.filter(Order.branch == br)
                 d_rows = dq.group_by(d_col).all()
                 d_map = {r.d: (float(r.rev or 0), int(r.cnt or 0)) for r in d_rows if r.d}
@@ -1286,9 +1291,11 @@ def analytics():
         top_dishes_labels = [r[0] for r in top_dishes_raw] if top_dishes_raw else ['No Data']
         top_dishes_data = [int(r[1]) for r in top_dishes_raw] if top_dishes_raw else [0]
 
-        # 6) Monthly Revenue
+        # 6) Monthly Revenue — SINGLE QUERY using GROUP BY year+month
         monthly_rev_labels = []
         monthly_rev_data = []
+        # Build ordered list of 6 months
+        monthly_slots = []
         for i in range(5, -1, -1):
             first_of_month = today.replace(day=1)
             m = first_of_month.month - i
@@ -1296,19 +1303,23 @@ def analytics():
             while m <= 0:
                 m += 12
                 y -= 1
-            month_start = date(y, m, 1)
-            if m == 12:
-                month_end = date(y + 1, 1, 1)
-            else:
-                month_end = date(y, m + 1, 1)
-            monthly_rev_labels.append(month_start.strftime('%b %Y'))
-            mrev_q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0))\
-                .filter(Order.created_at >= datetime.combine(month_start, datetime.min.time()),
-                        Order.created_at < datetime.combine(month_end, datetime.min.time()))
-            if br != 'ALL':
-                mrev_q = mrev_q.filter(Order.branch == br)
-            rev = mrev_q.scalar()
-            monthly_rev_data.append(float(rev))
+            monthly_slots.append((y, m))
+            monthly_rev_labels.append(date(y, m, 1).strftime('%b %Y'))
+        # Single aggregation query — filter from oldest slot start
+        oldest_y, oldest_m = monthly_slots[0]
+        six_months_ago_start = datetime.combine(date(oldest_y, oldest_m, 1), datetime.min.time())
+        yr_col = func.extract('year', Order.created_at).label('yr')
+        mo_col = func.extract('month', Order.created_at).label('mo')
+        mrev_q = db.session.query(
+            yr_col, mo_col,
+            func.coalesce(func.sum(Order.total_amount), 0).label('rev')
+        ).filter(Order.created_at >= six_months_ago_start)
+        if br != 'ALL':
+            mrev_q = mrev_q.filter(Order.branch == br)
+        mrev_rows = mrev_q.group_by(yr_col, mo_col).all()
+        mrev_map = {(int(r.yr), int(r.mo)): float(r.rev or 0) for r in mrev_rows}
+        for (y, m) in monthly_slots:
+            monthly_rev_data.append(mrev_map.get((y, m), 0.0))
 
         # 7) Customer Loyalty
         order_counts_sub_q = db.session.query(
@@ -1357,12 +1368,13 @@ def analytics():
 
         # 9) Sales Forecast — Linear Regression on last 30 days (OPTIMIZED 1 QUERY)
         thirty_days_ago = today - timedelta(days=29)
+        thirty_days_ago_dt = datetime.combine(thirty_days_ago, datetime.min.time())
         d_col = func.date(Order.created_at)
         fc_q = db.session.query(
             d_col.label('d'),
             func.coalesce(func.sum(Order.total_amount), 0).label('rev')
         ).filter(
-            d_col >= thirty_days_ago,
+            Order.created_at >= thirty_days_ago_dt,
             Order.status == 'COMPLETED'
         )
         if br != 'ALL':
@@ -1560,10 +1572,12 @@ def analytics():
             if tf_key == 'TODAY':
                 tf_rev_labels = [f'{h:02d}:00' for h in range(9, 23)]
                 h_col = func.extract('hour', Order.created_at)
+                today_start = datetime.combine(today, datetime.min.time())
+                today_end = datetime.combine(today, datetime.max.time())
                 q = db.session.query(
                     h_col.label('hr'),
                     func.coalesce(func.sum(Order.total_amount), 0).label('rev')
-                ).filter(func.date(Order.created_at) == today)
+                ).filter(Order.created_at >= today_start, Order.created_at <= today_end)
                 if br != 'ALL': q = q.filter(Order.branch == br)
                 h_rows = q.group_by(h_col).all()
                 h_map = {int(r.hr): float(r.rev or 0) for r in h_rows if r.hr is not None}
@@ -1593,11 +1607,13 @@ def analytics():
                         tf_rev_labels.append(d.strftime('%b %d'))
 
                 if tf_dates:
+                    tf_range_start = datetime.combine(min(tf_dates), datetime.min.time())
+                    tf_range_end = datetime.combine(max(tf_dates), datetime.max.time())
                     d_col = func.date(Order.created_at)
                     q = db.session.query(
                         d_col.label('d'),
                         func.coalesce(func.sum(Order.total_amount), 0).label('rev')
-                    ).filter(d_col >= min(tf_dates), d_col <= max(tf_dates))
+                    ).filter(Order.created_at >= tf_range_start, Order.created_at <= tf_range_end)
                     if br != 'ALL': q = q.filter(Order.branch == br)
                     d_rows = q.group_by(d_col).all()
                     d_map = {r.d: float(r.rev or 0) for r in d_rows if r.d}
