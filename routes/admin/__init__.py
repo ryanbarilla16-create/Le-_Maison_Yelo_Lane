@@ -1636,11 +1636,8 @@ def analytics():
         if selected_branch not in ['ALL', 'Pagsanjan', 'Lucban']:
             selected_branch = 'ALL'
         branches_data['ALL'] = get_branch_data('ALL')
-        if selected_branch != 'ALL':
-            branches_data[selected_branch] = get_branch_data(selected_branch)
-        for b in ['Pagsanjan', 'Lucban']:
-            if b not in branches_data:
-                branches_data[b] = get_branch_data(b)
+        branches_data['Pagsanjan'] = get_branch_data('Pagsanjan')
+        branches_data['Lucban'] = get_branch_data('Lucban')
     else:
         user_branch = getattr(current_user, 'branch', 'Pagsanjan')
         selected_branch = user_branch
