@@ -493,14 +493,15 @@ def overview():
 
     # ── REVENUE & ORDER TRENDS (branch-filtered, last 7 days) ──
     week_ago = today - timedelta(days=6)
+    date_col = func.date(Order.created_at)
     trend_query = db.session.query(
-        func.date(Order.created_at).label('d'),
+        date_col.label('d'),
         func.count(Order.id).label('cnt'),
         func.sum(Order.total_amount).label('rev')
-    ).filter(func.date(Order.created_at) >= week_ago)
+    ).filter(date_col >= week_ago)
     if user_branch and user_branch != 'ALL':
         trend_query = trend_query.filter(Order.branch == user_branch)
-    trend_stats = trend_query.group_by('d').all()
+    trend_stats = trend_query.group_by(date_col).all()
 
     trend_map = {row.d: (int(row.cnt or 0), float(row.rev or 0)) for row in trend_stats}
 
@@ -518,11 +519,18 @@ def overview():
         revenue_trend_data.append(stat[1])
 
     # ── BUSY TIMES (branch-filtered) ──
-    busy_query = db.session.query(func.extract('hour', Order.created_at).label('hr'), func.count(Order.id))
+    hour_col = func.extract('hour', Order.created_at)
+    busy_query = db.session.query(hour_col.label('hr'), func.count(Order.id))
     if user_branch and user_branch != 'ALL':
         busy_query = busy_query.filter(Order.branch == user_branch)
-    busy_hours_raw = busy_query.group_by('hr').order_by('hr').all()
-    busy_map = {int(h): c for h, c in busy_hours_raw}
+    busy_hours_raw = busy_query.group_by(hour_col).order_by(hour_col).all()
+    busy_map = {}
+    for h, c in busy_hours_raw:
+        if h is not None:
+            try:
+                busy_map[int(h)] = int(c or 0)
+            except (ValueError, TypeError):
+                pass
     busy_times_labels = [f'{h:02d}:00' for h in range(24)]
     busy_times_data = [busy_map.get(h, 0) for h in range(24)]
 
@@ -1275,16 +1283,23 @@ def analytics():
                 daily_orders_data.append(int(cnt_q.scalar() or 0))
 
         # 4) Busy Times
+        hour_col = func.extract('hour', Order.created_at)
         busy_q = db.session.query(
-            func.extract('hour', Order.created_at).label('hr'),
+            hour_col.label('hr'),
             func.count(Order.id)
         )
         if br != 'ALL':
             busy_q = busy_q.filter(Order.branch == br)
         if start_date and end_date:
             busy_q = busy_q.filter(Order.created_at >= start_dt, Order.created_at <= end_dt)
-        busy_hours_raw = busy_q.group_by('hr').order_by('hr').all()
-        busy_map = {int(h): c for h, c in busy_hours_raw}
+        busy_hours_raw = busy_q.group_by(hour_col).order_by(hour_col).all()
+        busy_map = {}
+        for h, c in busy_hours_raw:
+            if h is not None:
+                try:
+                    busy_map[int(h)] = int(c or 0)
+                except (ValueError, TypeError):
+                    pass
         busy_times_labels = [f'{h:02d}:00' for h in range(24)]
         busy_times_data = [busy_map.get(h, 0) for h in range(24)]
 
@@ -4913,12 +4928,19 @@ def advanced_analytics_api():
     today = date.today()
 
     # Peak Hours Analysis
+    hour_col = func.extract('hour', Order.created_at)
     peak_data = db.session.query(
-        func.extract('hour', Order.created_at).label('hr'),
+        hour_col.label('hr'),
         func.count(Order.id).label('cnt')
-    ).group_by('hr').order_by(func.count(Order.id).desc()).all()
+    ).group_by(hour_col).order_by(func.count(Order.id).desc()).all()
     
-    peak_hours = [{'hour': f'{int(h):02d}:00', 'orders': int(c)} for h, c in peak_data[:5]]
+    peak_hours = []
+    for h, c in peak_data[:5]:
+        if h is not None:
+            try:
+                peak_hours.append({'hour': f'{int(h):02d}:00', 'orders': int(c or 0)})
+            except (ValueError, TypeError):
+                pass
 
     # Customer Retention Rate
     total_customers_with_orders = db.session.query(func.count(func.distinct(Order.user_id))).scalar() or 0
@@ -4933,12 +4955,19 @@ def advanced_analytics_api():
     avg_order_value = round(float(avg_order), 2) if avg_order else 0
 
     # Orders by Day of Week
+    dow_col = func.extract('dow', Order.created_at)
     dow_data = db.session.query(
-        func.extract('dow', Order.created_at).label('dow'),
+        dow_col.label('dow'),
         func.count(Order.id)
-    ).group_by('dow').order_by('dow').all()
+    ).group_by(dow_col).order_by(dow_col).all()
     days_map = {0: 'Sun', 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat'}
-    orders_by_day = [{'day': days_map.get(int(d), str(d)), 'orders': int(c)} for d, c in dow_data]
+    orders_by_day = []
+    for d, c in dow_data:
+        if d is not None:
+            try:
+                orders_by_day.append({'day': days_map.get(int(d), str(d)), 'orders': int(c or 0)})
+            except (ValueError, TypeError):
+                pass
 
     return jsonify({
         'success': True,
