@@ -137,8 +137,8 @@ def run():
             {"tag": DUMMY_TAG_RESERVATION}
         ).scalar()
 
-        if existing_orders > 0 or existing_res > 0:
-            print(f"\n[!] Dummy data already exists!")
+        if existing_orders > 0:
+            print(f"\n[!] Dummy order data already exists!")
             print(f"    Orders:       {existing_orders:,}")
             print(f"    Reservations: {existing_res:,}")
             print("\n    To clean up, run these SQL commands:")
