@@ -1138,18 +1138,21 @@ def analytics():
         prev_rev = float(prev_rev_q.scalar())
         
         # Prev COGS
-        prev_cogs_q = db.session.query(
-            func.sum(OrderItem.quantity * MenuItemIngredient.quantity_needed * Ingredient.cost_per_unit)
-        ).select_from(OrderItem)\
-         .join(Order, Order.id == OrderItem.order_id)\
-         .join(MenuItem, MenuItem.id == OrderItem.menu_item_id)\
-         .join(MenuItemIngredient, MenuItemIngredient.menu_item_id == MenuItem.id)\
-         .join(Ingredient, Ingredient.id == MenuItemIngredient.ingredient_id)\
-         .filter(Order.status == 'COMPLETED')
-        if br != 'ALL':
-            prev_cogs_q = prev_cogs_q.filter(Order.branch == br)
-        prev_cogs_q = prev_cogs_q.filter(Order.created_at >= prev_start_dt, Order.created_at <= prev_end_dt)
-        prev_cogs = float(prev_cogs_q.scalar() or 0.0)
+        try:
+            prev_cogs_q = db.session.query(
+                func.sum(OrderItem.quantity * MenuItemIngredient.quantity_needed * Ingredient.cost_per_unit)
+            ).select_from(OrderItem)\
+             .join(Order, Order.id == OrderItem.order_id)\
+             .join(MenuItem, MenuItem.id == OrderItem.menu_item_id)\
+             .join(MenuItemIngredient, MenuItemIngredient.menu_item_id == MenuItem.id)\
+             .join(Ingredient, Ingredient.id == MenuItemIngredient.ingredient_id)\
+             .filter(Order.status == 'COMPLETED')
+            if br != 'ALL':
+                prev_cogs_q = prev_cogs_q.filter(Order.branch == br)
+            prev_cogs_q = prev_cogs_q.filter(Order.created_at >= prev_start_dt, Order.created_at <= prev_end_dt)
+            prev_cogs = float(prev_cogs_q.scalar() or 0.0)
+        except Exception:
+            prev_cogs = 0.0
         
         prev_profit = prev_rev - prev_cogs
         return {
@@ -1334,19 +1337,22 @@ def analytics():
         total_revenue_val = float(trev_q.scalar())
 
         # 8) Advanced P&L COGS
-        cogs_query = db.session.query(
-            func.sum(OrderItem.quantity * MenuItemIngredient.quantity_needed * Ingredient.cost_per_unit)
-        ).select_from(OrderItem)\
-         .join(Order, Order.id == OrderItem.order_id)\
-         .join(MenuItem, MenuItem.id == OrderItem.menu_item_id)\
-         .join(MenuItemIngredient, MenuItemIngredient.menu_item_id == MenuItem.id)\
-         .join(Ingredient, Ingredient.id == MenuItemIngredient.ingredient_id)\
-         .filter(Order.status == 'COMPLETED')
-        if br != 'ALL':
-            cogs_query = cogs_query.filter(Order.branch == br)
-        if start_date and end_date:
-            cogs_query = cogs_query.filter(Order.created_at >= start_dt, Order.created_at <= end_dt)
-        total_cogs = float(cogs_query.scalar() or 0.0)
+        try:
+            cogs_query = db.session.query(
+                func.sum(OrderItem.quantity * MenuItemIngredient.quantity_needed * Ingredient.cost_per_unit)
+            ).select_from(OrderItem)\
+             .join(Order, Order.id == OrderItem.order_id)\
+             .join(MenuItem, MenuItem.id == OrderItem.menu_item_id)\
+             .join(MenuItemIngredient, MenuItemIngredient.menu_item_id == MenuItem.id)\
+             .join(Ingredient, Ingredient.id == MenuItemIngredient.ingredient_id)\
+             .filter(Order.status == 'COMPLETED')
+            if br != 'ALL':
+                cogs_query = cogs_query.filter(Order.branch == br)
+            if start_date and end_date:
+                cogs_query = cogs_query.filter(Order.created_at >= start_dt, Order.created_at <= end_dt)
+            total_cogs = float(cogs_query.scalar() or 0.0)
+        except Exception:
+            total_cogs = 0.0
         net_profit = total_revenue_val - total_cogs
 
         # 9) Sales Forecast — Linear Regression on last 30 days (OPTIMIZED 1 QUERY)
@@ -1398,7 +1404,7 @@ def analytics():
         if start_date and end_date:
             dining_q = dining_q.filter(Order.created_at >= start_dt, Order.created_at <= end_dt)
         dining_rows = dining_q.group_by(Order.dining_option).all()
-        dining_labels = [r[0].replace('_', ' ').title() for r in dining_rows] if dining_rows else ['No Data']
+        dining_labels = [(r[0] or 'Unknown').replace('_', ' ').title() for r in dining_rows] if dining_rows else ['No Data']
         dining_data = [r[1] for r in dining_rows] if dining_rows else [0]
 
         # 12) Payment Methods
@@ -1408,7 +1414,7 @@ def analytics():
         if start_date and end_date:
             pay_q = pay_q.filter(Order.created_at >= start_dt, Order.created_at <= end_dt)
         pay_rows = pay_q.group_by(Order.payment_method).all()
-        pay_labels = [r[0].title() for r in pay_rows] if pay_rows else ['No Data']
+        pay_labels = [(r[0] or 'Unknown').title() for r in pay_rows] if pay_rows else ['No Data']
         pay_data = [r[1] for r in pay_rows] if pay_rows else [0]
 
         # 13) Top Categories
@@ -1421,8 +1427,8 @@ def analytics():
         if start_date and end_date:
             cat_q_main = cat_q_main.filter(Order.created_at >= start_dt, Order.created_at <= end_dt)
         cat_rows_main = cat_q_main.group_by(MenuItem.category).order_by(func.sum(OrderItem.quantity).desc()).limit(5).all()
-        top_categories_labels = [r[0].title() for r in cat_rows_main] if cat_rows_main else ['No Data']
-        top_categories_data = [float(r[1]) for r in cat_rows_main] if cat_rows_main else [0]
+        top_categories_labels = [(r[0] or 'Uncategorized').title() for r in cat_rows_main] if cat_rows_main else ['No Data']
+        top_categories_data = [float(r[1] or 0) for r in cat_rows_main] if cat_rows_main else [0]
 
         if date_filter == 'ALL':
             curr_30_start_dt = datetime.combine(today - timedelta(days=29), datetime.min.time())
@@ -1437,18 +1443,21 @@ def analytics():
                 rev_q = rev_q.filter(Order.created_at >= start, Order.created_at <= end)
                 rev = float(rev_q.scalar())
                 
-                cogs_q = db.session.query(
-                    func.sum(OrderItem.quantity * MenuItemIngredient.quantity_needed * Ingredient.cost_per_unit)
-                ).select_from(OrderItem)\
-                 .join(Order, Order.id == OrderItem.order_id)\
-                 .join(MenuItem, MenuItem.id == OrderItem.menu_item_id)\
-                 .join(MenuItemIngredient, MenuItemIngredient.menu_item_id == MenuItem.id)\
-                 .join(Ingredient, Ingredient.id == MenuItemIngredient.ingredient_id)\
-                 .filter(Order.status == 'COMPLETED')
-                if br != 'ALL':
-                    cogs_q = cogs_q.filter(Order.branch == br)
-                cogs_q = cogs_q.filter(Order.created_at >= start, Order.created_at <= end)
-                cogs = float(cogs_q.scalar() or 0.0)
+                try:
+                    cogs_q = db.session.query(
+                        func.sum(OrderItem.quantity * MenuItemIngredient.quantity_needed * Ingredient.cost_per_unit)
+                    ).select_from(OrderItem)\
+                     .join(Order, Order.id == OrderItem.order_id)\
+                     .join(MenuItem, MenuItem.id == OrderItem.menu_item_id)\
+                     .join(MenuItemIngredient, MenuItemIngredient.menu_item_id == MenuItem.id)\
+                     .join(Ingredient, Ingredient.id == MenuItemIngredient.ingredient_id)\
+                     .filter(Order.status == 'COMPLETED')
+                    if br != 'ALL':
+                        cogs_q = cogs_q.filter(Order.branch == br)
+                    cogs_q = cogs_q.filter(Order.created_at >= start, Order.created_at <= end)
+                    cogs = float(cogs_q.scalar() or 0.0)
+                except Exception:
+                    cogs = 0.0
                 
                 profit = rev - cogs
                 return {'revenue': rev, 'cogs': cogs, 'profit': profit}
@@ -1530,20 +1539,20 @@ def analytics():
             
             din_rows = din_q.group_by(Order.dining_option).all()
             multi_timeframe_charts['dining_options'][tf_key] = {
-                'labels': [r[0].replace('_', ' ').title() for r in din_rows] if din_rows else ['No Data'],
+                'labels': [(r[0] or 'Unknown').replace('_', ' ').title() for r in din_rows] if din_rows else ['No Data'],
                 'data': [r[1] for r in din_rows] if din_rows else [0]
             }
             
             pay_rows = pay_q.group_by(Order.payment_method).all()
             multi_timeframe_charts['payment_methods'][tf_key] = {
-                'labels': [r[0].title() for r in pay_rows] if pay_rows else ['No Data'],
+                'labels': [(r[0] or 'Unknown').title() for r in pay_rows] if pay_rows else ['No Data'],
                 'data': [r[1] for r in pay_rows] if pay_rows else [0]
             }
             
             cat_rows = cat_q.group_by(MenuItem.category).order_by(func.sum(OrderItem.quantity).desc()).limit(5).all()
             multi_timeframe_charts['top_categories'][tf_key] = {
-                'labels': [r[0].title() for r in cat_rows] if cat_rows else ['No Data'],
-                'data': [float(r[1]) for r in cat_rows] if cat_rows else [0]
+                'labels': [(r[0] or 'Uncategorized').title() for r in cat_rows] if cat_rows else ['No Data'],
+                'data': [float(r[1] or 0) for r in cat_rows] if cat_rows else [0]
             }
             
             tf_rev_labels = []
@@ -1628,6 +1637,43 @@ def analytics():
             'multi_timeframe_charts': multi_timeframe_charts
         }
 
+    def safe_get_branch_data(br):
+        try:
+            return get_branch_data(br)
+        except Exception as e:
+            current_app.logger.error(f"Error computing analytics for branch {br}: {e}")
+            traceback.print_exc()
+            empty_tf = {'labels': ['No Data'], 'data': [0]}
+            return {
+                'stats': {
+                    'total_menu_items': 0, 'exclusive_count': 0, 'regular_count': 0,
+                    'total_reservations': 0, 'total_revenue': 0.0, 'total_cogs': 0.0,
+                    'net_profit': 0.0, 'trends': {'revenue': 0.0, 'cogs': 0.0, 'profit': 0.0},
+                    'has_prev_period': False
+                },
+                'charts': {
+                    'forecast': {'labels': [], 'data': []},
+                    'revenue_trend': {'labels': [], 'data': []},
+                    'order_status': {'labels': ['No Data'], 'data': [1]},
+                    'daily_orders': {'labels': [], 'data': []},
+                    'busy_times': {'labels': [f'{h:02d}:00' for h in range(24)], 'data': [0]*24},
+                    'top_dishes': {'labels': ['No Data'], 'data': [0]},
+                    'monthly_rev': {'labels': [], 'data': []},
+                    'loyalty': {'labels': ['No Orders Yet'], 'data': [1]},
+                    'bookings_dist': {'labels': ['Standard Bookings', 'Exclusive Bookings'], 'data': [0, 0]},
+                    'dining_options': {'labels': ['No Data'], 'data': [0]},
+                    'payment_methods': {'labels': ['No Data'], 'data': [0]},
+                    'top_categories': {'labels': ['No Data'], 'data': [0]},
+                },
+                'multi_timeframe_charts': {
+                    'bookings_dist': {'TODAY': empty_tf, 'WEEK': empty_tf, 'MONTH': empty_tf, 'ALL': empty_tf},
+                    'dining_options': {'TODAY': empty_tf, 'WEEK': empty_tf, 'MONTH': empty_tf, 'ALL': empty_tf},
+                    'payment_methods': {'TODAY': empty_tf, 'WEEK': empty_tf, 'MONTH': empty_tf, 'ALL': empty_tf},
+                    'revenue_trend': {'TODAY': empty_tf, 'WEEK': empty_tf, 'MONTH': empty_tf, 'ALL': empty_tf},
+                    'top_categories': {'TODAY': empty_tf, 'WEEK': empty_tf, 'MONTH': empty_tf, 'ALL': empty_tf}
+                }
+            }
+
     user_role = current_user.role.upper()
     selected_branch = 'ALL'
     branches_data = {}
@@ -1635,15 +1681,15 @@ def analytics():
         selected_branch = request.args.get('branch', 'ALL')
         if selected_branch not in ['ALL', 'Pagsanjan', 'Lucban']:
             selected_branch = 'ALL'
-        branches_data['ALL'] = get_branch_data('ALL')
-        branches_data['Pagsanjan'] = get_branch_data('Pagsanjan')
-        branches_data['Lucban'] = get_branch_data('Lucban')
+        branches_data['ALL'] = safe_get_branch_data('ALL')
+        branches_data['Pagsanjan'] = safe_get_branch_data('Pagsanjan')
+        branches_data['Lucban'] = safe_get_branch_data('Lucban')
     else:
         user_branch = getattr(current_user, 'branch', 'Pagsanjan')
         selected_branch = user_branch
-        branches_data[user_branch] = get_branch_data(user_branch)
+        branches_data[user_branch] = safe_get_branch_data(user_branch)
 
-    current_data = branches_data[selected_branch]
+    current_data = branches_data.get(selected_branch) or branches_data.get('ALL') or safe_get_branch_data('ALL')
 
     return render_template('admin/analytics.html',
         total_customers=total_customers,
