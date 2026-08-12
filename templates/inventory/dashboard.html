@@ -1,4 +1,4 @@
-{% extends "layouts/staff_layout.html" %}
+{% extends base_layout|default("layouts/staff_layout.html") %}
 
 {% block title %}Stock Levels — Le Maison{% endblock %}
 
@@ -265,17 +265,9 @@
                     </td>
                     <td style="text-align:center;">
                         <div style="display:flex; gap:8px; justify-content:center;">
-                            <button class="btn-action btn-restock" title="Restock" 
-                                    onclick="openRestockModal({{ ing.id }}, '{{ ing.name|e }}', '{{ ing.unit }}')">
-                                <i class="fas fa-plus"></i>
-                            </button>
                             <button class="btn-action btn-waste" title="Record Waste"
                                     onclick="openWasteModal({{ ing.id }}, '{{ ing.name|e }}', '{{ ing.unit }}', {{ ing.stock_qty }})">
                                 <i class="fas fa-trash-arrow-up"></i>
-                            </button>
-                            <button class="btn-action" title="Edit" style="background: rgba(93,64,55,0.1); color: var(--primary);"
-                                    onclick="openEditModal('{{ ing.id }}', '{{ ing.name|e }}', '{{ ing.category|e }}', '{{ ing.reorder_level }}', '{{ ing.stock_qty }}')">
-                                <i class="fas fa-edit"></i>
                             </button>
                             <button class="btn-action btn-delete" title="Delete Ingredient"
                                     onclick="openDeleteIngredientModal({{ ing.id }}, '{{ ing.name|e }}')">
@@ -307,7 +299,7 @@
                 <h3><i class="fas fa-plus"></i> Add New Ingredient</h3>
                 <button class="close-modal" onclick="closeModal('addIngredientModal')">&times;</button>
             </div>
-            <form action="{{ url_for('inventory_portal.inventory_add_ingredient') }}" method="POST" class="modal-body-custom" onsubmit="submitAjaxForm(event, 'addIngredientModal')">
+            <form action="{{ url_for('inventory_portal.inventory_add_ingredient') }}" method="POST" class="modal-body-custom">
                 <div class="form-grid">
                     <div class="form-group">
                         <label>Ingredient Name *</label>
@@ -372,7 +364,7 @@
                 <h3><i class="fas fa-plus"></i> Restock</h3>
                 <button class="close-modal" onclick="closeModal('restockModal')">&times;</button>
             </div>
-            <form id="restockForm" method="POST" class="modal-body-custom" onsubmit="submitAjaxForm(event, 'restockModal')">
+            <form id="restockForm" method="POST" class="modal-body-custom">
                 <p>Add stock for <strong id="restockName"></strong></p>
                 <div class="form-group">
                     <label>Quantity to Add (<span id="restockUnit"></span>)</label>
@@ -393,7 +385,7 @@
                 <h3><i class="fas fa-trash-can"></i> Record Waste</h3>
                 <button class="close-modal" onclick="closeModal('wasteModal')">&times;</button>
             </div>
-            <form id="wasteForm" action="{{ url_for('inventory_portal.inventory_add_waste') }}" method="POST" class="modal-body-custom" onsubmit="submitAjaxForm(event, 'wasteModal')">
+            <form id="wasteForm" action="{{ url_for('inventory_portal.inventory_add_waste') }}" method="POST" class="modal-body-custom">
                 <input type="hidden" name="ingredient_id" id="wasteId">
                 <p>Recording waste for <strong id="wasteName"></strong></p>
                 <p style="font-size:0.8rem; color:var(--muted); margin-bottom:12px;">Current: <span id="wasteCurrent"></span> <span class="waste-unit"></span></p>
@@ -423,45 +415,6 @@
         </div>
     </div>
 
-    <!-- Edit Ingredient Modal -->
-    <div id="editIngredientModal" class="modal-overlay">
-        <div class="modal-content-custom">
-            <div class="modal-header-custom" style="background: #5d4037;">
-                <h3><i class="fas fa-edit"></i> Edit Ingredient</h3>
-                <button class="close-modal" onclick="closeModal('editIngredientModal')">&times;</button>
-            </div>
-            <form id="editIngredientForm" method="POST" class="modal-body-custom" onsubmit="submitAjaxForm(event, 'editIngredientModal')">
-                <div class="form-grid">
-                    <div class="form-group full-width">
-                        <label>Ingredient Name *</label>
-                        <input type="text" name="name" id="edit_name" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Category</label>
-                        <select name="category" id="edit_category">
-                            {% for cat in grouped_ingredients.keys() %}
-                            <option value="{{ cat }}">{{ cat }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Reorder Level</label>
-                        <input type="number" name="reorder_level" id="edit_reorder_level" step="0.01" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Stock Quantity (Warehouse)</label>
-                        <input type="number" name="stock_qty" id="edit_stock_qty" step="0.01" required 
-                               style="border: 1.5px solid #d7ccc8; background: #fffaf5;">
-                    </div>
-                </div>
-                <div class="modal-footer-custom">
-                    <button type="button" class="btn-secondary" onclick="closeModal('editIngredientModal')">Cancel</button>
-                    <button type="submit" class="btn-primary" style="background: #5d4037;">Save Changes</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <!-- Delete Ingredient Confirmation Modal -->
     <div id="deleteIngredientModal" class="modal-overlay">
         <div class="modal-content-custom" style="max-width: 420px;">
@@ -469,23 +422,25 @@
                 <h3><i class="fas fa-trash-alt me-2"></i> Delete Ingredient</h3>
                 <button class="close-modal" onclick="closeModal('deleteIngredientModal')">&times;</button>
             </div>
-            <div class="modal-body-custom" style="text-align:center; padding: 32px 24px;">
-                <div style="width:60px; height:60px; background:rgba(198,40,40,0.1); border-radius:50%; display:flex; align-items:center; justify-content:center; margin: 0 auto 16px;">
-                    <i class="fas fa-exclamation-triangle" style="font-size:1.5rem; color:#c62828;"></i>
+            <form id="deleteIngredientForm" method="POST">
+                <div class="modal-body-custom" style="text-align:center; padding: 32px 24px;">
+                    <div style="width:60px; height:60px; background:rgba(198,40,40,0.1); border-radius:50%; display:flex; align-items:center; justify-content:center; margin: 0 auto 16px;">
+                        <i class="fas fa-exclamation-triangle" style="font-size:1.5rem; color:#c62828;"></i>
+                    </div>
+                    <h4 style="margin:0 0 10px; color: var(--text); font-weight: 700;">Are you sure?</h4>
+                    <p style="color: var(--muted); font-size: 0.9rem; margin:0;">
+                        You are about to permanently delete <strong id="deleteIngName" style="color:#c62828;"></strong> from stock levels.<br>
+                        <span style="font-size: 0.8rem; color:#c62828; font-weight: 600; margin-top: 8px; display: block;">This will also delete all its waste records, batches, and recipe links.</span>
+                    </p>
                 </div>
-                <h4 style="margin:0 0 10px; color: var(--text); font-weight: 700;">Are you sure?</h4>
-                <p style="color: var(--muted); font-size: 0.9rem; margin:0;">
-                    You are about to permanently delete <strong id="deleteIngName" style="color:#c62828;"></strong> from stock levels.<br>
-                    <span style="font-size: 0.8rem; color:#c62828; font-weight: 600; margin-top: 8px; display: block;">This will also delete all its waste records, batches, and recipe links.</span>
-                </p>
-            </div>
-            <div class="modal-footer-custom" style="justify-content:center; gap:16px;">
-                <button type="button" class="btn-secondary" onclick="closeModal('deleteIngredientModal')">Cancel</button>
-                <button type="button" onclick="executeDeleteIngredient()"
-                    style="background:#c62828; color:white; border:none; padding:10px 24px; border-radius:10px; cursor:pointer; font-weight:600;">
-                    <i class="fas fa-trash-alt me-1"></i> Delete
-                </button>
-            </div>
+                <div class="modal-footer-custom" style="justify-content:center; gap:16px;">
+                    <button type="button" class="btn-secondary" onclick="closeModal('deleteIngredientModal')">Cancel</button>
+                    <button type="submit"
+                        style="background:#c62828; color:white; border:none; padding:10px 24px; border-radius:10px; cursor:pointer; font-weight:600;">
+                        <i class="fas fa-trash-alt me-1"></i> Delete
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div> <!-- end inventoryDashboardContainer -->
@@ -521,48 +476,14 @@
         openModal('wasteModal');
     }
 
-    function openEditModal(id, name, category, reorderLevel, currentQty) {
-        const form = document.getElementById('editIngredientForm');
-        form.action = `/staff/inventory/ingredients/edit/${id}`;
-        
-        document.getElementById('edit_name').value = name;
-        document.getElementById('edit_category').value = category || 'General';
-        document.getElementById('edit_reorder_level').value = reorderLevel;
-        document.getElementById('edit_stock_qty').value = currentQty || 0;
-        
-        openModal('editIngredientModal');
-    }
-
     let deleteIngredientId = null;
     function openDeleteIngredientModal(id, name) {
         deleteIngredientId = id;
         document.getElementById('deleteIngName').textContent = name;
+        const form = document.getElementById('deleteIngredientForm');
+        if (form) form.action = `/staff/inventory/ingredients/delete/${id}`;
         openModal('deleteIngredientModal');
     }
-
-    function executeDeleteIngredient() {
-        if (!deleteIngredientId) return;
-        closeModal('deleteIngredientModal');
-        
-        fetch(`/staff/inventory/ingredients/delete/${deleteIngredientId}`, {
-            method: 'POST',
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                if (window.showToast) window.showToast('success', data.message);
-                refreshDashboard();
-            } else {
-                if (window.showToast) window.showToast('danger', data.message || 'Failed to delete ingredient.');
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            if (window.showToast) window.showToast('danger', 'Network error. Failed to delete ingredient.');
-        });
-    }
-
 
     function applyDashboardFilter() {
         const category = document.getElementById('ingredientCategoryFilter').value;
@@ -795,134 +716,6 @@
         if (event.target.classList.contains('modal-overlay')) {
             event.target.style.display = 'none';
         }
-    }
-
-    function pollInventoryDashboard() {
-        if (document.querySelector('.modal-overlay[style*="flex"]')) return;
-
-        fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-        .then(response => response.text())
-        .then(html => {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            
-            ['fullInventoryTableBody', 'lastUpdateText', 'itemCount', 'categorySelector'].forEach(id => {
-                const o = document.getElementById(id);
-                const n = doc.getElementById(id);
-                if (o && n && o.innerHTML !== n.innerHTML) o.innerHTML = n.innerHTML;
-            });
-
-            const ids = ['inventoryDashboardContainer', 'lastUpdateText', 'ingredientCountPill'];
-            ids.forEach(id => {
-                const oldEl = document.getElementById(id);
-                const newEl = doc.getElementById(id);
-                if (oldEl && newEl && oldEl.innerHTML !== newEl.innerHTML) {
-                    oldEl.innerHTML = newEl.innerHTML;
-                    if (id === 'inventoryDashboardContainer') applyDashboardFilter();
-                }
-            });
-        })
-        .catch(err => console.warn('Inventory sync failed:', err));
-    }
-
-    let _lastLowStockCount = {{ low_stock|default(0) }};
-
-    function pollLowStockAlerts() {
-        fetch('{{ url_for("inventory_portal.inventory_api_alerts") }}')
-        .then(r => r.json())
-        .then(data => {
-            if (!data.success) return;
-            let banner = document.getElementById('lowStockAlertBanner');
-            if (data.count > 0) {
-                if (!banner) {
-                    banner = document.createElement('div');
-                    banner.id = 'lowStockAlertBanner';
-                    banner.style.cssText = 'background:#fff3e0;border:1px solid #ffcc80;border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:0.85rem;color:#e65100;font-weight:600;';
-                    const container = document.getElementById('inventoryDashboardContainer');
-                    if (container) container.prepend(banner);
-                }
-                const names = data.alerts.slice(0, 3).map(a => a.name).join(', ');
-                const more = data.count > 3 ? ` (+${data.count - 3} more)` : '';
-                banner.innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i><strong>${data.count} low-stock item(s):</strong> ${names}${more}`;
-            } else if (banner) {
-                banner.remove();
-            }
-            if (_lastLowStockCount > 0 && data.count > _lastLowStockCount && window.showToast) {
-                showToast('warning', `${data.count - _lastLowStockCount} new low-stock alert(s)!`);
-            }
-            _lastLowStockCount = data.count;
-        })
-        .catch(() => {});
-    }
-
-    setInterval(pollInventoryDashboard, 30000);
-    setInterval(pollLowStockAlerts, 20000);
-    document.addEventListener('DOMContentLoaded', pollLowStockAlerts);
-
-    function refreshDashboard() {
-        return fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-        .then(response => response.text())
-        .then(html => {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const ids = ['inventoryDashboardContainer', 'lastUpdateText', 'ingredientCountPill'];
-            ids.forEach(id => {
-                const oldEl = document.getElementById(id);
-                const newEl = doc.getElementById(id);
-                if (oldEl && newEl) {
-                    oldEl.innerHTML = newEl.innerHTML;
-                }
-            });
-            applyDashboardFilter();
-        })
-        .catch(err => console.error('Error refreshing dashboard:', err));
-    }
-
-    function submitAjaxForm(event, modalId) {
-        event.preventDefault();
-        const form = event.target;
-        const formData = new FormData(form);
-        const url = form.action || form.getAttribute('action');
-        const method = form.method || 'POST';
-        
-        const submitBtn = form.querySelector('button[type="submit"]');
-        const originalBtnText = submitBtn ? submitBtn.innerHTML : 'Submit';
-        if (submitBtn) {
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-        }
-        
-        fetch(url, {
-            method: method,
-            body: formData,
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        })
-        .then(response => {
-            if (!response.ok) {
-                return response.json().then(errData => { throw new Error(errData.message || 'Server error'); });
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                closeModal(modalId);
-                form.reset();
-                if (window.showToast) window.showToast('success', data.message);
-                refreshDashboard();
-            } else {
-                if (window.showToast) window.showToast('danger', data.message || 'Operation failed.');
-            }
-        })
-        .catch(err => {
-            console.error('AJAX Error:', err);
-            if (window.showToast) window.showToast('danger', err.message || 'Network error. Please try again.');
-        })
-        .finally(() => {
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalBtnText;
-            }
-        });
     }
 </script>
 {% endblock %}

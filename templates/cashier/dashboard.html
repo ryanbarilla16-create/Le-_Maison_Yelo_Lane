@@ -550,7 +550,7 @@
                 <div class="pos-card-body">
                     {% for item in order.items %}
                     <div class="pos-item-row">
-                        <img src="{{ item.menu_item.image_url or url_for('static', filename='img/default-food.png') }}" class="pos-item-thumb" onerror="this.src='/static/img/default-food.png';">
+                        <img loading="lazy" decoding="async" src="{{ item.menu_item.image_url or url_for('static', filename='img/default-food.png') }}" class="pos-item-thumb" onerror="this.src='/static/img/default-food.png';">
                         <div class="pos-item-details">
                             <span class="pos-item-name">{{ item.menu_item.name }}</span>
                             <span class="pos-item-qty">Qty: {{ item.quantity }}</span>

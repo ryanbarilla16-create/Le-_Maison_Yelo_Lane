@@ -30,7 +30,7 @@
 <div class="position-relative w-100 shadow-lg"
     style="height: 400px; border-radius: 20px; overflow: hidden; margin-bottom: 4rem; margin-top: 90px;">
     <img loading="eager" fetchpriority="high" decoding="sync"
-        src="https://images.unsplash.com/photo-1559925393-8be0ec4767c8?q=80&w=2071&auto=format&fit=crop"
+        src="https://images.unsplash.com/photo-1559925393-8be0ec4767c8?q=65&w=1200&auto=format&fit=crop"
         class="w-100 h-100" style="object-fit: cover; filter: brightness(0.6);" alt="Menu Banner">
     <div class="position-absolute top-50 start-50 translate-middle text-center w-100 px-3">
         <h1
@@ -656,7 +656,6 @@
                         btn.style.background = '#28a745';
                         btn.style.color = '#fff';
                         updateCartBadge(data.cart_count);
-                        if (typeof openMiniCart === 'function') openMiniCart();
                         setTimeout(function () {
                             btn.innerHTML = originalHTML;
                             btn.style.background = '';
@@ -761,7 +760,6 @@
                             btn.style.background = originalBg;
                             btn.disabled = false;
                             form.querySelector('input[name="quantity"]').value = 1;
-                            if (typeof openMiniCart === 'function') openMiniCart();
                         }, 1000);
                     }
                 })

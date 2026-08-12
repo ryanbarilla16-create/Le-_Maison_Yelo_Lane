@@ -394,63 +394,83 @@
     {% endif %}
     {% include 'includes/modals.html' %}
 
-    <!-- Mini Cart Sidebar -->
-    <div class="mini-cart-overlay" id="miniCartOverlay" onclick="closeMiniCart()"></div>
-    <div class="mini-cart-drawer" id="miniCartDrawer">
-        <div class="m-cart-header">
-            <h4><i class="fas fa-shopping-basket me-2" style="color:#8B634B;"></i>My Tray</h4>
-            <button class="btn-close" onclick="closeMiniCart()" style="box-shadow:none;"></button>
-        </div>
+    <!-- Modular Slide-Out Cart Drawer -->
+    {% include 'customer/components/cart_drawer.html' %}
 
-        <div class="m-cart-body" id="miniCartBody">
-            <!-- Items load here via JS -->
-            <div class="text-center p-5">
-                <div class="spinner-border spinner-border-sm" style="color: #8B634B;"></div>
-            </div>
-        </div>
-
-        <div class="m-cart-footer" id="miniCartFooter" style="display: none;">
-            <div class="m-cart-total">
-                <span>Estimated Total</span>
-                <span id="miniCartTotal">₱0.00</span>
-            </div>
-            <div class="m-cart-actions">
-                <a href="{{ url_for('main.view_cart') }}"
-                    class="btn-m-checkout d-block w-100 text-center text-decoration-none">View Full Cart</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- Global Cart Scripts -->
+    <!-- Global Cart Scripts & Controller -->
     <script>
-        function toggleMiniCart() {
-            const drawer = document.getElementById('miniCartDrawer');
-            const overlay = document.getElementById('miniCartOverlay');
-            if (drawer.classList.contains('open')) {
-                closeMiniCart();
+        let currentOrderType = 'delivery';
+
+        function setOrderType(type) {
+            currentOrderType = type;
+            const btnDelivery = document.getElementById('btnOrderDelivery');
+            const btnPickup = document.getElementById('btnOrderPickup');
+            const locationText = document.getElementById('orderLocationText');
+
+            if (type === 'delivery') {
+                if (btnDelivery) { btnDelivery.classList.add('active'); btnDelivery.classList.remove('inactive'); }
+                if (btnPickup) { btnPickup.classList.add('inactive'); btnPickup.classList.remove('active'); }
+                if (locationText) locationText.innerText = 'Delivery to: Your Saved Address';
             } else {
-                openMiniCart();
+                if (btnPickup) { btnPickup.classList.add('active'); btnPickup.classList.remove('inactive'); }
+                if (btnDelivery) { btnDelivery.classList.add('inactive'); btnDelivery.classList.remove('active'); }
+                if (locationText) locationText.innerText = 'Pick-up at: Le Maison Main Branch';
             }
         }
 
-        function openMiniCart() {
-            document.getElementById('miniCartDrawer').classList.add('open');
-            document.getElementById('miniCartOverlay').classList.add('show');
+        function toggleMiniCart() {
+            const drawer = document.getElementById('miniCartDrawer');
+            if (!drawer) return;
+            if (drawer.classList.contains('open')) {
+                closeMiniCart();
+            } else {
+                openMiniCart(true); // Explicit user click on TopNav Cart button
+            }
+        }
+
+        function openMiniCart(isUserClick = false) {
+            // STRICT GUARANTEE: Refuse to open drawer unless explicitly clicked by user on TopNav Cart button
+            if (isUserClick !== true) {
+                return;
+            }
+            const drawer = document.getElementById('miniCartDrawer');
+            const overlay = document.getElementById('miniCartOverlay');
+            if (drawer) drawer.classList.add('open');
+            if (overlay) overlay.classList.add('show');
+            document.body.style.overflow = 'hidden';
             loadMiniCart();
         }
 
         function closeMiniCart() {
-            document.getElementById('miniCartDrawer').classList.remove('open');
-            document.getElementById('miniCartOverlay').classList.remove('show');
+            const drawer = document.getElementById('miniCartDrawer');
+            const overlay = document.getElementById('miniCartOverlay');
+            if (drawer) drawer.classList.remove('open');
+            if (overlay) overlay.classList.remove('show');
+            document.body.style.overflow = '';
         }
 
         function loadMiniCart() {
             const body = document.getElementById('miniCartBody');
-            const footer = document.getElementById('miniCartFooter');
+            const countBadge = document.getElementById('drawerItemCountBadge');
+            const subtotalEl = document.getElementById('miniCartSubtotal');
+            const deliveryEl = document.getElementById('miniCartDeliveryFee');
+            const totalEl = document.getElementById('miniCartTotal');
+            const checkoutBtn = document.getElementById('miniCartCheckoutBtn');
 
             fetch('/api/cart/items')
                 .then(r => r.json())
                 .then(data => {
+                    const count = data.cart_count || 0;
+                    const totalFormatted = '₱' + (data.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+                    if (countBadge) {
+                        countBadge.innerText = `${count} item${count !== 1 ? 's' : ''}`;
+                    }
+
+                    if (subtotalEl) subtotalEl.innerText = totalFormatted;
+                    if (deliveryEl) deliveryEl.innerText = 'FREE';
+                    if (totalEl) totalEl.innerText = totalFormatted;
+
                     if (data.items && data.items.length > 0) {
                         let html = `
                             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -486,24 +506,32 @@
                         });
 
                         body.innerHTML = html;
-                        document.getElementById('miniCartTotal').innerText = '₱' + data.total.toLocaleString(undefined, { minimumFractionDigits: 2 });
-                        footer.style.display = 'block';
-                        updateMiniCheckoutBtn();
+
+                        // Enable Sticky Checkout Button
+                        if (checkoutBtn) {
+                            checkoutBtn.classList.remove('disabled');
+                            checkoutBtn.removeAttribute('disabled');
+                        }
                     } else {
+                        // Empty State (NO redundant "Go to Menu" button)
                         body.innerHTML = `
                             <div class="m-cart-empty">
                                 <i class="fas fa-shopping-basket"></i>
-                                <p style="font-family: 'Playfair Display', serif; font-size: 1.2rem; color: #4E342E; font-weight: 700;">Your tray is empty</p>
-                                <p style="font-size: 0.85rem; padding: 0 1rem;">Looks like you haven't added anything yet. Discover our delicious menu!</p>
-                                <a href="/menu" onclick="closeMiniCart()" class="btn-m-checkout d-inline-block px-5 mt-3" style="text-decoration:none;">Go to Menu</a>
+                                <h5 class="fw-bold mb-2" style="font-family: 'Playfair Display', serif; color: #4E342E; font-size: 1.25rem;">Your tray is empty</h5>
+                                <p class="text-muted mb-0" style="font-size: 0.85rem; max-width: 260px; line-height: 1.4;">Looks like you haven't added anything yet. Discover our delicious menu!</p>
                             </div>
                         `;
-                        footer.style.display = 'none';
+
+                        // Disable Sticky Checkout Button on Empty Cart
+                        if (checkoutBtn) {
+                            checkoutBtn.classList.add('disabled');
+                            checkoutBtn.setAttribute('disabled', 'disabled');
+                        }
                     }
                 })
                 .catch(err => {
                     console.error('Mini Cart Error:', err);
-                    body.innerHTML = '<div class="text-center p-5 text-danger">Failed to load cart.</div>';
+                    body.innerHTML = '<div class="text-center p-5 text-danger">Failed to load order tray.</div>';
                 });
         }
 
@@ -545,13 +573,24 @@
             });
         }
 
-        // Expose helper to update badge (if not already defined globably)
+        // Expose helper to update badge and trigger cart micro-interaction animation
         window.updateCartBadge = function (count) {
-            const badge = document.querySelector('.cart-badge');
-            if (badge) {
-                badge.innerText = count;
-                badge.style.display = count > 0 ? 'block' : 'none';
-            }
+            const badges = document.querySelectorAll('.cart-badge, #mobileCartBadge');
+            badges.forEach(b => {
+                if (count !== undefined && count !== null) {
+                    b.innerText = count;
+                    b.style.display = count > 0 ? 'inline-block' : 'none';
+                }
+            });
+
+            // Trigger non-blocking micro-interaction animation on cart button & badge
+            const cartElements = document.querySelectorAll('.nav-cart-pill-btn, .cart-badge');
+            cartElements.forEach(el => {
+                el.classList.remove('cart-bump-pop');
+                void el.offsetWidth; // Force reflow
+                el.classList.add('cart-bump-pop');
+                setTimeout(() => el.classList.remove('cart-bump-pop'), 450);
+            });
         };
 
         function miniQtyChange(itemId, action) {

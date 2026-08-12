@@ -13,7 +13,7 @@
             style="border-radius: 10px; font-weight: 700; font-size: 0.85rem; text-decoration: none;">
             <i class="fas fa-trash-alt me-2"></i> View Trash
         </a>
-        {% if current_user.role|upper == 'ADMIN' %}
+        {% if current_user.role|upper in ['ADMIN', 'SUPER_ADMIN'] %}
         <button class="btn-admin-primary px-4 py-2" onclick="openAddModal()"
             style="border-radius: 10px; border: none; font-weight: 700; font-size: 0.85rem;">
             <i class="fas fa-plus me-2"></i> Add Item
@@ -114,7 +114,7 @@
 <div class="modal fade" id="editMenuModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <form method="POST" id="editMenuForm" action="{{ url_for('admin.menu_edit', item_id=0) }}">
+            <form method="POST" id="editMenuForm" action="{{ url_for('admin.menu_edit', item_id=0) }}" enctype="multipart/form-data">
                 <div class="modal-header">
                     <h5 class="modal-title" id="editMenuTitle">Edit Menu Item</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -136,15 +136,17 @@
                             </select>
                         </div>
                     </div>
-                    <div class="mb-3"><label>Image URL</label><input class="form-control" id="editItemImageUrl"
-                            name="image_url" type="url" maxlength="255"></div>
+                    <div class="mb-3">
+                        <label class="form-label font-weight-bold">Item Image</label>
+                        <input class="form-control" type="file" name="image_file" accept="image/*">
+                        <div class="form-text text-muted" style="font-size: 0.78rem;">Upload photo from device (Max 5MB - Auto-compressed)</div>
+                    </div>
                     <div class="mb-3 form-check">
                         <input type="checkbox" class="form-check-input" id="editItemBestSeller" name="is_bestseller">
                         <label class="form-check-label" for="editItemBestSeller">Best Seller (Featured)</label>
                     </div>
-                </div> <!-- Missing closing div for modal-body -->
-                <div class="modal-footer"><button type="submit" class="btn-admin btn-admin-primary">Save
-                        Changes</button></div>
+                </div>
+                <div class="modal-footer"><button type="submit" class="btn-admin btn-admin-primary">Save Changes</button></div>
             </form>
         </div>
     </div>
@@ -154,7 +156,7 @@
 <div class="modal fade" id="addMenuModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <form method="POST" action="{{ url_for('admin.menu_add') }}">
+            <form method="POST" action="{{ url_for('admin.menu_add') }}" enctype="multipart/form-data">
                 <div class="modal-header">
                     <h5 class="modal-title">Add New Menu Item</h5><button type="button" class="btn-close"
                         data-bs-dismiss="modal"></button>
@@ -175,16 +177,17 @@
                             </select>
                         </div>
                     </div>
-                    <div class="mb-3"><label>Image URL</label><input class="form-control" name="image_url" type="url"
-                            maxlength="255"></div>
+                    <div class="mb-3">
+                        <label class="form-label font-weight-bold">Item Image</label>
+                        <input class="form-control" type="file" name="image_file" accept="image/*">
+                        <div class="form-text text-muted" style="font-size: 0.78rem;">Upload photo from device (Max 5MB - Auto-compressed)</div>
+                    </div>
                     <div class="mb-3 form-check">
                         <input type="checkbox" class="form-check-input" id="addItemBestSeller" name="is_bestseller">
                         <label class="form-check-label" for="addItemBestSeller">Best Seller (Featured)</label>
                     </div>
-                </div> <!-- Missing closing div for modal-body -->
-                <div class="modal-footer"><button type="submit" class="btn-admin btn-admin-primary">Add
-                        Item</button>
-                    </div>
+                </div>
+                <div class="modal-footer"><button type="submit" class="btn-admin btn-admin-primary">Add Item</button></div>
             </form>
         </div>
     </div>
@@ -414,7 +417,7 @@
 </style>
 
 <script>
-    const IS_ADMIN = {{ 'true' if current_user.role| upper == 'ADMIN' else 'false' }};
+    const IS_ADMIN = {{ 'true' if current_user.role|upper in ['ADMIN', 'SUPER_ADMIN'] else 'false' }};
 
     function escapeHtml(str) {
         return String(str || '').replace(/[&<>"']/g, function (m) {
@@ -683,7 +686,6 @@
             document.getElementById('editItemName').value = data.name || '';
             document.getElementById('editItemDescription').value = data.description || '';
             document.getElementById('editItemPrice').value = data.price ?? 0;
-            document.getElementById('editItemImageUrl').value = data.image_url || '';
             document.getElementById('editItemBestSeller').checked = !!data.is_bestseller;
 
             const catSel = document.getElementById('editItemCategory');

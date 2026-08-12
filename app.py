@@ -63,6 +63,24 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
 
 # Database and Login Manager initialization
 db.init_app(app)
+
+# SQLite performance optimization listener (WAL mode, RAM cache, sync normal)
+from sqlalchemy import event
+from sqlalchemy.engine import Engine
+
+@event.listens_for(Engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    if type(dbapi_connection).__module__ == 'sqlite3':
+        try:
+            cursor = dbapi_connection.cursor()
+            cursor.execute("PRAGMA journal_mode=WAL")
+            cursor.execute("PRAGMA synchronous=NORMAL")
+            cursor.execute("PRAGMA temp_store=MEMORY")
+            cursor.execute("PRAGMA cache_size=-64000")
+            cursor.close()
+        except Exception:
+            pass
+
 migrate = Migrate(app, db) # Handles seamless database upgrades
 
 login_manager = LoginManager()
@@ -164,6 +182,8 @@ app.register_blueprint(debug_bp)
 with app.app_context():
     try:
         db.create_all()
+        from update_db import sync_database_schema
+        sync_database_schema()
         try:
             dialect = db.engine.dialect.name
         except Exception:

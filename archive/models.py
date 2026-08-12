@@ -7,13 +7,9 @@ PostgreSQL/Neon: `archive` schema on the same database (no second DB required).
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+from config import Config
 
-_main_db = os.environ.get("NEON_DATABASE_URL") or os.environ.get("DATABASE_URL") or ""
-_USE_ARCHIVE_SCHEMA = (
-    ("postgresql" in _main_db or "postgres" in _main_db)
-    and not os.environ.get("ARCHIVE_DATABASE_URL")
-)
+_USE_ARCHIVE_SCHEMA = getattr(Config, "ARCHIVE_USE_SCHEMA", False)
 _ARCHIVE_TABLE_ARGS = {"schema": "archive"} if _USE_ARCHIVE_SCHEMA else {}
 
 from models import db

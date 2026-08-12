@@ -20,12 +20,7 @@ window.showToast = function(category, message) {
     const container = document.getElementById('toastContainer');
     if (!container) return;
 
-    // Auto-open mini-cart sidebar when item is added to cart
-    if (category === 'success' && message && (message.toLowerCase().includes('added') || message.toLowerCase().includes('cart'))) {
-        if (typeof openMiniCart === 'function') {
-            openMiniCart();
-        }
-    }
+    // Toast notification feedback (Auto-drawer opening disabled for frictionless ordering)
 
     const cfg = {
         success: { icon: '✅', title: 'Success',     color: '#2E7D32', bg: '#E8F5E9' },
@@ -45,13 +40,14 @@ window.showToast = function(category, message) {
             <div class="toast-msg">${message}</div>
         </div>
         <button class="toast-close" onclick="dismissToast(this.parentElement)">✕</button>
-        <div class="toast-progress" style="background:${c.color};"></div>
+        <div class="toast-progress" style="background:${c.color}; animation-duration: 3s;"></div>
     `;
 
     container.appendChild(toast);
     requestAnimationFrame(() => { requestAnimationFrame(() => toast.classList.add('show')); });
 
-    const timer = setTimeout(() => dismissToast(toast), 4500);
+    // Auto dismiss toast after 3 seconds for clean UX
+    const timer = setTimeout(() => dismissToast(toast), 3000);
     toast._timer = timer;
 };
 

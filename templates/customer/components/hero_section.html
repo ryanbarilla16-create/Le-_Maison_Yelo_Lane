@@ -1,0 +1,108 @@
+<!-- ═══ MODULAR COMPONENT: HERO SECTION ═══ -->
+<style>
+    .compactHero {
+        position: relative;
+        width: 100vw;
+        height: 250px;
+        min-height: 230px;
+        overflow: hidden;
+        margin-top: -65px;
+        left: 50%;
+        margin-left: -50vw;
+        border-bottom: 1px solid rgba(139, 99, 75, 0.12);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+    }
+
+    .compactHero img.hero-bg {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        filter: brightness(0.35) saturate(0.95) blur(1px);
+        transform: scale(1.03);
+    }
+
+    .compactHero::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg,
+                rgba(62, 39, 35, 0.55) 0%,
+                rgba(62, 39, 35, 0.8) 75%,
+                rgba(253, 251, 249, 1) 100%);
+        z-index: 1;
+    }
+
+    .compactHero-content {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding-top: 72px; /* Compensate for fixed top navbar height */
+        padding-bottom: 24px;
+    }
+
+    .compactHero-text {
+        text-align: center;
+        padding: 0.5rem 1.5rem;
+        animation: heroFade 0.8s ease-out;
+    }
+
+    @keyframes heroFade {
+        from {
+            opacity: 0;
+            transform: translateY(15px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .compactHero-text .greeting {
+        font-family: 'Playfair Display', serif;
+        font-style: italic;
+        font-size: 1.15rem;
+        color: #D4A862;
+        margin-bottom: 0.4rem;
+        letter-spacing: 1.2px;
+        font-weight: 500;
+        text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .compactHero-text h1 {
+        font-family: 'Playfair Display', serif;
+        font-size: clamp(2rem, 4.2vw, 2.8rem);
+        font-weight: 700;
+        color: #ffffff;
+        margin-bottom: 0.45rem;
+        text-shadow: 0 4px 18px rgba(0, 0, 0, 0.7);
+        letter-spacing: -0.3px;
+        line-height: 1.2;
+    }
+
+    .compactHero-text .tagline {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.78rem;
+        letter-spacing: 3.8px;
+        text-transform: uppercase;
+        font-weight: 600;
+        margin: 0;
+    }
+</style>
+
+<div class="compactHero">
+    <img src="https://images.unsplash.com/photo-1559925393-8be0ec4767c8?q=80&w=2071&auto=format&fit=crop" class="hero-bg" alt="Le Maison Yelo Lane Ambience">
+    <div class="compactHero-content">
+        <div class="compactHero-text">
+            <div class="greeting"><i class="fas fa-sparkles me-1" style="font-size: 0.85rem; color: #D4A862;"></i> Welcome back,</div>
+            <h1>{{ current_user.first_name }} {{ current_user.last_name }}</h1>
+            <div class="tagline">LE MAISON YELO LANE &bull; FINE EPICUREAN SELECTION</div>
+        </div>
+    </div>
+</div>

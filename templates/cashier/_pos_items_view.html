@@ -1,0 +1,89 @@
+<!-- POS Items View Component (Initially Hidden) -->
+<div id="items-view" class="h-100 flex-column overflow-y-auto pe-1" style="display: none; scrollbar-width: thin; scrollbar-color: rgba(139, 99, 75, 0.2) transparent;">
+    
+    <!-- Items Top Action Bar -->
+    <div class="mb-3 d-flex justify-content-between align-items-center bg-white p-2 rounded-3 shadow-sm border" style="border-color: rgba(139, 99, 75, 0.12) !important;">
+        <button type="button" onclick="showCategoriesGrid()" class="btn rounded-pill border shadow-sm px-3 py-1 fw-bold back-btn"
+            style="color: #5D4037; background: #ffffff; font-size: 0.85rem; border-color: rgba(139, 99, 75, 0.2) !important;">
+            <i class="fas fa-arrow-left me-1"></i> Back to Categories
+        </button>
+        <h5 class="mb-0 fw-bold" id="current-category-title" style="color: #8B634B;"></h5>
+    </div>
+
+    <!-- Items Grid Sections -->
+    {% for cat_name, info in categories_data.items() %}
+    <div class="menu-category-section" data-category="{{ cat_name }}" style="display: none; padding-bottom: 2rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 1.2rem; align-items: stretch;">
+            {% for item in items if item.category == cat_name %}
+            <div class="card border-0 shadow-sm d-flex flex-column item-card rounded-4 overflow-hidden position-relative h-100"
+                data-name="{{ item.name|lower }}"
+                style="background: #ffffff; border: 1px solid rgba(139, 99, 75, 0.12) !important; transition: all 0.25s ease;">
+                
+                <!-- Image -->
+                {% if item.image_url %}
+                <div style="height: 135px; overflow: hidden; position: relative; background: #FAF6F0;">
+                    <img loading="lazy" decoding="async" src="{{ item.image_url }}" class="w-100 h-100"
+                        style="object-fit: cover; transition: transform 0.4s ease;"
+                        onerror="this.style.display='none';this.parentNode.innerHTML='<div class=\'w-100 h-100 d-flex align-items-center justify-content-center\'><i class=\'fas fa-utensils fa-2x\' style=\'color:rgba(139,99,75,0.2);\'></i></div>'">
+                </div>
+                {% else %}
+                <div style="height: 135px; background: #FAF6F0; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-utensils fa-2x" style="color: rgba(139,99,75,0.2);"></i>
+                </div>
+                {% endif %}
+
+                <!-- Card Body -->
+                <div class="card-body p-3 d-flex flex-column flex-grow-1 justify-content-between" style="background: #ffffff;">
+                    <div>
+                        {% if item.item_code %}
+                        <span class="badge rounded-pill mb-1 px-2 py-1 fw-bold"
+                            style="background: rgba(93, 64, 55, 0.08); color: #5D4037; font-family: 'Courier New', monospace; font-size: 0.68rem;">
+                            {{ item.item_code }}
+                        </span>
+                        {% endif %}
+
+                        <h6 class="card-title fw-bold m-0 mb-1 text-truncate-2" style="color: #2D2D2D; font-size: 0.92rem; line-height: 1.35; min-height: 2.5em;">
+                            {{ item.name }}
+                        </h6>
+
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-bold fs-6" style="color: #5D4037;">₱{{ "%.2f"|format(item.price) }}</span>
+                            <span class="badge rounded-pill" style="font-size: 0.68rem; color: #8D6E63; background: #FAF6F0;">{{ item.category[:12] }}</span>
+                        </div>
+                    </div>
+
+                    {% if current_user.role|upper in ['ADMIN', 'CASHIER', 'STAFF', 'KITCHEN'] %}
+                    <div class="d-flex align-items-center gap-2 mt-auto pt-2 border-top" style="border-color: rgba(139,99,75,0.1) !important;">
+                        <!-- Quantity Adjust Controls -->
+                        <div class="d-flex align-items-center gap-1 rounded-pill p-1" style="background: #FAF6F0; border: 1px solid rgba(139, 99, 75, 0.15); flex-shrink: 0;">
+                            <button type="button" class="btn btn-sm rounded-circle d-flex align-items-center justify-content-center p-0" 
+                                onclick="adjustQtyInCard(this, {{ item.id }}, -1)"
+                                style="width: 26px; height: 26px; background: #ffffff; border: 1px solid rgba(139, 99, 75, 0.3); color: #5D4037;">
+                                <i class="fas fa-minus" style="font-size: 0.65rem;"></i>
+                            </button>
+                            <input type="number" id="qty_{{ item.id }}" value="1" min="1" max="99" readonly
+                                class="text-center fw-bold border-0 bg-transparent"
+                                style="width: 28px; font-size: 0.85rem; color: #2D2D2D;">
+                            <button type="button" class="btn btn-sm rounded-circle d-flex align-items-center justify-content-center p-0"
+                                onclick="adjustQtyInCard(this, {{ item.id }}, 1)"
+                                style="width: 26px; height: 26px; background: #5D4037; border: none; color: #ffffff;">
+                                <i class="fas fa-plus" style="font-size: 0.65rem;"></i>
+                            </button>
+                        </div>
+
+                        <!-- Add Button -->
+                        <button type="button"
+                            onclick="addFromInput(this, {{ item.id }}, '{{ item.name|replace("'", "\\'") }}', {{ item.price }}, '{{ item.category|replace("'", "\\'") }}', '{{ item.image_url|replace("'", "\\'") if item.image_url else "" }}')"
+                            class="btn btn-sm rounded-pill fw-bold text-white flex-grow-1 shadow-sm transition-all"
+                            style="background: #8B634B; border: none; font-size: 0.8rem; padding: 6px 12px;">
+                            <i class="fas fa-plus me-1" style="font-size: 0.68rem;"></i> Add
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</div>

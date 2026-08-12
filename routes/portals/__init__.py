@@ -497,6 +497,40 @@ def cashier_dashboard():
         )
     ).order_by(Order.created_at.desc()).limit(100).all()
     
+    # Live Auto-Verify Xendit online payment status for any UNPAID orders with a xendit_invoice_id
+    import os, base64, requests
+    xendit_secret_key = os.environ.get('XENDIT_SECRET_KEY')
+    if xendit_secret_key and xendit_secret_key.strip() not in ('add_your_xendit_secret_key_here', ''):
+        api_key_b64 = base64.b64encode(f"{xendit_secret_key.strip()}:".encode('utf-8')).decode('utf-8')
+        headers = { 'Authorization': f'Basic {api_key_b64}' }
+        unpaid_xendit_orders = [o for o in live_orders if o.payment_status == 'UNPAID' and o.xendit_invoice_id]
+        status_updated = False
+        for ord_obj in unpaid_xendit_orders:
+            try:
+                resp = requests.get(f'https://api.xendit.co/v2/invoices/{ord_obj.xendit_invoice_id}', headers=headers, timeout=5)
+                if resp.status_code == 200:
+                    inv_data = resp.json()
+                    inv_status = str(inv_data.get('status', '')).upper()
+                    if inv_status in ['PAID', 'SETTLED']:
+                        ord_obj.payment_status = 'PAID'
+                        if not ord_obj.amount_tendered:
+                            ord_obj.amount_tendered = ord_obj.total_amount
+                        if ord_obj.change_amount is None:
+                            ord_obj.change_amount = 0.0
+                        status_updated = True
+            except Exception as ex:
+                print(f"Xendit Auto-Verify Error for order #{ord_obj.id}: {ex}")
+        if status_updated:
+            db.session.commit()
+            unpaid_orders_count = Order.query.outerjoin(Reservation).filter(
+                Order.is_archived.is_(False),
+                Order.payment_status == 'UNPAID',
+                db.or_(
+                    Order.reservation_id.is_(None),
+                    Reservation.date <= today
+                )
+            ).count()
+    
     return render_template('cashier/dashboard.html', 
                            portal_name=f"{current_user.first_name} {current_user.last_name}",
                            active_orders=active_orders_count,
@@ -948,7 +982,10 @@ def cashier_update_payment_status(order_id):
             try:
                 amount_tendered = float(amount_tendered_raw)
             except (ValueError, TypeError):
-                return jsonify({'success': False, 'message': 'Invalid amount tendered.'}), 400
+                if order.payment_method == 'ONLINE' or order.xendit_invoice_id:
+                    amount_tendered = float(order.total_amount)
+                else:
+                    return jsonify({'success': False, 'message': 'Invalid amount tendered.'}), 400
 
             actual_due = float(order.total_amount)
             if amount_tendered < actual_due:
@@ -1816,7 +1853,33 @@ def kitchen_reset_password():
 # ── Inventory Portal ──────────────────────────────────────────────
 # ══════════════════════════════════════════════════════════════════
 
-INVENTORY_ROLES = ['INVENTORY_STAFF', 'INVENTORY']
+INVENTORY_ROLES = ['INVENTORY_STAFF', 'INVENTORY', 'ADMIN', 'SUPER_ADMIN']
+
+@inventory_bp.before_request
+def enforce_inventory_role_access():
+    if not current_user.is_authenticated:
+        return
+        
+    # Skip API, AJAX, and login routes
+    if request.path.startswith('/api/') or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+        return
+    if request.path in ['/inventory/login', '/staff/inventory/login']:
+        return
+
+    user_role = (getattr(current_user, 'role', '') or '').upper()
+    is_admin = user_role in ['ADMIN', 'SUPER_ADMIN']
+
+    if request.path.startswith('/admin'):
+        if not is_admin:
+            if '/inventory' in request.path:
+                staff_path = request.path.replace('/admin', '/staff', 1)
+                return redirect(staff_path)
+            else:
+                return redirect(url_for('inventory_portal.inventory_dashboard'))
+    elif request.path.startswith('/staff'):
+        if is_admin:
+            admin_path = request.path.replace('/staff', '/admin', 1)
+            return redirect(admin_path)
 
 @inventory_bp.route('/inventory/login', methods=['GET', 'POST'])
 @inventory_bp.route('/staff/inventory/login', methods=['GET', 'POST'])
@@ -1840,10 +1903,14 @@ def _get_ingredient_food_categories():
     return cats_by_ing
 
 @inventory_bp.route('/staff/inventory')
+@inventory_bp.route('/staff/inventory/levels')
+@inventory_bp.route('/admin/inventory')
+@inventory_bp.route('/admin/inventory/levels')
 def inventory_dashboard():
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
         return redirect(url_for('cashier_portal.staff_login'))
-        
+    
+    base_layout = 'admin/base.html' if request.path.startswith('/admin') else 'layouts/staff_layout.html'
     user_branch = getattr(current_user, 'branch', None)
     query = Ingredient.query
     if user_branch and user_branch != 'ALL':
@@ -1872,6 +1939,7 @@ def inventory_dashboard():
     grouped_ingredients = dict(sorted(grouped_ingredients.items()))
         
     return render_template('inventory/dashboard.html',
+                           base_layout=base_layout,
                            portal_name=f"{current_user.first_name} {current_user.last_name}",
                            total_items=total_items,
                            low_stock=low_stock_count,
@@ -1911,10 +1979,12 @@ def inventory_api_alerts():
 
 
 @inventory_bp.route('/staff/inventory/recipes')
+@inventory_bp.route('/admin/inventory/recipes')
 def inventory_recipes():
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
         return redirect(url_for('cashier_portal.staff_login'))
     
+    base_layout = 'admin/base.html' if request.path.startswith('/admin') else 'layouts/staff_layout.html'
     from itertools import groupby
     user_branch = getattr(current_user, 'branch', None)
     
@@ -1938,6 +2008,7 @@ def inventory_recipes():
     all_ingredients = ing_q.order_by(Ingredient.name).all()
     
     return render_template('inventory/recipes.html',
+                           base_layout=base_layout,
                            portal_name=f"{current_user.first_name} {current_user.last_name}",
                            grouped_items=grouped_items,
                            menu_categories=menu_categories,
@@ -2072,10 +2143,12 @@ def inventory_delete_recipe_item(item_id):
 
 
 @inventory_bp.route('/staff/inventory/batches')
+@inventory_bp.route('/admin/inventory/batches')
 def inventory_ingredient_batches():
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
         return redirect(url_for('cashier_portal.staff_login'))
     
+    base_layout = 'admin/base.html' if request.path.startswith('/admin') else 'layouts/staff_layout.html'
     from datetime import date
     from sqlalchemy.orm import selectinload
     
@@ -2110,6 +2183,7 @@ def inventory_ingredient_batches():
         ing_menu_cats[ing.id] = [c[0] for c in cats if c[0]]
 
     return render_template('staff/batches.html',
+                           base_layout=base_layout,
                            batches=batches,
                            ingredients=ingredients,
                            today=today,
@@ -2166,10 +2240,12 @@ def inventory_add_ingredient_batch():
     return redirect(url_for('inventory_portal.inventory_ingredient_batches'))
 
 @inventory_bp.route('/staff/inventory/full')
+@inventory_bp.route('/admin/inventory/full')
 def inventory_full():
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
         return redirect(url_for('cashier_portal.staff_login'))
     
+    base_layout = 'admin/base.html' if request.path.startswith('/admin') else 'layouts/staff_layout.html'
     user_branch = getattr(current_user, 'branch', None)
     query = Ingredient.query
     if user_branch and user_branch != 'ALL':
@@ -2187,18 +2263,21 @@ def inventory_full():
     categories = sorted(list(categories))
     suppliers = Supplier.query.order_by(Supplier.name).all()
     
-    return render_template('inventory/full.html', 
+    return render_template('inventory/full.html',
+                           base_layout=base_layout,
                            ingredients=all_ingredients,
                            categories=categories,
                            suppliers=suppliers,
                            portal_name=f"{current_user.first_name} {current_user.last_name}")
 
 @inventory_bp.route('/staff/inventory/ingredient-setup')
+@inventory_bp.route('/admin/inventory/ingredient-setup')
 def inventory_ingredient_setup():
     """Dedicated page to assign supplier, category, and code to unsetup ingredients."""
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
         return redirect(url_for('cashier_portal.staff_login'))
 
+    base_layout = 'admin/base.html' if request.path.startswith('/admin') else 'layouts/staff_layout.html'
     from sqlalchemy import or_
 
     user_branch = getattr(current_user, 'branch', None)
@@ -2222,6 +2301,7 @@ def inventory_ingredient_setup():
 
     return render_template(
         'inventory/ingredient_setup.html',
+        base_layout=base_layout,
         ingredients=unassigned_ingredients,
         suppliers=suppliers_list,
         menu_categories=menu_categories,
@@ -2277,10 +2357,12 @@ def api_ingredient_setup(ing_id):
 
 
 @inventory_bp.route('/staff/inventory/suppliers')
+@inventory_bp.route('/admin/inventory/suppliers')
 def inventory_suppliers():
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
         return redirect(url_for('cashier_portal.staff_login'))
     
+    base_layout = 'admin/base.html' if request.path.startswith('/admin') else 'layouts/staff_layout.html'
     from collections import defaultdict
     from models import SupplierPayment
     
@@ -2328,7 +2410,8 @@ def inventory_suppliers():
     br_expenses = float(db.session.query(func.coalesce(func.sum(SupplierPayment.amount), 0)).filter(SupplierPayment.branch == target_branch).scalar())
     available_funds = br_order_revenue - br_expenses
     
-    return render_template('inventory/suppliers.html', 
+    return render_template('inventory/suppliers.html',
+                           base_layout=base_layout,
                            suppliers=suppliers_list,
                            menu_categories=menu_categories,
                            recent_payments=recent_payments,
@@ -2393,57 +2476,71 @@ def inventory_add_ingredient():
     return redirect(url_for('inventory_portal.inventory_full'))
 
 @inventory_bp.route('/staff/inventory/ingredients/edit/<int:ing_id>', methods=['POST'])
+@inventory_bp.route('/admin/inventory/ingredients/edit/<int:ing_id>', methods=['POST'])
 def inventory_edit_ingredient(ing_id):
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
-    if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
+    if not current_user.is_authenticated or current_user.role.upper() not in ['ADMIN', 'SUPER_ADMIN']:
         if is_ajax:
-            return jsonify({'success': False, 'message': 'Unauthorized'}), 403
-        return redirect(url_for('cashier_portal.staff_login'))
-    
+            return jsonify({'success': False, 'message': 'Forbidden: Only Administrators can edit ingredient metadata.'}), 403
+        flash('Unauthorized: Only Administrators can edit ingredient metadata.', 'danger')
+        return redirect(request.referrer or url_for('inventory_portal.inventory_full'))
+
     ing = Ingredient.query.get_or_404(ing_id)
+    old_name = ing.name
     
     name = request.form.get('name', '').strip()
-    category = request.form.get('category', 'General')
-    reorder_level = request.form.get('reorder_level', 0, type=float)
-    stock_qty = request.form.get('stock_qty', type=float)
-    supplier_id = request.form.get('supplier_id')
+    ingredient_code = request.form.get('ingredient_code', '').strip()
+    category = request.form.get('category', '').strip()
+    unit = request.form.get('unit', '').strip()
+    reorder_level = request.form.get('reorder_level', type=float)
+
+    # CRITICAL ANTI-FRAUD RULE: Stock quantity is kept strictly untouched from this endpoint!
+
+    if name:
+        ing.name = name
+    if ingredient_code:
+        ing.ingredient_code = ingredient_code
+    if unit:
+        ing.unit = unit
+    if reorder_level is not None:
+        ing.reorder_level = reorder_level
+        
+    if category:
+        ing.food_categories = [category]
+
+    # Task 3: Audit History Dispatch
+    from models import InventoryLog, AuditLog
     
-    if not name:
-        msg = 'Ingredient name is required.'
-        if is_ajax:
-            return jsonify({'success': False, 'message': msg}), 400
-        flash(msg, 'danger')
-        return redirect(url_for('inventory_portal.inventory_full'))
-        
-    ing.name = name
-    ing.category = category
-    ing.reorder_level = reorder_level
-    if stock_qty is not None:
-        ing.stock_qty = stock_qty
-        
-    if supplier_id:
-        try:
-            ing.supplier_id = int(supplier_id)
-        except (ValueError, TypeError):
-            ing.supplier_id = None
-    else:
-        ing.supplier_id = None
+    inv_log = InventoryLog(
+        ingredient_id=ing.id,
+        user_id=current_user.id,
+        action='EDIT',
+        quantity_changed=0,
+        new_stock_qty=ing.stock_qty,
+        notes=f"Updated ingredient metadata ({old_name} -> {ing.name})"
+    )
+    db.session.add(inv_log)
+
+    audit_log = AuditLog(
+        user_id=current_user.id,
+        action='EDIT',
+        target_type='Ingredient',
+        target_id=ing.id,
+        description=f"Updated ingredient metadata for '{ing.name}' (Code: {ing.ingredient_code}, Unit: {ing.unit}, Reorder Level: {ing.reorder_level})",
+        ip_address=request.remote_addr
+    )
+    db.session.add(audit_log)
     
     db.session.commit()
-    msg = f'Changes saved for "{name}".'
+
+    msg = f'Ingredient "{ing.name}" metadata updated successfully.'
     if is_ajax:
-        return jsonify({
-            'success': True,
-            'message': msg,
-            'ingredient': {
-                'id': ing.id,
-                'name': ing.name,
-                'category': ing.category,
-                'stock_qty': float(ing.stock_qty),
-                'reorder_level': float(ing.reorder_level)
-            }
-        })
+        return jsonify({'success': True, 'message': msg})
     flash(msg, 'success')
+
+    referrer = request.referrer
+    if referrer and ('/inventory/full' in referrer or '/inventory/levels' in referrer):
+        return redirect(referrer)
     return redirect(url_for('inventory_portal.inventory_full'))
 
 @inventory_bp.route('/staff/inventory/suppliers/add', methods=['POST'])
@@ -2717,16 +2814,20 @@ def inventory_delete_ingredient(ing_id):
 
 
 @inventory_bp.route('/staff/inventory/waste')
+@inventory_bp.route('/admin/inventory/waste')
 def inventory_waste_records():
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
         return redirect(url_for('cashier_portal.staff_login'))
     
+    base_layout = 'admin/base.html' if request.path.startswith('/admin') else 'layouts/staff_layout.html'
     waste_records_list = WasteRecord.query.order_by(WasteRecord.created_at.desc()).limit(100).all()
-    return render_template('inventory/waste.html', 
+    return render_template('inventory/waste.html',
+                           base_layout=base_layout,
                            waste_records=waste_records_list,
                            portal_name=f"{current_user.first_name} {current_user.last_name}")
 
 @inventory_bp.route('/staff/inventory/stock-requests')
+@inventory_bp.route('/admin/inventory/stock-requests')
 def inventory_stock_requests():
     from routes.admin import stock_requests
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
@@ -2734,10 +2835,12 @@ def inventory_stock_requests():
     return stock_requests()
 
 @inventory_bp.route('/staff/inventory/audit')
+@inventory_bp.route('/admin/inventory/audit')
 def inventory_audit():
     if not current_user.is_authenticated or current_user.role not in INVENTORY_ROLES:
         return redirect(url_for('cashier_portal.staff_login'))
         
+    base_layout = 'admin/base.html' if request.path.startswith('/admin') else 'layouts/staff_layout.html'
     from models import InventoryLog, Ingredient
     
     ing_filter = request.args.get('ingredient_id', type=int)
@@ -2750,7 +2853,8 @@ def inventory_audit():
     logs = query.order_by(InventoryLog.created_at.desc()).limit(200).all()
     ingredients = Ingredient.query.order_by(Ingredient.name).limit(500).all()
     
-    return render_template('inventory/audit.html', 
+    return render_template('inventory/audit.html',
+                           base_layout=base_layout,
                            logs=logs, 
                            ingredients=ingredients,
                            ing_filter=ing_filter, 

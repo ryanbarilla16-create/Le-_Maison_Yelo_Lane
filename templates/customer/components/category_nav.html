@@ -1,0 +1,141 @@
+<!-- ═══ MODULAR COMPONENT: CATEGORY NAVIGATION ═══ -->
+<style>
+    .catNavWrapper {
+        position: relative;
+        margin-top: 1rem;
+        margin-bottom: 2rem;
+        z-index: 10;
+    }
+
+    .catPillsScroll {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        overflow-x: auto;
+        padding: 0.6rem 0.25rem 1rem 0.25rem;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(139, 99, 75, 0.3) transparent;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .catPillsScroll::-webkit-scrollbar {
+        height: 4px;
+    }
+
+    .catPillsScroll::-webkit-scrollbar-thumb {
+        background: rgba(139, 99, 75, 0.3);
+        border-radius: 10px;
+    }
+
+    .catPillBtn {
+        background: #ffffff;
+        color: #5D4037;
+        border: 1px solid rgba(139, 99, 75, 0.14);
+        padding: 0.65rem 1.4rem;
+        border-radius: 50px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        user-select: none;
+    }
+
+    .catPillBtn i {
+        font-size: 0.9rem;
+        color: #8B634B;
+        transition: transform 0.3s ease, color 0.3s ease;
+    }
+
+    .catPillBtn:hover {
+        transform: translateY(-2px);
+        background: #FDFBF9;
+        border-color: rgba(139, 99, 75, 0.3);
+        box-shadow: 0 6px 16px rgba(139, 99, 75, 0.1);
+        color: #3E2723;
+    }
+
+    .catPillBtn.active {
+        background: linear-gradient(135deg, #5D4037 0%, #795548 100%);
+        color: #ffffff !important;
+        border-color: transparent !important;
+        box-shadow: 0 6px 20px rgba(93, 64, 55, 0.35);
+    }
+
+    .catPillBtn.active i {
+        color: #D4A862 !important;
+        transform: scale(1.1);
+    }
+
+    .catCountBadge {
+        background: rgba(139, 99, 75, 0.1);
+        color: #5D4037;
+        font-size: 0.72rem;
+        padding: 0.15rem 0.5rem;
+        border-radius: 20px;
+        font-weight: 700;
+    }
+
+    .catPillBtn.active .catCountBadge {
+        background: rgba(255, 255, 255, 0.25);
+        color: #ffffff;
+    }
+</style>
+
+<div class="catNavWrapper">
+    <div class="d-flex align-items-center justify-content-between mb-2">
+        <h5 class="m-0 fw-bold" style="font-family: 'Playfair Display', serif; color: #4E342E; font-size: 1.25rem;">
+            <i class="fas fa-utensils me-2" style="color: #8B634B; font-size: 1rem;"></i>Explore Menu Categories
+        </h5>
+        <span class="text-muted" style="font-size: 0.78rem; font-weight: 500;" id="filteredCountText">Displaying All Items</span>
+    </div>
+
+    <div class="catPillsScroll" id="categoryPillContainer">
+        <!-- INDEX [0] STRICT EXCEPTION: "All Items" pill ALWAYS stays first at index 0 -->
+        <button class="catPillBtn active" data-cat-name="All" onclick="selectCategory('All', this)">
+            <i class="fas fa-border-all"></i> All Items
+        </button>
+
+        {% if categories %}
+            {% set sorted_categories = categories|sort(attribute='category', case_sensitive=False) if (categories[0] is defined and categories[0].category is defined) else categories|sort(case_sensitive=False) %}
+            {% for cat in sorted_categories %}
+            {% set cat_name = cat.category if cat.category is defined else cat %}
+            <button class="catPillBtn" data-cat-name="{{ cat_name|escape }}" onclick="selectCategory('{{ cat_name|escape }}', this)">
+                <i class="fas fa-concierge-bell"></i> {{ cat_name }}
+                {% if cat.count is defined and cat.count %}
+                <span class="catCountBadge">{{ cat.count }}</span>
+                {% endif %}
+            </button>
+            {% endfor %}
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    // Enforce Alphabetical (A-Z) Sorting for category pills while preserving "All Items" at index [0]
+    document.addEventListener('DOMContentLoaded', function() {
+        const container = document.getElementById('categoryPillContainer');
+        if (!container) return;
+        
+        const pills = Array.from(container.querySelectorAll('.catPillBtn'));
+        if (pills.length <= 2) return;
+
+        const firstPill = pills[0]; // "All Items"
+        const remainingPills = pills.slice(1);
+
+        remainingPills.sort((a, b) => {
+            const nameA = (a.getAttribute('data-cat-name') || a.innerText).replace(/[\d\n]/g, '').trim().toLowerCase();
+            const nameB = (b.getAttribute('data-cat-name') || b.innerText).replace(/[\d\n]/g, '').trim().toLowerCase();
+            return nameA.localeCompare(nameB);
+        });
+
+        // Re-append in alphabetical order starting at index 1
+        container.innerHTML = '';
+        container.appendChild(firstPill);
+        remainingPills.forEach(p => container.appendChild(p));
+    });
+</script>

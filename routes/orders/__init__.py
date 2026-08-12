@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from .. import main_bp
 from models import db, MenuItem, Order, OrderItem, Review, User
 from datetime import datetime
-from utils import get_ph_time, create_notification, validate_order
+from utils import get_ph_time, create_notification, validate_order, save_optimized_image
 import os
 import requests
 import base64
@@ -508,7 +508,8 @@ def add_order_review(order_id):
             os.makedirs(upload_folder, exist_ok=True)
             filename = secure_filename(f"review_{current_user.id}_{int(get_ph_time().timestamp())}.{ext}")
             filepath = os.path.join(upload_folder, filename)
-            photo_file.save(filepath)
+            if not save_optimized_image(photo_file, filepath, max_dim=(1000, 1000), quality=75):
+                photo_file.save(filepath)
             photo_url = f"/static/uploads/reviews/{filename}"
         except Exception as e:
             print(f"Error saving review photo: {str(e)}")

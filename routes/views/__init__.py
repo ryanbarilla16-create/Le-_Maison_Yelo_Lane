@@ -1,11 +1,11 @@
 from flask import render_template, jsonify, current_app
 from flask_login import current_user, login_required
 from .. import main_bp
-from models import db, MenuItem, Reservation
+from models import db, MenuItem, Reservation, MenuItemIngredient
 from utils import load_site_settings, get_ph_time
 from sqlalchemy import func
 from datetime import date
-from sqlalchemy.orm import load_only
+from sqlalchemy.orm import load_only, selectinload
 import time
 import random
 
@@ -25,10 +25,7 @@ def _get_menu_items_for_menu_page():
 
     items = (
         MenuItem.query.options(
-            load_only(MenuItem.id, MenuItem.name, MenuItem.price,
-                      MenuItem.category, MenuItem.image_url,
-                      MenuItem.is_available, MenuItem.description,
-                      MenuItem.is_bestseller)
+            selectinload(MenuItem.ingredients).selectinload(MenuItemIngredient.ingredient)
         )
         .filter(MenuItem.is_deleted == False)
         .order_by(MenuItem.category, MenuItem.name)
@@ -135,8 +132,11 @@ def index():
         featured = _get_featured_items_cached()
         bestsellers = MenuItem.query.filter_by(is_bestseller=True, is_available=True, is_deleted=False).limit(6).all()
 
-        from models import Order, Review
-        recent_orders = Order.query.filter_by(user_id=current_user.id).order_by(Order.created_at.desc()).limit(5).all()
+        from models import Order, Review, OrderItem
+        from sqlalchemy.orm import selectinload
+        recent_orders = Order.query.options(
+            selectinload(Order.items).selectinload(OrderItem.menu_item)
+        ).filter_by(user_id=current_user.id).order_by(Order.created_at.desc()).limit(5).all()
         
         # Optimized Review Lookup
         user_reviews = Review.query.filter_by(user_id=current_user.id).all()
@@ -179,10 +179,13 @@ def index():
 @main_bp.route('/my-orders')
 @login_required
 def my_orders():
-    from models import Order, Review
+    from models import Order, Review, OrderItem
+    from sqlalchemy.orm import selectinload
 
-    # Optimized Order Fetching (Limit to last 30 to prevent dashboard lag)
-    all_orders = Order.query.filter_by(user_id=current_user.id).order_by(Order.created_at.desc()).limit(30).all()
+    # Optimized Order Fetching with Eager Loading (Limit to last 30 to prevent dashboard lag)
+    all_orders = Order.query.options(
+        selectinload(Order.items).selectinload(OrderItem.menu_item)
+    ).filter_by(user_id=current_user.id).order_by(Order.created_at.desc()).limit(30).all()
     
     for o in all_orders:
         if o.dining_option == 'DELIVERY' and o.status == 'COMPLETED' and o.delivery_status != 'DELIVERED':

@@ -5,13 +5,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Staff{% endblock %} | Le Maison Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@700&family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/admin.css') }}" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="icon" type="image/jpeg" href="{{ url_for('static', filename='images/logo.jpg') }}">
+    {% block extra_head %}{% endblock %}
 
     <!-- PREMIUM ADMIN SIDEBAR OVERRIDES -->
     <style>
@@ -689,7 +690,7 @@
                 {% endif %}
                 {% endif %}
 
-                {% if current_user.role|upper in ['ADMIN', 'CASHIER', 'STAFF', 'INVENTORY_STAFF', 'INVENTORY'] %}
+                {% if current_user.role|upper in ['ADMIN', 'SUPER_ADMIN', 'CASHIER', 'STAFF', 'INVENTORY_STAFF', 'INVENTORY'] %}
                 <li><a href="{{ url_for('admin.menu') }}"
                         class="{% if request.endpoint == 'admin.menu' %}active{% endif %}"><i
                             class="fas fa-utensils"></i><span class="sidebar-label">Menu</span></a></li>
@@ -765,27 +766,76 @@
                             class="fas fa-truck"></i><span class="sidebar-label">Deliveries</span></a></li>
                 {% endif %}
 
-                {% if current_user.role|upper in ['INVENTORY_STAFF', 'INVENTORY'] %}
-                <li><a href="{{ url_for('inventory_portal.inventory_dashboard') }}"
-                        class="{% if request.endpoint == 'inventory_portal.inventory_dashboard' %}active{% endif %}"><i
-                            class="fas fa-boxes-stacked"></i><span class="sidebar-label">Inventory Master</span></a>
+                {% if current_user.role|upper in ['ADMIN', 'SUPER_ADMIN', 'INVENTORY_STAFF', 'INVENTORY'] %}
+                {% set is_inventory_active = request.path.startswith('/admin/inventory') or request.path.startswith('/staff/inventory') %}
+                <!-- 📦 INVENTORY COLLAPSIBLE ACCORDION -->
+                <li class="inventory-accordion-wrap {% if is_inventory_active %}open{% endif %}">
+                    <a href="javascript:void(0)" class="inventory-accordion-toggle {% if is_inventory_active %}active{% endif %}" onclick="toggleInventorySubmenu(this)" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 12px; color: rgba(255, 255, 255, 0.75); font-weight: 600; text-decoration: none; transition: all 0.25s;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 1rem; line-height: 1;">📦</span>
+                            <span class="sidebar-label">Inventory</span>
+                        </div>
+                        <i class="fas fa-chevron-down inventory-chevron" style="font-size: 0.7rem; transition: transform 0.3s ease; {% if is_inventory_active %}transform: rotate(180deg);{% endif %}"></i>
+                    </a>
+                    <ul class="inventory-sub-menu" style="list-style: none; padding-left: 1.75rem; margin: 4px 0 8px 0; border-left: 2px solid rgba(255,255,255,0.12); max-height: {% if is_inventory_active %}500px{% else %}0px{% endif %}; overflow: hidden; transition: max-height 0.3s ease-in-out, opacity 0.3s ease; opacity: {% if is_inventory_active %}1{% else %}0{% endif %};">
+                        <li style="margin-bottom: 3px;">
+                            <a href="/admin/inventory/levels"
+                               class="{% if request.path in ['/admin/inventory', '/admin/inventory/levels', '/staff/inventory'] %}active{% endif %}"
+                               style="font-size: 0.82rem; padding: 6px 12px; display: flex; align-items: center; border-radius: 8px; color: rgba(255,255,255,0.7); text-decoration: none; transition: all 0.2s;">
+                               <i class="fas fa-chart-pie me-2" style="font-size: 0.75rem; width: 14px; text-align: center;"></i><span class="sidebar-label">Stock Levels</span>
+                            </a>
+                        </li>
+                        <li style="margin-bottom: 3px;">
+                            <a href="/admin/inventory/full"
+                               class="{% if request.path in ['/admin/inventory/full', '/staff/inventory/full'] %}active{% endif %}"
+                               style="font-size: 0.82rem; padding: 6px 12px; display: flex; align-items: center; border-radius: 8px; color: rgba(255,255,255,0.7); text-decoration: none; transition: all 0.2s;">
+                               <i class="fas fa-warehouse me-2" style="font-size: 0.75rem; width: 14px; text-align: center;"></i><span class="sidebar-label">Full Inventory</span>
+                            </a>
+                        </li>
+                        <li style="margin-bottom: 3px;">
+                            <a href="/admin/inventory/stock-requests"
+                               class="{% if request.path in ['/admin/inventory/stock-requests', '/staff/inventory/stock-requests'] %}active{% endif %}"
+                               style="font-size: 0.82rem; padding: 6px 12px; display: flex; align-items: center; border-radius: 8px; color: rgba(255,255,255,0.7); text-decoration: none; transition: all 0.2s;">
+                               <i class="fas fa-clipboard-check me-2" style="font-size: 0.75rem; width: 14px; text-align: center;"></i><span class="sidebar-label">Stock Requests</span>
+                            </a>
+                        </li>
+                        <li style="margin-bottom: 3px;">
+                            <a href="/admin/inventory/suppliers"
+                               class="{% if request.path in ['/admin/inventory/suppliers', '/staff/inventory/suppliers'] %}active{% endif %}"
+                               style="font-size: 0.82rem; padding: 6px 12px; display: flex; align-items: center; border-radius: 8px; color: rgba(255,255,255,0.7); text-decoration: none; transition: all 0.2s;">
+                               <i class="fas fa-truck me-2" style="font-size: 0.75rem; width: 14px; text-align: center;"></i><span class="sidebar-label">Suppliers</span>
+                            </a>
+                        </li>
+                        <li style="margin-bottom: 3px;">
+                            <a href="/admin/inventory/ingredient-setup"
+                               class="{% if request.path in ['/admin/inventory/ingredient-setup', '/staff/inventory/ingredient-setup'] %}active{% endif %}"
+                               style="font-size: 0.82rem; padding: 6px 12px; display: flex; align-items: center; border-radius: 8px; color: rgba(255,255,255,0.7); text-decoration: none; transition: all 0.2s;">
+                               <i class="fas fa-tags me-2" style="font-size: 0.75rem; width: 14px; text-align: center;"></i><span class="sidebar-label">Ingredient Setup</span>
+                            </a>
+                        </li>
+                        <li style="margin-bottom: 3px;">
+                            <a href="/admin/inventory/waste"
+                               class="{% if request.path in ['/admin/inventory/waste', '/staff/inventory/waste'] %}active{% endif %}"
+                               style="font-size: 0.82rem; padding: 6px 12px; display: flex; align-items: center; border-radius: 8px; color: rgba(255,255,255,0.7); text-decoration: none; transition: all 0.2s;">
+                               <i class="fas fa-trash-can me-2" style="font-size: 0.75rem; width: 14px; text-align: center;"></i><span class="sidebar-label">Waste Log</span>
+                            </a>
+                        </li>
+                        <li style="margin-bottom: 3px;">
+                            <a href="/admin/inventory/batches"
+                               class="{% if request.path in ['/admin/inventory/batches', '/staff/inventory/batches'] %}active{% endif %}"
+                               style="font-size: 0.82rem; padding: 6px 12px; display: flex; align-items: center; border-radius: 8px; color: rgba(255,255,255,0.7); text-decoration: none; transition: all 0.2s;">
+                               <i class="fas fa-layer-group me-2" style="font-size: 0.75rem; width: 14px; text-align: center;"></i><span class="sidebar-label">FIFO Batches</span>
+                            </a>
+                        </li>
+                        <li style="margin-bottom: 3px;">
+                            <a href="/admin/inventory/audit"
+                               class="{% if request.path in ['/admin/inventory/audit', '/staff/inventory/audit'] %}active{% endif %}"
+                               style="font-size: 0.82rem; padding: 6px 12px; display: flex; align-items: center; border-radius: 8px; color: rgba(255,255,255,0.7); text-decoration: none; transition: all 0.2s;">
+                               <i class="fas fa-history me-2" style="font-size: 0.75rem; width: 14px; text-align: center;"></i><span class="sidebar-label">Audit History</span>
+                            </a>
+                        </li>
+                    </ul>
                 </li>
-                <li><a href="{{ url_for('inventory_portal.inventory_recipes') }}"
-                        class="{% if request.endpoint == 'inventory_portal.inventory_recipes' %}active{% endif %}"><i
-                            class="fas fa-utensils"></i><span class="sidebar-label">Menu Recipes</span></a></li>
-                <li><a href="{{ url_for('inventory_portal.inventory_ingredient_batches') }}"
-                        class="{% if request.endpoint == 'inventory_portal.inventory_ingredient_batches' %}active{% endif %}"><i
-                            class="fas fa-box-open"></i><span class="sidebar-label">FIFO Batches</span></a></li>
-                <li><a href="{{ url_for('inventory_portal.inventory_waste_records') }}"
-                        class="{% if request.endpoint == 'inventory_portal.inventory_waste_records' %}active{% endif %}"><i
-                            class="fas fa-trash-alt"></i><span class="sidebar-label">Waste Mgmt</span></a></li>
-                <li><a href="{{ url_for('inventory_portal.inventory_stock_requests') }}"
-                        class="{% if request.endpoint == 'inventory_portal.inventory_stock_requests' %}active{% endif %}"><i
-                            class="fas fa-clipboard-check"></i><span class="sidebar-label">Stock Requests</span></a>
-                </li>
-                <li><a href="{{ url_for('inventory_portal.inventory_audit') }}"
-                        class="{% if request.endpoint == 'inventory_portal.inventory_audit' %}active{% endif %}"><i
-                            class="fas fa-history"></i><span class="sidebar-label">Audit History</span></a></li>
                 {% endif %}
 
                 {% if current_user.role|upper == 'SUPER_ADMIN' %}
@@ -842,6 +892,11 @@
     <!-- TOP BAR -->
     <header class="admin-topbar">
         <div class="topbar-right">
+            <!-- BRANCH CONTEXT INDICATOR BADGE -->
+            <div class="branch-pill-badge" style="background: #fef3c7; color: #78350f; border: 1px solid rgba(217, 119, 6, 0.3); padding: 5px 14px; border-radius: 50px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(217, 119, 6, 0.08); margin-right: 12px;">
+                <span>📍</span> <span>{{ current_user.branch if current_user and current_user.branch and current_user.branch != 'ALL' else 'Pagsanjan' }} Branch</span>
+            </div>
+
             <span style="font-size: 0.85rem; color: var(--admin-text-muted);">
                 <i class="fas fa-clock me-1"></i> <span id="liveDateTime"></span>
             </span>
@@ -1165,12 +1220,346 @@
             transform: translateX(3px);
         }
 
-        .dropdown-item.text-danger:hover {
-            background-color: #fff5f5;
-            color: #dc3545;
+        /* ══════════════════════════════════════════════
+           STAFF INVENTORY MODULE — CSS COMPATIBILITY SHIM
+           Ensures inventory templates look IDENTICAL in
+           both Admin and Staff contexts.
+           ══════════════════════════════════════════════ */
+
+        /* Shared Staff Inventory Module UI Variables */
+        :root {
+            --primary: #5D4037;
+            --primary-light: #795548;
+            --primary-dark: #3E2723;
+            --accent: #D7CCC8;
+            --accent-dark: #A1887F;
+            --bg: #F5EFE8;
+            --card: rgba(255, 255, 255, 0.72);
+            --card-border: rgba(255, 255, 255, 0.9);
+            --text: #3E2723;
+            --muted: #8D6E63;
+            --success: #2e7d32;
+            --warning: #e65100;
+            --danger: #c62828;
         }
+
+        /* .section-card — white frosted panel used across all inventory pages */
+        .section-card {
+            background: var(--card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            box-shadow: 0 6px 24px rgba(93, 64, 55, 0.07);
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+
+        .section-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid rgba(93, 64, 55, 0.06);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .section-header h2 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text);
+            margin: 0;
+        }
+
+        /* Table resets — make inventory tables look like staff view */
+        .admin-content table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .admin-content thead th {
+            padding: 12px 20px;
+            font-size: 0.73rem;
+            font-weight: 600;
+            color: var(--muted);
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            text-align: left;
+            background: rgba(245, 239, 232, 0.6);
+            border-bottom: 1px solid rgba(93, 64, 55, 0.06);
+        }
+
+        .admin-content tbody tr {
+            transition: background 0.2s;
+        }
+
+        .admin-content tbody tr:hover {
+            background: rgba(245, 239, 232, 0.5);
+        }
+
+        .admin-content tbody td {
+            padding: 14px 20px;
+            font-size: 0.88rem;
+            border-bottom: 1px solid rgba(93, 64, 55, 0.04);
+            color: var(--text);
+            vertical-align: middle;
+        }
+
+        /* Pill badges */
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 12px;
+            border-radius: 50px;
+            font-size: 0.72rem;
+            font-weight: 600;
+        }
+
+        /* Buttons */
+        .btn-staff {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: none;
+            background: var(--primary);
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn-staff:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            color: #fff;
+        }
+
+        .btn-primary {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: none;
+            background: var(--primary);
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #e0d6cf;
+            color: #5d4037;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-danger {
+            background: #c62828;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-danger:hover {
+            background: #b71c1c;
+            transform: translateY(-1px);
+        }
+
+        /* Page title area inside inventory — displayed inline with admin topbar */
+        .admin-content h2.inventory-page-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        /* Inventory Accordion Sidebar Styling */
+        .inventory-accordion-wrap.open .inventory-chevron {
+            transform: rotate(180deg) !important;
+        }
+        .inventory-sub-menu a:hover {
+            background: rgba(255, 255, 255, 0.12) !important;
+            color: #ffffff !important;
+            transform: translateX(2px);
+        }
+        .inventory-sub-menu a.active {
+            background: rgba(215, 204, 200, 0.2) !important;
+            color: #d7ccc8 !important;
+            font-weight: 700 !important;
+        }
+
+        /* Flash messages inside inventory pages */
+        .admin-content .flash-success {
+            padding: 12px 20px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            background: #e8f5e9;
+            color: #2e7d32;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .admin-content .flash-danger {
+            padding: 12px 20px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            background: #ffebee;
+            color: #c62828;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        /* Inventory form inputs */
+        .admin-content .form-group input,
+        .admin-content .form-group select,
+        .admin-content .form-group textarea {
+            padding: 10px 14px;
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-family: 'Outfit', sans-serif;
+            width: 100%;
+            color: var(--text);
+        }
+
+        .admin-content .form-group label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Premium select dropdown */
+        .premium-dropdown {
+            position: relative;
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .premium-select {
+            appearance: none;
+            width: 100%;
+            padding: 14px 20px;
+            padding-right: 45px;
+            background: #fff;
+            border: 1px solid rgba(93, 64, 55, 0.12);
+            border-radius: 16px;
+            color: var(--text);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(93, 64, 55, 0.04);
+            outline: none;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .premium-select:hover {
+            border-color: var(--primary);
+            box-shadow: 0 6px 16px rgba(93, 64, 55, 0.08);
+        }
+
+        .premium-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(93, 64, 55, 0.1);
+        }
+
+        .dropdown-arrow {
+            position: absolute;
+            right: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary);
+            pointer-events: none;
+            font-size: 0.8rem;
+        }
+
+        /* Modal overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9000;
+        }
+
+        .modal-content-custom {
+            background: white;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .modal-header-custom {
+            padding: 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+            background: var(--primary);
+        }
+
+        .modal-header-custom h3 { margin: 0; font-size: 1.1rem; }
+        .close-modal { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; opacity: 0.7; }
+        .modal-body-custom { padding: 24px; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .full-width { grid-column: span 2; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+
+        .modal-footer-custom {
+            padding: 20px 24px;
+            background: #fdfaf8;
+            border-top: 1px solid var(--card-border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        /* ── Extra style block support ── */
+        {% block extra_style %}{% endblock %}
     </style>
     <script>
+        function toggleInventorySubmenu(btn) {
+            const wrap = btn.closest('.inventory-accordion-wrap');
+            const subMenu = wrap.querySelector('.inventory-sub-menu');
+            const chevron = btn.querySelector('.inventory-chevron');
+            const isOpen = wrap.classList.contains('open');
+
+            if (isOpen) {
+                wrap.classList.remove('open');
+                subMenu.style.maxHeight = '0px';
+                subMenu.style.opacity = '0';
+                if (chevron) chevron.style.transform = 'rotate(0deg)';
+            } else {
+                wrap.classList.add('open');
+                subMenu.style.maxHeight = '500px';
+                subMenu.style.opacity = '1';
+                if (chevron) chevron.style.transform = 'rotate(180deg)';
+            }
+        }
+
         function toggleSidebarGroup(trigger, groupId) {
             trigger.classList.toggle('active');
         }
@@ -1306,6 +1695,7 @@
 
     <div id="admin-scripts-container">
         {% block scripts %}{% endblock %}
+        {% block extra_script %}{% endblock %}
     </div>
 
     <!-- GLOBAL EDIT PROFILE MODAL -->

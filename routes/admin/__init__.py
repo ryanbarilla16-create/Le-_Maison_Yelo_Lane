@@ -1891,9 +1891,31 @@ def menu_items_json():
 def menu_add():
     name = (request.form.get('name') or '').strip()[:50]
     description = request.form.get('description', '')[:255]
-    image_url = (request.form.get('image_url') or '')[:255]
     category = request.form.get('category', '')
     is_bestseller = 'is_bestseller' in request.form
+    image_url = (request.form.get('image_url') or '')[:255]
+
+    MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB upload limit
+    image_file = request.files.get('image_file')
+    if image_file and image_file.filename:
+        import os, uuid
+        from werkzeug.utils import secure_filename
+        from utils import save_optimized_image
+        
+        image_file.seek(0, os.SEEK_END)
+        file_size = image_file.tell()
+        image_file.seek(0)
+        if file_size > MAX_FILE_SIZE:
+            flash("Image file size exceeds the 5MB limit. Please choose a file under 5MB.", "warning")
+            return redirect(url_for('admin.menu', category=category))
+
+        ext = os.path.splitext(secure_filename(image_file.filename))[1].lower() or '.jpg'
+        filename = f"menu_{uuid.uuid4().hex[:10]}{ext}"
+        upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'menu')
+        os.makedirs(upload_folder, exist_ok=True)
+        filepath = os.path.join(upload_folder, filename)
+        if save_optimized_image(image_file, filepath, max_dim=(800, 800), quality=75):
+            image_url = f"/static/uploads/menu/{filename}"
 
     try:
         price = float(request.form.get('price', 0))
@@ -1939,9 +1961,32 @@ def menu_edit(item_id):
 
     name = (request.form.get('name') or '').strip()[:50]
     description = request.form.get('description', '')[:255]
-    image_url = (request.form.get('image_url') or '')[:255]
     category = request.form.get('category', '')
     is_bestseller = 'is_bestseller' in request.form
+
+    MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB upload limit
+    image_file = request.files.get('image_file')
+    if image_file and image_file.filename:
+        import os, uuid
+        from werkzeug.utils import secure_filename
+        from utils import save_optimized_image
+
+        image_file.seek(0, os.SEEK_END)
+        file_size = image_file.tell()
+        image_file.seek(0)
+        if file_size > MAX_FILE_SIZE:
+            flash("Image file size exceeds the 5MB limit. Please choose a file under 5MB.", "warning")
+            return redirect(url_for('admin.menu', category=category))
+
+        ext = os.path.splitext(secure_filename(image_file.filename))[1].lower() or '.jpg'
+        filename = f"menu_{uuid.uuid4().hex[:10]}{ext}"
+        upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'menu')
+        os.makedirs(upload_folder, exist_ok=True)
+        filepath = os.path.join(upload_folder, filename)
+        if save_optimized_image(image_file, filepath, max_dim=(800, 800), quality=75):
+            item.image_url = f"/static/uploads/menu/{filename}"
+    elif request.form.get('image_url') is not None:
+        item.image_url = (request.form.get('image_url') or '').strip()[:255]
 
     try:
         price = float(request.form.get('price', 0))
@@ -1959,7 +2004,6 @@ def menu_edit(item_id):
         item.description = description
         item.price = price
         item.category = category
-        item.image_url = image_url
         item.is_bestseller = is_bestseller
         # is_available is handled automatically by recipe sync logic now
         db.session.commit()
@@ -2716,8 +2760,8 @@ def walkin_order_submit():
 
 @admin_bp.route('/walkin-order/table-status', methods=['GET'])
 @login_required
-@admin_required
 def get_table_status():
+    """Allow any logged-in staff (Admin, Cashier, etc.) to fetch live table statuses."""
     """Get status of all tables matching table management state."""
     try:
         from models import Reservation
@@ -4531,134 +4575,10 @@ def bulk_delete_suppliers():
     return redirect(url_for('admin.inventory', tab='suppliers'))
 
 # ─── WASTE MANAGEMENT ─────────────────────────────────────────────
-@admin_bp.route('/inventory/waste', methods=['GET'])
-@login_required
-@admin_required
-def waste_records():
-    # Cap payload for speed (older records may be hidden; UI remains functional).
-    records = WasteRecord.query.order_by(WasteRecord.created_at.desc()).limit(200).all()
-    ingredients = Ingredient.query.order_by(Ingredient.name).limit(500).all()
-    total_lost = sum(float(r.cost_lost or 0) for r in records)
-    return render_template('admin/waste.html', records=records, ingredients=ingredients, total_lost=total_lost)
-
-@admin_bp.route('/inventory/waste/add', methods=['POST'])
-@login_required
-@admin_required
-def add_waste_record():
-    ing_id = request.form.get('ingredient_id', type=int)
-    qty = request.form.get('quantity_wasted', type=float)
-    reason = request.form.get('reason', 'OTHER')
-    notes = request.form.get('notes', '').strip()
-
-    ing = Ingredient.query.get_or_404(ing_id)
-    cost_lost = qty * float(ing.cost_per_unit or 0)
-    prev_qty = float(ing.stock_qty)
-    ing.stock_qty = max(0, prev_qty - qty)
-
-    record = WasteRecord(
-        ingredient_id=ing_id,
-        recorded_by_id=current_user.id,
-        quantity_wasted=qty,
-        reason=reason,
-        notes=notes,
-        cost_lost=cost_lost
-    )
-    db.session.add(record)
-    log_inventory_change(ing_id, 'SPOILED', qty, prev_qty, f'Waste: {reason} - {notes}')
-    db.session.commit()
-    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-    if is_ajax:
-        return jsonify({'success': True, 'message': f'Waste record added. ₱{cost_lost:,.2f} lost. Stock deducted.'})
-    flash(f'Waste record added. ₱{cost_lost:,.2f} lost. Stock deducted.', 'warning')
-    return redirect(url_for('admin.waste_records'))
-
-# ─── FIFO BATCH MANAGEMENT ────────────────────────────────────────
-@admin_bp.route('/inventory/batches', methods=['GET'])
-@login_required
-@admin_required
-def ingredient_batches():
-    ingredients = Ingredient.query.order_by(Ingredient.name).limit(500).all()
-    today = date.today()
-    batches = (
-        IngredientBatch.query.filter_by(is_exhausted=False)
-        .join(Ingredient)
-        .options(selectinload(IngredientBatch.ingredient))
-        .order_by(IngredientBatch.purchase_date.asc())
-        .limit(300)
-        .all()
-    )
-
-    # Get all menu categories for the dropdown
-    menu_categories = [r[0] for r in db.session.query(MenuItem.category)
-                       .filter(MenuItem.is_deleted == False)
-                       .distinct().order_by(MenuItem.category).all()]
-
-    # Pre-compute which menu categories each ingredient belongs to
-    # so the frontend can filter without a page reload
-    ing_menu_cats = {}
-    for ing in ingredients:
-        cats = db.session.query(MenuItem.category).join(MenuItemIngredient).filter(
-            MenuItemIngredient.ingredient_id == ing.id
-        ).distinct().all()
-        ing_menu_cats[ing.id] = [c[0] for c in cats]
-
-    return render_template('admin/batches.html',
-        batches=batches,
-        ingredients=ingredients,
-        today=today,
-        menu_categories=menu_categories,
-        ing_menu_cats=ing_menu_cats)
-
-@admin_bp.route('/inventory/batches/add', methods=['POST'])
-@login_required
-@admin_required
-def add_ingredient_batch():
-    ing_id = request.form.get('ingredient_id', type=int)
-    qty = request.form.get('batch_qty', type=float)
-    cost = request.form.get('cost_per_unit', type=float, default=0)
-    purchase_date_str = request.form.get('purchase_date')
-    exp_date_str = request.form.get('expiration_date', '')
-
-    purchase_date = date.fromisoformat(purchase_date_str)
-    exp_date = date.fromisoformat(exp_date_str) if exp_date_str else None
-
-    ing = Ingredient.query.get_or_404(ing_id)
-    prev_qty = float(ing.stock_qty)
-    ing.stock_qty = prev_qty + qty
-
-    batch = IngredientBatch(
-        ingredient_id=ing_id,
-        batch_qty=qty,
-        remaining_qty=qty,
-        cost_per_unit=cost,
-        purchase_date=purchase_date,
-        expiration_date=exp_date
-    )
-    db.session.add(batch)
-    log_inventory_change(ing_id, 'ADD', qty, prev_qty, f'Batch received on {purchase_date}')
-    db.session.commit()
-    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-    if is_ajax:
-        return jsonify({'success': True, 'message': f'Batch of {qty} {ing.unit} added for {ing.name}.'})
-    flash(f'Batch of {qty} {ing.unit} added for {ing.name}.', 'success')
-    return redirect(url_for('admin.ingredient_batches'))
-
-# ─── INVENTORY AUDIT HISTORY ──────────────────────────────────────
-@admin_bp.route('/inventory/audit', methods=['GET'])
-@login_required
-@admin_required
-def inventory_audit():
-    ing_filter = request.args.get('ingredient_id', type=int)
-    action_filter = request.args.get('action', '')
-    query = InventoryLog.query
-    if ing_filter:
-        query = query.filter_by(ingredient_id=ing_filter)
-    if action_filter:
-        query = query.filter_by(action=action_filter)
-    logs = query.order_by(InventoryLog.created_at.desc()).limit(200).all()
-    ingredients = Ingredient.query.order_by(Ingredient.name).limit(500).all()
-    return render_template('admin/inventory_audit.html', logs=logs, ingredients=ingredients,
-                           ing_filter=ing_filter, action_filter=action_filter)
+# DEPRECATED: Old duplicate routes removed in favor of single canonical routes in inventory_portal (routes/portals/__init__.py)
+# @admin_bp.route('/inventory/waste', methods=['GET'])
+# @admin_bp.route('/inventory/batches', methods=['GET'])
+# @admin_bp.route('/inventory/audit', methods=['GET'])
 
 # ─── KITCHEN STOCK REQUESTS ───────────────────────────────────────
 @admin_bp.route('/stock-requests', methods=['GET'])
@@ -4709,7 +4629,9 @@ def stock_requests():
     )
         
     pending_count = StockRequest.query.filter_by(status='PENDING').count()
+    base_layout = 'admin/base.html' if request.path.startswith('/admin') else 'layouts/staff_layout.html'
     return render_template('admin/stock_requests.html',
+                           base_layout=base_layout,
                            requests=requests_list, 
                            grouped_ingredients=grouped_ingredients,
                            critical_ingredients=critical_ingredients,

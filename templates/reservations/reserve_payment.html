@@ -162,7 +162,7 @@
                     <div class="order-items-list" id="orderItemsList">
                         {% for data in order_items_data %}
                         <div class="order-item-card" id="item-card-{{ data.item.id }}">
-                            <img src="{{ data.item.image_url if data.item.image_url else 'https://via.placeholder.com/100' }}" class="order-item-img">
+                            <img loading="lazy" decoding="async" src="{{ data.item.image_url if data.item.image_url else 'https://via.placeholder.com/100' }}" class="order-item-img">
                             <div class="order-item-info">
                                 <span class="order-item-name">{{ data.item.name }}</span>
                                 <span class="order-item-price">₱{{ "%.2f"|format(data.item.price) }}</span>

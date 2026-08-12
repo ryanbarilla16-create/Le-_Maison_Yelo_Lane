@@ -1,6 +1,6 @@
 {% extends "layouts/staff_layout.html" %}
 
-{% block title %}Walk-In Order — Le Maison{% endblock %}
+{% block title %}Walk-In Order — Le Maison POS{% endblock %}
 
 {% block portal_sub %}POS Terminal{% endblock %}
 {% block portal_role %}Cashier Staff{% endblock %}
@@ -10,761 +10,628 @@
     {% include "cashier/_sidebar.html" %}
 {% endblock %}
 
-{% block page_title %}Walk-In Order{% endblock %}
-{% block page_subtitle %}Create a new order for walk-in customers{% endblock %}
-
 {% block extra_head %}
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 {% endblock %}
 
 {% block extra_style %}
-    /* Override staff_layout table styles that conflict with Bootstrap */
-    .walkin-content table { all: unset; }
-    .walkin-content th, .walkin-content td { all: unset; }
+    /* ── CRITICAL DIRECTIVE 2: REMOVE TOP HEADER ──────────────── */
+    .topbar { 
+        display: none !important; 
+    }
 
-    .category-card:hover { transform: translateY(-5px) !important; box-shadow: 0 15px 30px rgba(139, 99, 75, 0.15) !important; border: 1px solid rgba(139, 99, 75, 0.2) !important; }
-    .category-card:hover .category-img { transform: scale(1.08) !important; }
-    .back-btn:hover { background-color: var(--primary) !important; color: white !important; border-color: var(--primary) !important; }
+    /* ── CRITICAL DIRECTIVE 1: FULL-SCREEN FLUID POS LAYOUT ───── */
+    .main { 
+        margin-left: var(--sidebar-w) !important;
+        padding: 12px 16px !important; 
+        background: #FAF6F0 !important;
+        max-width: 100% !important;
+        height: 100vh !important;
+        overflow: hidden !important;
+    }
+    
+    .pos-workspace-container {
+        width: 100% !important;
+        height: calc(100vh - 24px) !important;
+        display: flex !important;
+        gap: 16px !important;
+        overflow: hidden !important;
+    }
 
-    /* Reduce main padding for walkin page */
-    .main { background: var(--bg) !important; padding: 16px 24px !important; }
-    .walkin-content { max-width: 100%; }
-    .walkin-content .card { background: #fff; }
-    .walkin-content .form-control, .walkin-content .form-select { font-family: 'Outfit', sans-serif; }
+    /* Left/Center Workspace (~65% width) */
+    .pos-main-workspace {
+        flex: 1 1 65%;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    /* Right Order Ticket (~35% width) */
+    .pos-cart-workspace {
+        flex: 0 0 35%;
+        max-width: 420px;
+        min-width: 320px;
+        height: 100%;
+    }
+
+    /* Hover Micro-animations */
+    .category-card:hover {
+        transform: translateY(-5px) !important;
+        box-shadow: 0 15px 30px rgba(139, 99, 75, 0.15) !important;
+        border-color: rgba(139, 99, 75, 0.3) !important;
+    }
+    .category-card:hover .category-img {
+        transform: scale(1.08) !important;
+    }
+    
+    .item-card:hover {
+        transform: translateY(-3px) !important;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08) !important;
+    }
+
+    .text-truncate-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
 {% endblock %}
 
 {% block content %}
-<div class="walkin-content">
 
-    {% set categories_data = {} %}
-    {% for item in items %}
+{% set categories_data = {} %}
+{% for item in items %}
     {% if item.category not in categories_data %}
-    {% set _ = categories_data.update({item.category: {'image': item.image_url, 'count': 1}}) %}
+        {% set _ = categories_data.update({item.category: {'image': item.image_url, 'count': 1}}) %}
     {% else %}
-    {% set count = categories_data[item.category]['count'] + 1 %}
-    {% set _ = categories_data.update({item.category: {'image': categories_data[item.category]['image'], 'count': count}}) %}
+        {% set count = categories_data[item.category]['count'] + 1 %}
+        {% set _ = categories_data.update({item.category: {'image': categories_data[item.category]['image'], 'count': count}}) %}
     {% endif %}
-    {% endfor %}
+{% endfor %}
 
-    <div class="row g-4">
-        <!-- LEFT: Menu Categories & Items -->
-        <div class="col-lg-7">
-            <div class="card border-0 shadow-sm" style="border-radius: 12px; height: calc(100vh - 80px); display: flex; flex-direction: column;">
-                <div class="card-body p-4" style="overflow-y: auto; flex-grow: 1;">
-                    <!-- 1. Categories Grid View -->
-                    <div id="categories-grid-view">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h4 class="fw-bold mb-0" style="color: var(--text);">Menu Categories</h4>
-                            <input type="text" id="globalSearch" class="form-control form-control-sm" placeholder="Search menu..."
-                                style="border-radius: 20px; max-width: 250px; border: 1px solid rgba(139, 99, 75,0.2);">
-                        </div>
-
-                        <!-- Search Results View -->
-                        <div id="search-results-view" style="display: none;">
-                            <div class="mb-3 d-flex justify-content-between align-items-center">
-                                <button onclick="clearSearch()" class="btn rounded-pill border shadow-sm px-3 py-1 fw-bold back-btn"
-                                    style="color: var(--text); background: white; font-size: 0.9rem; transition: all 0.2s;">
-                                    <i class="fas fa-times me-1"></i> Clear Search
-                                </button>
-                                <h5 class="mb-0 fw-bold" style="color: var(--primary);">Search Results</h5>
-                            </div>
-                            <div id="search-items-container"
-                                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.5rem; align-items: stretch;">
-                            </div>
-                        </div>
-
-                        <div id="categories-container"
-                            style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem;">
-                            {% for cat_name, info in categories_data.items() %}
-                            <div class="card border-0 shadow-sm category-card d-flex flex-column h-100"
-                                style="border-radius: 16px; overflow: hidden; cursor: pointer; transition: all 0.3s ease;"
-                                data-cat-trigger="{{ cat_name }}">
-                                <div style="height: 140px; overflow: hidden; position: relative; flex-shrink: 0;">
-                                    {% if info.image %}
-                                    <img loading="lazy" decoding="async" src="{{ info.image }}" class="w-100 h-100 category-img"
-                                        style="object-fit: cover; transition: transform 0.6s ease;" alt="{{ cat_name }}"
-                                        onerror="this.style.display='none';this.parentNode.innerHTML='<div style=\'width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(139,99,75,0.05);\'><i class=\'fas fa-utensils fa-2x\' style=\'color:rgba(139,99,75,0.2);\'></i></div>'">
-                                    {% else %}
-                                    <div class="w-100 h-100 d-flex align-items-center justify-content-center"
-                                        style="background: rgba(139, 99, 75, 0.05);">
-                                        <i class="fas fa-utensils fa-2x" style="color: rgba(139, 99, 75, 0.2);"></i>
-                                    </div>
-                                    {% endif %}
-                                </div>
-                                <div class="card-body p-3 d-flex flex-column flex-grow-1" style="background: white;">
-                                    <h6 class="card-title fw-bold m-0" style="color: var(--text);">{{ cat_name }}</h6>
-                                    <p class="mb-0 mt-auto fw-bold" style="font-size: 0.8rem; padding-top: 0.5rem; color: var(--primary);">
-                                        See More <i class="fas fa-arrow-right ms-1"></i>
-                                    </p>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-
-                    <!-- 2. Items View (Initially Hidden) -->
-                    <div id="items-view" style="display: none;">
-                        <div class="mb-3 d-flex justify-content-between align-items-center bg-white py-2">
-                            <button onclick="showCategoriesGrid()" class="btn rounded-pill border shadow-sm px-3 py-1 fw-bold back-btn"
-                                style="color: var(--text); background: white; font-size: 0.9rem; transition: all 0.2s;">
-                                <i class="fas fa-arrow-left me-1"></i> Categories
-                            </button>
-                            <h4 class="mb-0 fw-bold" id="current-category-title" style="color: var(--primary);"></h4>
-                        </div>
-                        <hr class="mb-4">
-                        {% for cat_name, info in categories_data.items() %}
-                        <div class="menu-category-section" data-category="{{ cat_name }}" style="display: none;">
-                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem;">
-                                {% for item in items if item.category == cat_name %}
-                                <div class="card border-0 shadow-sm d-flex flex-column item-card"
-                                    data-name="{{ item.name|lower }}"
-                                    style="border-radius: 20px; overflow: hidden; transition: all 0.3s; background: #fff; position: relative;"
-                                    onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 8px 20px rgba(0,0,0,0.08)';"
-                                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.04)';">
-                                    {% if item.image_url %}
-                                    <div style="height: 140px; overflow: hidden; position: relative;">
-                                        <img loading="lazy" decoding="async" src="{{ item.image_url }}" class="w-100 h-100"
-                                            style="object-fit: cover;"
-                                            onerror="this.style.display='none';this.parentNode.innerHTML='<div style=\'width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f5f5f5;\'><i class=\'fas fa-utensils fa-2x\' style=\'color:#ddd;\'></i></div>'">
-                                    </div>
-                                    {% else %}
-                                    <div style="height: 140px; background: #f5f5f5; display: flex; align-items: center; justify-content: center;">
-                                        <i class="fas fa-utensils fa-2x" style="color: #ddd;"></i>
-                                    </div>
-                                    {% endif %}
-                                    <div class="card-body p-3 d-flex flex-column" style="background: #fff;">
-                                        {% if item.item_code %}
-                                        <div style="font-size: 0.7rem; font-weight: 700; color: #8B634B; background: rgba(139,99,75,0.08); padding: 4px 8px; border-radius: 6px; display: inline-block; margin-bottom: 0.5rem; font-family: 'Courier New', monospace; letter-spacing: 0.5px; width: fit-content;">{{ item.item_code }}</div>
-                                        {% endif %}
-                                        <h6 class="card-title fw-bold m-0 mb-1" style="color: #2d2d2d; font-size: 0.95rem; line-height: 1.3; min-height: 2.6em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">{{ item.name }}</h6>
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <span class="fw-bold" style="color: var(--primary); font-size: 1.05rem;">₱{{ "%.2f"|format(item.price) }}</span>
-                                            <span style="font-size: 0.7rem; color: #999; background: #f5f5f5; padding: 2px 8px; border-radius: 10px;">{{ item.category[:10] }}</span>
-                                        </div>
-                                        {% if current_user.role|upper in ['ADMIN', 'CASHIER', 'STAFF', 'KITCHEN'] %}
-                                        <div class="d-flex align-items-center gap-2 mt-auto pt-2" style="border-top: 1px solid #f0f0f0;">
-                                            <div class="d-flex align-items-center gap-1" style="background: rgba(139, 99, 75, 0.08); border-radius: 25px; padding: 2px; flex-shrink: 0;">
-                                                <button type="button" class="btn btn-sm rounded-circle d-flex align-items-center justify-content-center" 
-                                                    onclick="adjustQtyInCard(this, {{ item.id }}, -1)"
-                                                    style="width: 28px; height: 28px; padding: 0; background: #fff; border: 1px solid rgba(139, 99, 75, 0.3); color: var(--primary);">
-                                                    <i class="fas fa-minus" style="font-size: 0.7rem;"></i>
-                                                </button>
-                                                <input type="number" id="qty_{{ item.id }}" value="1" min="1" max="99" readonly
-                                                    class="text-center fw-bold"
-                                                    style="width: 35px; border: none; background: transparent; font-size: 0.9rem; color: #2d2d2d;">
-                                                <button type="button" class="btn btn-sm rounded-circle d-flex align-items-center justify-content-center"
-                                                    onclick="adjustQtyInCard(this, {{ item.id }}, 1)"
-                                                    style="width: 28px; height: 28px; padding: 0; background: var(--primary); border: none; color: white;">
-                                                    <i class="fas fa-plus" style="font-size: 0.7rem;"></i>
-                                                </button>
-                                            </div>
-                                            <button type="button"
-                                                onclick="addFromInput(this, {{ item.id }}, '{{ item.name|replace("'", "\\'") }}', {{ item.price }}, '{{ item.category|replace("'", "\\'") }}', '{{ item.image_url|replace("'", "\\'") if item.image_url else "" }}')"
-                                                class="btn btn-sm rounded-pill fw-bold"
-                                                style="background: var(--primary); color: white; border: none; font-size: 0.8rem; padding: 6px 16px; transition: all 0.2s; flex: 1; min-width: 70px;">
-                                                <i class="fas fa-plus me-1" style="font-size: 0.7rem;"></i> Add
-                                            </button>
-                                        </div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- RIGHT: Order Summary -->
-        <div class="col-lg-5" style="position: sticky; top: 16px; align-self: flex-start;">
-            <form action="{{ url_for('admin.walkin_order_submit') }}" method="POST" id="orderForm"
-                onsubmit="return handleOrderSubmit(event)" style="height: 100%;">
-                <input type="hidden" name="amount_tendered" id="hiddenAmountTendered">
-                <div class="card border-0 shadow-sm" style="border-radius: 12px; height: calc(100vh - 80px); display: flex; flex-direction: column;">
-                    <div class="card-header bg-white border-bottom p-3">
-                        <h5 class="mb-0 fw-bold" style="color: var(--text);"><i class="fas fa-receipt me-2"></i>Order Summary</h5>
-                    </div>
-                    <div class="card-body p-0" style="display: flex; flex-direction: column; overflow: hidden; height: 100%;">
-                        <div class="p-3" style="display: flex; flex-direction: column; flex-grow: 1; overflow: hidden;">
-                            <!-- 1. ORDER LIST -->
-                            <div class="mb-2 d-flex justify-content-between align-items-center">
-                                <span class="fw-bold fs-6" style="color: var(--text);">1. Items Ordered</span>
-                                <button type="button" onclick="Object.keys(orderItems).forEach(removeItem); renderOrder();" class="btn btn-link btn-sm text-danger p-0" style="text-decoration: none; font-size: 0.75rem;">Clear All</button>
-                            </div>
-                            <div id="orderItems" style="flex-grow: 1; overflow-y: auto; background: #fff; border-radius: 12px; border: 1px solid rgba(139, 99, 75, 0.15); padding: 10px; margin-bottom: 1rem; box-shadow: inset 0 2px 5px rgba(0,0,0,0.02);">
-                                <div class="h-100 d-flex flex-column align-items-center justify-content-center text-muted opacity-75">
-                                    <i class="fas fa-shopping-basket fa-2x mb-2"></i>
-                                    <p id="emptyMsg" style="font-size: 0.85rem;">Order is empty.</p>
-                                </div>
-                            </div>
-
-                            <!-- 2. DINING & CUSTOMER INFO -->
-                            <div class="p-3 mb-3" style="background: rgba(139, 99, 75, 0.03); border-radius: 15px; border: 1px dashed rgba(139, 99, 75, 0.2); flex-shrink: 0;">
-                                <div class="mb-2 fs-6 fw-bold" style="color: var(--text);">2. Details</div>
-                                <div class="mb-3">
-                                    <input type="text" name="customer_name" class="form-control form-control-sm shadow-sm"
-                                        placeholder="Customer Name... (e.g. Juan)"
-                                        style="border-radius: 20px; border: 1px solid rgba(139, 99, 75,0.2);"
-                                        value="Walk-in Customer">
-                                </div>
-                                <div class="row g-2">
-                                    <div class="col-6">
-                                        <select name="dining_option" class="form-select form-select-sm shadow-sm"
-                                            style="border-radius: 20px; border: 1px solid rgba(139, 99, 75,0.2);">
-                                            <option value="DINE_IN">🍽️ Dine-In</option>
-                                            <option value="TAKE_OUT">🛍️ Pick-up</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-6">
-                                        <select name="table_number" id="tableSelect" class="form-select form-select-sm shadow-sm" required
-                                            style="border-radius: 20px; border: 1px solid rgba(139, 99, 75,0.2);">
-                                            <option value="">Select Table...</option>
-                                            {% for i in range(1, 18) %}
-                                            <option value="{{ i }}">Table {{ i }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- 3. PAYMENT METHOD -->
-                            <div class="p-3 mb-2" style="background: #fff; border-radius: 15px; border: 1px solid rgba(139, 99, 75, 0.1); flex-shrink: 0;">
-                                <div class="mb-2 fs-6 fw-bold" style="color: var(--text);">3. Payment</div>
-                                <div class="d-flex flex-row gap-2">
-                                    <label class="flex-grow-1 btn btn-outline-dark rounded-3 text-start p-2 shadow-sm d-flex align-items-center" style="font-size: 0.75rem; border: 1px solid rgba(139, 99, 75, 0.2);">
-                                        <input type="radio" class="form-check-input me-2 mt-0" name="payment_method" value="COUNTER" checked style="width: 1rem; height: 1rem;">
-                                        <span class="fw-bold">Counter</span>
-                                    </label>
-                                    <label class="flex-grow-1 btn btn-outline-dark rounded-3 text-start p-2 shadow-sm d-flex align-items-center" style="font-size: 0.75rem; border: 1px solid rgba(139, 99, 75, 0.2);">
-                                        <input type="radio" class="form-check-input me-2 mt-0" name="payment_method" value="ONLINE" style="width: 1rem; height: 1rem;">
-                                        <span class="fw-bold">GCash</span>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- FIXED FOOTER AREA -->
-                        <div class="p-3 border-top bg-white">
-                            <!-- Total -->
-                            <div class="d-flex justify-content-between align-items-center mb-3 p-2 rounded"
-                                style="background: rgba(139, 99, 75, 0.05); border: 1px solid rgba(139, 99, 75, 0.1);">
-                                <span class="fw-bold fs-5" style="color: var(--text);">Total:</span>
-                                <span class="fw-bold fs-4 text-success" id="totalAmount">₱0.00</span>
-                            </div>
-
-                            {% if current_user.role|upper not in ['ADMIN', 'CASHIER', 'STAFF', 'KITCHEN'] %}
-                            <button type="button" class="btn w-100 rounded-pill fw-bold text-white py-3 shadow-sm" disabled
-                                style="background: gray; cursor: not-allowed; font-size: 1.1rem;">
-                                <i class="fas fa-lock me-2"></i>View Only (Staff Required)
-                            </button>
-                            {% else %}
-                            <button type="submit" class="btn w-100 rounded-pill fw-bold text-white py-3 shadow-sm"
-                                id="submitBtn"
-                                style="background: linear-gradient(135deg, #8b634b, #a67c64); font-size: 1.1rem; transition: transform 0.2s;"
-                                disabled onmousedown="this.style.transform='scale(0.98)'"
-                                onmouseup="this.style.transform='scale(1)'">
-                                <i class="fas fa-arrow-circle-right me-2"></i>Proceed to Payment
-                            </button>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </form>
-        </div>
+<!-- FULL-SCREEN FLUID 2-COLUMN WORKSPACE -->
+<div class="pos-workspace-container">
+    
+    <!-- LEFT: Main Menu Workspace (~65% Width) -->
+    <div class="pos-main-workspace">
+        {% include "cashier/_pos_header.html" %}
+        {% include "cashier/_pos_category_grid.html" %}
+        {% include "cashier/_pos_items_view.html" %}
     </div>
 
-    <!-- Payment Modal -->
-    <div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
-            <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.12);">
-                <div class="modal-header border-0 pb-0 px-4 pt-4">
-                    <h5 class="modal-title fw-bold" style="color: var(--text); font-size: 1.1rem;"><i class="fas fa-cash-register me-2" style="color: var(--primary);"></i>Process Payment</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <!-- RIGHT: Order Ticket / Cart Panel (~35% Width) -->
+    <div class="pos-cart-workspace">
+        {% include "cashier/_pos_cart.html" %}
+    </div>
+</div>
+
+<!-- Process Payment Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+            <div class="modal-header border-bottom pb-3 px-4 pt-4" style="background: #FAF6F0;">
+                <h5 class="modal-title fw-bold" style="color: #5D4037; font-size: 1.15rem;">
+                    <i class="fas fa-cash-register me-2" style="color: #8B634B;"></i>Process Payment
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body px-4 pb-4 pt-3" style="background: #ffffff;">
+
+                <!-- Payment Method Toggle Selector -->
+                <div class="mb-3 p-1 rounded-pill d-flex align-items-center" style="background: #EFEBE4; border: 1px solid rgba(139, 99, 75, 0.15);">
+                    <button type="button" id="modalMethodCounter" onclick="setModalPaymentMethod('COUNTER')"
+                        class="btn btn-sm w-50 rounded-pill fw-bold py-2 transition-all shadow-sm"
+                        style="background: #5D4037; color: #ffffff; font-size: 0.85rem;">
+                        💵 Counter (Cash)
+                    </button>
+                    <button type="button" id="modalMethodOnline" onclick="setModalPaymentMethod('ONLINE')"
+                        class="btn btn-sm w-50 rounded-pill fw-bold py-2 transition-all"
+                        style="background: transparent; color: #5D4037; font-size: 0.85rem;">
+                        💳 Online (Xendit / GCash)
+                    </button>
                 </div>
-                <div class="modal-body px-4 pb-4 pt-3">
 
-                    <!-- Breakdown Table -->
-                    <div class="mb-3 rounded-3 overflow-hidden" style="border: 1px solid rgba(139,99,75,0.12);">
-                        <!-- Sub Total -->
-                        <div class="d-flex justify-content-between align-items-center px-3 py-2" style="background: #faf8f6; border-bottom: 1px solid rgba(139,99,75,0.08);">
-                            <span class="fw-semibold" style="color: #888; font-size: 0.88rem;">Sub Total</span>
-                            <span class="fw-bold" style="color: var(--text); font-size: 0.95rem;" id="modalSubTotal">₱0.00</span>
-                        </div>
-                        <!-- Cash -->
-                        <div class="d-flex justify-content-between align-items-center px-3 py-2" style="background: #faf8f6; border-bottom: 1px solid rgba(139,99,75,0.08);">
-                            <span class="fw-semibold" style="color: #888; font-size: 0.88rem;">Cash</span>
-                            <input type="number" id="modalAmountTendered" min="0" step="0.01"
-                                class="form-control form-control-sm text-end"
-                                style="width: 130px; font-weight: 700; border-radius: 8px; border: 1px solid rgba(139,99,75,0.2); font-size: 0.95rem; color: var(--text);">
-                        </div>
-                        <!-- Change -->
-                        <div class="d-flex justify-content-between align-items-center px-3 py-2" style="background: #faf8f6; border-bottom: 1px solid rgba(139,99,75,0.08);">
-                            <span class="fw-semibold" style="color: #888; font-size: 0.88rem;">Change</span>
-                            <span class="fw-bold" style="color: var(--primary); font-size: 0.95rem;" id="modalChangeAmount">₱0.00</span>
-                        </div>
-                        <!-- Grand Total -->
-                        <div class="d-flex justify-content-between align-items-center px-3 py-3" style="background: linear-gradient(135deg, rgba(139,99,75,0.06), rgba(139,99,75,0.02));">
-                            <span class="fw-bold" style="color: var(--text); font-size: 1rem;">Grand Total</span>
-                            <span class="fw-bold" style="color: #2e7d32; font-size: 1.2rem;" id="modalTotalAmount">₱0.00</span>
+                <!-- Financial Breakdown Table -->
+                <div class="mb-3 rounded-4 overflow-hidden shadow-sm" style="border: 1px solid rgba(139,99,75,0.15);">
+                    <div class="d-flex justify-content-between align-items-center px-3 py-2" style="background: #faf8f6; border-bottom: 1px solid rgba(139,99,75,0.08);">
+                        <span class="fw-semibold text-muted" style="font-size: 0.88rem;">Subtotal</span>
+                        <span class="fw-bold" style="color: #5D4037; font-size: 0.95rem;" id="modalSubTotal">₱0.00</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center px-3 py-2" style="background: #faf8f6; border-bottom: 1px solid rgba(139,99,75,0.08);">
+                        <span class="fw-semibold text-muted" style="font-size: 0.88rem;">VAT (12%)</span>
+                        <span class="fw-bold" style="color: #5D4037; font-size: 0.95rem;" id="modalVat">₱0.00</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center px-3 py-2" style="background: #f4efe9;">
+                        <span class="fw-bold" style="color: #5D4037; font-size: 1rem;">Grand Total</span>
+                        <span class="fw-bold text-success fs-5" id="modalGrandTotal">₱0.00</span>
+                    </div>
+                </div>
+
+                <!-- CASH PAYMENT SECTION -->
+                <div id="cashPaymentSection">
+                    <!-- Quick Cash Presets Section -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-uppercase text-muted mb-2" style="letter-spacing: 0.5px;">Quick Cash Presets</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="button" onclick="setCashPreset('EXACT')" class="btn btn-sm btn-outline-dark rounded-pill fw-bold px-3 py-1" style="font-size: 0.82rem;">
+                                🎯 Exact Amount
+                            </button>
+                            <button type="button" onclick="setCashPreset(100)" class="btn btn-sm btn-outline-secondary rounded-pill fw-bold px-3 py-1" style="font-size: 0.82rem;">
+                                ₱100
+                            </button>
+                            <button type="button" onclick="setCashPreset(200)" class="btn btn-sm btn-outline-secondary rounded-pill fw-bold px-3 py-1" style="font-size: 0.82rem;">
+                                ₱200
+                            </button>
+                            <button type="button" onclick="setCashPreset(500)" class="btn btn-sm btn-outline-secondary rounded-pill fw-bold px-3 py-1" style="font-size: 0.82rem;">
+                                ₱500
+                            </button>
+                            <button type="button" onclick="setCashPreset(1000)" class="btn btn-sm btn-outline-secondary rounded-pill fw-bold px-3 py-1" style="font-size: 0.82rem;">
+                                ₱1,000
+                            </button>
                         </div>
                     </div>
 
-                    <!-- Quick Tender Buttons -->
-                    <div class="d-flex gap-2 mb-3 flex-wrap">
-                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="setTender('exact')" style="flex:1; min-width:60px; font-size:0.78rem;">Exact</button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="setTender(100)" style="flex:1; min-width:60px; font-size:0.78rem;">₱100</button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="setTender(200)" style="flex:1; min-width:60px; font-size:0.78rem;">₱200</button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="setTender(500)" style="flex:1; min-width:60px; font-size:0.78rem;">₱500</button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="setTender(1000)" style="flex:1; min-width:60px; font-size:0.78rem;">₱1000</button>
+                    <!-- Cash Tendered & Change Row -->
+                    <div class="mb-3 rounded-4 p-3 shadow-sm" style="background: #FAF6F0; border: 1px solid rgba(139,99,75,0.15);">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-6">
+                                <label class="form-label small fw-bold mb-1" style="color: #5D4037;">Cash Tendered</label>
+                                <input type="number" id="modalAmountTendered" min="0" step="0.01" placeholder="0.00"
+                                    class="form-control form-control-lg text-end fw-bold shadow-none"
+                                    style="border-radius: 10px; border: 1px solid rgba(139,99,75,0.3); color: #5D4037; font-size: 1.1rem;">
+                            </div>
+                            <div class="col-6 text-end">
+                                <label class="form-label small fw-bold mb-1" style="color: #5D4037;">Sukli (Change)</label>
+                                <div class="fw-bold fs-4 text-success" id="modalChange">₱0.00</div>
+                            </div>
+                        </div>
                     </div>
+                </div>
 
-                    <button type="button" id="confirmPaymentBtn"
-                        class="btn w-100 rounded-pill fw-bold text-white shadow-sm"
-                        style="background: linear-gradient(135deg, #8b634b, #a67c64); padding: 14px; font-size: 1rem;" disabled>
-                        <i class="fas fa-check-circle me-2"></i> Confirm Order
+                <!-- ONLINE PAYMENT SECTION (Xendit / GCash) -->
+                <div id="onlinePaymentSection" class="mb-3 rounded-4 p-3 d-none text-center shadow-sm" style="background: #FAF6F0; border: 1px solid rgba(139,99,75,0.15);">
+                    <div class="mb-2">
+                        <span class="badge px-3 py-2 rounded-pill fs-7 fw-bold" style="background: #106c54; color: #ffffff;">
+                            <i class="fas fa-qrcode me-1"></i> Xendit Online Gateway
+                        </span>
+                    </div>
+                    <h6 class="fw-bold mb-1" style="color: #5D4037;">GCash / E-Wallet / Card Payment</h6>
+                    <p class="text-muted small mb-0">Confirming will automatically generate an official Xendit Invoice & QR Code link for GCash/Maya payment.</p>
+                </div>
+
+                <!-- Smart Warning Alert Box -->
+                <div id="paymentWarningBox" class="alert py-2 px-3 mb-3 small rounded-3 fw-semibold d-none"></div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex gap-2 pt-2">
+                    <button type="button" class="btn btn-light w-50 py-2 rounded-pill fw-semibold" data-bs-dismiss="modal" style="font-size: 0.95rem;">Cancel</button>
+                    <button type="button" id="modalConfirmBtn" onclick="confirmPaymentAndSubmit()" disabled
+                        class="btn w-50 py-2 rounded-pill fw-bold text-white shadow-sm transition-all"
+                        style="background: linear-gradient(135deg, #8B634B, #5D4037); font-size: 0.95rem;">
+                        <i class="fas fa-check-circle me-1"></i>Confirm Payment
                     </button>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Large Amount Warning Modal -->
-    <div class="modal fade" id="confirmGuardModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
-        <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
-            <div class="modal-content border-0 shadow" style="border-radius: 20px;">
-                <div class="modal-body text-center p-4">
-                    <div style="width: 56px; height: 56px; border-radius: 50%; background: #fff9c4; color: #fbc02d; display: inline-flex; align-items: center; justify-content: center; font-size: 1.8rem; margin-bottom: 16px;">
-                        <i class="fas fa-exclamation-triangle"></i>
-                    </div>
-                    <h5 class="fw-bold mb-2" style="color: #3E2723; font-family: 'Outfit', sans-serif;">Large Amount Warning</h5>
-                    <p class="text-muted mb-0" id="confirmGuardMessage" style="font-size: 0.88rem; line-height: 1.5; font-family: 'Outfit', sans-serif;"></p>
-                </div>
-                <div class="modal-footer border-0 p-3 justify-content-center" style="background: white; border-radius: 0 0 20px 20px; gap: 10px;">
-                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" id="confirmGuardCancelBtn" style="font-weight: 700; font-size: 0.85rem; font-family: 'Outfit', sans-serif;">Check Again</button>
-                    <button type="button" class="btn btn-primary rounded-pill px-4" id="confirmGuardProceedBtn" style="font-weight: 700; font-size: 0.85rem; background: #8B634B; border-color: #8B634B; font-family: 'Outfit', sans-serif;">Yes, Correct</button>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
-{% endblock %}
 
-{% block extra_script %}
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
+    // State Tracking
     const orderItems = {};
 
-    function showCategory(categoryName) {
-        if (!categoryName) return;
-        const gridView = document.getElementById('categories-grid-view');
+    // Category-First Navigation Functions
+    function showCategoryItems(categoryName) {
+        const catGrid = document.getElementById('categories-grid-view');
         const itemsView = document.getElementById('items-view');
-        const titleEl = document.getElementById('current-category-title');
-        if (!gridView || !itemsView || !titleEl) return;
 
-        gridView.style.display = 'none';
-        itemsView.style.display = 'block';
-        titleEl.textContent = categoryName;
+        if (catGrid) catGrid.style.setProperty('display', 'none', 'important');
+        if (itemsView) itemsView.style.setProperty('display', 'flex', 'important');
 
-        document.querySelectorAll('.menu-category-section').forEach(function (section) {
-            section.style.display = (section.getAttribute('data-category') || '').trim() === categoryName.trim() ? 'block' : 'none';
+        document.getElementById('current-category-title').innerText = categoryName;
+        document.getElementById('posWorkspaceTitle').innerText = categoryName;
+        document.getElementById('posWorkspaceSub').innerText = 'Items in ' + categoryName;
+
+        document.querySelectorAll('.menu-category-section').forEach(sec => {
+            if (sec.getAttribute('data-category') === categoryName) {
+                sec.style.setProperty('display', 'block', 'important');
+            } else {
+                sec.style.setProperty('display', 'none', 'important');
+            }
         });
-
-        const cardBody = itemsView.closest('.card-body');
-        if (cardBody) cardBody.scrollTop = 0;
     }
-
-    document.addEventListener('click', function(e) {
-        const trigger = e.target.closest('[data-cat-trigger]');
-        if (trigger) { showCategory(trigger.getAttribute('data-cat-trigger')); e.preventDefault(); }
-    });
 
     function showCategoriesGrid() {
-        document.getElementById('items-view').style.display = 'none';
-        document.getElementById('categories-grid-view').style.display = 'block';
-        document.getElementById('globalSearch').value = '';
-        clearSearch();
-    }
+        const catGrid = document.getElementById('categories-grid-view');
+        const itemsView = document.getElementById('items-view');
+        const searchView = document.getElementById('search-results-view');
+        const categoriesContainer = document.getElementById('categories-container');
 
-    function addFromInput(btn, id, name, price, category, imageUrl) {
-        let container = btn.closest('div');
-        let localInput = container.querySelector('input[type="number"]');
-        let input = document.getElementById('qty_' + id);
-        let qty = parseInt(localInput ? localInput.value : (input ? input.value : 1)) || 1;
-
-        if (orderItems[id]) { 
-            orderItems[id].qty += qty; 
-        } else { 
-            orderItems[id] = { name, price, qty, category, image: imageUrl || '' }; 
-        }
-        if (localInput) localInput.value = 1; else if (input) input.value = 1;
-        renderOrder();
-
-        // Save original content and style
-        let originalHTML = btn.innerHTML;
-        let originalStyle = btn.getAttribute('style');
+        if (catGrid) catGrid.style.setProperty('display', 'flex', 'important');
+        if (itemsView) itemsView.style.setProperty('display', 'none', 'important');
+        if (searchView) searchView.style.setProperty('display', 'none', 'important');
+        if (categoriesContainer) categoriesContainer.style.setProperty('display', 'grid', 'important');
         
-        // Show "Added" feedback
-        btn.innerHTML = '<i class="fas fa-check"></i> Added';
-        btn.style.backgroundColor = '#6d4c3d';
-        btn.style.boxShadow = '0 0 10px rgba(139, 99, 75, 0.4)';
-        
-        // Restore after animation
-        setTimeout(() => { 
-            btn.innerHTML = originalHTML;
-            btn.setAttribute('style', originalStyle);
-        }, 800);
+        const searchInput = document.getElementById('globalSearch');
+        if (searchInput) searchInput.value = '';
+
+        document.getElementById('posWorkspaceTitle').innerText = 'Menu Categories';
+        document.getElementById('posWorkspaceSub').innerText = 'Select a category to view available items';
     }
 
-    function removeItem(id) { delete orderItems[id]; renderOrder(); }
-    function changeQty(id, delta) { if (!orderItems[id]) return; orderItems[id].qty += delta; if (orderItems[id].qty <= 0) delete orderItems[id]; renderOrder(); }
+    // Search Handler
+    function handlePosSearch(val) {
+        const query = (val || '').toLowerCase().trim();
+        const catGrid = document.getElementById('categories-grid-view');
+        const itemsView = document.getElementById('items-view');
+        const searchView = document.getElementById('search-results-view');
+        const categoriesContainer = document.getElementById('categories-container');
+        const searchItemsContainer = document.getElementById('search-items-container');
 
-    // Adjust quantity in the item card (for +/- buttons on cards)
-    function adjustQtyInCard(btn, itemId, delta) {
-        const input = document.getElementById('qty_' + itemId);
-        if (!input) return;
-        let currentQty = parseInt(input.value) || 1;
-        let newQty = currentQty + delta;
-        if (newQty < 1) newQty = 1;
-        if (newQty > 99) newQty = 99;
-        input.value = newQty;
-    }
-
-    function renderOrder() {
-        const container = document.getElementById('orderItems');
-        const keys = Object.keys(orderItems);
-
-        if (keys.length === 0) {
-            container.innerHTML = `<div class="h-100 d-flex flex-column align-items-center justify-content-center text-muted opacity-75 mt-5"><i class="fas fa-shopping-basket fa-3x mb-3"></i><p id="emptyMsg">Order is empty. Click items to add.</p></div>`;
-            document.getElementById('totalAmount').textContent = '₱0.00';
-            document.getElementById('submitBtn').disabled = true;
-            document.querySelectorAll('.hidden-item').forEach(e => e.remove());
+        if (!query) {
+            clearSearch();
             return;
         }
 
-        let html = '', total = 0;
-        document.querySelectorAll('.hidden-item').forEach(e => e.remove());
+        if (catGrid) catGrid.style.setProperty('display', 'flex', 'important');
+        if (itemsView) itemsView.style.setProperty('display', 'none', 'important');
+        if (categoriesContainer) categoriesContainer.style.setProperty('display', 'none', 'important');
+        if (searchView) searchView.style.setProperty('display', 'block', 'important');
 
-        keys.forEach(id => {
-            const item = orderItems[id];
-            const subtotal = item.price * item.qty;
-            total += subtotal;
-            
-            // Create image HTML
-            let imageHtml = '';
-            if (item.image && item.image.trim() !== '') {
-                imageHtml = `<img src="${item.image}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px; margin-right: 10px;" onerror="this.style.display='none'">`;
-            } else {
-                imageHtml = `<div style="width: 50px; height: 50px; background: rgba(139, 99, 75, 0.1); border-radius: 8px; margin-right: 10px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-utensils" style="color: rgba(139, 99, 75, 0.3); font-size: 1.2rem;"></i></div>`;
+        searchItemsContainer.innerHTML = '';
+        let foundCount = 0;
+
+        document.querySelectorAll('.menu-category-section .item-card').forEach(card => {
+            const name = card.getAttribute('data-name') || '';
+            if (name.includes(query)) {
+                const clone = card.cloneNode(true);
+                searchItemsContainer.appendChild(clone);
+                foundCount++;
             }
-            
-            html += `<div class="d-flex justify-content-between align-items-center mb-2 p-2 rounded shadow-sm" style="background: #ffffff; border: 1px solid rgba(139, 99, 75,0.1);">
-                <div class="d-flex align-items-center" style="flex: 1; padding-right: 10px;">
-                    ${imageHtml}
-                    <div>
-                        <div class="fw-bold" style="font-size: 0.9rem; color: var(--text); line-height: 1.2;">${item.name}</div>
-                        <small class="text-muted" style="font-size: 0.75rem;">₱${item.price.toFixed(2)}</small>
-                    </div>
+        });
+
+        if (foundCount === 0) {
+            searchItemsContainer.innerHTML = `
+                <div class="col-12 text-center py-5 text-muted">
+                    <i class="fas fa-search fa-2x mb-2" style="color: rgba(139,99,75,0.3);"></i>
+                    <p class="mb-0">No items matching "${query}"</p>
                 </div>
-                <div class="d-flex align-items-center gap-2">
-                    <div class="d-flex align-items-center border rounded-pill overflow-hidden" style="background: rgba(139, 99, 75,0.03);">
-                        <button type="button" class="btn btn-sm" style="width:28px;height:28px;padding:0;border:none;" onclick="changeQty(${id}, -1)">−</button>
-                        <span class="fw-bold" style="min-width: 20px; text-align: center; font-size: 0.85rem;">${item.qty}</span>
-                        <button type="button" class="btn btn-sm" style="width:28px;height:28px;padding:0;border:none;" onclick="changeQty(${id}, 1)">+</button>
-                    </div>
-                    <span class="fw-bold text-success ms-1" style="min-width: 60px; text-align: right; font-size: 0.9rem;">₱${subtotal.toFixed(2)}</span>
-                    <button type="button" class="btn btn-sm text-danger" onclick="removeItem(${id})" style="padding: 2px 6px; background: rgba(220,53,69,0.1); border-radius: 6px;"><i class="fas fa-trash-alt"></i></button>
-                </div></div>`;
-            const form = document.getElementById('orderForm');
-            let h1 = document.createElement('input'); h1.type='hidden'; h1.name='item_id[]'; h1.value=id; h1.className='hidden-item'; form.appendChild(h1);
-            let h2 = document.createElement('input'); h2.type='hidden'; h2.name='quantity[]'; h2.value=item.qty; h2.className='hidden-item'; form.appendChild(h2);
-        });
-
-        container.innerHTML = html;
-        document.getElementById('totalAmount').textContent = '₱' + total.toFixed(2);
-        document.getElementById('submitBtn').disabled = false;
-        container.scrollTop = container.scrollHeight;
+            `;
+        }
     }
-
-    // Global Search
-    document.getElementById('globalSearch').addEventListener('input', function () {
-        const q = this.value.toLowerCase().trim();
-        if (q.length === 0) { clearSearch(); return; }
-        document.getElementById('categories-container').style.display = 'none';
-        document.getElementById('search-results-view').style.display = 'block';
-        const itemsContainer = document.getElementById('search-items-container');
-        itemsContainer.innerHTML = '';
-        let foundAny = false;
-        document.querySelectorAll('.item-card').forEach(card => {
-            if (card.dataset.name.includes(q)) { foundAny = true; itemsContainer.appendChild(card.cloneNode(true)); }
-        });
-        if (!foundAny) itemsContainer.innerHTML = '<div class="col-12 py-4 text-center text-muted">No items matched your search.</div>';
-    });
 
     function clearSearch() {
         document.getElementById('globalSearch').value = '';
         document.getElementById('categories-container').style.display = 'grid';
         document.getElementById('search-results-view').style.display = 'none';
-        document.getElementById('search-items-container').innerHTML = '';
+        document.getElementById('items-view').style.display = 'none';
+        document.getElementById('categories-grid-view').style.display = 'flex';
+
+        document.getElementById('posWorkspaceTitle').innerText = 'Menu Categories';
+        document.getElementById('posWorkspaceSub').innerText = 'Select a category to view available items';
     }
 
-    // Payment Modal Logic
-    function handleOrderSubmit(e) {
-        if (document.querySelector('input[name="payment_method"]:checked').value === 'ONLINE') return true;
-        e.preventDefault();
-        let total = parseFloat(document.getElementById('totalAmount').textContent.replace('₱', '').replace(/,/g, ''));
-        document.getElementById('modalSubTotal').textContent = '₱' + total.toFixed(2);
-        document.getElementById('modalTotalAmount').textContent = '₱' + total.toFixed(2);
-        document.getElementById('modalAmountTendered').value = '';
-        document.getElementById('modalAmountTendered').min = total;
-        document.getElementById('modalChangeAmount').textContent = '₱0.00';
-        document.getElementById('confirmPaymentBtn').disabled = true;
-        new bootstrap.Modal(document.getElementById('paymentModal')).show();
-        document.getElementById('paymentModal').addEventListener('shown.bs.modal', () => document.getElementById('modalAmountTendered').focus(), { once: true });
-        return false;
+    // Quantity Adjuster inside Item Card
+    function adjustQtyInCard(btn, id, delta) {
+        const input = document.getElementById('qty_' + id);
+        if (!input) return;
+        let val = parseInt(input.value) || 1;
+        val += delta;
+        if (val < 1) val = 1;
+        if (val > 99) val = 99;
+        input.value = val;
     }
 
-    let _isConfirmingGuard = false;
+    // Add Item to Order Cart
+    function addFromInput(btn, id, name, price, category, image) {
+        const input = document.getElementById('qty_' + id);
+        const qtyToAdd = input ? (parseInt(input.value) || 1) : 1;
 
-    document.getElementById('modalAmountTendered').addEventListener('keydown', function(e) {
-        if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
-    });
+        if (!orderItems[id]) {
+            orderItems[id] = { id, name, price, category, image, qty: qtyToAdd };
+        } else {
+            orderItems[id].qty += qtyToAdd;
+        }
 
-    document.getElementById('modalAmountTendered').addEventListener('input', function () {
-        let total = parseFloat(document.getElementById('totalAmount').textContent.replace('₱', '').replace(/,/g, ''));
-        
-        // Prevent e, +, - symbols
-        if (/[eE+\-]/.test(this.value) && this.value !== '') {
-            this.value = this.value.replace(/[eE+\-]/g, '');
+        if (input) input.value = 1;
+        renderOrder();
+    }
+
+    // Dine-In vs Takeout Toggle
+    function setDiningOption(opt) {
+        document.getElementById('diningOptionInput').value = opt;
+        const btnDineIn = document.getElementById('btnDineIn');
+        const btnTakeout = document.getElementById('btnTakeout');
+        const tableSelect = document.getElementById('tableSelect');
+
+        if (opt === 'DINE_IN') {
+            btnDineIn.style.background = '#5D4037';
+            btnDineIn.style.color = '#ffffff';
+            btnTakeout.style.background = 'transparent';
+            btnTakeout.style.color = '#5D4037';
+            tableSelect.required = true;
+            tableSelect.disabled = false;
+        } else {
+            btnTakeout.style.background = '#5D4037';
+            btnTakeout.style.color = '#ffffff';
+            btnDineIn.style.background = 'transparent';
+            btnDineIn.style.color = '#5D4037';
+            tableSelect.required = false;
+            tableSelect.disabled = true;
+            tableSelect.value = '';
+        }
+    }
+
+    function updateQty(id, delta) {
+        if (orderItems[id]) {
+            orderItems[id].qty += delta;
+            if (orderItems[id].qty <= 0) {
+                delete orderItems[id];
+            }
+        }
+        renderOrder();
+    }
+
+    function removeItem(id) {
+        delete orderItems[id];
+        renderOrder();
+    }
+
+    function clearCartItems() {
+        Object.keys(orderItems).forEach(id => delete orderItems[id]);
+        renderOrder();
+    }
+
+    // Render Cart Summary Ticket
+    function renderOrder() {
+        const orderContainer = document.getElementById('orderItems');
+        const submitBtn = document.getElementById('submitBtn');
+        const emptyState = document.getElementById('emptyCartState');
+
+        const itemRows = orderContainer.querySelectorAll('.pos-cart-item-row');
+        itemRows.forEach(r => r.remove());
+
+        const keys = Object.keys(orderItems);
+        let subtotal = 0;
+
+        if (keys.length === 0) {
+            if (emptyState) emptyState.style.display = 'flex';
+            if (submitBtn) submitBtn.disabled = true;
+            document.getElementById('posSubtotal').innerText = '₱0.00';
+            document.getElementById('totalAmount').innerText = '₱0.00';
             return;
         }
 
-        let tendered = parseFloat(this.value) || 0;
-        let change = tendered - total;
+        if (emptyState) emptyState.style.display = 'none';
+        if (submitBtn) submitBtn.disabled = false;
 
-        if (change >= 0 && this.value !== '') {
-            document.getElementById('modalChangeAmount').textContent = '₱' + change.toFixed(2);
-            document.getElementById('confirmPaymentBtn').disabled = false;
-        } else {
-            document.getElementById('modalChangeAmount').textContent = '₱0.00';
-            document.getElementById('confirmPaymentBtn').disabled = true;
-        }
+        keys.forEach(id => {
+            const item = orderItems[id];
+            const lineTotal = item.price * item.qty;
+            subtotal += lineTotal;
 
-        // Warning threshold: if tendered is greater than 10x total
-        if (tendered > total * 10 && this.value !== '') {
-            if (_isConfirmingGuard) return;
-            _isConfirmingGuard = true;
+            const row = document.createElement('div');
+            row.className = 'pos-cart-item-row d-flex align-items-center justify-content-between p-2 mb-2 rounded-3';
+            row.style.background = '#FAF6F0';
+            row.style.border = '1px solid rgba(139, 99, 75, 0.12)';
 
-            const msg = `Amount Tendered (₱${tendered.toLocaleString(undefined, {minimumFractionDigits: 2})}) is significantly higher than the Grand Total (₱${total.toLocaleString(undefined, {minimumFractionDigits: 2})}). Is this correct?`;
-            document.getElementById('confirmGuardMessage').textContent = msg;
+            row.innerHTML = `
+                <input type="hidden" name="item_id[]" value="${id}">
+                <input type="hidden" name="quantity[]" value="${item.qty}">
+                
+                <div class="d-flex align-items-center gap-2 overflow-hidden flex-grow-1">
+                    <div style="width: 36px; height: 36px; border-radius: 8px; overflow: hidden; background: #fff; flex-shrink: 0;">
+                        ${item.image ? `<img src="${item.image}" class="w-100 h-100" style="object-fit: cover;">` : `<div class="w-100 h-100 d-flex align-items-center justify-content-center text-muted"><i class="fas fa-utensils" style="font-size:0.7rem;"></i></div>`}
+                    </div>
+                    <div class="text-truncate">
+                        <div class="fw-bold text-dark text-truncate" style="font-size: 0.85rem;">${item.name}</div>
+                        <div class="text-muted" style="font-size: 0.75rem;">₱${item.price.toFixed(2)} × ${item.qty}</div>
+                    </div>
+                </div>
 
-            const guardModal = new bootstrap.Modal(document.getElementById('confirmGuardModal'));
-            guardModal.show();
-
-            const proceedBtn = document.getElementById('confirmGuardProceedBtn');
-            const cancelBtn = document.getElementById('confirmGuardCancelBtn');
-
-            const handleProceed = () => {
-                _isConfirmingGuard = false;
-                guardModal.hide();
-                cleanup();
-            };
-
-            const handleCancel = () => {
-                _isConfirmingGuard = false;
-                guardModal.hide();
-                this.value = '';
-                document.getElementById('modalChangeAmount').textContent = '₱0.00';
-                document.getElementById('confirmPaymentBtn').disabled = true;
-                cleanup();
-            };
-
-            function cleanup() {
-                proceedBtn.removeEventListener('click', handleProceed);
-                cancelBtn.removeEventListener('click', handleCancel);
-            }
-
-            proceedBtn.addEventListener('click', handleProceed);
-            cancelBtn.addEventListener('click', handleCancel);
-        }
-    });
-
-    document.getElementById('confirmPaymentBtn').addEventListener('click', function () {
-        const amountInput = document.getElementById('modalAmountTendered');
-        document.getElementById('hiddenAmountTendered').value = amountInput.value;
-        this.disabled = true;
-        this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Processing...';
-        
-        const form = document.getElementById('orderForm');
-        const formData = new FormData(form);
-        
-        // Dismiss bootstrap modal first
-        const modalEl = document.getElementById('paymentModal');
-        const bsModal = bootstrap.Modal.getInstance(modalEl);
-        if (bsModal) bsModal.hide();
-        
-        fetch(form.action, {
-            method: 'POST',
-            body: formData,
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                if (window.showToast) showToast('success', data.message || 'Walk-in order submitted!');
-                // Reset POS - clear cart
-                Object.keys(orderItems).forEach(k => delete orderItems[k]);
-                renderOrder();
-                // Go back to categories grid
-                showCategoriesGrid();
-                // Reset form fields
-                form.querySelector('input[name="customer_name"]').value = 'Walk-in Customer';
-                document.getElementById('totalAmount').textContent = '₱0.00';
-                document.getElementById('submitBtn').disabled = true;
-                // Reset tender input
-                amountInput.value = '';
-            } else {
-                if (window.showToast) showToast('danger', data.message || 'Order submission failed.');
-            }
-        })
-        .catch(err => {
-            console.error('Walkin submit error:', err);
-            if (window.showToast) showToast('danger', 'Network error. Please try again.');
-        })
-        .finally(() => {
-            const btn = document.getElementById('confirmPaymentBtn');
-            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check-circle me-1"></i> Confirm Order'; }
+                <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                    <div class="d-flex align-items-center rounded-pill bg-white border p-1" style="gap: 2px;">
+                        <button type="button" onclick="updateQty(${id}, -1)" class="btn btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center" style="width: 22px; height: 22px; background: #EFEBE4; color: #5D4037; border: none;">
+                            <i class="fas fa-minus" style="font-size: 0.6rem;"></i>
+                        </button>
+                        <span class="fw-bold px-1" style="font-size: 0.82rem; min-width: 18px; text-align: center;">${item.qty}</span>
+                        <button type="button" onclick="updateQty(${id}, 1)" class="btn btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center" style="width: 22px; height: 22px; background: #5D4037; color: #fff; border: none;">
+                            <i class="fas fa-plus" style="font-size: 0.6rem;"></i>
+                        </button>
+                    </div>
+                    <button type="button" onclick="removeItem(${id})" class="btn btn-link text-danger p-0 ms-1" style="font-size: 0.8rem;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            orderContainer.appendChild(row);
         });
-    });
 
-    // Quick quantity setter
-    function setQty(itemId, qty) {
-        const input = document.getElementById('qty_' + itemId);
-        if (input) input.value = qty;
+        document.getElementById('posSubtotal').innerText = `₱${subtotal.toFixed(2)}`;
+        document.getElementById('totalAmount').innerText = `₱${subtotal.toFixed(2)}`;
     }
 
-    // Quick tender amount setter
-    function setTender(amount) {
-        const input = document.getElementById('modalAmountTendered');
-        if (amount === 'exact') {
-            const total = parseFloat(document.getElementById('totalAmount').textContent.replace('₱', '').replace(/,/g, ''));
-            input.value = total.toFixed(2);
+    let currentPaymentMethod = 'COUNTER';
+
+    function setModalPaymentMethod(method) {
+        currentPaymentMethod = method;
+        const btnCounter = document.getElementById('modalMethodCounter');
+        const btnOnline = document.getElementById('modalMethodOnline');
+        const cashSection = document.getElementById('cashPaymentSection');
+        const onlineSection = document.getElementById('onlinePaymentSection');
+        const payCounterRadio = document.getElementById('payCounter');
+        const payGcashRadio = document.getElementById('payGcash');
+        const confirmBtn = document.getElementById('modalConfirmBtn');
+        const warningBox = document.getElementById('paymentWarningBox');
+
+        if (method === 'COUNTER') {
+            if (btnCounter) { btnCounter.style.background = '#5D4037'; btnCounter.style.color = '#ffffff'; }
+            if (btnOnline) { btnOnline.style.background = 'transparent'; btnOnline.style.color = '#5D4037'; }
+
+            if (cashSection) cashSection.classList.remove('d-none');
+            if (onlineSection) onlineSection.classList.add('d-none');
+            if (payCounterRadio) payCounterRadio.checked = true;
+
+            if (confirmBtn) confirmBtn.innerHTML = `<i class="fas fa-check-circle me-1"></i>Confirm Cash Payment`;
+            validatePaymentInput();
         } else {
-            input.value = amount;
+            if (btnOnline) { btnOnline.style.background = '#5D4037'; btnOnline.style.color = '#ffffff'; }
+            if (btnCounter) { btnCounter.style.background = 'transparent'; btnCounter.style.color = '#5D4037'; }
+
+            if (cashSection) cashSection.classList.add('d-none');
+            if (onlineSection) onlineSection.classList.remove('d-none');
+            if (payGcashRadio) payGcashRadio.checked = true;
+
+            if (warningBox) warningBox.classList.add('d-none');
+            if (confirmBtn) {
+                confirmBtn.innerHTML = `<i class="fas fa-qrcode me-1"></i>Pay via Xendit / GCash`;
+                confirmBtn.disabled = false;
+            }
         }
-        input.dispatchEvent(new Event('input'));
     }
 
-    // Keyboard shortcuts
-    document.addEventListener('keydown', function(e) {
-        // Ctrl/Cmd + F: Focus search
-        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
-            e.preventDefault();
-            document.getElementById('globalSearch').focus();
-        }
-        // Escape: Clear search or go back to categories
-        if (e.key === 'Escape') {
-            if (document.getElementById('search-results-view').style.display !== 'none') {
-                clearSearch();
-            } else if (document.getElementById('items-view').style.display !== 'none') {
-                showCategoriesGrid();
-            }
-        }
-        // Ctrl/Cmd + Enter: Submit order (if enabled)
-        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-            const submitBtn = document.getElementById('submitBtn');
-            if (submitBtn && !submitBtn.disabled) {
-                e.preventDefault();
-                submitBtn.click();
-            }
-        }
-    });
+    // Submit & Payment Modal Handler
+    function handleOrderSubmit(e) {
+        e.preventDefault();
+        const totalStr = document.getElementById('totalAmount').innerText.replace('₱', '').replace(/,/g, '');
+        const totalVal = parseFloat(totalStr) || 0;
+        const vatVal = totalVal * 0.12;
 
-    // Load table status on page load
-    function loadTableStatus() {
-        fetch('{{ url_for("cashier_portal.cashier_api_tables") }}')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success && data.tables) {
-                    const tableSelect = document.getElementById('tableSelect');
-                    if (tableSelect) {
-                        const currentVal = tableSelect.value;
-                        const tableKeys = Object.keys(data.tables).map(Number).sort((a, b) => a - b);
-                        tableKeys.forEach(i => {
-                            let option = tableSelect.querySelector(`option[value="${i}"]`);
-                            if (!option) {
-                                option = document.createElement('option');
-                                option.value = i;
-                                tableSelect.appendChild(option);
-                            }
-                            const info = data.tables[i];
-                            const status = (typeof info === 'object' && info !== null) ? info.status : info;
-                            const name = (typeof info === 'object' && info !== null && info.name) ? info.name : `Table ${i}`;
+        document.getElementById('modalSubTotal').innerText = `₱${totalVal.toFixed(2)}`;
+        document.getElementById('modalVat').innerText = `₱${vatVal.toFixed(2)}`;
+        document.getElementById('modalGrandTotal').innerText = `₱${totalVal.toFixed(2)}`;
+        document.getElementById('modalAmountTendered').value = '';
+        document.getElementById('modalChange').innerText = '₱0.00';
+        
+        setModalPaymentMethod('COUNTER');
+        
+        const modal = new bootstrap.Modal(document.getElementById('paymentModal'));
+        modal.show();
+        return false;
+    }
 
-                            if (status === 'OCCUPIED') {
-                                option.disabled = false;
-                                const custName = (typeof info === 'object' && info !== null && info.customer) ? info.customer : '';
-                                option.dataset.customerName = custName;
-                                option.textContent = `${name} (Occupied — Add-On Order)`;
-                                option.style.color = '#d97706';
-                            } else if (status === 'RESERVED') {
-                                option.disabled = true;
-                                option.dataset.customerName = '';
-                                option.textContent = `${name} (Reserved)`;
-                                option.style.color = '#ef6c00';
-                            } else {
-                                option.disabled = false;
-                                option.dataset.customerName = '';
-                                option.textContent = name;
-                                option.style.color = '';
-                            }
-                        });
-                        if (currentVal) {
-                            const selectedOpt = tableSelect.querySelector(`option[value="${currentVal}"]`);
-                            if (selectedOpt && !selectedOpt.disabled) {
-                                tableSelect.value = currentVal;
-                            }
-                        }
+    function setCashPreset(val) {
+        const totalStr = document.getElementById('totalAmount').innerText.replace('₱', '').replace(/,/g, '');
+        const grandTotal = parseFloat(totalStr) || 0;
+        const inputElem = document.getElementById('modalAmountTendered');
+        
+        if (val === 'EXACT') {
+            inputElem.value = grandTotal.toFixed(2);
+        } else {
+            inputElem.value = val;
+        }
+        validatePaymentInput();
+    }
+
+    function validatePaymentInput() {
+        if (currentPaymentMethod !== 'COUNTER') return;
+
+        const totalStr = document.getElementById('totalAmount').innerText.replace('₱', '').replace(/,/g, '');
+        const grandTotal = parseFloat(totalStr) || 0;
+        const inputVal = document.getElementById('modalAmountTendered').value;
+        const tendered = parseFloat(inputVal) || 0;
+        const change = tendered - grandTotal;
+
+        const warningBox = document.getElementById('paymentWarningBox');
+        const confirmBtn = document.getElementById('modalConfirmBtn');
+        const changeDisplay = document.getElementById('modalChange');
+
+        changeDisplay.innerText = change >= 0 ? `₱${change.toFixed(2)}` : '₱0.00';
+
+        if (!inputVal || tendered <= 0) {
+            warningBox.classList.add('d-none');
+            confirmBtn.disabled = true;
+            return;
+        }
+
+        if (tendered < grandTotal) {
+            const diff = grandTotal - tendered;
+            warningBox.className = 'alert alert-danger py-2 px-3 mb-3 small rounded-3 fw-semibold';
+            warningBox.innerHTML = `<i class="fas fa-exclamation-circle me-1"></i> Insufficient cash! Need <strong>₱${diff.toFixed(2)}</strong> more.`;
+            warningBox.classList.remove('d-none');
+            confirmBtn.disabled = true;
+        } else if (tendered > 10000 || (grandTotal > 0 && tendered > grandTotal * 5)) {
+            warningBox.className = 'alert alert-warning py-2 px-3 mb-3 small rounded-3 fw-semibold';
+            warningBox.innerHTML = `<i class="fas fa-exclamation-triangle me-1"></i> Warning: Unusually high cash amount entered (<strong>₱${tendered.toLocaleString()}</strong>). Please check for extra zeros!`;
+            warningBox.classList.remove('d-none');
+            confirmBtn.disabled = false;
+        } else {
+            warningBox.className = 'alert alert-success py-2 px-3 mb-3 small rounded-3 fw-semibold';
+            warningBox.innerHTML = `<i class="fas fa-check-circle me-1"></i> Payment valid. Sukli (Change): <strong>₱${change.toFixed(2)}</strong>`;
+            warningBox.classList.remove('d-none');
+            confirmBtn.disabled = false;
+        }
+    }
+
+    document.getElementById('modalAmountTendered').addEventListener('input', validatePaymentInput);
+
+    function confirmPaymentAndSubmit() {
+        const tendered = document.getElementById('modalAmountTendered').value;
+        document.getElementById('hiddenAmountTendered').value = tendered;
+        document.getElementById('orderForm').submit();
+    }
+
+    // ── Table Occupancy Status & Customer Name Auto-Fill ──
+    let tableStatusMap = {};
+
+    async function fetchTableStatuses() {
+        try {
+            const resp = await fetch('/admin/walkin-order/table-status');
+            if (!resp.ok) { console.warn('Table status fetch failed:', resp.status); return; }
+            const data = await resp.json();
+            if (data.success && data.tables) {
+                tableStatusMap = data.tables; // keys are strings e.g. "1", "2"
+                const select = document.getElementById('tableSelect');
+                if (!select) return;
+
+                const currentVal = select.value;
+                select.innerHTML = '<option value="">Select Table...</option>';
+
+                for (let i = 1; i <= 17; i++) {
+                    const key = String(i);
+                    const info = tableStatusMap[key] || { status: 'AVAILABLE' };
+                    const opt = document.createElement('option');
+                    opt.value = i;
+
+                    if (info.status === 'OCCUPIED') {
+                        opt.text = `🔴 Table ${i} - OCCUPIED (${info.customer || 'Guest'})`;
+                    } else if (info.status === 'RESERVED') {
+                        opt.text = `🟡 Table ${i} - RESERVED`;
+                    } else {
+                        opt.text = `🟢 Table ${i} - Available`;
                     }
-                }
-            })
-            .catch(error => console.error('Error loading table status:', error));
-    }
 
-    // Auto-fill customer name when selecting an occupied table for add-on order
-    const tableSelectEl = document.getElementById('tableSelect');
-    if (tableSelectEl) {
-        tableSelectEl.addEventListener('change', function() {
-            const selectedOpt = this.options[this.selectedIndex];
-            const customerInput = document.querySelector('input[name="customer_name"]');
-            if (selectedOpt && selectedOpt.dataset.customerName && customerInput) {
-                customerInput.value = selectedOpt.dataset.customerName;
-            }
-        });
-    }
-
-    // Toggle table select based on Dining Option
-    const diningOptionSelect = document.querySelector('select[name="dining_option"]');
-    if (diningOptionSelect) {
-        diningOptionSelect.addEventListener('change', function() {
-            const tableSelect = document.getElementById('tableSelect');
-            if (tableSelect) {
-                if (this.value === 'TAKE_OUT') {
-                    tableSelect.required = false;
-                    tableSelect.disabled = false;
-                } else {
-                    tableSelect.required = true;
-                    tableSelect.disabled = false;
+                    if (String(currentVal) === String(i)) opt.selected = true;
+                    select.appendChild(opt);
                 }
             }
-        });
+        } catch (e) {
+            console.error('Error fetching table statuses:', e);
+        }
     }
 
-    // Load table status on page load
-    loadTableStatus();
+    function handleTableSelect(val) {
+        const custInput = document.getElementById('customerNameInput');
+        if (!custInput) return;
 
-    // Refresh table status every 10 seconds for real-time responsiveness
-    setInterval(loadTableStatus, 10000);
+        if (!val) { custInput.value = 'Walk-in Customer'; return; }
+
+        const info = tableStatusMap[String(val)];
+        if (info && info.status === 'OCCUPIED' && info.customer) {
+            custInput.value = info.customer;
+        } else {
+            custInput.value = 'Walk-in Customer';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        fetchTableStatuses();
+        setInterval(fetchTableStatuses, 15000);
+    });
 </script>
 {% endblock %}

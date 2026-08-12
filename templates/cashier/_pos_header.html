@@ -1,0 +1,15 @@
+<!-- POS Top Workspace Header with Search -->
+<div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom" style="border-color: rgba(139, 99, 75, 0.12) !important;">
+    <div>
+        <h4 class="fw-bold mb-0" id="posWorkspaceTitle" style="color: #5D4037; font-family: 'Playfair Display', serif;">Menu Categories</h4>
+        <p class="text-muted small mb-0" id="posWorkspaceSub">Select a category to view available items</p>
+    </div>
+    
+    <!-- Search Bar -->
+    <div class="position-relative" style="min-width: 250px;">
+        <i class="fas fa-search position-absolute top-50 start-0 translate-middle-y ms-3" style="color: #8D6E63; font-size: 0.85rem;"></i>
+        <input type="text" id="globalSearch" onkeyup="handlePosSearch(this.value)" class="form-control form-control-sm ps-5 pe-3 py-2 rounded-pill shadow-none"
+            placeholder="Search menu..."
+            style="border: 1px solid rgba(139, 99, 75, 0.25); background: #FAF6F0; color: #2D2D2D; font-size: 0.88rem; transition: all 0.2s;">
+    </div>
+</div>

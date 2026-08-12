@@ -16,11 +16,25 @@ class Config:
     # Priority: NEON_DATABASE_URL -> DATABASE_URL -> SQLite fallback
     _db_url = os.environ.get("NEON_DATABASE_URL") or os.environ.get("DATABASE_URL")
     
+    # Verify if PostgreSQL host is resolvable; if host DNS fails, fallback to local SQLite
+    if _db_url and ("postgresql" in _db_url or "postgres" in _db_url):
+        try:
+            from urllib.parse import urlparse
+            import socket
+            parsed_host = urlparse(_db_url).hostname
+            if parsed_host:
+                socket.gethostbyname(parsed_host)
+        except Exception as e:
+            import sys
+            if 'pytest' not in sys.modules:
+                print(f"[WARNING] Database host '{parsed_host if 'parsed_host' in locals() else _db_url}' is unreachable ({e}). Falling back to local SQLite.")
+            _db_url = None
+
     if not _db_url:
         # Fallback to SQLite for local development
         import sys
         if 'pytest' not in sys.modules:
-            print("[WARNING] No DATABASE_URL set. Using SQLite for development.")
+            print("[WARNING] Using local SQLite database for development.")
         _db_url = "sqlite:///lemaisondb.db"
     
     # Neon strings often use `postgres://`, but SQLAlchemy requires `postgresql://`

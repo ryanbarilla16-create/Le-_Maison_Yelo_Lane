@@ -151,8 +151,8 @@ class Order(db.Model):
 
 class OrderItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    order_id = db.Column(db.Integer, db.ForeignKey('order.id'), nullable=False)
-    menu_item_id = db.Column(db.Integer, db.ForeignKey('menu_item.id'), nullable=False)
+    order_id = db.Column(db.Integer, db.ForeignKey('order.id'), nullable=False, index=True)
+    menu_item_id = db.Column(db.Integer, db.ForeignKey('menu_item.id'), nullable=False, index=True)
     quantity = db.Column(db.Integer, nullable=False)
     price_at_time = db.Column(db.Numeric(10, 2), nullable=False)
     cost_at_time = db.Column(db.Numeric(10, 2), nullable=True) # Cost of ingredients at production
@@ -216,8 +216,8 @@ class Ingredient(db.Model):
 
 class MenuItemIngredient(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    menu_item_id = db.Column(db.Integer, db.ForeignKey('menu_item.id'), nullable=False)
-    ingredient_id = db.Column(db.Integer, db.ForeignKey('ingredient.id'), nullable=False)
+    menu_item_id = db.Column(db.Integer, db.ForeignKey('menu_item.id'), nullable=False, index=True)
+    ingredient_id = db.Column(db.Integer, db.ForeignKey('ingredient.id'), nullable=False, index=True)
     quantity_needed = db.Column(db.Numeric(10, 2), nullable=False)  # amount used per 1 serving
 
     menu_item = db.relationship('MenuItem', backref=db.backref('ingredients', lazy=True))
