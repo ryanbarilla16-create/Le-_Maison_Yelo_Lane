@@ -1175,56 +1175,64 @@ def analytics():
             menu_q = menu_q.filter_by(branch=br)
         total_menu_items = menu_q.count()
 
-        # 1) Revenue Trend
+        # 1) Revenue Trend & 3) Daily Orders (OPTIMIZED 1-QUERY AGGREGATION)
         revenue_trend_labels = []
         revenue_trend_data = []
-        
+        daily_orders_data = []
+
         if date_filter == 'TODAY':
             revenue_trend_labels = [f'{h:02d}:00' for h in range(9, 23)]
+            h_col = func.extract('hour', Order.created_at)
+            hq = db.session.query(
+                h_col.label('hr'),
+                func.coalesce(func.sum(Order.total_amount), 0).label('rev'),
+                func.count(Order.id).label('cnt')
+            ).filter(func.date(Order.created_at) == today)
+            if br != 'ALL': hq = hq.filter(Order.branch == br)
+            h_rows = hq.group_by(h_col).all()
+            h_map = {int(r.hr): (float(r.rev or 0), int(r.cnt or 0)) for r in h_rows if r.hr is not None}
             for h in range(9, 23):
-                rev_q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0))\
-                    .filter(
-                        func.date(Order.created_at) == today,
-                        func.extract('hour', Order.created_at) == h
-                    )
-                if br != 'ALL':
-                    rev_q = rev_q.filter(Order.branch == br)
-                revenue_trend_data.append(float(rev_q.scalar() or 0))
-        elif date_filter == 'WEEK':
-            week_start = today - timedelta(days=today.weekday())
-            for i in range(7):
-                d = week_start + timedelta(days=i)
-                revenue_trend_labels.append(d.strftime('%a (%b %d)'))
-                rev_q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0))\
-                    .filter(func.date(Order.created_at) == d)
-                if br != 'ALL':
-                    rev_q = rev_q.filter(Order.branch == br)
-                revenue_trend_data.append(float(rev_q.scalar() or 0))
-        elif date_filter == 'MONTH':
-            month_start = today.replace(day=1)
-            next_month = month_start.month + 1
-            year = month_start.year
-            if next_month > 12:
-                next_month = 1
-                year += 1
-            days_in_month = (date(year, next_month, 1) - month_start).days
-            for i in range(days_in_month):
-                d = month_start + timedelta(days=i)
-                revenue_trend_labels.append(d.strftime('%d'))
-                rev_q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0))\
-                    .filter(func.date(Order.created_at) == d)
-                if br != 'ALL':
-                    rev_q = rev_q.filter(Order.branch == br)
-                revenue_trend_data.append(float(rev_q.scalar() or 0))
+                stat = h_map.get(h, (0.0, 0))
+                revenue_trend_data.append(stat[0])
+                daily_orders_data.append(stat[1])
         else:
-            for i in range(6, -1, -1):
-                d = today - timedelta(days=i)
-                revenue_trend_labels.append(d.strftime('%b %d'))
-                rev_q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0))\
-                    .filter(func.date(Order.created_at) == d)
-                if br != 'ALL':
-                    rev_q = rev_q.filter(Order.branch == br)
-                revenue_trend_data.append(float(rev_q.scalar() or 0))
+            dates = []
+            if date_filter == 'WEEK':
+                week_start = today - timedelta(days=today.weekday())
+                for i in range(7):
+                    d = week_start + timedelta(days=i)
+                    dates.append(d)
+                    revenue_trend_labels.append(d.strftime('%a (%b %d)'))
+            elif date_filter == 'MONTH':
+                month_start = today.replace(day=1)
+                next_month = month_start.month + 1
+                year = month_start.year
+                if next_month > 12: next_month = 1; year += 1
+                days_in_month = (date(year, next_month, 1) - month_start).days
+                for i in range(days_in_month):
+                    d = month_start + timedelta(days=i)
+                    dates.append(d)
+                    revenue_trend_labels.append(d.strftime('%d'))
+            else: # ALL
+                for i in range(6, -1, -1):
+                    d = today - timedelta(days=i)
+                    dates.append(d)
+                    revenue_trend_labels.append(d.strftime('%b %d'))
+
+            if dates:
+                d_col = func.date(Order.created_at)
+                dq = db.session.query(
+                    d_col.label('d'),
+                    func.coalesce(func.sum(Order.total_amount), 0).label('rev'),
+                    func.count(Order.id).label('cnt')
+                ).filter(d_col >= min(dates), d_col <= max(dates))
+                if br != 'ALL': dq = dq.filter(Order.branch == br)
+                d_rows = dq.group_by(d_col).all()
+                d_map = {r.d: (float(r.rev or 0), int(r.cnt or 0)) for r in d_rows if r.d}
+                for d in dates:
+                    stat = d_map.get(d, (0.0, 0))
+                    revenue_trend_data.append(stat[0])
+                    daily_orders_data.append(stat[1])
 
         # 2) Order Status
         status_q = db.session.query(Order.status, func.count(Order.id))
@@ -1236,51 +1244,7 @@ def analytics():
         order_status_labels = [r[0] for r in order_status_rows] if order_status_rows else ['No Data']
         order_status_data = [r[1] for r in order_status_rows] if order_status_rows else [1]
 
-        # 3) Daily Orders
         daily_orders_labels = list(revenue_trend_labels)
-        daily_orders_data = []
-        if date_filter == 'TODAY':
-            for h in range(9, 23):
-                cnt_q = db.session.query(func.count(Order.id))\
-                    .filter(
-                        func.date(Order.created_at) == today,
-                        func.extract('hour', Order.created_at) == h
-                    )
-                if br != 'ALL':
-                    cnt_q = cnt_q.filter(Order.branch == br)
-                daily_orders_data.append(int(cnt_q.scalar() or 0))
-        elif date_filter == 'WEEK':
-            week_start = today - timedelta(days=today.weekday())
-            for i in range(7):
-                d = week_start + timedelta(days=i)
-                cnt_q = db.session.query(func.count(Order.id))\
-                    .filter(func.date(Order.created_at) == d)
-                if br != 'ALL':
-                    cnt_q = cnt_q.filter(Order.branch == br)
-                daily_orders_data.append(int(cnt_q.scalar() or 0))
-        elif date_filter == 'MONTH':
-            month_start = today.replace(day=1)
-            next_month = month_start.month + 1
-            year = month_start.year
-            if next_month > 12:
-                next_month = 1
-                year += 1
-            days_in_month = (date(year, next_month, 1) - month_start).days
-            for i in range(days_in_month):
-                d = month_start + timedelta(days=i)
-                cnt_q = db.session.query(func.count(Order.id))\
-                    .filter(func.date(Order.created_at) == d)
-                if br != 'ALL':
-                    cnt_q = cnt_q.filter(Order.branch == br)
-                daily_orders_data.append(int(cnt_q.scalar() or 0))
-        else:
-            for i in range(6, -1, -1):
-                d = today - timedelta(days=i)
-                cnt_q = db.session.query(func.count(Order.id))\
-                    .filter(func.date(Order.created_at) == d)
-                if br != 'ALL':
-                    cnt_q = cnt_q.filter(Order.branch == br)
-                daily_orders_data.append(int(cnt_q.scalar() or 0))
 
         # 4) Busy Times
         hour_col = func.extract('hour', Order.created_at)
@@ -1385,18 +1349,21 @@ def analytics():
         total_cogs = float(cogs_query.scalar() or 0.0)
         net_profit = total_revenue_val - total_cogs
 
-        # 9) Sales Forecast — Linear Regression on last 30 days
-        daily_rev = []
-        for i in range(29, -1, -1):
-            d = today - timedelta(days=i)
-            fc_q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0))\
-                .filter(
-                    func.date(Order.created_at) == d,
-                    Order.status == 'COMPLETED'
-                )
-            if br != 'ALL':
-                fc_q = fc_q.filter(Order.branch == br)
-            daily_rev.append(float(fc_q.scalar() or 0))
+        # 9) Sales Forecast — Linear Regression on last 30 days (OPTIMIZED 1 QUERY)
+        thirty_days_ago = today - timedelta(days=29)
+        d_col = func.date(Order.created_at)
+        fc_q = db.session.query(
+            d_col.label('d'),
+            func.coalesce(func.sum(Order.total_amount), 0).label('rev')
+        ).filter(
+            d_col >= thirty_days_ago,
+            Order.status == 'COMPLETED'
+        )
+        if br != 'ALL':
+            fc_q = fc_q.filter(Order.branch == br)
+        fc_rows = fc_q.group_by(d_col).all()
+        fc_map = {r.d: float(r.rev or 0) for r in fc_rows if r.d}
+        daily_rev = [fc_map.get(today - timedelta(days=i), 0.0) for i in range(29, -1, -1)]
 
         n = len(daily_rev)  # 30
         x_mean = (n - 1) / 2.0
@@ -1583,39 +1550,49 @@ def analytics():
             tf_rev_data = []
             if tf_key == 'TODAY':
                 tf_rev_labels = [f'{h:02d}:00' for h in range(9, 23)]
-                for h in range(9, 23):
-                    q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0)).filter(func.date(Order.created_at) == today, func.extract('hour', Order.created_at) == h)
+                h_col = func.extract('hour', Order.created_at)
+                q = db.session.query(
+                    h_col.label('hr'),
+                    func.coalesce(func.sum(Order.total_amount), 0).label('rev')
+                ).filter(func.date(Order.created_at) == today)
+                if br != 'ALL': q = q.filter(Order.branch == br)
+                h_rows = q.group_by(h_col).all()
+                h_map = {int(r.hr): float(r.rev or 0) for r in h_rows if r.hr is not None}
+                tf_rev_data = [h_map.get(h, 0.0) for h in range(9, 23)]
+            else:
+                tf_dates = []
+                if tf_key == 'WEEK':
+                    ws = today - timedelta(days=today.weekday())
+                    for i in range(7):
+                        d = ws + timedelta(days=i)
+                        tf_dates.append(d)
+                        tf_rev_labels.append(d.strftime('%a (%b %d)'))
+                elif tf_key == 'MONTH':
+                    ms = today.replace(day=1)
+                    nm = ms.month + 1
+                    yr = ms.year
+                    if nm > 12: nm = 1; yr += 1
+                    dim = (date(yr, nm, 1) - ms).days
+                    for i in range(dim):
+                        d = ms + timedelta(days=i)
+                        tf_dates.append(d)
+                        tf_rev_labels.append(d.strftime('%d'))
+                elif tf_key == 'ALL':
+                    for i in range(6, -1, -1):
+                        d = today - timedelta(days=i)
+                        tf_dates.append(d)
+                        tf_rev_labels.append(d.strftime('%b %d'))
+
+                if tf_dates:
+                    d_col = func.date(Order.created_at)
+                    q = db.session.query(
+                        d_col.label('d'),
+                        func.coalesce(func.sum(Order.total_amount), 0).label('rev')
+                    ).filter(d_col >= min(tf_dates), d_col <= max(tf_dates))
                     if br != 'ALL': q = q.filter(Order.branch == br)
-                    tf_rev_data.append(float(q.scalar() or 0))
-            elif tf_key == 'WEEK':
-                ws = today - timedelta(days=today.weekday())
-                for i in range(7):
-                    d = ws + timedelta(days=i)
-                    tf_rev_labels.append(d.strftime('%a (%b %d)'))
-                    q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0)).filter(func.date(Order.created_at) == d)
-                    if br != 'ALL': q = q.filter(Order.branch == br)
-                    tf_rev_data.append(float(q.scalar() or 0))
-            elif tf_key == 'MONTH':
-                ms = today.replace(day=1)
-                nm = ms.month + 1
-                yr = ms.year
-                if nm > 12:
-                    nm = 1
-                    yr += 1
-                dim = (date(yr, nm, 1) - ms).days
-                for i in range(dim):
-                    d = ms + timedelta(days=i)
-                    tf_rev_labels.append(d.strftime('%d'))
-                    q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0)).filter(func.date(Order.created_at) == d)
-                    if br != 'ALL': q = q.filter(Order.branch == br)
-                    tf_rev_data.append(float(q.scalar() or 0))
-            elif tf_key == 'ALL':
-                for i in range(6, -1, -1):
-                    d = today - timedelta(days=i)
-                    tf_rev_labels.append(d.strftime('%b %d'))
-                    q = db.session.query(func.coalesce(func.sum(Order.total_amount), 0)).filter(func.date(Order.created_at) == d)
-                    if br != 'ALL': q = q.filter(Order.branch == br)
-                    tf_rev_data.append(float(q.scalar() or 0))
+                    d_rows = q.group_by(d_col).all()
+                    d_map = {r.d: float(r.rev or 0) for r in d_rows if r.d}
+                    tf_rev_data = [d_map.get(d, 0.0) for d in tf_dates]
                     
             multi_timeframe_charts['revenue_trend'][tf_key] = {
                 'labels': tf_rev_labels,
@@ -1659,8 +1636,11 @@ def analytics():
         if selected_branch not in ['ALL', 'Pagsanjan', 'Lucban']:
             selected_branch = 'ALL'
         branches_data['ALL'] = get_branch_data('ALL')
-        branches_data['Pagsanjan'] = get_branch_data('Pagsanjan')
-        branches_data['Lucban'] = get_branch_data('Lucban')
+        if selected_branch != 'ALL':
+            branches_data[selected_branch] = get_branch_data(selected_branch)
+        for b in ['Pagsanjan', 'Lucban']:
+            if b not in branches_data:
+                branches_data[b] = get_branch_data(b)
     else:
         user_branch = getattr(current_user, 'branch', 'Pagsanjan')
         selected_branch = user_branch
