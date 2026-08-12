@@ -437,10 +437,13 @@ def run():
 
         # Bulk insert all reservations
         if res_rows:
-            db.session.execute(Reservation.__table__.insert(), res_rows)
-            db.session.commit()
-
-        print(f"    [OK] Reservations generation complete!")
+            try:
+                db.session.execute(Reservation.__table__.insert(), res_rows)
+                db.session.commit()
+                print(f"    [OK] Reservations generation complete!")
+            except Exception as e:
+                db.session.rollback()
+                print(f"    [NOTE] Reservation insert skipped (already populated or duplicate code): {e}")
 
         # ---- 5. Print Summary -----------------------------------------------
         total_res = total_standard + total_exclusive
