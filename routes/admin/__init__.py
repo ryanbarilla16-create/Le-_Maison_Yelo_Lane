@@ -24,6 +24,13 @@ _ADMIN_CACHE = {
     "walkin_items": {"loaded_at": 0.0, "value": None},
 }
 
+# Analytics-specific TTL cache — stores computed branch data for 5 minutes
+# This prevents re-running 75+ slow queries on every visit to /admin/analytics
+_ANALYTICS_CACHE = {
+    "branches_data": {"loaded_at": 0.0, "value": None},
+}
+_ANALYTICS_TTL = 300  # 5 minutes
+
 def _ttl_cached(key: str, ttl_seconds: int, loader):
     now = time.monotonic()
     slot = _ADMIN_CACHE.get(key)
@@ -1321,18 +1328,27 @@ def analytics():
         for (y, m) in monthly_slots:
             monthly_rev_data.append(mrev_map.get((y, m), 0.0))
 
-        # 7) Customer Loyalty
-        order_counts_sub_q = db.session.query(
-            Order.user_id,
-            func.count(Order.id).label('order_count')
-        )
-        if br != 'ALL':
-            order_counts_sub_q = order_counts_sub_q.filter(Order.branch == br)
-        if start_date and end_date:
-            order_counts_sub_q = order_counts_sub_q.filter(Order.created_at >= start_dt, Order.created_at <= end_dt)
-        order_counts_sub = order_counts_sub_q.group_by(Order.user_id).subquery()
-        repeat_customers = db.session.query(func.count()).filter(order_counts_sub.c.order_count > 1).scalar() or 0
-        onetime_customers = db.session.query(func.count()).filter(order_counts_sub.c.order_count == 1).scalar() or 0
+        # 7) Customer Loyalty — SINGLE QUERY with CASE aggregation
+        try:
+            from sqlalchemy import case as sa_case
+            loyalty_sub = db.session.query(
+                Order.user_id,
+                func.count(Order.id).label('cnt')
+            )
+            if br != 'ALL':
+                loyalty_sub = loyalty_sub.filter(Order.branch == br)
+            if start_date and end_date:
+                loyalty_sub = loyalty_sub.filter(Order.created_at >= start_dt, Order.created_at <= end_dt)
+            loyalty_sub = loyalty_sub.group_by(Order.user_id).subquery()
+            loyalty_result = db.session.query(
+                func.sum(sa_case((loyalty_sub.c.cnt > 1, 1), else_=0)).label('repeat'),
+                func.sum(sa_case((loyalty_sub.c.cnt == 1, 1), else_=0)).label('onetime')
+            ).select_from(loyalty_sub).one()
+            repeat_customers = int(loyalty_result.repeat or 0)
+            onetime_customers = int(loyalty_result.onetime or 0)
+        except Exception:
+            repeat_customers = 0
+            onetime_customers = 0
         loyalty_labels = ['Repeat Customers', 'One-time Customers']
         loyalty_data = [repeat_customers, onetime_customers]
         if repeat_customers == 0 and onetime_customers == 0:
@@ -1693,17 +1709,47 @@ def analytics():
     user_role = current_user.role.upper()
     selected_branch = 'ALL'
     branches_data = {}
+
+    # Build a cache key that includes role, date_filter so filter changes still recompute
+    _cache_key = f"{user_role}_{date_filter}"
     if user_role == 'SUPER_ADMIN':
         selected_branch = request.args.get('branch', 'ALL')
         if selected_branch not in ['ALL', 'Pagsanjan', 'Lucban']:
             selected_branch = 'ALL'
-        branches_data['ALL'] = safe_get_branch_data('ALL')
-        branches_data['Pagsanjan'] = safe_get_branch_data('Pagsanjan')
-        branches_data['Lucban'] = safe_get_branch_data('Lucban')
+        # --- Check 5-minute analytics cache ---
+        _now = time.monotonic()
+        _cached = _ANALYTICS_CACHE["branches_data"]
+        if (
+            _cached["value"] is not None
+            and _cached.get("cache_key") == _cache_key
+            and (_now - _cached["loaded_at"]) < _ANALYTICS_TTL
+        ):
+            branches_data = _cached["value"]
+        else:
+            branches_data['ALL'] = safe_get_branch_data('ALL')
+            branches_data['Pagsanjan'] = safe_get_branch_data('Pagsanjan')
+            branches_data['Lucban'] = safe_get_branch_data('Lucban')
+            _ANALYTICS_CACHE["branches_data"]["value"] = branches_data
+            _ANALYTICS_CACHE["branches_data"]["loaded_at"] = _now
+            _ANALYTICS_CACHE["branches_data"]["cache_key"] = _cache_key
     else:
         user_branch = getattr(current_user, 'branch', 'Pagsanjan')
         selected_branch = user_branch
-        branches_data[user_branch] = safe_get_branch_data(user_branch)
+        # --- Check 5-minute analytics cache for regular admin ---
+        _now = time.monotonic()
+        _cached = _ANALYTICS_CACHE["branches_data"]
+        if (
+            _cached["value"] is not None
+            and _cached.get("cache_key") == _cache_key
+            and (_now - _cached["loaded_at"]) < _ANALYTICS_TTL
+            and user_branch in _cached["value"]
+        ):
+            branches_data = _cached["value"]
+        else:
+            branches_data[user_branch] = safe_get_branch_data(user_branch)
+            _ANALYTICS_CACHE["branches_data"]["value"] = branches_data
+            _ANALYTICS_CACHE["branches_data"]["loaded_at"] = _now
+            _ANALYTICS_CACHE["branches_data"]["cache_key"] = _cache_key
 
     current_data = branches_data.get(selected_branch) or branches_data.get('ALL') or safe_get_branch_data('ALL')
 
