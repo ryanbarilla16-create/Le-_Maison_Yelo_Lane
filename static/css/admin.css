@@ -105,7 +105,7 @@ body.admin-body {
     margin: 0;
 }
 
-.sidebar-nav li a {
+.sidebar-nav > li > a {
     display: flex;
     align-items: center;
     gap: 0.8rem;
@@ -119,13 +119,13 @@ body.admin-body {
     border-left: 3px solid transparent;
 }
 
-.sidebar-nav li a:hover {
+.sidebar-nav > li > a:hover {
     color: #ffffff;
     background: rgba(255, 255, 255, 0.08);
     border-left-color: rgba(255, 255, 255, 0.4);
 }
 
-.sidebar-nav li a.active {
+.sidebar-nav > li > a.active {
     color: #D7CCC8;
     background: rgba(215, 204, 200, 0.18);
     border-left-color: #D7CCC8;

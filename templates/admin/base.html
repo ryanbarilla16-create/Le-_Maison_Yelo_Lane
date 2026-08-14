@@ -770,68 +770,60 @@
                 {% set is_inventory_active = request.path.startswith('/admin/inventory') or request.path.startswith('/staff/inventory') %}
                 <!-- 📦 INVENTORY COLLAPSIBLE ACCORDION -->
                 <li class="inventory-accordion-wrap {% if is_inventory_active %}open{% endif %}">
-                    <a href="javascript:void(0)" class="inventory-accordion-toggle {% if is_inventory_active %}active{% endif %}" onclick="toggleInventorySubmenu(this)" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 12px; color: rgba(255, 255, 255, 0.75); font-weight: 600; text-decoration: none; transition: all 0.25s;">
+                    <a href="javascript:void(0)" class="inventory-accordion-toggle {% if is_inventory_active %}parent-active{% endif %}" onclick="toggleInventorySubmenu(this)">
                         <div style="display: flex; align-items: center; gap: 10px;">
                             <span style="font-size: 1rem; line-height: 1;">📦</span>
                             <span class="sidebar-label">Inventory</span>
                         </div>
                         <i class="fas fa-chevron-down inventory-chevron" style="font-size: 0.7rem; transition: transform 0.3s ease; {% if is_inventory_active %}transform: rotate(180deg);{% endif %}"></i>
                     </a>
-                    <ul class="inventory-sub-menu" style="list-style: none; padding-left: 1.75rem; margin: 4px 0 8px 0; border-left: 2px solid rgba(255,255,255,0.12); max-height: {% if is_inventory_active %}500px{% else %}0px{% endif %}; overflow: hidden; transition: max-height 0.3s ease-in-out, opacity 0.3s ease; opacity: {% if is_inventory_active %}1{% else %}0{% endif %};">
-                        <li style="margin-bottom: 3px;">
+                    <ul class="inventory-sub-menu" style="max-height: {% if is_inventory_active %}500px{% else %}0px{% endif %}; overflow: hidden; transition: max-height 0.3s ease-in-out, opacity 0.3s ease; opacity: {% if is_inventory_active %}1{% else %}0{% endif %};">
+                        <li>
                             <a href="/admin/inventory/levels"
-                               class="{% if request.path in ['/admin/inventory', '/admin/inventory/levels', '/staff/inventory'] %}active{% endif %}"
-                               style="font-size: 0.82rem; padding: 6px 12px; display: flex; align-items: center; border-radius: 8px; color: rgba(255,255,255,0.7); text-decoration: none; transition: all 0.2s;">
-                               <i class="fas fa-chart-pie me-2" style="font-size: 0.75rem; width: 14px; text-align: center;"></i><span class="sidebar-label">Stock Levels</span>
+                               class="{% if request.path in ['/admin/inventory', '/admin/inventory/levels', '/staff/inventory', '/staff/inventory/levels'] %}active{% endif %}">
+                               <i class="fas fa-chart-pie me-2"></i><span class="sidebar-label">Stock Levels</span>
                             </a>
                         </li>
-                        <li style="margin-bottom: 3px;">
+                        <li>
                             <a href="/admin/inventory/full"
-                               class="{% if request.path in ['/admin/inventory/full', '/staff/inventory/full'] %}active{% endif %}"
-                               style="font-size: 0.82rem; padding: 6px 12px; display: flex; align-items: center; border-radius: 8px; color: rgba(255,255,255,0.7); text-decoration: none; transition: all 0.2s;">
-                               <i class="fas fa-warehouse me-2" style="font-size: 0.75rem; width: 14px; text-align: center;"></i><span class="sidebar-label">Full Inventory</span>
+                               class="{% if request.path in ['/admin/inventory/full', '/staff/inventory/full'] %}active{% endif %}">
+                               <i class="fas fa-warehouse me-2"></i><span class="sidebar-label">Full Inventory</span>
                             </a>
                         </li>
-                        <li style="margin-bottom: 3px;">
+                        <li>
                             <a href="/admin/inventory/stock-requests"
-                               class="{% if request.path in ['/admin/inventory/stock-requests', '/staff/inventory/stock-requests'] %}active{% endif %}"
-                               style="font-size: 0.82rem; padding: 6px 12px; display: flex; align-items: center; border-radius: 8px; color: rgba(255,255,255,0.7); text-decoration: none; transition: all 0.2s;">
-                               <i class="fas fa-clipboard-check me-2" style="font-size: 0.75rem; width: 14px; text-align: center;"></i><span class="sidebar-label">Stock Requests</span>
+                               class="{% if request.path in ['/admin/inventory/stock-requests', '/staff/inventory/stock-requests'] %}active{% endif %}">
+                               <i class="fas fa-clipboard-check me-2"></i><span class="sidebar-label">Stock Requests</span>
                             </a>
                         </li>
-                        <li style="margin-bottom: 3px;">
+                        <li>
                             <a href="/admin/inventory/suppliers"
-                               class="{% if request.path in ['/admin/inventory/suppliers', '/staff/inventory/suppliers'] %}active{% endif %}"
-                               style="font-size: 0.82rem; padding: 6px 12px; display: flex; align-items: center; border-radius: 8px; color: rgba(255,255,255,0.7); text-decoration: none; transition: all 0.2s;">
-                               <i class="fas fa-truck me-2" style="font-size: 0.75rem; width: 14px; text-align: center;"></i><span class="sidebar-label">Suppliers</span>
+                               class="{% if request.path in ['/admin/inventory/suppliers', '/staff/inventory/suppliers'] %}active{% endif %}">
+                               <i class="fas fa-truck me-2"></i><span class="sidebar-label">Suppliers</span>
                             </a>
                         </li>
-                        <li style="margin-bottom: 3px;">
+                        <li>
                             <a href="/admin/inventory/ingredient-setup"
-                               class="{% if request.path in ['/admin/inventory/ingredient-setup', '/staff/inventory/ingredient-setup'] %}active{% endif %}"
-                               style="font-size: 0.82rem; padding: 6px 12px; display: flex; align-items: center; border-radius: 8px; color: rgba(255,255,255,0.7); text-decoration: none; transition: all 0.2s;">
-                               <i class="fas fa-tags me-2" style="font-size: 0.75rem; width: 14px; text-align: center;"></i><span class="sidebar-label">Ingredient Setup</span>
+                               class="{% if request.path in ['/admin/inventory/ingredient-setup', '/staff/inventory/ingredient-setup'] %}active{% endif %}">
+                               <i class="fas fa-tags me-2"></i><span class="sidebar-label">Ingredient Setup</span>
                             </a>
                         </li>
-                        <li style="margin-bottom: 3px;">
+                        <li>
                             <a href="/admin/inventory/waste"
-                               class="{% if request.path in ['/admin/inventory/waste', '/staff/inventory/waste'] %}active{% endif %}"
-                               style="font-size: 0.82rem; padding: 6px 12px; display: flex; align-items: center; border-radius: 8px; color: rgba(255,255,255,0.7); text-decoration: none; transition: all 0.2s;">
-                               <i class="fas fa-trash-can me-2" style="font-size: 0.75rem; width: 14px; text-align: center;"></i><span class="sidebar-label">Waste Log</span>
+                               class="{% if request.path in ['/admin/inventory/waste', '/staff/inventory/waste'] %}active{% endif %}">
+                               <i class="fas fa-trash-can me-2"></i><span class="sidebar-label">Waste Log</span>
                             </a>
                         </li>
-                        <li style="margin-bottom: 3px;">
+                        <li>
                             <a href="/admin/inventory/batches"
-                               class="{% if request.path in ['/admin/inventory/batches', '/staff/inventory/batches'] %}active{% endif %}"
-                               style="font-size: 0.82rem; padding: 6px 12px; display: flex; align-items: center; border-radius: 8px; color: rgba(255,255,255,0.7); text-decoration: none; transition: all 0.2s;">
-                               <i class="fas fa-layer-group me-2" style="font-size: 0.75rem; width: 14px; text-align: center;"></i><span class="sidebar-label">FIFO Batches</span>
+                               class="{% if request.path in ['/admin/inventory/batches', '/staff/inventory/batches'] %}active{% endif %}">
+                               <i class="fas fa-layer-group me-2"></i><span class="sidebar-label">FIFO Batches</span>
                             </a>
                         </li>
-                        <li style="margin-bottom: 3px;">
+                        <li>
                             <a href="/admin/inventory/audit"
-                               class="{% if request.path in ['/admin/inventory/audit', '/staff/inventory/audit'] %}active{% endif %}"
-                               style="font-size: 0.82rem; padding: 6px 12px; display: flex; align-items: center; border-radius: 8px; color: rgba(255,255,255,0.7); text-decoration: none; transition: all 0.2s;">
-                               <i class="fas fa-history me-2" style="font-size: 0.75rem; width: 14px; text-align: center;"></i><span class="sidebar-label">Audit History</span>
+                               class="{% if request.path in ['/admin/inventory/audit', '/staff/inventory/audit'] %}active{% endif %}">
+                               <i class="fas fa-history me-2"></i><span class="sidebar-label">Audit History</span>
                             </a>
                         </li>
                     </ul>
@@ -1390,18 +1382,87 @@
         }
 
         /* Inventory Accordion Sidebar Styling */
+        .inventory-accordion-toggle {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            padding: 0.65rem 1rem !important;
+            border-radius: 12px !important;
+            color: rgba(255, 255, 255, 0.75) !important;
+            font-weight: 600 !important;
+            text-decoration: none !important;
+            transition: all 0.25s ease !important;
+            background: transparent !important;
+            border: none !important;
+        }
+        .inventory-accordion-toggle:hover {
+            background: rgba(255, 255, 255, 0.08) !important;
+            color: #ffffff !important;
+        }
+        .inventory-accordion-toggle.parent-active {
+            color: #ffffff !important;
+            background: rgba(255, 255, 255, 0.05) !important;
+        }
         .inventory-accordion-wrap.open .inventory-chevron {
             transform: rotate(180deg) !important;
         }
-        .inventory-sub-menu a:hover {
-            background: rgba(255, 255, 255, 0.12) !important;
-            color: #ffffff !important;
-            transform: translateX(2px);
+
+        .sidebar-nav .inventory-sub-menu {
+            list-style: none !important;
+            padding-left: 1.25rem !important;
+            margin: 4px 0 8px 0 !important;
+            border-left: 2px solid rgba(255, 255, 255, 0.12) !important;
         }
-        .inventory-sub-menu a.active {
-            background: rgba(215, 204, 200, 0.2) !important;
-            color: #d7ccc8 !important;
+
+        .sidebar-nav .inventory-sub-menu li {
+            margin-bottom: 2px !important;
+        }
+
+        .sidebar-nav .inventory-sub-menu a {
+            font-size: 0.82rem !important;
+            padding: 8px 12px !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 10px !important;
+            border-radius: 8px !important;
+            border-left: none !important;
+            margin-right: 0 !important;
+            color: rgba(255, 255, 255, 0.7) !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            transform: none !important;
+            text-decoration: none !important;
+            transition: all 0.2s ease !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+        }
+
+        .sidebar-nav .inventory-sub-menu a:hover {
+            background: rgba(255, 255, 255, 0.1) !important;
+            color: #ffffff !important;
+            transform: translateX(3px) !important;
+        }
+
+        .sidebar-nav .inventory-sub-menu a.active {
+            background: rgba(215, 204, 200, 0.25) !important;
+            color: #ffffff !important;
             font-weight: 700 !important;
+            border-left: none !important;
+            border-radius: 8px !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+        }
+
+        .sidebar-nav .inventory-sub-menu a i {
+            font-size: 0.8rem !important;
+            width: 16px !important;
+            text-align: center !important;
+            opacity: 0.75 !important;
+            color: inherit !important;
+        }
+
+        .sidebar-nav .inventory-sub-menu a.active i {
+            opacity: 1 !important;
+            color: #ffffff !important;
         }
 
         /* Flash messages inside inventory pages */

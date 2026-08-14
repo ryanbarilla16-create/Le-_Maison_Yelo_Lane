@@ -78,6 +78,26 @@
   .inventory-accordion-wrap.open .inventory-chevron {
     transform: rotate(180deg) !important;
   }
+  .inventory-sub-menu .nav-item {
+    border-left: none !important;
+    border-radius: 8px !important;
+    margin: 2px 0 !important;
+    transition: all 0.2s ease !important;
+    position: relative !important;
+  }
+  .inventory-sub-menu .nav-item:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+    transform: translateX(3px) !important;
+  }
+  .inventory-sub-menu .nav-item.active {
+    background: rgba(215, 204, 200, 0.25) !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    border-left: none !important;
+    border-radius: 8px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  }
 </style>
 <script>
 function toggleInventorySubmenu(btn) {

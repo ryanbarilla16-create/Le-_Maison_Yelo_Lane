@@ -129,7 +129,7 @@
     </div>
 </div>
 
-<!-- ROW 3 : Distribution Charts (Booking Types, Order Dining Options, Payment Methods) -->
+<!-- ROW 3 : Distribution Charts (Booking Types, Order Dining Options, Payment Methods - Stacked Progress Bars) -->
 <div class="admin-cards-grid" style="grid-template-columns: 1fr 1fr 1fr;">
     <div class="admin-card chart-card">
         <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
@@ -141,7 +141,7 @@
                 <option value="ALL" selected>All Time</option>
             </select>
         </div>
-        <div class="chart-container chart-container-sm"><canvas id="bookingsDistChart"></canvas></div>
+        <div id="bookingsDistContainer" class="py-1"></div>
     </div>
     <div class="admin-card chart-card">
         <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
@@ -153,7 +153,7 @@
                 <option value="ALL" selected>All Time</option>
             </select>
         </div>
-        <div class="chart-container chart-container-sm"><canvas id="diningOptionsChart"></canvas></div>
+        <div id="diningOptionsContainer" class="py-1"></div>
     </div>
     <div class="admin-card chart-card">
         <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
@@ -165,15 +165,12 @@
                 <option value="ALL" selected>All Time</option>
             </select>
         </div>
-        <div class="chart-container chart-container-sm"><canvas id="paymentMethodsChart"></canvas></div>
+        <div id="paymentMethodsContainer" class="py-1"></div>
     </div>
 </div>
 
-<!-- ROW 4 : Top Categories -->
-<div class="admin-cards-grid" style="grid-template-columns: 1fr 1fr 1fr;">
-    <!-- Empty div for spacing -->
-    <div></div>
-    
+<!-- ROW 4 : Top Categories (Bar Chart for Data Viz Best Practice) -->
+<div class="admin-cards-grid" style="grid-template-columns: 1fr;">
     <div class="admin-card chart-card">
         <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
             <h3 class="mb-0"><i class="fas fa-layer-group me-2" style="color: var(--admin-primary);"></i> Top Categories</h3>
@@ -184,11 +181,8 @@
                 <option value="ALL" selected>All Time</option>
             </select>
         </div>
-        <div class="chart-container chart-container-sm"><canvas id="topCategoriesChart"></canvas></div>
+        <div class="chart-container"><canvas id="topCategoriesChart"></canvas></div>
     </div>
-    
-    <!-- Empty div for spacing -->
-    <div></div>
 </div>
 
 <script id="allBranchesData" type="application/json">
@@ -243,6 +237,87 @@
                 }
             })
             .catch(err => console.warn('Analytics sync failed:', err));
+    }
+
+    // Data Visualization Utility: Shorthand currency formatter for Y-Axis ticks (e.g. ₱50M, ₱100M, ₱250K)
+    function formatCurrencyShorthand(value) {
+        if (value === null || value === undefined) return '₱0';
+        var val = Number(value);
+        if (isNaN(val)) return '₱0';
+        var absVal = Math.abs(val);
+        var prefix = val < 0 ? '-₱' : '₱';
+        
+        if (absVal >= 1000000000) {
+            return prefix + (absVal / 1000000000).toFixed(1).replace(/\.0$/, '') + 'B';
+        } else if (absVal >= 1000000) {
+            return prefix + (absVal / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+        } else if (absVal >= 1000) {
+            return prefix + (absVal / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+        } else {
+            return prefix + absVal.toLocaleString();
+        }
+    }
+
+    // Modular UI Component: Stacked Progress Bar for Binary & Low-Cardinality Distributions
+    function renderStackedProgressBar(containerId, labels, data, colors) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        const numericData = (data || []).map(v => Number(v) || 0);
+        const total = numericData.reduce((a, b) => a + b, 0);
+
+        if (total === 0 || !labels || labels.length === 0 || (labels.length === 1 && labels[0] === 'No Data')) {
+            container.innerHTML = `
+                <div class="d-flex flex-column align-items-center justify-content-center py-4">
+                    <div style="height: 16px; width: 100%; border-radius: 9999px; background: #e5e7eb; overflow: hidden;" class="mb-3">
+                        <div style="width: 100%; height: 100%; background: #d1d5db;"></div>
+                    </div>
+                    <span class="text-muted small" style="font-size: 0.8rem;">No data recorded for this period</span>
+                </div>
+            `;
+            return;
+        }
+
+        let barSegmentsHtml = '';
+        let legendItemsHtml = '';
+
+        labels.forEach((label, idx) => {
+            const count = numericData[idx] || 0;
+            const pctNumber = total > 0 ? (count / total) * 100 : 0;
+            const pctDisplay = pctNumber.toFixed(1);
+            const color = colors[idx % colors.length];
+
+            if (pctNumber > 0) {
+                barSegmentsHtml += `
+                    <div title="${label}: ${count.toLocaleString()} (${pctDisplay}%)" 
+                         style="width: ${pctNumber}%; height: 100%; background-color: ${color}; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+                `;
+            }
+
+            legendItemsHtml += `
+                <div class="d-flex align-items-center justify-content-between py-2" style="font-size: 0.85rem; border-bottom: 1px solid rgba(139, 99, 75, 0.08);">
+                    <div class="d-flex align-items-center gap-2">
+                        <span style="width: 10px; height: 10px; border-radius: 50%; background-color: ${color}; display: inline-block; flex-shrink: 0;"></span>
+                        <span style="color: #3e2723; font-weight: 600;">${label}</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span style="color: #3e2723; font-weight: 700;">${count.toLocaleString()}</span>
+                        <span class="badge" style="background: rgba(139, 99, 75, 0.08); color: #8b634b; font-size: 0.75rem; font-weight: 600; padding: 4px 8px; border-radius: 6px;">${pctDisplay}%</span>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = `
+            <div class="pt-2 pb-1">
+                <div style="height: 16px; width: 100%; border-radius: 9999px; display: flex; overflow: hidden; background: #f3f4f6; box-shadow: inset 0 1px 2px rgba(0,0,0,0.06);" class="mb-3">
+                    ${barSegmentsHtml}
+                </div>
+                <div class="mt-2">
+                    ${legendItemsHtml}
+                </div>
+            </div>
+        `;
     }
 
     function updateAnalyticsUI(branch) {
@@ -339,58 +414,50 @@
             });
         }
 
-        // 2. Update Charts
-        // Chart 1: Revenue Trend (update daily view data; switch view will use new data)
+        // 2. Update Charts & Progress Bars
         if (window.analyticsCharts.revenueTrend) {
             window.analyticsCharts.revenueTrend.data.labels = data.charts.revenue_trend.labels;
             window.analyticsCharts.revenueTrend.data.datasets[0].data = data.charts.revenue_trend.data;
             window.analyticsCharts.revenueTrend.update();
         }
 
-        // Chart 3: AI Sales Forecast
         if (window.analyticsCharts.forecast) {
             window.analyticsCharts.forecast.data.labels = data.charts.forecast.labels;
             window.analyticsCharts.forecast.data.datasets[0].data = data.charts.forecast.data;
             window.analyticsCharts.forecast.update();
         }
 
-        // Chart 6: Top Dishes
         if (window.analyticsCharts.topDishes) {
             window.analyticsCharts.topDishes.data.labels = data.charts.top_dishes.labels;
             window.analyticsCharts.topDishes.data.datasets[0].data = data.charts.top_dishes.data;
             window.analyticsCharts.topDishes.update();
         }
 
-        // Chart 9: Bookings Distribution
-        if (window.analyticsCharts.bookingsDist) {
-            window.analyticsCharts.bookingsDist.data.labels = data.charts.bookings_dist.labels;
-            window.analyticsCharts.bookingsDist.data.datasets[0].data = data.charts.bookings_dist.data;
-            var CAFE_LATTE = '#c87941';
-            var CAFE_GOLD = '#f59e0b';
-            window.analyticsCharts.bookingsDist.data.datasets[0].backgroundColor = data.charts.bookings_dist.labels.length === 1 ? ['#d4d4d8'] : [CAFE_LATTE, CAFE_GOLD];
-            window.analyticsCharts.bookingsDist.update();
+        if (window.analyticsCharts.topCategories) {
+            window.analyticsCharts.topCategories.data.labels = data.charts.top_categories.labels;
+            window.analyticsCharts.topCategories.data.datasets[0].data = data.charts.top_categories.data;
+            window.analyticsCharts.topCategories.update();
         }
 
-        // Chart 10: Dining Options
-        if (window.analyticsCharts.diningOptions) {
-            window.analyticsCharts.diningOptions.data.labels = data.charts.dining_options.labels;
-            window.analyticsCharts.diningOptions.data.datasets[0].data = data.charts.dining_options.data;
-            var CAFE_BLUE = '#1565c0';
-            var CAFE_ORANGE = '#e65100';
-            var CAFE_TEAL = '#0d9488';
-            window.analyticsCharts.diningOptions.data.datasets[0].backgroundColor = data.charts.dining_options.labels.length === 1 ? ['#d4d4d8'] : [CAFE_BLUE, CAFE_ORANGE, CAFE_TEAL];
-            window.analyticsCharts.diningOptions.update();
-        }
-
-        // Chart 11: Payment Methods
-        if (window.analyticsCharts.paymentMethods) {
-            window.analyticsCharts.paymentMethods.data.labels = data.charts.payment_methods.labels;
-            window.analyticsCharts.paymentMethods.data.datasets[0].data = data.charts.payment_methods.data;
-            var CAFE_GREEN = '#2e7d32';
-            var CAFE_LATTE = '#c87941';
-            window.analyticsCharts.paymentMethods.data.datasets[0].backgroundColor = data.charts.payment_methods.labels.length === 1 ? ['#d4d4d8'] : [CAFE_GREEN, CAFE_LATTE];
-            window.analyticsCharts.paymentMethods.update();
-        }
+        // Update Stacked Progress Bars for Distribution Metrics
+        renderStackedProgressBar(
+            'bookingsDistContainer',
+            data.charts.bookings_dist.labels,
+            data.charts.bookings_dist.data,
+            ['#c87941', '#f59e0b']
+        );
+        renderStackedProgressBar(
+            'diningOptionsContainer',
+            data.charts.dining_options.labels,
+            data.charts.dining_options.data,
+            ['#1565c0', '#e65100', '#0d9488']
+        );
+        renderStackedProgressBar(
+            'paymentMethodsContainer',
+            data.charts.payment_methods.labels,
+            data.charts.payment_methods.data,
+            ['#2e7d32', '#c87941', '#1565c0']
+        );
     }
 
     // Attach click listeners
@@ -473,20 +540,29 @@
         const multi = data.multi_timeframe_charts;
         if (!multi) return;
         
-        if (chartName === 'bookingsDist' && window.analyticsCharts.bookingsDist && multi.bookings_dist[filterValue]) {
-            window.analyticsCharts.bookingsDist.data.labels = multi.bookings_dist[filterValue].labels;
-            window.analyticsCharts.bookingsDist.data.datasets[0].data = multi.bookings_dist[filterValue].data;
-            window.analyticsCharts.bookingsDist.update();
+        if (chartName === 'bookingsDist' && multi.bookings_dist[filterValue]) {
+            renderStackedProgressBar(
+                'bookingsDistContainer',
+                multi.bookings_dist[filterValue].labels,
+                multi.bookings_dist[filterValue].data,
+                ['#c87941', '#f59e0b']
+            );
         }
-        else if (chartName === 'diningOptions' && window.analyticsCharts.diningOptions && multi.dining_options[filterValue]) {
-            window.analyticsCharts.diningOptions.data.labels = multi.dining_options[filterValue].labels;
-            window.analyticsCharts.diningOptions.data.datasets[0].data = multi.dining_options[filterValue].data;
-            window.analyticsCharts.diningOptions.update();
+        else if (chartName === 'diningOptions' && multi.dining_options[filterValue]) {
+            renderStackedProgressBar(
+                'diningOptionsContainer',
+                multi.dining_options[filterValue].labels,
+                multi.dining_options[filterValue].data,
+                ['#1565c0', '#e65100', '#0d9488']
+            );
         }
-        else if (chartName === 'paymentMethods' && window.analyticsCharts.paymentMethods && multi.payment_methods[filterValue]) {
-            window.analyticsCharts.paymentMethods.data.labels = multi.payment_methods[filterValue].labels;
-            window.analyticsCharts.paymentMethods.data.datasets[0].data = multi.payment_methods[filterValue].data;
-            window.analyticsCharts.paymentMethods.update();
+        else if (chartName === 'paymentMethods' && multi.payment_methods[filterValue]) {
+            renderStackedProgressBar(
+                'paymentMethodsContainer',
+                multi.payment_methods[filterValue].labels,
+                multi.payment_methods[filterValue].data,
+                ['#2e7d32', '#c87941', '#1565c0']
+            );
         }
         else if (chartName === 'topCategories' && window.analyticsCharts.topCategories && multi.top_categories[filterValue]) {
             window.analyticsCharts.topCategories.data.labels = multi.top_categories[filterValue].labels;
@@ -658,7 +734,7 @@
                             ...scaleY,
                             ticks: {
                                 color: '#a1887f', font: { size: 11 },
-                                callback: function (v) { return '₱' + Number(v).toLocaleString(); }
+                                callback: function (v) { return formatCurrencyShorthand(v); }
                             }
                         }
                     },
@@ -677,22 +753,70 @@
             });
             
             if (document.getElementById('topCategoriesChart')) {
+                var catPalette = [CAFE_BROWN, CAFE_LATTE, CAFE_GOLD, CAFE_TEAL, CAFE_PURPLE];
                 window.analyticsCharts.topCategories = new Chart(document.getElementById('topCategoriesChart').getContext('2d'), {
-                    type: 'doughnut',
+                    type: 'bar',
                     data: {
                         labels: topCategoriesLabels,
                         datasets: [{
+                            label: 'Qty Sold',
                             data: topCategoriesData,
-                            backgroundColor: [CAFE_BROWN, CAFE_LATTE, CAFE_GOLD, CAFE_TEAL, CAFE_PINK],
-                            borderWidth: 0
+                            backgroundColor: catPalette.map(function (c) { return c + '44'; }),
+                            borderColor: catPalette,
+                            borderWidth: 2,
+                            borderRadius: 8
                         }]
                     },
-                    plugins: [centerTextPlugin],
+                    plugins: [{
+                        id: 'topCategoriesValueLabel',
+                        afterDatasetsDraw(chart) {
+                            const { ctx } = chart;
+                            ctx.save();
+                            ctx.font = 'bold 11px Inter, sans-serif';
+                            ctx.fillStyle = '#8b634b';
+                            ctx.textAlign = 'left';
+                            ctx.textBaseline = 'middle';
+                            chart.data.datasets.forEach((dataset, i) => {
+                                const meta = chart.getDatasetMeta(i);
+                                meta.data.forEach((bar, idx) => {
+                                    const val = dataset.data[idx];
+                                    if (val !== undefined && val !== null) {
+                                        const x = bar.x + 6;
+                                        const y = bar.y;
+                                        ctx.fillText(Number(val).toLocaleString() + ' items', x, y);
+                                    }
+                                });
+                            });
+                            ctx.restore();
+                        }
+                    }],
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        cutout: '68%',
-                        plugins: { centerText: centerTextPlugin }
+                        indexAxis: 'y',
+                        scales: {
+                            x: {
+                                ticks: {
+                                    color: '#a1887f',
+                                    font: { size: 11 },
+                                    callback: function (v) { return Number(v).toLocaleString(); }
+                                },
+                                grid: { color: 'rgba(139, 99, 75,0.06)' },
+                                beginAtZero: true,
+                                grace: '15%'
+                            },
+                            y: { ticks: { color: '#8b634b', font: { size: 11, weight: '600' } }, grid: { display: false } }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (c) {
+                                        return '  Total: ' + Number(c.parsed.x).toLocaleString() + ' items';
+                                    }
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -753,9 +877,7 @@
             });
         })();
 
-        // 6) MONTHLY REVENUE — merged into Revenue toggle above, canvas kept for compatibility
-        // monthlyRevenueChart canvas is no longer in the DOM; skip init.
-
+        // 6) MONTHLY REVENUE — merged into Revenue toggle above
         // 7) LOYALTY — removed per request
 
         // 8) FORECAST — animated + live refresh
@@ -819,7 +941,7 @@
                             ticks: {
                                 color: '#a1887f',
                                 font: { size: 11 },
-                                callback: function (v) { return '₱' + Number(v).toLocaleString(); }
+                                callback: function (v) { return formatCurrencyShorthand(v); }
                             }
                         }
                     },
@@ -838,7 +960,7 @@
                 }
             });
 
-            // Scan line animation (purely visual, no canvas interference)
+            // Scan line animation
             function runScanLine() {
                 var scan = document.getElementById('forecastScanLine');
                 var container = document.querySelector('#forecastCard .chart-container');
@@ -904,83 +1026,10 @@
             }
         })();
 
-        // 9) BOOKINGS DISTRIBUTION
-        (function () {
-            var colors = bookingsDistLabels.length === 1 ? ['#d4d4d8'] : [CAFE_LATTE, CAFE_GOLD];
-            window.analyticsCharts.bookingsDist = new Chart(document.getElementById('bookingsDistChart'), {
-                type: 'doughnut',
-                plugins: [centerTextPlugin],
-                data: {
-                    labels: bookingsDistLabels,
-                    datasets: [{
-                        data: bookingsDistData,
-                        backgroundColor: colors,
-                        borderWidth: 0,
-                        hoverOffset: 8
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '68%',
-                    plugins: {
-                        legend: { position: 'bottom', labels: { padding: 14, font: { size: 12 } } }
-                    }
-                }
-            });
-        })();
-
-        // 10) DINING OPTIONS
-        (function () {
-            var colors = diningOptionsLabels.length === 1 ? ['#d4d4d8'] : [CAFE_BLUE, CAFE_ORANGE, CAFE_TEAL];
-            window.analyticsCharts.diningOptions = new Chart(document.getElementById('diningOptionsChart'), {
-                type: 'doughnut',
-                plugins: [centerTextPlugin],
-                data: {
-                    labels: diningOptionsLabels,
-                    datasets: [{
-                        data: diningOptionsData,
-                        backgroundColor: colors,
-                        borderWidth: 0,
-                        hoverOffset: 8
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '68%',
-                    plugins: {
-                        legend: { position: 'bottom', labels: { padding: 14, font: { size: 12 } } }
-                    }
-                }
-            });
-        })();
-
-        // 11) PAYMENT METHODS
-        (function () {
-            var colors = paymentMethodsLabels.length === 1 ? ['#d4d4d8'] : [CAFE_GREEN, CAFE_LATTE];
-            window.analyticsCharts.paymentMethods = new Chart(document.getElementById('paymentMethodsChart'), {
-                type: 'doughnut',
-                plugins: [centerTextPlugin],
-                data: {
-                    labels: paymentMethodsLabels,
-                    datasets: [{
-                        data: paymentMethodsData,
-                        backgroundColor: colors,
-                        borderWidth: 0,
-                        hoverOffset: 8
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '68%',
-                    plugins: {
-                        legend: { position: 'bottom', labels: { padding: 14, font: { size: 12 } } }
-                    }
-                }
-            });
-        })();
+        // 9) DISTRIBUTION METRICS (Rendered via Stacked Progress Bars for Data Viz Best Practice)
+        renderStackedProgressBar('bookingsDistContainer', bookingsDistLabels, bookingsDistData, [CAFE_LATTE, CAFE_GOLD]);
+        renderStackedProgressBar('diningOptionsContainer', diningOptionsLabels, diningOptionsData, [CAFE_BLUE, CAFE_ORANGE, CAFE_TEAL]);
+        renderStackedProgressBar('paymentMethodsContainer', paymentMethodsLabels, paymentMethodsData, [CAFE_GREEN, CAFE_LATTE, CAFE_BLUE]);
     }
 
     initAnalyticsCharts();

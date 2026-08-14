@@ -83,16 +83,28 @@
         margin-bottom: 0.75rem;
     }
     .sa-gstat .sa-gstat-value {
-        font-size: 1.75rem;
+        font-size: clamp(1.1rem, 1.3vw, 1.55rem);
         font-weight: 800;
         color: #2d2520;
-        line-height: 1;
+        line-height: 1.2;
+        white-space: nowrap;
     }
     .sa-gstat .sa-gstat-label {
         font-size: 0.75rem;
         color: #8b7355;
         margin-top: 0.25rem;
         font-weight: 500;
+    }
+    .sa-custom-scroll::-webkit-scrollbar {
+        width: 4px;
+    }
+    .sa-custom-scroll::-webkit-scrollbar-track {
+        background: #faf8f5;
+        border-radius: 4px;
+    }
+    .sa-custom-scroll::-webkit-scrollbar-thumb {
+        background: #d4a862;
+        border-radius: 4px;
     }
 
     /* ── Branch Comparison Section ── */
@@ -291,7 +303,7 @@
         <div class="sa-gstat-icon" style="background: rgba(239,68,68,0.12); color: #dc2626;">
             <i class="fas fa-truck"></i>
         </div>
-        <div class="sa-gstat-value" style="color: #dc2626;">-₱{{ "{:,.2f}".format(total_expenses) }}</div>
+        <div class="sa-gstat-value" style="color: #dc2626;">{{ '-₱{:,.2f}'.format(total_expenses) if total_expenses > 0 else '₱0.00' }}</div>
         <div class="sa-gstat-label">Total Supplier Expenses</div>
     </div>
     <div class="sa-gstat">
@@ -335,7 +347,7 @@
                     </div>
                     <div style="text-align:right;">
                         <div style="font-size:0.68rem; color:#dc2626; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">Supplier Expenses ({{ branch_data['Pagsanjan']['expense_count'] }} payments)</div>
-                        <div style="font-size:1.1rem; font-weight:900; color:#dc2626; margin-top:2px;">-₱{{ "{:,.2f}".format(branch_data['Pagsanjan']['expenses']) }}</div>
+                        <div style="font-size:1.1rem; font-weight:900; color:#dc2626; margin-top:2px;">{{ '-₱{:,.2f}'.format(branch_data['Pagsanjan']['expenses']) if branch_data['Pagsanjan']['expenses'] > 0 else '₱0.00' }}</div>
                     </div>
                 </div>
                 <div style="border-top: 1px dashed rgba(212,168,98,0.3); margin-top:10px; padding-top:10px; display:flex; justify-content:space-between; align-items:center;">
@@ -375,20 +387,19 @@
             {% if branch_data['Pagsanjan']['recent_payments'] %}
             <div style="margin-top:14px; border-top:1px solid #f0ebe6; padding-top:12px;">
                 <div style="font-size:0.72rem; font-weight:700; color:#8b7355; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;"><i class="fas fa-truck me-1"></i>Recent Supplier Payments</div>
-                {% for pay in branch_data['Pagsanjan']['recent_payments'] %}
-                <div style="display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px dashed rgba(93,64,55,0.07); font-size:0.75rem;">
-                    <div>
-                        <span style="font-weight:700; color:#2d2520;">{{ pay.supplier.name if pay.supplier else 'Unknown' }}</span>
-                        <span style="color:#8b7355; margin-left:6px;">{{ pay.created_at.strftime('%b %d') if pay.created_at else '' }}</span>
+                <div class="sa-custom-scroll" style="max-height: 160px; overflow-y: auto; padding-right: 4px;">
+                    {% for pay in branch_data['Pagsanjan']['recent_payments'] %}
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px dashed rgba(93,64,55,0.07); font-size:0.75rem;">
+                        <div>
+                            <span style="font-weight:700; color:#2d2520;">{{ pay.supplier.name if pay.supplier else 'Unknown' }}</span>
+                            <span style="color:#8b7355; margin-left:6px;">{{ pay.created_at.strftime('%b %d') if pay.created_at else '' }}</span>
+                        </div>
+                        <span style="font-weight:800; color:#dc2626;">{{ '-₱{:,.2f}'.format(pay.amount) if pay.amount > 0 else '₱0.00' }}</span>
                     </div>
-                    <span style="font-weight:800; color:#dc2626;">-₱{{ "{:,.2f}".format(pay.amount) }}</span>
+                    {% endfor %}
                 </div>
-                {% endfor %}
             </div>
             {% endif %}
-            <div class="sa-branch-chart">
-                <canvas id="pagsanjanStatusChart"></canvas>
-            </div>
         </div>
     </div>
 
@@ -408,7 +419,7 @@
                     </div>
                     <div style="text-align:right;">
                         <div style="font-size:0.68rem; color:#dc2626; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">Supplier Expenses ({{ branch_data['Lucban']['expense_count'] }} payments)</div>
-                        <div style="font-size:1.1rem; font-weight:900; color:#dc2626; margin-top:2px;">-₱{{ "{:,.2f}".format(branch_data['Lucban']['expenses']) }}</div>
+                        <div style="font-size:1.1rem; font-weight:900; color:#dc2626; margin-top:2px;">{{ '-₱{:,.2f}'.format(branch_data['Lucban']['expenses']) if branch_data['Lucban']['expenses'] > 0 else '₱0.00' }}</div>
                     </div>
                 </div>
                 <div style="border-top: 1px dashed rgba(139,99,75,0.2); margin-top:10px; padding-top:10px; display:flex; justify-content:space-between; align-items:center;">
@@ -448,20 +459,19 @@
             {% if branch_data['Lucban']['recent_payments'] %}
             <div style="margin-top:14px; border-top:1px solid #f0ebe6; padding-top:12px;">
                 <div style="font-size:0.72rem; font-weight:700; color:#8b7355; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;"><i class="fas fa-truck me-1"></i>Recent Supplier Payments</div>
-                {% for pay in branch_data['Lucban']['recent_payments'] %}
-                <div style="display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px dashed rgba(93,64,55,0.07); font-size:0.75rem;">
-                    <div>
-                        <span style="font-weight:700; color:#2d2520;">{{ pay.supplier.name if pay.supplier else 'Unknown' }}</span>
-                        <span style="color:#8b7355; margin-left:6px;">{{ pay.created_at.strftime('%b %d') if pay.created_at else '' }}</span>
+                <div class="sa-custom-scroll" style="max-height: 160px; overflow-y: auto; padding-right: 4px;">
+                    {% for pay in branch_data['Lucban']['recent_payments'] %}
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px dashed rgba(93,64,55,0.07); font-size:0.75rem;">
+                        <div>
+                            <span style="font-weight:700; color:#2d2520;">{{ pay.supplier.name if pay.supplier else 'Unknown' }}</span>
+                            <span style="color:#8b7355; margin-left:6px;">{{ pay.created_at.strftime('%b %d') if pay.created_at else '' }}</span>
+                        </div>
+                        <span style="font-weight:800; color:#dc2626;">{{ '-₱{:,.2f}'.format(pay.amount) if pay.amount > 0 else '₱0.00' }}</span>
                     </div>
-                    <span style="font-weight:800; color:#dc2626;">-₱{{ "{:,.2f}".format(pay.amount) }}</span>
+                    {% endfor %}
                 </div>
-                {% endfor %}
             </div>
             {% endif %}
-            <div class="sa-branch-chart">
-                <canvas id="lucbanStatusChart"></canvas>
-            </div>
         </div>
     </div>
 </div>
@@ -535,20 +545,22 @@
             </div>
             <div class="sa-branch-body" style="padding: 1rem;">
                 {% if low_ingredients[branch_name] %}
-                    {% for item in low_ingredients[branch_name] %}
-                    <div class="sa-staff-row" style="padding: 0.5rem 0; border-bottom: 1px dashed #f0ebe6;">
-                        <div class="sa-staff-role">
-                            <div class="sa-role-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;"><i class="fas fa-box"></i></div>
-                            <div>
-                                <div style="font-size: 0.85rem; font-weight: 600; color: #4a3b32;">{{ item.name }}</div>
-                                <div style="font-size: 0.7rem; color: #8b7355;">Reorder Level: {{ item.reorder_level }} {{ item.unit }}</div>
+                    <div class="sa-custom-scroll" style="max-height: 320px; overflow-y: auto; padding-right: 6px;">
+                        {% for item in low_ingredients[branch_name] %}
+                        <div class="sa-staff-row" style="padding: 0.5rem 0; border-bottom: 1px dashed #f0ebe6;">
+                            <div class="sa-staff-role">
+                                <div class="sa-role-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;"><i class="fas fa-box"></i></div>
+                                <div>
+                                    <div style="font-size: 0.85rem; font-weight: 600; color: #4a3b32;">{{ item.name }}</div>
+                                    <div style="font-size: 0.7rem; color: #8b7355;">Reorder Level: {{ item.reorder_level }} {{ item.unit }}</div>
+                                </div>
+                            </div>
+                            <div class="sa-staff-count" style="background: #fef3c7; color: #b45309;">
+                                {{ item.stock_qty }} {{ item.unit }}
                             </div>
                         </div>
-                        <div class="sa-staff-count" style="background: #fef3c7; color: #b45309;">
-                            {{ item.stock_qty }} {{ item.unit }}
-                        </div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
                 {% else %}
                     <div style="text-align: center; padding: 1.5rem; color: #8b7355; font-size: 0.85rem;">
                         <i class="fas fa-check-circle" style="color: #22c55e; font-size: 1.5rem; margin-bottom: 0.5rem; display: block;"></i>
@@ -567,20 +579,22 @@
             </div>
             <div class="sa-branch-body" style="padding: 1rem;">
                 {% if out_of_stock_menu[branch_name] %}
-                    {% for item in out_of_stock_menu[branch_name] %}
-                    <div class="sa-staff-row" style="padding: 0.5rem 0; border-bottom: 1px dashed #f0ebe6;">
-                        <div class="sa-staff-role">
-                            <div class="sa-role-icon" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;"><i class="fas fa-utensils"></i></div>
-                            <div>
-                                <div style="font-size: 0.85rem; font-weight: 600; color: #4a3b32;">{{ item.name }}</div>
-                                <div style="font-size: 0.7rem; color: #8b7355;">{{ item.category }}</div>
+                    <div class="sa-custom-scroll" style="max-height: 320px; overflow-y: auto; padding-right: 6px;">
+                        {% for item in out_of_stock_menu[branch_name] %}
+                        <div class="sa-staff-row" style="padding: 0.5rem 0; border-bottom: 1px dashed #f0ebe6;">
+                            <div class="sa-staff-role">
+                                <div class="sa-role-icon" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;"><i class="fas fa-utensils"></i></div>
+                                <div>
+                                    <div style="font-size: 0.85rem; font-weight: 600; color: #4a3b32;">{{ item.name }}</div>
+                                    <div style="font-size: 0.7rem; color: #8b7355;">{{ item.category }}</div>
+                                </div>
+                            </div>
+                            <div class="sa-staff-count" style="background: #fee2e2; color: #b91c1c; font-size: 0.7rem;">
+                                UNAVAILABLE
                             </div>
                         </div>
-                        <div class="sa-staff-count" style="background: #fee2e2; color: #b91c1c; font-size: 0.7rem;">
-                            UNAVAILABLE
-                        </div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
                 {% else %}
                     <div style="text-align: center; padding: 1.5rem; color: #8b7355; font-size: 0.85rem;">
                         <i class="fas fa-check-circle" style="color: #22c55e; font-size: 1.5rem; margin-bottom: 0.5rem; display: block;"></i>
@@ -687,6 +701,24 @@
 </div>
 
 <script>
+function formatCurrencyShorthand(value) {
+    if (value === null || value === undefined) return '₱0';
+    var val = Number(value);
+    if (isNaN(val)) return '₱0';
+    var absVal = Math.abs(val);
+    var prefix = val < 0 ? '-₱' : '₱';
+    
+    if (absVal >= 1000000000) {
+        return prefix + (absVal / 1000000000).toFixed(1).replace(/\.0$/, '') + 'B';
+    } else if (absVal >= 1000000) {
+        return prefix + (absVal / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+    } else if (absVal >= 1000) {
+        return prefix + (absVal / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+    } else {
+        return prefix + absVal.toLocaleString();
+    }
+}
+
 function pollDashboard() {
     fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
     .then(response => response.text())
@@ -703,9 +735,6 @@ function pollDashboard() {
     .catch(err => console.warn('Sync failed:', err));
 }
 
-// Poll every 30 seconds
-
-
 function initSuperAdminCharts() {
     if (typeof Chart === 'undefined') {
         setTimeout(initSuperAdminCharts, 50);
@@ -720,12 +749,10 @@ function initSuperAdminCharts() {
     Chart.defaults.plugins.tooltip.cornerRadius = 10;
     Chart.defaults.plugins.tooltip.padding = 12;
 
-    var STATUS_COLORS = { 'PENDING': '#f59e0b', 'PREPARING': '#3b82f6', 'READY': '#8b5cf6', 'COMPLETED': '#22c55e', 'CANCELLED': '#ef4444', 'No Data': '#d4d4d8' };
-
     var cd = document.getElementById('saChartData').dataset;
-    var revLabels = JSON.parse(cd.revLabels);
-    var pagsanjanRev = JSON.parse(cd.pagsanjanRev);
-    var lucbanRev = JSON.parse(cd.lucbanRev);
+    var revLabels = JSON.parse(cd.revLabels || '[]');
+    var pagsanjanRev = JSON.parse(cd.pagsanjanRev || '[]').map(Number);
+    var lucbanRev = JSON.parse(cd.lucbanRev || '[]').map(Number);
 
     // ── Revenue Comparison Line Chart ──
     (function() {
@@ -775,9 +802,27 @@ function initSuperAdminCharts() {
                 maintainAspectRatio: false,
                 scales: {
                     x: { ticks: { color: '#8b634b' }, grid: { display: false } },
-                    y: { ticks: { color: '#8b634b' }, grid: { color: 'rgba(139,99,75,0.06)' }, beginAtZero: true }
+                    y: {
+                        ticks: {
+                            color: '#8b634b',
+                            font: { size: 11 },
+                            callback: function (v) { return formatCurrencyShorthand(v); }
+                        },
+                        grid: { color: 'rgba(139,99,75,0.06)' },
+                        beginAtZero: true
+                    }
                 },
-                plugins: { legend: { position: 'top' } }
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                var val = Number(context.parsed.y) || 0;
+                                return '  ' + context.dataset.label + ': ₱' + val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                            }
+                        }
+                    }
+                }
             }
         });
     })();
@@ -807,38 +852,14 @@ function initSuperAdminCharts() {
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                var val = context.raw;
+                                var val = Number(context.raw) || 0;
                                 var pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
-                                return context.label + ': P' + val.toLocaleString() + ' (' + pct + '%)';
+                                return '  ' + context.label + ': ₱' + val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' (' + pct + '%)';
                             }
                         }
                     }
                 }
             }
-        });
-    })();
-
-    // ── Pagsanjan Order Status Donut ──
-    (function() {
-        var labels = JSON.parse(cd.pagsanjanStatusLabels);
-        var data = JSON.parse(cd.pagsanjanStatusData);
-        var colors = labels.map(function(l) { return STATUS_COLORS[l] || '#a1887f'; });
-        new Chart(document.getElementById('pagsanjanStatusChart'), {
-            type: 'doughnut',
-            data: { labels: labels, datasets: [{ data: data, backgroundColor: colors, borderWidth: 0 }] },
-            options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, padding: 10 } } } }
-        });
-    })();
-
-    // ── Lucban Order Status Donut ──
-    (function() {
-        var labels = JSON.parse(cd.lucbanStatusLabels);
-        var data = JSON.parse(cd.lucbanStatusData);
-        var colors = labels.map(function(l) { return STATUS_COLORS[l] || '#a1887f'; });
-        new Chart(document.getElementById('lucbanStatusChart'), {
-            type: 'doughnut',
-            data: { labels: labels, datasets: [{ data: data, backgroundColor: colors, borderWidth: 0 }] },
-            options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, padding: 10 } } } }
         });
     })();
 }
